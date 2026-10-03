@@ -12,14 +12,14 @@ uniform float wobble_amount = 0.04;
 uniform float noise_scale = 0.36;
 uniform float plate_scale = 2.3;
 
-instance uniform float u_heat = -1.0;
-instance uniform float u_melt = -1.0;
-instance uniform float u_crust = -1.0;
-instance uniform float u_seed = -1.0;
-instance uniform float u_damage = -1.0;
-instance uniform float u_rise = -1.0;
-instance uniform float u_rise_height = -1.0;
-instance uniform float u_detail = -1.0;   // >1 = finer plates / grain (large objects such as walls)
+instance uniform float u_heat = 0.0;
+instance uniform float u_melt = 0.0;
+instance uniform float u_crust = 0.0;
+instance uniform float u_seed = 0.0;
+instance uniform float u_damage = 0.0;
+instance uniform float u_rise = 1.0;
+instance uniform float u_rise_height = 1.0;
+instance uniform float u_detail = 1.0;   // >1 = finer plates / grain (large objects such as walls)
 
 varying vec3 v_p;
 

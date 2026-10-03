@@ -751,20 +751,31 @@ func _station_hero(o: Vector3) -> Dictionary:
 
 
 func _station_dbg(o: Vector3) -> Dictionary:
+	var variant: String = "A"
+	for a in _only:
+		if a.begins_with("var="):
+			variant = a.substr(4)
 	var s3 := StoneView.new()
 	s3.setup(33, 0.3)
 	add_child(s3)
 	s3.position = o + Vector3(-1.0, 0.26, 0.0)
-	s3.set_thermal(0.0, 0.0)
+	var s1 := StoneView.new()
+	s1.setup(21, 0.4)
+	add_child(s1)
+	s1.position = o + Vector3(-2.5, 0.35, 0.0)
+	if variant == "A":
+		s1.set_thermal(1.0, 0.85)   # hot stone, set in tree
+	elif variant == "B":
+		s1.set_thermal(0.5, 0.0)
+	# variant C: no hot stone
 	var s4 := StoneView.new()
 	s4.setup(3, 0.3)
 	add_child(s4)
 	s4.position = o + Vector3(0.0, 0.26, 0.0)
-	s4.set_thermal(0.0, 0.0)
 	var wall := EarthWallView.new()
 	add_child(wall)
 	wall.position = o + Vector3(1.8, 0.0, 0.0)
 	wall.setup(8, 1.6, 1.05, 0.6)
 	wall.dust = false
 	wall.set_rise(1.0)
-	return {"pos": o + Vector3(0.5, 2.0, 4.0), "look": o + Vector3(0.5, 0.4, 0.0), "frames": 3, "fov": 40.0}
+	return {"pos": o + Vector3(-0.5, 2.0, 4.0), "look": o + Vector3(-0.5, 0.4, 0.0), "frames": 3, "fov": 40.0}
