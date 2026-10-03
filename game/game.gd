@@ -378,10 +378,11 @@ func _challenges(evs: Array[Dictionary]) -> void:
 					_challenge_n += 1
 		"m_storm_eye":
 			for e in evs:
-				# A caster standing in the connected water is a victim too; only targets count.
-				var victims: Array = e.get("victims", [])
-				if e.type == "conduct" and e.actor == player.id and victims.size() - int(victims.has(player.id)) >= 2:
-					_challenge_n += 1
+				if e.type == "conduct" and e.actor == player.id:
+					# A caster standing in the connected water is a victim too; only the others count.
+					var victims: Array = e.victims
+					if victims.size() - int(victims.has(player.id)) >= 2:
+						_challenge_n += 1
 		"m_return":
 			for e in evs:
 				if e.type == "lightning_redirect" and e.actor == player.id:

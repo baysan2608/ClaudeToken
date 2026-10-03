@@ -2,10 +2,11 @@ extends RefCounted
 ## Water showcase choreography for `--autoplay=show_water[:seconds]` (loaded by
 ## actors/autoplay.gd). Everything goes through real InputFrames, exactly like touch input;
 ## the camera is steered with cam_delta like a player's drag.
-## Beats: draw from the pool and shape it -> release a stream at the rival -> water lash ->
-## ice lance (freezes, shatters) -> draw again while the ice melts into a puddle -> raise the
-## held water as a shield -> the rival's flare boils on it (steam) -> let go (the shield refills
-## the waterskin, the rest splashes down) -> lash + ice lance finisher -> the shards melt.
+## Beats: walk to the pool -> draw from it and shape it (hold technique, drag aim) -> release a
+## stream at the rival -> water lash -> waterskin shield (guard) blocks two flares in steam ->
+## let go (the water flows back into the waterskin) -> counter with two lashes -> ice lance
+## (freezes, shatters) -> draw + stream again while the ice shards melt into a puddle.
+## The rival is kept passive (ai cfg) except during the shield beat.
 
 const PLAYER_START := Vector3(5.4, 0.0, 0.8)
 const RIVAL_START := Vector3(3.6, 0.0, -4.2)
@@ -13,7 +14,9 @@ const RIVAL_START := Vector3(3.6, 0.0, -4.2)
 var _beat := ""
 var _bt := 0.0           # time the current beat started
 var _shot := ""
-var _flare_seen := -1.0  # time the rival's first flare started
+var _flare_seen := -1.0  # time the rival's latest flare started
+var _flare_id := 0
+var _flares := 0
 var _cam_off := -0.55    # camera yaw offset from the player->rival line (rad): a 3/4 view
 var _cam_pitch := 0.30
 
@@ -28,7 +31,7 @@ func bind(g: Game) -> void:
 	var o := g.opponent
 	p.kit = g.progress.kit()
 	p.element = Sim.Element.WATER
-	p.pos = PLAYER_START
+	p.pos = PLAYER_START + Vector3(-1.2, 0.0, 2.5)
 	o.pos = RIVAL_START
 	p.facing = atan2(o.pos.x - p.pos.x, o.pos.z - p.pos.z)
 	o.facing = atan2(p.pos.x - o.pos.x, p.pos.z - o.pos.z)
@@ -59,26 +62,30 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 		_trace(g, t)
 	match _beat:
 		"intro":
-			if bt >= 0.5:
+			# Walk up to the pool's edge.
+			var d0 := PLAYER_START - p.pos
+			d0.y = 0.0
+			if d0.length() > 0.15 and bt < 2.5:
+				f.move = _stick(g, d0.normalized() * 0.55)
+			elif bt >= 1.5:
 				f.tech_pressed = true
 				f.tech_held = true
 				_go("draw", t)
 		"draw":
-			# Hold: water rises from the pool; drag the aim to shape it, then release at the rival.
+			# Hold: water is drawn from the pool to the hands; drag the aim to shape it,
+			# then release: the stream flies at the rival.
 			f.tech_held = true
-			if bt > 0.9 and bt < 1.8:
-				f.tech_aim_active = true
-				f.tech_aim = Vector2(sin((bt - 0.9) * 2.0 * PI / 0.9) * 0.7, 0.7)
-			if bt > 1.0:
+			_shape(f, bt, 1.1, 2.1)
+			if bt > 1.2:
 				_shot = "draw"
-			if bt >= 2.1:
+			if bt >= 2.7:
 				f.tech_held = false
 				f.tech_released = true
 				_go("stream", t)
 		"stream":
 			if bt > 0.3:
 				_shot = "stream"
-			if bt >= 0.6:
+			if bt >= 1.1:
 				_go("approach", t)
 		"approach":
 			var d := o.pos - p.pos
@@ -91,65 +98,90 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 			_tap_attack(f, bt)
 			if bt > 0.2 and bt < 0.3:
 				_shot = "lash"
-			if bt >= 0.9:
-				_go("lance", t)
-		"lance":
-			# Hold attack: the water freezes into a shard; release to throw it.
-			_hold_attack(f, bt, 0.7)
-			if bt > 0.75 and bt < 0.85:
-				_shot = "lance"
-			if bt >= 1.2:
-				f.tech_pressed = true
-				f.tech_held = true
-				_go("draw2", t)
-		"draw2":
-			# Draw again while the ice shards melt into the puddle at the rival's feet.
-			f.tech_held = true
-			if bt > 3.6:
-				_shot = "melted"
-			if bt >= 3.9:
+			if bt >= 1.0:
 				f.guard_pressed = true
 				f.guard_held = true
 				_go("shield", t)
 		"shield":
-			# Guard keeps the held water as a shield. Now the rival fights back with a close flare.
+			# Guard with water in the waterskin raises a water shield; now the rival fights back
+			# with close-range flares, which boil on the water into steam.
 			f.guard_held = true
-			f.tech_held = bt < Sim.DT * 2.5
-			if bt >= 0.25 and g.ai.cfg.drill == "passive" and _flare_seen < 0.0:
-				g.ai.cfg["drill"] = ""
+			if bt >= 0.3 and _flares == 0 and g.ai.cfg.drill == "passive":
+				# Any drill name other than the built-in ones = free sparring at a fixed interval.
+				g.ai.cfg["drill"] = "flares"
+				g.ai.cfg["interval"] = 0.9
 				g.ai.cfg["elements"] = [Sim.Element.FIRE]
-				g.ai.cfg["aggression"] = 1.0
-			if o.action != null and o.action.id == "fire_attack" and _flare_seen < 0.0:
+				g.ai.cfg["aggression"] = 1.5
+			if o.action != null and o.action.id == "fire_attack" and o.action.attack_id != _flare_id:
+				_flare_id = o.action.attack_id
+				_flares += 1
 				_flare_seen = t
-			if _flare_seen >= 0.0:
-				if t - _flare_seen > 0.15 and t - _flare_seen < 0.3:
-					_shot = "steam"
-				if t - _flare_seen > 1.4:
+				if _flares >= 2:
 					g.ai.cfg["drill"] = "passive"
-				if t - _flare_seen > 2.0:
-					_go("drop", t)
-			elif bt > 3.0:
+			if _flares > 0 and t - _flare_seen > 0.15 and t - _flare_seen < 0.3:
+				_shot = "steam%d" % _flares
+			if (_flares >= 2 and t - _flare_seen > 1.2) or bt > 4.5:
+				g.ai.cfg["drill"] = "passive"
 				_go("drop", t)
 		"drop":
-			# Letting go: the shield water refills the waterskin, the rest splashes down.
+			# Letting go: the shield water flows back into the waterskin.
 			f.guard_held = false
 			f.guard_released = bt < Sim.DT * 1.5
-			if bt > 0.4 and bt < 0.5:
-				_shot = "drop"
-			if bt >= 1.0:
-				_go("lash2", t)
-		"lash2":
+			if bt >= 0.6:
+				_go("counter", t)
+		"counter":
+			# Counter-attack once the flares stop: two quick lashes.
 			_tap_attack(f, bt)
-			if bt >= 0.8:
-				_go("lance2", t)
-		"lance2":
+			if bt >= 0.75:
+				_go("counter_b", t)
+		"counter_b":
+			_tap_attack(f, bt)
+			if bt >= 1.0:
+				_go("lance", t)
+		"lance":
+			# Hold attack: 4 kg of water freezes into a shard; release to throw it. It shatters.
 			_hold_attack(f, bt, 0.7)
-			if bt >= 1.2:
+			if bt > 0.75 and bt < 0.85:
+				_shot = "lance"
+			if bt >= 1.3:
+				f.tech_pressed = true
+				f.tech_held = true
+				_go("draw2", t)
+		"draw2":
+			# Draw and shape again while the ice shards at the rival's feet melt.
+			f.tech_held = true
+			_shape(f, bt, 0.9, 1.9)
+			if bt >= 2.1:
+				f.tech_held = false
+				f.tech_released = true
+				_go("close", t)
+		"close":
+			# Step in to watch the last of the ice melt into the puddle.
+			var d2 := o.pos - p.pos
+			d2.y = 0.0
+			if bt > 0.4 and d2.length() > 2.6 and bt < 1.6:
+				f.move = _stick(g, d2.normalized() * 0.4)
+			if not _any_ice(g) and bt > 0.4:
 				_go("end", t)
 		"end":
-			if bt > 3.9:
-				_shot = "end"
+			if bt > 0.3 and bt < 0.4:
+				_shot = "melted"
 	_steer_cam(g, f)
+
+
+func _any_ice(g: Game) -> bool:
+	for b in g.world.bodies:
+		if b.alive and b.is_water() and b.phase == Sim.Phase.FROZEN:
+			return true
+	return false
+
+
+## Aim drag while holding the technique: sweep side to side once (shaping), then let go of
+## the drag so the release goes to the locked target.
+func _shape(f: InputFrame, bt: float, from: float, to: float) -> void:
+	if bt > from and bt < to:
+		f.tech_aim_active = true
+		f.tech_aim = Vector2(sin((bt - from) * 2.0 * PI / (to - from)) * 0.7, 0.7)
 
 
 func _tap_attack(f: InputFrame, bt: float) -> void:

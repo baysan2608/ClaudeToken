@@ -170,11 +170,17 @@ func _play(c: String, key: String, speed: float = 1.0, blend: float = 0.12, from
 		ap.seek(from_time, true)
 
 
-## Plays clip so that its contact frame lands `remaining` seconds from now.
+## Plays clip so that its contact frame lands `remaining` seconds from now. While the same clip
+## runs, the speed is re-aimed from the clip's actual position (catching up a late start or a long
+## frame); past contact, or inside the last tick, the follow-through keeps its speed.
 func _play_aligned(c: String, key: String, remaining: float) -> void:
 	var contact := _contact(c)
-	var spd := clampf(contact / maxf(remaining, 0.03), 0.5, 2.5)
-	_play(c, key, spd, 0.06)
+	if ap != null and key == _cur_key and c == _cur:
+		var left := contact - ap.current_animation_position
+		if left > 0.0 and remaining >= Sim.DT:
+			ap.speed_scale = clampf(left / remaining, 0.5, 2.5)
+		return
+	_play(c, key, clampf(contact / maxf(remaining, 0.03), 0.5, 2.5), 0.06)
 
 
 func _animate(a: ActorState, dt: float) -> void:
@@ -212,19 +218,31 @@ func _animate(a: ActorState, dt: float) -> void:
 	var dir := hv / spd
 	var f := a.forward()
 	var fd := dir.dot(f)
-	var rd := dir.dot(f.cross(Vector3.UP))
+	var rd := dir.dot(f.cross(Vector3.UP))   # forward x UP is the character's RIGHT (rig left is +X)
 	if a.lock_target >= 0 and fd < 0.55 and spd < 3.0:
 		if fd < -0.5:
 			_play("walk_back", "wb", clampf(spd / BACK_SPEED, 0.5, 2.0), 0.18)
 		elif rd < 0.0:
-			_play("strafe_r", "sr", clampf(spd / STRAFE_SPEED, 0.5, 2.0), 0.18)
-		else:
 			_play("strafe_l", "sl", clampf(spd / STRAFE_SPEED, 0.5, 2.0), 0.18)
+		else:
+			_play("strafe_r", "sr", clampf(spd / STRAFE_SPEED, 0.5, 2.0), 0.18)
 		return
 	if spd < 2.9:
 		_play("walk", "walk", clampf(spd / WALK_SPEED, 0.5, 2.0), 0.2)
 	else:
 		_play("run", "run", clampf(spd / RUN_SPEED, 0.6, 1.5), 0.2)
+
+
+## Evade clip from the evade direction relative to the facing it started with, so the clip always
+## travels the way the sim moves the fighter (the sim's "side" label is not trusted for l/r).
+func _evade_side(a: ActorState, inst: ActionInst) -> String:
+	var dir: Vector3 = inst.data.get("dir", Vector3.ZERO)
+	var f: Vector3 = inst.data.get("face", a.forward())
+	var fd := dir.dot(f)
+	var rd := dir.dot(f.cross(Vector3.UP))   # > 0: toward the character's right
+	if dir == Vector3.ZERO or absf(fd) >= absf(rd):
+		return "fwd" if fd > 0.0 else "back"
+	return "r" if rd > 0.0 else "l"
 
 
 func _animate_action(a: ActorState, inst: ActionInst) -> void:
@@ -234,12 +252,12 @@ func _animate_action(a: ActorState, inst: ActionInst) -> void:
 	var su := float(inst.data.get("startup", inst.def.startup))
 	match inst.id:
 		"evade":
-			_play("evade_" + String(inst.data.get("side", "back")), "ev%d" % inst.attack_id, _clip_len("evade_l") / 0.42, 0.04)
+			_play("evade_" + _evade_side(a, inst), "ev%d" % inst.attack_id, _clip_len("evade_l") / 0.42, 0.04)
 		"air_dash":
 			_play("air_dash", "ad%d" % inst.attack_id, 1.0, 0.04)
 		"guard":
 			if a.wall_body >= 0 and inst.total < 0.35:
-				_play_aligned("earth_wall", "gw%d" % inst.attack_id, maxf(0.14 - inst.total, 0.05))
+				_play_aligned("earth_wall", "gw%d" % inst.attack_id, 0.14 - inst.total)
 			else:
 				_play("guard", "guard", 1.0, 0.08)
 		"earth_attack":

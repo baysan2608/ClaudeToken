@@ -7,7 +7,9 @@ extends Node3D
 
 var pool: VfxPool
 var world: CombatWorld
-var _views := {}       # body id -> {kind: String, node: Node3D, prev: Vector3, curr: Vector3, trail: PackedVector3Array}
+## body id -> {kind: String, node: Node3D, prev: Vector3, curr: Vector3, trail: PackedVector3Array}, plus
+## the ridge path/state last built (sig, st: "wave") and the radius the wet mark was placed with (r: "puddle").
+var _views := {}
 var _tmp_w := PackedFloat32Array()
 
 
@@ -81,7 +83,7 @@ func render(alpha: float) -> void:
 				if b.controller >= 0:
 					n.rotate_y(0.02)
 			"wave":
-				_update_wave(b, n, p)
+				_update_wave(b, n, p, v)
 			"wall":
 				n.global_position = b.pos
 				n.rotation.y = b.wall_yaw
@@ -103,7 +105,11 @@ func render(alpha: float) -> void:
 				n.call("set_points", pts, rad)
 				n.call("set_state", 1.0 - b.liquid)
 			"puddle":
-				pass
+				# Puddles grow as water merges in and shrink as they are drawn or boiled: keep the wet
+				# patch on the live radius by scaling the placed quad (re-placing restarts its fade-in).
+				var k := maxf(b.radius, 0.05) / maxf(float(v.get("r", b.radius)), 0.05)
+				if absf(n.scale.x - k) > 0.01:
+					n.scale = Vector3(k, 1.0, k)
 
 
 func _crust(b: MatBody) -> float:
@@ -142,29 +148,40 @@ func _make(b: MatBody, kind: String) -> Dictionary:
 	var n: Node3D = null
 	match kind:
 		"stone":
-			n = pool.get_fx("stone")
+			n = acquire("stone")
 			if n:
 				n.call("setup", b.id * 7919 + 13, b.radius)
 		"wave":
-			n = pool.get_fx("lava_wave")
+			n = acquire("lava_wave")
 		"wall":
-			n = pool.get_fx("earth_wall")
+			n = acquire("earth_wall")
 			if n and n.has_method("setup"):
 				n.call("setup", b.id, b.wall_half.x * 2.0, b.wall_half.y * 2.0, b.wall_half.z * 2.0)
 		"blob":
-			n = pool.get_fx("water_blob")
+			n = acquire("water_blob")
 			if n:
 				n.call("setup", b.radius)
 		"ribbon":
-			n = pool.get_fx("water_ribbon")
+			n = acquire("water_ribbon")
 		"puddle":
-			n = pool.get_fx("scorch_decal")
+			n = acquire("scorch_decal")
 			if n and n.has_method("place"):
 				n.call("place", b.pos, b.radius, "wet", 9999.0)
+				v.r = b.radius
 	if n != null:
 		n.visible = true
 	v.node = n
 	return v
+
+
+## Acquire a pooled node the caller keeps across frames. At its cap VfxPool recycles the oldest
+## active node, which would leave two owners driving (and later releasing) one node, so a kept
+## kind grows its cap instead: the sim already bounds how many bodies can be alive.
+func acquire(key: String) -> Node3D:
+	var st: Array = pool.get_stats().get(key, [])
+	if st.size() == 3 and int(st[1]) == 0 and int(st[0]) >= int(st[2]):
+		pool.set_cap(key, int(st[0]) + 1)
+	return pool.get_fx(key) as Node3D
 
 
 func _release(id: int) -> void:
@@ -175,25 +192,36 @@ func _release(id: int) -> void:
 	v.node = null
 
 
-func _update_wave(b: MatBody, n: Node3D, p: Vector3) -> void:
-	var pts := PackedVector3Array()
-	for q in b.wave_path:
-		pts.append(q)
-	if b.form == Sim.Form.WAVE:
-		if pts.is_empty() or pts[pts.size() - 1].distance_to(p) > 0.05:
-			pts.append(p)
-	if pts.size() < 2:
-		pts.insert(0, p - b.wave_dir * 0.4)
-	_tmp_w.resize(pts.size())
-	for k in pts.size():
-		var t := float(k) / maxf(1.0, pts.size() - 1)
-		_tmp_w[k] = b.wave_width * lerpf(0.55, 1.0, t)
-	n.global_position = Vector3.ZERO
-	n.call("set_path", pts, _tmp_w)
+func _update_wave(b: MatBody, n: Node3D, p: Vector3, v: Dictionary) -> void:
+	# A moving wave's front is interpolated every frame; a settled ridge's path only changes when
+	# the sim changes it, so its mesh is rebuilt only then (set_path re-uploads the whole strip).
+	var path := b.wave_path
+	var sig: Array = []
+	if b.form != Sim.Form.WAVE and path.size() >= 2:
+		sig = [path.size(), path[0], path[path.size() - 1], b.wave_width]
+	if sig.is_empty() or sig != v.get("sig", []):
+		v.sig = sig
+		var pts := PackedVector3Array()
+		for q in path:
+			pts.append(q)
+		if b.form == Sim.Form.WAVE:
+			if pts.is_empty() or pts[pts.size() - 1].distance_to(p) > 0.05:
+				pts.append(p)
+		if pts.size() < 2:
+			pts.insert(0, p - b.wave_dir * 0.4)
+		_tmp_w.resize(pts.size())
+		for k in pts.size():
+			var t := float(k) / maxf(1.0, pts.size() - 1)
+			_tmp_w[k] = b.wave_width * lerpf(0.55, 1.0, t)
+		n.global_position = Vector3.ZERO
+		n.call("set_path", pts, _tmp_w)
 	var crust := clampf(1.0 - b.liquid / 0.85, 0.0, 1.0)
 	if b.liquid <= 0.0:
 		crust = 1.0
-	n.call("set_state", b.liquid, crust, b.vel.length())
+	var st := Vector3(b.liquid, crust, b.vel.length())
+	if st != v.get("st", -Vector3.ONE):
+		v.st = st
+		n.call("set_state", b.liquid, crust, st.z)
 
 
 func view_of(id: int) -> Node3D:

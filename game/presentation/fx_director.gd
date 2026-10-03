@@ -17,6 +17,7 @@ var hud: Node = null         # receives toast(text) / flash(kind)
 
 var _charge_fx := {}         # actor id -> Node (FireChargeFX / ChargeAimFX)
 var _transient: Array[Dictionary] = []   # short-lived driven views (water lash arcs)
+var _loop_bodies := {}       # stone body id -> last position (its heat/lava/draw loops may be on)
 var _step_t := {}
 var _slowmo := 0.0
 
@@ -32,12 +33,18 @@ func bind(w: CombatWorld) -> void:
 				views.pool.release(tr.node)
 	_charge_fx.clear()
 	_transient.clear()
+	_loop_bodies.clear()
 	if audio:
 		audio.stop_all_loops()
 
 
 func _fx(key: String) -> Node:
 	return views.pool.get_fx(key) if views and views.pool else null
+
+
+## A node kept across frames (released by this director): never recycled out from under its owner.
+func _hold(key: String) -> Node:
+	return views.acquire(key) if views and views.pool else null
 
 
 func _hand(actor_id: int) -> Vector3:
@@ -232,7 +239,7 @@ func _event(e: Dictionary) -> void:
 			pass
 		"lash":
 			audio.play("water_whip", _apos(a))
-			var rib := _fx("water_ribbon")
+			var rib := _hold("water_ribbon")
 			if rib:
 				_transient.append({"node": rib, "t": 0.0, "dur": 0.28, "actor": a, "dir": e.dir, "range": float(e.range)})
 			_call(_fx("splash"), "play", [_apos(a) + (e.dir as Vector3) * 2.5, Vector3.UP, 0.4])
@@ -304,17 +311,25 @@ func update_continuous(dt: float) -> void:
 	if _slowmo > 0.0:
 		_slowmo -= dt / maxf(Engine.time_scale, 0.1)
 		Engine.time_scale = 0.55 if _slowmo > 0.0 else 1.0
+	var live := {}
 	for b in world.bodies:
-		if not b.alive:
+		if not b.alive or not b.is_stone():
 			continue
+		live[b.id] = b.pos
 		var key := "b%d" % b.id
-		if b.is_stone():
-			var heating := b.controller >= 0 and b.last_verb == "heat" and world.tick - b.last_tick < 4
-			audio.loop(key + "heat", "heat_crackle_loop", heating, b.pos)
-			audio.loop(key + "lava", "lava_wave_loop" if b.form == Sim.Form.WAVE else "lava_bubble_loop",
-				(b.form == Sim.Form.WAVE and b.vel.length() > 0.3) or (b.form == Sim.Form.BLOB and b.liquid > 0.3), b.pos)
-			var drawn := b.last_verb == "draw" and world.tick - b.last_tick < 4
-			audio.loop(key + "draw", "heat_draw_loop", drawn, b.pos)
+		var heating := b.controller >= 0 and b.last_verb == "heat" and world.tick - b.last_tick < 4
+		audio.loop(key + "heat", "heat_crackle_loop", heating, b.pos)
+		audio.loop(key + "lava", "lava_wave_loop" if b.form == Sim.Form.WAVE else "lava_bubble_loop",
+			(b.form == Sim.Form.WAVE and b.vel.length() > 0.3) or (b.form == Sim.Form.BLOB and b.liquid > 0.3), b.pos)
+		var drawn := b.last_verb == "draw" and world.tick - b.last_tick < 4
+		audio.loop(key + "draw", "heat_draw_loop", drawn, b.pos)
+	# A body that died (decay, remnant trim, merge) is never updated again: fade its loops out
+	# where it was, or a looping stream would play on forever.
+	for id in _loop_bodies:
+		if not live.has(id):
+			for s in ["heat", "lava", "draw"]:
+				audio.loop("b%d%s" % [id, s], "", false, _loop_bodies[id])
+	_loop_bodies = live
 	for a in world.actors:
 		var key := "a%d" % a.id
 		var inst := a.action
@@ -337,8 +352,12 @@ func update_continuous(dt: float) -> void:
 func _charge_visual(a: ActorState, charging: bool, bolt: bool) -> void:
 	var n: Node = _charge_fx.get(a.id, null)
 	if charging:
+		# The flame shows the fire charge; once the bolt is ready the telegraph becomes the aim line.
+		if n != null and bolt != n.has_method("set_aim"):
+			views.pool.release(n)
+			n = null
 		if n == null:
-			n = _fx("charge_aim" if bolt else "fire_charge")
+			n = _hold("charge_aim" if bolt else "fire_charge")
 			_charge_fx[a.id] = n
 		if n != null:
 			var t := clampf(a.action.total / 0.65, 0.0, 1.0)

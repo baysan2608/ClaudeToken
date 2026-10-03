@@ -15,9 +15,12 @@ const BOULDER_POS := Vector3(3.4, 0.6, 5.4)
 const REDIRECT_LEAD := 0.11
 ## Camera yaw for the guard exchanges: looking across the duel line, so the wall and the
 ## stone's path in and back out are seen in profile instead of hidden behind the fighter.
-const SIDE_YAW := PI - 1.05
+const SIDE_YAW := PI - 1.0
+## Camera yaw for the opening throws: a little off the fighter's back so the stones' flight
+## reads in three quarters instead of straight down the barrel.
+const OPEN_YAW := PI - 0.45
 ## The rival is knocked back by every hit; past this gap it walks back in (see _rival_range).
-const RIVAL_GAP := 6.5
+const RIVAL_GAP := 6.0
 
 var _done := {}
 var _ends := {}               # button -> time its hold ends (released on that tick)
@@ -72,7 +75,11 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 	# Back to standing still once the cued throw has started.
 	if g.ai.cfg.drill == "stone_rain" and o.action != null and o.action.id == "earth_attack":
 		g.ai.cfg["drill"] = "passive"
-	if _cue("cam_side", t >= 9.0):
+	if _cue("cam_open", true):
+		# Start in three quarters (one cut on the very first tick, before anything happens).
+		_cam_yaw = OPEN_YAW
+		f.cam_delta.x = -wrapf(OPEN_YAW - g.cam.yaw, -PI, PI)
+	if _cue("cam_side", t >= 8.4):
 		_cam_yaw = SIDE_YAW
 	_camera(g, f, t)
 
@@ -117,18 +124,18 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 				_aim_at(g, f, o.pos - p.pos)
 				_shot = "seize_throw"
 	# ---- 5. guard wall blocks a rival stone
-	if _cue("cue_block", t >= 10.0):
+	if _cue("cue_block", t >= 9.5):
 		_guard = "block"
 		_throw_cue(g)
 	# ---- 6. perfectly timed guards redirect the rival's stones
-	if _cue("cue_redirect1", t >= 12.7):
+	if _cue("cue_redirect1", t >= 12.2):
 		_guard = "redirect"
 		_throw_cue(g)
-	if _cue("cue_redirect2", t >= 15.4):
+	if _cue("cue_redirect2", t >= 14.8):
 		_guard = "redirect"
 		_throw_cue(g)
 	# ---- 7. closing stone shot, seen from the side
-	if _cue("shot2", t >= 17.9):
+	if _cue("shot2", t >= 17.2):
 		_press(f, "attack", t, 0.05)
 
 	_guards(g, f, t)
@@ -155,7 +162,7 @@ func _rival_range(g: Game) -> void:
 			_walking = false
 			g.ai.cfg["drill"] = "passive"
 			g.ai.cfg["aggression"] = 0.55
-	elif gap > RIVAL_GAP + 1.2 and g.ai.cfg.drill == "passive" and o.action == null and o.stun <= 0.0:
+	elif gap > RIVAL_GAP + 0.7 and g.ai.cfg.drill == "passive" and o.action == null and o.stun <= 0.0:
 		_walking = true
 		g.ai.cfg["drill"] = "stone_rain"
 		g.ai.cfg["aggression"] = 3.0   # preferred range 0.5..5 m: approach
@@ -209,7 +216,7 @@ func _incoming(g: Game) -> MatBody:
 # ------------------------------------------------------------------ camera
 
 func _camera(g: Game, f: InputFrame, _t: float) -> void:
-	if _cam_yaw == null:
+	if _cam_yaw == null or f.cam_delta != Vector2.ZERO:
 		return
 	var diff := wrapf(float(_cam_yaw) - g.cam.yaw, -PI, PI)
 	var d := clampf(diff * 0.05, -0.02, 0.02)
