@@ -37,7 +37,8 @@ void rock_surface(float ed, float cid, float eid, float lowf, float grain, float
 	float w_melt = mix(w_cold, wmax, smoothstep(0.08, 1.0, melt));
 	float w = max(w_melt * (1.0 - 0.84 * crust), 0.010) * act * (0.75 + 0.5 * lowf);
 	float en = ed + (grain - 0.5) * 0.07;
-	float fm = (1.0 - smoothstep(w * 0.40, w, en)) * step(0.001, w);
+	// NB: smoothstep with edge0 >= edge1 is undefined (NaN on some GPUs): keep edge1 strictly larger
+	float fm = (1.0 - smoothstep(w * 0.40, w + 1e-4, en)) * step(0.001, w);
 	fissure = fm;
 
 	float tcore = clamp(0.75 * heat + 0.45 * k_melt, 0.0, 1.0) * (1.0 - 0.74 * crust);

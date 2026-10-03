@@ -112,14 +112,17 @@ static func _draw(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorInte
 	if src != null:
 		var room := maxm - (b.mass if b != null else 0.0)
 		var take := minf(minf(rate, src.mass), room)
+		# Drawn water carries the source's exact state (temperature and ice fraction).
+		var e_take := take * (Sim.WATER_C * (src.temp - Sim.AMBIENT_C) - Sim.WATER_LATENT_FUSION * (1.0 - src.liquid))
 		if b == null:
 			b = w.spawn_body(Sim.Mat.WATER, Sim.Form.STREAM, take, src_point + Vector3(0, 0.2, 0), "draw:%d" % src.id)
 			b.temp = src.temp
+			b.liquid = src.liquid
 			b.lineage.append(src.id)
 			w.take_control(a, b, 0.9, "draw")
 		else:
-			# Absorb with exact energy bookkeeping (source water is at its own temperature).
-			var e := b.thermal_energy() + take * Sim.WATER_C * (src.temp - Sim.AMBIENT_C)
+			var e := b.thermal_energy() + e_take
+			b.liquid = (b.liquid * b.mass + src.liquid * take) / (b.mass + take)
 			b.mass += take
 			w._set_energy(b, e)
 			b.update_radius()

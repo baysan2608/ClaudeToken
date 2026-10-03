@@ -1,7 +1,7 @@
 class_name Conduction
 extends RefCounted
 ## Lightning as a bounded gameplay conduction graph, built once per discharge.
-## Nodes: the pool, the metal plate, liquid puddles, held/flying liquid water, actors.
+## Nodes: the pool, the metal plate, liquid puddles, and actors standing on them.
 ## Edges: explicit geometric contact only. Stone, lava and ice never conduct.
 ## Limits: one discharge per bolt (no per-frame damage), max hops, fixed damage
 ## budget split across reached actors, one redirect per bolt.

@@ -40,7 +40,7 @@ void fragment() {
 
 	// thermal profile: banks cool and crust first, the front is fresh and hot
 	float bank = smoothstep(0.45, 0.98, u);
-	float front_hot = smoothstep(0.9, 0.0, v_fh.x) * smoothstep(0.3, 0.8, melt);
+	float front_hot = (1.0 - smoothstep(0.0, 0.9, v_fh.x)) * smoothstep(0.3, 0.8, melt);
 	float crust_eff = clamp(crust + bank * (1.0 - crust) * 0.55 * (1.0 - front_hot) , 0.0, 1.0);
 	float heat_eff = clamp(melt * (1.0 - 0.35 * bank) + front_hot * 0.2, 0.0, 1.0);
 	float melt_eff = clamp(melt * (1.0 - 0.1 * bank), 0.0, 1.0);

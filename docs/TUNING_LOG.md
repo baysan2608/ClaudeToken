@@ -12,3 +12,8 @@
 | 8 | AI re-rolled its counter decision every tick while a wave was out of range (counter chance effectively ~100%) | decide once per threat, wait for range in a separate state | `counter` setting means what it says |
 | 9 | Soak: per-body audio loop players were never freed (node count crept up) | idle loop players freed when off and silent | node count plateaus (see PERF.md) |
 | 10 | Soak: EarthWallView.setup signature mismatch made body views fail and cascade | call matches VFX API (seed, width, height, thickness) | 0 script errors in 2-min soak |
+| 11 | Tests: own rising wall stopped the guard's own redirected stone; redirect flew straight (dropped ~5 m over 12 m) | own wall never blocks own shots; redirects use a ballistic launch to the thrower's chest | Perfect redirect window = stone launched 2.0–4.5 m from the guard; reaches a 12 m thrower |
+| 12 | Tests: inert stones stuck inside a rising wall ground it down (39 block events, crumble) | inert bodies never damage walls and are pushed clear | Walls only take damage from attacks |
+| 13 | Tests: heavy earth gather kept the stone's temperature while adding ambient mass (heat from nothing) | gather preserves total heat (temperature dilutes) | Energy ledger exact |
+| 14 | Tests: drawing from a partly frozen puddle ignored latent heat | drawn water carries the source's ice fraction and exact energy | 10-min soak ledger drift 83 HU → within tolerance |
+| 15 | Ledger rounding: thermal results passed through Vector2 (32-bit floats) | `Thermal.heat()` / `boil()` return 64-bit floats; Vector2 wrappers kept for compatibility | Ledgers accumulate no float32 rounding |

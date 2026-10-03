@@ -217,7 +217,7 @@ static func _heat_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: Acto
 		if paid < want * 0.5 and not inst.data.get("starved", false):
 			inst.data["starved"] = true
 			w.emit("insufficient", {"actor": a.id, "what": "focus", "move": "heat"})
-		var used := Thermal.apply_heat(b, paid).x
+		var used := w.heat_body(b, paid)
 		w.ledger.spent += paid - used
 		b.touch(a.id, "heat", w.tick)
 		if w.tick % 6 == 0:
@@ -241,7 +241,7 @@ static func _heat_water(w: CombatWorld, a: ActorState, inst: ActionInst, b: MatB
 		return
 	var paid := w.pay_heat(a, float(inst.def.heat_rate) * 0.5 * Sim.DT)
 	if b.phase == Sim.Phase.FROZEN or b.liquid < 1.0:
-		var used := Thermal.apply_heat(b, paid).x
+		var used := w.heat_body(b, paid)
 		w.ledger.spent += paid - used
 	else:
 		w.boil_water(b, paid, b.pos)
@@ -283,7 +283,7 @@ static func _draw_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: Acto
 			w.emit("insufficient", {"actor": a.id, "what": "focus", "move": "draw"})
 		return
 	w.spend_focus(a, fcost)
-	var taken := -Thermal.apply_heat(b, -e).x
+	var taken := -Thermal.heat(b, -e)
 	a.heat_reserve += taken
 	b.touch(a.id, "draw", w.tick)
 	if w.tick % 6 == 0:
@@ -334,7 +334,7 @@ static func _flare(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 			continue
 		var share := left * 0.6
 		if b.phase == Sim.Phase.FROZEN:
-			var used := Thermal.apply_heat(b, share).x
+			var used := w.heat_body(b, share)
 			left -= used
 		else:
 			w.boil_water(b, share, b.pos)
@@ -365,7 +365,7 @@ static func _flare(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 			continue
 		var to := b.pos - a.chest()
 		if to.length() < rng_m and (to.length() < 0.5 or Vector3(to.x, 0, to.z).normalized().dot(dir) > cos(deg_to_rad(cone))):
-			var used := Thermal.apply_heat(b, left * 0.5).x
+			var used := w.heat_body(b, left * 0.5)
 			left -= used
 	w.ledger.spent += maxf(0.0, left)
 

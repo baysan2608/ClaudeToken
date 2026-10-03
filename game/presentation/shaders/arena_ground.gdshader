@@ -65,7 +65,7 @@ void fragment() {
 	albedo *= 1.0 + (grain - 0.5) * 0.35;
 	albedo = mix(albedo, albedo * 1.18 + vec3(0.02), wear * smoothstep(0.1, 0.9, mott) * 0.45);
 	albedo = mix(albedo, seam_color, seam * 0.75);
-	albedo *= 1.0 - 0.28 * smoothstep(0.12, 0.0, d) * (1.0 - seam);
+	albedo *= 1.0 - 0.28 * (1.0 - smoothstep(0.0, 0.12, d)) * (1.0 - seam);
 
 	// per-stone tilt and bevel normal (world space -> view space)
 	vec2 tilt = (vec2(h21(id + 5.0), h21(id + 9.0)) - 0.5) * 0.06;

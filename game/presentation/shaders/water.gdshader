@@ -80,7 +80,8 @@ void fragment() {
 	// ripples on the surface; faceted ice swaps them for the geometric normal
 	float rip = (1.0 - frozen) * 0.32 + frozen * 0.03;
 	n = normalize(n + vec3(n1.g - 0.5, n2.g - 0.5, 0.0) * rip * (0.3 + 0.7 * (1.0 - ndv0)));
-	vec3 fn = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
+	vec3 fc = cross(dFdx(VERTEX), dFdy(VERTEX));
+	vec3 fn = fc * inversesqrt(max(dot(fc, fc), 1e-12));
 	fn = dot(fn, view) < 0.0 ? -fn : fn;
 	n = normalize(mix(n, fn, smoothstep(0.15, 0.7, frozen)));
 	NORMAL = n;

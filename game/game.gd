@@ -300,7 +300,7 @@ func _scenario_tick() -> void:
 	for b in world.bodies:
 		if b.alive and b.origin == "vent" and b.liquid > 0.0 and b.liquid < 1.0 and b.controller < 0:
 			var e := 55.0 * Sim.DT
-			var used := Thermal.apply_heat(b, e).x
+			var used := Thermal.heat(b, e)
 			world.ledger.generated += used
 
 

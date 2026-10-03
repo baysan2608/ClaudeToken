@@ -593,6 +593,27 @@ func test_knockdown_getup_and_return_to_idle() -> void:
 	check(p.action != null, "and the actor can act again")
 
 
+func test_guard_break_ends_the_guard_and_recovers_cleanly() -> void:
+	_duel(Sim.Element.FIRE)
+	h.press(p, "guard")
+	h.step(30)
+	check(p.guarding and p.action != null and p.action.id == "guard", "setup: P is guarding")
+	var r1 := h.w.hit_actor(p, _hit_info(o, 10.0, 100.0))
+	check(r1 == "block", "first heavy hit is blocked (%s)" % r1)
+	check(p.guarding and p.stun == 0.0, "the guard holds after one blocked hit")
+	near(p.balance, 100.0 - 100.0 * 0.55, 1e-6, "a block costs 55%% of the balance damage (%.1f)" % p.balance)
+	var r2 := h.w.hit_actor(p, _hit_info(o, 10.0, 100.0))
+	check(r2 == "guard_break", "the second one breaks the guard (%s)" % r2)
+	check(not p.guarding and p.action == null, "the guard is gone and the action interrupted")
+	check(p.stun_kind == "guard_break" and p.stun > 0.0, "stunned by the guard break")
+	check(p.balance == 35.0, "balance partially restored (%.0f)" % p.balance)
+	h.release(p, "guard")
+	var free := h.until(func(): return p.stun == 0.0, 120)
+	check(free > 0 and free < 60, "free again after the guard-break stun (%d ticks)" % free)
+	h.step(2)
+	check(p.action == null and not p.guarding and p.stun_kind == "", "clean idle state")
+
+
 func test_hits_during_getup_are_evaded() -> void:
 	_duel()
 	p.balance = 10.0

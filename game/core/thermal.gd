@@ -10,16 +10,30 @@ const ICE_MIN_C := -20.0
 const ICE_AMBIENT_MULT := 6.0
 
 
-## Adds (energy > 0) or removes (energy < 0) heat. Returns Vector2(applied_HU, vaporised_kg).
-## Removal never cools below ambient for stone (extraction needs a temperature gradient).
-static func apply_heat(b: MatBody, energy: float) -> Vector2:
+## Vapour (kg) produced by the last heat() call, and HU used by the last boil() call.
+## Kept as 64-bit floats: the ledgers must not accumulate Vector2 (32-bit) rounding.
+static var last_vapor := 0.0
+static var last_used := 0.0
+
+
+## Adds (energy > 0) or removes (energy < 0) heat. Returns HU actually applied
+## (sets last_vapor). Removal never cools below ambient for stone.
+static func heat(b: MatBody, energy: float) -> float:
+	last_vapor = 0.0
 	if b.mass <= 0.0 or energy == 0.0:
-		return Vector2.ZERO
+		return 0.0
 	if b.mat == Sim.Mat.STONE:
-		return Vector2(_stone(b, energy), 0.0)
+		return _stone(b, energy)
 	if b.mat == Sim.Mat.WATER:
-		return _water(b, energy)
-	return Vector2.ZERO
+		var r := _water(b, energy)
+		return r
+	return 0.0
+
+
+## Compatibility wrapper: Vector2(applied_HU, vaporised_kg). Prefer heat() for ledgers.
+static func apply_heat(b: MatBody, energy: float) -> Vector2:
+	var a := heat(b, energy)
+	return Vector2(a, last_vapor)
 
 
 static func _stone(b: MatBody, e: float) -> float:
@@ -70,7 +84,7 @@ static func _stone(b: MatBody, e: float) -> float:
 	return applied
 
 
-static func _water(b: MatBody, e: float) -> Vector2:
+static func _water(b: MatBody, e: float) -> float:
 	var m := b.mass
 	var applied := 0.0
 	var vapor := 0.0
@@ -98,7 +112,8 @@ static func _water(b: MatBody, e: float) -> Vector2:
 			vapor = minf(b.mass, left / Sim.WATER_LATENT_VAPOR)
 			applied += vapor * Sim.WATER_LATENT_VAPOR
 			b.mass -= vapor
-		return Vector2(applied, vapor)
+		last_vapor = vapor
+		return applied
 	var take := -e
 	if b.temp > Sim.WATER_FREEZE_C:
 		var avail := (b.temp - Sim.WATER_FREEZE_C) * m * Sim.WATER_C
@@ -119,20 +134,28 @@ static func _water(b: MatBody, e: float) -> Vector2:
 		var use_s := minf(take, avail_s)
 		b.temp -= use_s / (m * Sim.WATER_C)
 		applied -= use_s
-	return Vector2(applied, 0.0)
+	return applied
 
 
 ## Flash-boil at a water contact surface (game rule): fire energy boils water off
-## the contact layer instead of warming the bulk. Returns Vector2(vaporised_kg, HU used).
-static func flash_boil(b: MatBody, energy: float) -> Vector2:
+## the contact layer instead of warming the bulk. Returns vaporised kg (sets last_used).
+static func boil(b: MatBody, energy: float) -> float:
+	last_used = 0.0
 	if b.mat != Sim.Mat.WATER or b.mass <= 0.0 or energy <= 0.0:
-		return Vector2.ZERO
+		return 0.0
 	var per_kg := Sim.WATER_LATENT_VAPOR + Sim.WATER_C * maxf(0.0, Sim.WATER_BOIL_C - b.temp)
 	if b.liquid < 1.0:
 		per_kg += Sim.WATER_LATENT_FUSION * (1.0 - b.liquid)
 	var kg := minf(b.mass, energy / per_kg)
 	b.mass -= kg
-	return Vector2(kg, kg * per_kg)
+	last_used = kg * per_kg
+	return kg
+
+
+## Compatibility wrapper: Vector2(vaporised_kg, HU used).
+static func flash_boil(b: MatBody, energy: float) -> Vector2:
+	var kg := boil(b, energy)
+	return Vector2(kg, last_used)
 
 
 ## Heat (above ambient) carried away by vapour leaving at boiling point.
@@ -151,9 +174,9 @@ static func ambient_step(b: MatBody, dt: float) -> float:
 	if b.mat == Sim.Mat.WATER:
 		if b.liquid < 1.0 or b.temp < Sim.AMBIENT_C - 0.5:
 			var gain := k * ICE_AMBIENT_MULT * (Sim.AMBIENT_C - minf(b.temp, 0.0)) / 100.0 * dt
-			return _water(b, gain).x
+			return _water(b, gain)
 		if b.temp > Sim.AMBIENT_C + 0.5:
-			return _water(b, -k * (b.temp - Sim.AMBIENT_C) / 100.0 * dt).x
+			return _water(b, -k * (b.temp - Sim.AMBIENT_C) / 100.0 * dt)
 	return 0.0
 
 

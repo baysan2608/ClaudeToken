@@ -1138,8 +1138,13 @@ func _update_ballistic(b: MatBody, dt: float) -> void:
 	var hit_wall_body: MatBody = null
 	for w in bodies:
 		if w.alive and w.form == Sim.Form.WALL and w.wall_rise > 0.3 and w != b and point_in_wall(np, w, b.radius * 0.7):
-			hit_wall_body = w
-			break
+			if b.attack_id != 0:
+				if w.last_actor == b.attack_owner:
+					continue   # a fighter's own wall launches, never blocks, their shot
+				hit_wall_body = w
+				break
+			# Inert bodies are never stuck in or grinding a wall: they're pushed clear of it.
+			np = _push_out_obb(np, b.radius, w)
 	if hit_wall_body != null:
 		_body_hits_wall(b, hit_wall_body)
 		return
@@ -1183,13 +1188,15 @@ func _body_impact(b: MatBody, what: String) -> void:
 
 
 func _body_hits_wall(b: MatBody, w: MatBody) -> void:
+	if b.attack_id == 0:
+		return
 	var owner := get_actor(w.controller if w.controller >= 0 else w.last_actor)
 	var perfect := owner != null and owner.guarding and owner.wall_body == w.id and perfect_guard(owner)
 	if perfect and b.is_stone() and b.mass <= owner.max_control_mass and b.attack_owner != owner.id:
 		var tgt := get_actor(b.attack_owner)
 		var dir := (tgt.chest() - b.pos).normalized() if tgt != null else owner.forward()
-		var spd := maxf(b.vel.length(), 12.0) * 1.05
-		b.vel = dir * spd
+		var spd := maxf(Vector2(b.vel.x, b.vel.z).length(), 12.0) * 1.05
+		b.vel = ActEarth.launch_vel(b.pos, tgt.chest(), spd) if tgt != null else dir * spd
 		b.attack_id = new_attack_id()
 		b.attack_owner = owner.id
 		b.hit_set.clear()
@@ -1317,7 +1324,7 @@ func _quench(lava: MatBody, water: MatBody, dt: float) -> void:
 	var q := minf(Sim.QUENCH_RATE * dt, lava.thermal_energy())
 	if q <= 0.0 or water.mass <= 0.0:
 		return
-	var applied := -Thermal.apply_heat(lava, -q).x
+	var applied := -Thermal.heat(lava, -q)
 	var kg := boil_water(water, applied, lava.pos + Vector3(0, 0.3, 0))
 	if water.form == Sim.Form.PUDDLE and water.mass <= 0.05:
 		decay_body(water, "boiled")
@@ -1325,14 +1332,27 @@ func _quench(lava: MatBody, water: MatBody, dt: float) -> void:
 		emit("steam", {"body": lava.id, "water": water.id, "kg": kg})
 
 
+## Applies heat to any body with full ledger accounting (vapour leaving water is
+## recorded and spawns steam). Returns HU applied.
+func heat_body(b: MatBody, energy: float) -> float:
+	var applied := Thermal.heat(b, energy)
+	var kg := Thermal.last_vapor
+	if kg > 0.0:
+		ledger.vapor += Thermal.vapor_energy(kg)
+		_spawn_steam(b.pos + Vector3(0, 0.3, 0), kg)
+		if b.mass <= 0.05 and b.form != Sim.Form.POOL:
+			decay_body(b, "boiled")
+	return applied
+
+
 ## Flash-boils water with `energy` HU at a contact surface; energy the water can't
 ## take (not enough mass) is lost to the air. Returns vaporised kg.
 func boil_water(water: MatBody, energy: float, at: Vector3) -> float:
-	var r := Thermal.flash_boil(water, energy)
-	ledger.vapor += Thermal.vapor_energy(r.x)
-	ledger.ambient -= energy - r.y
-	_spawn_steam(at, r.x)
-	return r.x
+	var kg := Thermal.boil(water, energy)
+	ledger.vapor += Thermal.vapor_energy(kg)
+	ledger.ambient -= energy - Thermal.last_used
+	_spawn_steam(at, kg)
+	return kg
 
 
 func _spawn_steam(p: Vector3, kg: float) -> void:
@@ -1466,8 +1486,8 @@ func _projectile_hits_actor(b: MatBody, a: ActorState) -> void:
 		var perfect := perfect_guard(a)
 		if perfect and a.element == Sim.Element.EARTH and b.is_stone() and b.mass <= a.max_control_mass:
 			var tgt := get_actor(b.attack_owner)
-			var dir := (tgt.chest() - b.pos).normalized() if tgt != null else a.forward()
-			b.vel = dir * maxf(b.vel.length(), 12.0) * 1.05
+			var spd := maxf(Vector2(b.vel.x, b.vel.z).length(), 12.0) * 1.05
+			b.vel = ActEarth.launch_vel(b.pos, tgt.chest(), spd) if tgt != null else a.forward() * spd
 			b.attack_id = new_attack_id()
 			b.attack_owner = a.id
 			b.hit_set.clear()

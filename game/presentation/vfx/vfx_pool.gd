@@ -90,6 +90,72 @@ func get_fx(key: Variant) -> Node:
 	return node
 
 
+## Warm every built-in effect type once so shader pipelines compile during loading instead of on
+## the first hit. Call while a loading screen covers the view, with the camera looking at `at`
+## (the effects are drawn tiny for a couple of frames, then released). `frames` = frames to hold.
+func prewarm(at: Vector3, frames: int = 3) -> void:
+	var warmed: Array[Node] = []
+	for key in _types.keys():
+		if not (key is String):
+			continue
+		var node: Node = get_fx(key)
+		if node == null:
+			continue
+		warmed.append(node)
+		_prewarm_node(key, node, at)
+	for _i in frames:
+		await get_tree().process_frame
+		for node in warmed:
+			if is_instance_valid(node) and node.has_method("advance") and not (node is StoneView):
+				node.call("advance", 0.016)
+	for node in warmed:
+		release(node)
+
+
+func _prewarm_node(key: String, node: Node, at: Vector3) -> void:
+	var tiny: float = 0.05
+	match key:
+		"stone":
+			node.setup(1, tiny)
+			node.position = at
+			node.set_thermal(1.0, 1.0)
+		"earth_wall":
+			node.setup(1, tiny * 2.0, tiny, tiny)
+			node.position = at
+			node.set_rise(0.5)
+		"lava_wave":
+			node.set_path(PackedVector3Array([at, at + Vector3(tiny, 0, 0)]), PackedFloat32Array([tiny, tiny]))
+			node.set_state(1.0, 0.3, 1.0)
+		"water_ribbon":
+			node.set_points(PackedVector3Array([at, at + Vector3(tiny, 0, 0)]), PackedFloat32Array([tiny * 0.2, tiny * 0.2]))
+			node.set_state(0.5)
+		"water_blob":
+			node.setup(tiny)
+			node.position = at
+			node.set_state(0.5)
+		"fire_burst":
+			node.play(at, Vector3.UP, tiny, 0.3)
+		"fire_charge":
+			node.position = at
+			node.set_charge(0.2)
+		"lightning_arc":
+			node.strike(PackedVector3Array([at, at + Vector3(tiny, tiny, 0)]), 1)
+		"charge_aim":
+			node.set_aim(at, at + Vector3(tiny, 0, 0), 0.5)
+		"air_push":
+			node.play(at, Vector3.UP, tiny, tiny * 2.0)
+		"glide_trail":
+			node.begin(null)
+			node.push(at)
+			node.push(at + Vector3(tiny, 0, 0))
+		"dust_puff", "splash", "ember":
+			node.play(at, Vector3.UP, 0.1)
+		"steam":
+			node.play(at, 0.1)
+		"scorch_decal":
+			node.place(at, tiny, "scorch", 1.0)
+
+
 ## Return a node to its pool (safe to call twice).
 func release(node: Node) -> void:
 	if node == null or not is_instance_valid(node):

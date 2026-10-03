@@ -39,7 +39,10 @@ static func on_phase(w: CombatWorld, a: ActorState, inst: ActionInst, p: int) ->
 		var b := w.held(a)
 		var extra := float(inst.def.heavy_mass) - (b.mass if b != null else 0.0)
 		if b != null and extra > 0.0 and w.spend_focus(a, float(inst.def.heavy_cost) - float(inst.def.cost)):
+			# Ground stone arrives at ambient: total heat is unchanged, so temperature dilutes.
+			var e := b.thermal_energy()
 			b.mass += extra
+			w._set_energy(b, e)
 			b.update_radius()
 			w.mass_ledger.ground_taken += extra
 			w.emit("acquire", {"actor": a.id, "body": b.id, "mass": extra})

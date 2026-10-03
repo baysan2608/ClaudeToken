@@ -201,6 +201,54 @@ func test_reserve_passively_dissipates_and_is_accounted() -> void:
 	check(_worst_drift <= _tolerance(), "ledger drift %.6f" % _worst_drift)
 
 
+# ================================================================ targeted energy-leak regressions
+
+func test_heavy_earth_gather_onto_a_warm_stone_creates_no_heat() -> void:
+	# A heavy earth attack gathers extra stone from the ground (ambient temperature) into the
+	# stone in hand. If the stone in hand is warm, the energy of the combined body must be the
+	# sum of the parts, not the warm temperature applied to the new mass.
+	h = SimHarness.new(5)
+	a = h.actor("A", Vector3(0, 0, 6), 0, {}, Sim.Element.EARTH)
+	b = h.actor("B", Vector3(0, 0, -6), 1, {}, Sim.Element.EARTH)
+	stone = h.w.spawn_body(Sim.Mat.STONE, Sim.Form.CHUNK, 20.0, Vector3(0, 0.2, 5.2), "scenario")
+	stone.temp = 400.0
+	h.step(20)
+	h.log.clear()
+	_begin_accounting()
+	var heat0 := stone.thermal_energy()
+	h.press(a, "attack")
+	_run(60)
+	check(h.has_event("acquire"), "the heavy attack gathered extra stone")
+	check(absf(stone.mass - float(Moves.DEFS.earth_attack.heavy_mass)) < 1e-9, "the stone grew to the heavy mass (%.1f kg)" % stone.mass)
+	check(stone.thermal_energy() <= heat0 + 1e-6, "gathering ambient stone cannot add heat: %.2f HU -> %.2f HU" % [heat0, stone.thermal_energy()])
+	check(_worst_drift <= _tolerance(), "energy ledger drifted by %.3f HU at tick %d" % [_worst_drift, _drift_tick])
+	h.release(a, "attack")
+	_run(60)
+	check(_worst_drift <= _tolerance(), "energy ledger drift after the throw %.3f HU" % _worst_drift)
+
+
+func test_drawing_from_a_partially_thawed_puddle_conserves_energy() -> void:
+	# A puddle at 0 degC that is 30% ice holds negative latent energy. Moving its water into a
+	# stream moves that energy with it (or turns the stream into slush); it must not appear or vanish.
+	h = SimHarness.new(5)
+	a = h.actor("D", Vector3(-4, 0, 5), 0, {}, Sim.Element.WATER)
+	h.step(5)
+	var puddle := h.w.spawn_body(Sim.Mat.WATER, Sim.Form.PUDDLE, 4.0, Vector3(-4, 0, 6.5), "scenario")
+	puddle.update_radius_puddle()
+	puddle.temp = 0.0
+	puddle.liquid = 0.7
+	a.water_carried = 0.0
+	_begin_accounting()
+	var water0 := h.w.water_mass()
+	h.press(a, "tech")
+	_run(40)
+	var held := h.w.held(a)
+	check(held != null and held.origin.begins_with("draw:"), "D is holding water drawn from the puddle")
+	check(puddle.mass < 4.0, "the puddle was drawn from (%.2f kg left)" % puddle.mass)
+	near(h.w.water_mass(), water0, 1e-6, "water mass conserved")
+	check(_worst_drift <= _tolerance(), "energy ledger drifted by %.3f HU at tick %d" % [_worst_drift, _drift_tick])
+
+
 # ================================================================ soak
 
 class Soak:
@@ -501,6 +549,6 @@ func test_soak_is_deterministic_for_a_seed() -> void:
 	check(diverged < 0, "state hashes diverged at checkpoint %d (tick %d)" % [diverged, (diverged + 1) * 600])
 	check(first.final_hash == again.final_hash, "same seed: identical final state hash (%d vs %d)" % [first.final_hash, again.final_hash])
 	check(first.event_counts == again.event_counts, "same seed: identical event counts")
-	# A different seed must really play differently (the hash is sensitive).
-	var other := _soak_for(SOAK_SEED + 1)
-	check(other.final_hash != first.final_hash, "a different seed gives a different final state")
+	# A different seed must really play differently (the hash is sensitive): compare tick 6000.
+	var other := _run_soak(SOAK_SEED + 1, 6000)
+	check(other.final_hash != first.checkpoints[9], "a different seed gives a different state at tick 6000")

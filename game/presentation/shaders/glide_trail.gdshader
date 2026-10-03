@@ -31,7 +31,7 @@ void vertex() {
 void fragment() {
 	float n = texture(noise_tex, vec2(v_dist * 0.8 - flow, v_across * 0.4 + 0.5)).g;
 	float x = abs(v_across);
-	float body = smoothstep(1.0, 0.15, x + (n - 0.5) * 0.5);
+	float body = 1.0 - smoothstep(0.15, 1.0, x + (n - 0.5) * 0.5);
 	float life = (1.0 - v_age) * smoothstep(0.0, 0.08, v_age + 0.04);
 	ALBEDO = tint;
 	ALPHA = clamp(body * life * life * opacity * (0.6 + 0.8 * n), 0.0, 1.0);
