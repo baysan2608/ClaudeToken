@@ -171,7 +171,7 @@ Godot import once and rebuild (or just copy the committed `.import`).
 | `lightning_charge` | 36 | 1.200 | loop | - | Arms trace a 0.25 m ring in front of the chest, fingers extended |
 | `lightning_release` | 11 | 0.367 (spec 0.35) | once | 0.067 (spec ~0.08) | Right-hand two-finger thrust |
 | `air_push` | 11 | 0.367 (spec 0.35) | once | 0.133 (spec ~0.12) | Two-hand open palm push with a small hip pivot |
-| `air_gust` | 18 | 0.600 | once | 0.367 (spec ~0.35) | Wind-up, airborne 360 degree pirouette, lands with a two-palm thrust |
+| `air_gust` | 18 | 0.600 | once | 0.367 (spec ~0.35) | Big push: torso coils ~105 deg left over 0.23 s (feet planted), unwinds through the front into a two-palm drive, settles to air stance; total yaw change 105 to -10 deg |
 
 Simplified clips (kept deliberately simple, mostly pose-to-pose): `fall`, `glide`, `air_dash`, `evade_*` (hop is a
 stylised lean-and-lift, not a physical step), `stagger`, `water_freeze`, `earth_hold`, `magma_hold`. `knockdown`/`getup`
@@ -222,8 +222,9 @@ Run on the final files (`validate_fighter.py`, `validate_fighter.gd`).
   intersection line where it meets the thigh tubes; arms raised high behind the back pinch the shoulder caps; wrist twist
   beyond about 90 degrees candy-wraps the forearm (forearm takes half of the twist). Elbow/knee/hip bends up to the tested
   extremes are clean.
-* `air_gust` spins at 60 to 70 degrees per frame (about 2000 degrees/s): fine at 30/60 fps, expect aliasing with heavy motion
-  blur or slow-motion; `air_dash`/`earth_lift` start with a fast wrist roll (100+ degrees per frame).
+* `air_gust` keeps the feet planted and twists the legs up to about 30 degrees against them during the coil; the unwind
+  peaks near 30 degrees of body yaw per frame, so it reads as a hard whip. `air_dash`/`earth_lift` start with a fast wrist
+  roll (100+ degrees per frame).
 * `evade_*` and `jump` are short stylised hops (feet planted until take-off, then airborne). The evade/jump contact is
   "apex/take-off", not an impact.
 * Asymmetries: the left foot is always the lead foot in stances; `earth_throw`, `water_whip`, `lightning_release` use the

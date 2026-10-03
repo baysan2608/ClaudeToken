@@ -788,31 +788,31 @@ clip("air_push", 0.35, False, B_AIR, [
 
 
 def _gust():
-    # full 360-degree pirouette while airborne, then a landing palm thrust
-    end_air = dict(B_AIR)
-    wide = both(H((0.50, 0.06, 0.04), ((1, 0.2, 0.1), (0, 0, -1)), (0.2, -1, -0.2)))
-    keys = [
+    """Big readable push: coil the torso ~105 deg to the left (hips 30, spine/chest 75; feet stay planted on the balls
+    of the feet), unwind through the front into a two-palm drive, settle back to the air stance.  Total body yaw
+    change is 105 -> -10 degrees (never more than ~30 deg per frame)."""
+    coil = dict(
+        hp=(0.03, -0.02, -0.08), hips=(2, 0, 30), spine=(3, 0, 35), chest=(2, 0, 40), neck=(0, 0, -40), head=(-2, 0, -35),
+        sl=(2, -4), sr=(2, 6),
+        hl=Hd(p=(0.42, -0.16, 0.08), f=(1, -0.2, 0.2), m=(0, 0, -1), e=(0.4, -1, -0.3)),
+        hr=Hd(p=(0.12, 0.20, 0.0), f=(0, 1, 0.5), m=(1, 0, 0.2), e=(-0.6, -0.5, -0.8)),
+    )
+    drive = dict(
+        hp=(0, 0.08, -0.06), hips=(2, 0, -8), spine=(5, 0, -4), chest=(6, 0, -6), neck=(-4, 0, 6), head=(-4, 0, 6), sl=(0, 8), sr=(0, 8),
+        hl=Hd(p=(-0.10, 0.54, 0.0), f=(0, 0.3, 1), m=(0, 1, -0.2), e=(0.5, 0.0, -1)),
+        hr=Hd(p=(0.10, 0.54, 0.0), f=(0, 0.3, 1), m=(0, 1, -0.2), e=(-0.5, 0.0, -1)),
+    )
+    return [
         (0.0, {}, "lin"),
-        (F(3), merged(dict(hp=(0, 0, -0.10), hips=(0, 0, 20), spine=(2, 0, 0), chest=(0, 0, 10), neck=(0, 0, -10), head=(0, 0, -10)),
-                      both(H((0.20, 0.20, -0.10), PALM_IN, (0.9, -0.3, -0.8)))), "out"),
-        (F(5), merged(dict(hp=(0, 0, 0.07), hips=(0, 0, -20), chest=(0, 0, 0), neck=(0, 0, 0), head=(0, 0, 0),
-                           fl=Fd(x=0.06, y=0.05, lift=0.20, yaw=-20, pitch=-30, pv=0.0), fr=Fd(x=-0.06, y=-0.03, lift=0.20, yaw=-30, pitch=-30, pv=0.0)), wide), "in"),
-        (F(8), merged(dict(hp=(0, 0, 0.10), hips=(0, 0, -200),
-                           fl=Fd(x=0.06, y=0.05, lift=0.22, yaw=-200, pitch=-30, pv=0.0), fr=Fd(x=-0.06, y=-0.03, lift=0.22, yaw=-210, pitch=-30, pv=0.0)), wide), "lin"),
-        (F(10), dict(hp=(0, 0, 0.05), hips=(0, 0, -340), spine=(0, 0, 0),
-                     fl=Fd(x=0.12, y=0.12, lift=0.12, yaw=-340, pitch=-30, pv=0.0), fr=Fd(x=-0.12, y=-0.02, lift=0.12, yaw=-350, pitch=-30, pv=0.0)), "out"),
-        (F(11), merged(dict(hp=(0, 0.08, -0.06), hips=(0, 0, -360), spine=(5, 0, 0), chest=(6, 0, 0), neck=(-4, 0, 0), head=(-4, 0, 0), sl=(0, 8), sr=(0, 8),
-                            fl=Fd(x=0.12, y=0.08, lift=0.0, yaw=-354, pitch=-9, pv=0.13), fr=Fd(x=-0.12, y=-0.07, lift=0.0, yaw=-366, pitch=-9, pv=0.13)),
-                       both(H((-0.10, 0.54, 0.0), PALM_FWD, (0.5, 0.0, -1)))), "in3"),
-        (F(14), dict(hp=(0, 0.07, -0.05), hl=Hd(p=(-0.10, 0.58, 0.01)), hr=Hd(p=(0.10, 0.58, 0.01))), "out"),
+        (F(2), dict(hp=(0, 0, -0.05), hips=(0, 0, 8), chest=(0, 0, 8), neck=(0, 0, -8), head=(0, 0, -6),
+                    hl=Hd(p=(0.16, 0.12, -0.04)), hr=Hd(p=(0.0, 0.14, -0.02))), "out"),
+        (F(7), coil, "io"),
+        (F(11), drive, "in3"),
+        (F(14), dict(hp=(0, 0.09, -0.06), hips=(2, 0, -5), chest=(6, 0, -3), hl=Hd(p=(-0.10, 0.58, 0.01)), hr=Hd(p=(0.10, 0.58, 0.01))), "out"),
+        (F(18), dict(B_AIR, _base=True), "io"),
     ]
-    fin = dict(B_AIR)
-    fin["hips"] = (0, 0, -360)
-    fin["fl"] = Fd(x=0.12, y=0.08, yaw=6 - 360, pitch=-9, pv=0.13, lift=0.0)
-    fin["fr"] = Fd(x=-0.12, y=-0.07, yaw=-6 - 360, pitch=-9, pv=0.13, lift=0.0)
-    keys.append((F(18), fin, "io"))
-    return keys
 
 
 clip("air_gust", 0.6, False, B_AIR, _gust(), contact=F(11),
-     notes="Wind-up, airborne 360-degree pirouette on the balls of the feet, lands with a two-palm thrust; contact = landing + thrust (0.37 s). Hips/foot yaw end at -360 (== rest orientation).")
+     notes="Big push: coil the torso ~105 deg to the left (hips 30 + spine/chest 75, feet planted), unwind through the front "
+           "into a two-palm drive; contact = palms drive forward (0.37 s). Total yaw change 105 to -10 deg, ends in air stance.")

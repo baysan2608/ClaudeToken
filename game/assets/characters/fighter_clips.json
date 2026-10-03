@@ -325,7 +325,7 @@
     "duration": 0.6,
     "loop": false,
     "contact": 0.3667,
-    "notes": "Wind-up, airborne 360-degree pirouette on the balls of the feet, lands with a two-palm thrust; contact = landing + thrust (0.37 s). Hips/foot yaw end at -360 (== rest orientation).",
+    "notes": "Big push: coil the torso ~105 deg to the left (hips 30 + spine/chest 75, feet planted), unwind through the front into a two-palm drive; contact = palms drive forward (0.37 s). Total yaw change 105 to -10 deg, ends in air stance.",
     "frames": 18
   }
 }

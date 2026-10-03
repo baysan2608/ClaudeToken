@@ -1394,11 +1394,11 @@
  },
  "air_gust": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 56,
+  "contact_runs": 28,
   "worst_run": {
-   "vertex": 50,
+   "vertex": 99,
    "frames": [
-    11,
+    0,
     18
    ]
   },
@@ -1409,10 +1409,6 @@
     "runs": [
      [
       0,
-      3
-     ],
-     [
-      11,
       18
      ]
     ]
@@ -1423,10 +1419,6 @@
     "runs": [
      [
       0,
-      3
-     ],
-     [
-      11,
       18
      ]
     ]
