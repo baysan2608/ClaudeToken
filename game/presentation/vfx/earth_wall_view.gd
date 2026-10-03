@@ -14,6 +14,7 @@ extends VfxEffect
 @export var dust: bool = true
 
 var _mi: MeshInstance3D
+var _mat: ShaderMaterial
 var _width: float = 2.4
 var _height: float = 1.0
 var _thick: float = 0.55
@@ -28,7 +29,8 @@ var _seed: int = 0
 func _init() -> void:
 	_mi = MeshInstance3D.new()
 	_mi.name = "Wall"
-	_mi.material_override = VfxMaterials.stone()
+	_mat = VfxMaterials.make_stone()
+	_mi.material_override = _mat
 	_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(_mi)
 	setup(1, _width, _height, _thick)
@@ -43,12 +45,6 @@ func setup(seed_value: int, width: float = 2.4, height: float = 1.0, thickness: 
 	_mi.mesh = VfxMesh.wall_mesh(seed_value)
 	_mi.scale = Vector3(_width * 0.5, _height, _thick * 2.0)
 	_apply()
-
-
-func _enter_tree() -> void:
-	# Instance uniforms written before the MeshInstance3D is registered in the scene are not
-	# reliable (and children enter the tree after this callback): re-push everything deferred.
-	_apply.call_deferred()
 
 
 func set_rise(t01: float) -> void:
@@ -89,15 +85,11 @@ func reset() -> void:
 
 
 func _apply() -> void:
-	# every instance uniform is set explicitly (unset ones can read stale instance-buffer data)
-	_mi.set_instance_shader_parameter("u_seed", float(absi(_seed) % 977) + 0.5)
-	_mi.set_instance_shader_parameter("u_rise_height", 1.25)
-	_mi.set_instance_shader_parameter("u_detail", 2.2)
-	_mi.set_instance_shader_parameter("u_heat", 0.0)
-	_mi.set_instance_shader_parameter("u_melt", 0.0)
-	_mi.set_instance_shader_parameter("u_crust", 0.0)
-	_mi.set_instance_shader_parameter("u_rise", _rise)
-	_mi.set_instance_shader_parameter("u_damage", _damage)
+	_mat.set_shader_parameter("u_seed", float(absi(_seed) % 977) + 0.5)
+	_mat.set_shader_parameter("u_rise_height", 1.25)
+	_mat.set_shader_parameter("u_detail", 2.2)
+	_mat.set_shader_parameter("u_rise", _rise)
+	_mat.set_shader_parameter("u_damage", _damage)
 
 
 func _play_dust(strength: float) -> void:

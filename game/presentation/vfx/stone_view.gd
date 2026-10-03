@@ -5,12 +5,13 @@ extends Node3D
 ## without ever being despawned.
 ##
 ## Usage: setup(seed, radius) once, then every frame set_thermal(heat, melt) and set_crust(c).
-## All setters are cheap and change-guarded; the material is shared (instance uniforms).
+## All setters are cheap and change-guarded. Each view owns one ShaderMaterial (shared shader).
 
 ## Optional warm light on the surroundings (single OmniLight3D, no shadows). Disable for crowds.
 @export var use_light: bool = true
 
 var _mesh_inst: MeshInstance3D
+var _mat: ShaderMaterial
 var _light: OmniLight3D
 var _radius: float = 0.4
 var _seed: int = 0
@@ -22,7 +23,8 @@ var _crust: float = 0.0
 func _init() -> void:
 	_mesh_inst = MeshInstance3D.new()
 	_mesh_inst.name = "Mesh"
-	_mesh_inst.material_override = VfxMaterials.stone()
+	_mat = VfxMaterials.make_stone()
+	_mesh_inst.material_override = _mat
 	_mesh_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(_mesh_inst)
 	_light = OmniLight3D.new()
@@ -42,12 +44,6 @@ func setup(seed_value: int, radius: float) -> void:
 	_mesh_inst.mesh = VfxMesh.rock_mesh(seed_value)
 	_mesh_inst.scale = Vector3.ONE * _radius
 	_apply()
-
-
-func _enter_tree() -> void:
-	# Instance uniforms written before the MeshInstance3D is registered in the scene are not
-	# reliable (and children enter the tree after this callback): re-push everything deferred.
-	_push_params.call_deferred()
 
 
 ## heat01: glowing crack network (0 = cold stone). melt01: softens into a molten blob.
@@ -106,15 +102,8 @@ func _apply() -> void:
 		_light.visible = false
 
 
-## Every instance uniform is written explicitly: unset instance uniforms are NOT reliably
-## initialised to the shader default (stale instance-buffer data can show through).
 func _push_params() -> void:
-	var mi: MeshInstance3D = _mesh_inst
-	mi.set_instance_shader_parameter("u_seed", float(absi(_seed) % 977) + 0.5)
-	mi.set_instance_shader_parameter("u_heat", _heat)
-	mi.set_instance_shader_parameter("u_melt", _melt)
-	mi.set_instance_shader_parameter("u_crust", _crust)
-	mi.set_instance_shader_parameter("u_damage", 0.0)
-	mi.set_instance_shader_parameter("u_rise", 1.0)
-	mi.set_instance_shader_parameter("u_rise_height", 1.0)
-	mi.set_instance_shader_parameter("u_detail", 1.0)
+	_mat.set_shader_parameter("u_seed", float(absi(_seed) % 977) + 0.5)
+	_mat.set_shader_parameter("u_heat", _heat)
+	_mat.set_shader_parameter("u_melt", _melt)
+	_mat.set_shader_parameter("u_crust", _crust)

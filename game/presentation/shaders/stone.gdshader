@@ -1,6 +1,6 @@
 // Stone / molten blob / cooled rock — one material, continuous thermal state.
-// Used by StoneView (instance uniforms drive the state so one material is shared by all stones)
-// and by EarthWallView (cold state + damage cracks + rise).
+// Used by StoneView and EarthWallView (one ShaderMaterial per view; plain uniforms carry the state.
+// NOTE: `instance uniform`s were tried first but proved unreliable under the Mobile renderer).
 // Mesh contract: CUSTOM0 = (relaxed blob position xyz, per-vertex random w); NORMAL = flat face normal.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx, cull_back;
@@ -12,14 +12,14 @@ uniform float wobble_amount = 0.04;
 uniform float noise_scale = 0.36;
 uniform float plate_scale = 2.3;
 
-instance uniform float u_heat = 0.0;
-instance uniform float u_melt = 0.0;
-instance uniform float u_crust = 0.0;
-instance uniform float u_seed = 0.0;
-instance uniform float u_damage = 0.0;
-instance uniform float u_rise = 1.0;
-instance uniform float u_rise_height = 1.0;
-instance uniform float u_detail = 1.0;   // >1 = finer plates / grain (large objects such as walls)
+uniform float u_heat = 0.0;
+uniform float u_melt = 0.0;
+uniform float u_crust = 0.0;
+uniform float u_seed = 0.0;
+uniform float u_damage = 0.0;
+uniform float u_rise = 1.0;
+uniform float u_rise_height = 1.0;
+uniform float u_detail = 1.0;   // >1 = finer plates / grain (large objects such as walls)
 
 varying vec3 v_p;
 
@@ -79,5 +79,4 @@ void fragment() {
 	ROUGHNESS = rough;
 	SPECULAR = mix(0.28, 0.5, smoothstep(0.0, 0.6, u_melt) * (1.0 - u_crust));
 	EMISSION = emis;
-	EMISSION = albedo * 6.0 + vec3(0.0, 0.0, rough * 0.2);
 }

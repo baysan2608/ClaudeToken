@@ -25,13 +25,11 @@ static func make(shader_name: String) -> ShaderMaterial:
 	return m
 
 
-## Shared material for the stone family (StoneView, EarthWallView). State lives in instance uniforms.
-static func stone() -> ShaderMaterial:
-	var m: ShaderMaterial = _shared.get("stone")
-	if m == null:
-		m = make("stone")
-		m.set_shader_parameter("noise_vol", VfxTextures.noise_volume())
-		_shared["stone"] = m
+## New ShaderMaterial for the stone family (StoneView, EarthWallView). One per view: the stone
+## shader keeps its state in plain uniforms (instance uniforms were unreliable on Mobile).
+static func make_stone() -> ShaderMaterial:
+	var m: ShaderMaterial = make("stone")
+	m.set_shader_parameter("noise_vol", VfxTextures.noise_volume())
 	return m
 
 

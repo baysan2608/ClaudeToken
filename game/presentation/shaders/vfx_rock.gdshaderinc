@@ -20,10 +20,10 @@ void rock_surface(float ed, float cid, float eid, float lowf, float grain, float
 	float act = smoothstep(thr, thr + 0.16, eid);
 
 	// ---- cold stone: tonal variation, grain, dust on top faces, cavity darkening in cracks
-	vec3 rock = mix(vec3(0.015, 0.0145, 0.0145), vec3(0.060, 0.056, 0.051), smoothstep(0.25, 0.75, lowf));
+	vec3 rock = mix(vec3(0.021, 0.020, 0.020), vec3(0.088, 0.081, 0.073), smoothstep(0.25, 0.75, lowf));
 	rock *= 0.72 + 0.56 * grain;
 	float dust = smoothstep(0.40, 0.95, up) * smoothstep(0.25, 0.75, grain * 0.7 + lowf * 0.5);
-	rock = mix(rock, vec3(0.085, 0.078, 0.068), dust * 0.22);
+	rock = mix(rock, vec3(0.115, 0.104, 0.090), dust * 0.25);
 	rock *= mix(1.0, 0.55 + 0.45 * smoothstep(0.0, 0.2, ed), act);
 
 	// ---- cooled crust (basalt / glassy slag)
