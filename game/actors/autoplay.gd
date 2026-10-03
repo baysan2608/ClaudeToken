@@ -24,6 +24,9 @@ var _hold_t := 0.0
 var _next := 0.0
 var _rounds := 0
 var _game: Game
+## Element showcase choreography (res://actors/showcase_<name>.gd), used by --autoplay=show_<name>.
+## Interface: scenario() -> String, bind(g: Game), frame(g: Game, f: InputFrame, t: float), shot(name) callback.
+var show: Object = null
 
 
 func _init(spec: String) -> void:
@@ -31,6 +34,11 @@ func _init(spec: String) -> void:
 	mode = parts[0]
 	if parts.size() > 1:
 		duration = float(parts[1])
+	if mode.begins_with("show_"):
+		var path := "res://actors/showcase_%s.gd" % mode.substr(5)
+		if ResourceLoader.exists(path):
+			show = (load(path) as GDScript).new()
+			scenario = String(show.call("scenario"))
 	match mode:
 		"flagship":
 			scenario = "molten_exchange"
@@ -39,7 +47,8 @@ func _init(spec: String) -> void:
 		"tour":
 			scenario = "conduction"
 		_:
-			scenario = mode
+			if show == null:
+				scenario = mode
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--shots="):
 			shots_dir = a.substr(8)
@@ -51,6 +60,8 @@ func _init(spec: String) -> void:
 
 func bind(g: Game) -> void:
 	_game = g
+	if show != null and show.has_method("bind"):
+		show.call("bind", g)
 	if mode == "soak":
 		g.progress.lab_mode = true
 		g.player.kit = g.progress.kit()
@@ -60,6 +71,12 @@ func frame(g: Game) -> InputFrame:
 	_t += Sim.DT
 	f.clear_edges()
 	f.tech_aim_active = false
+	if show != null:
+		show.call("frame", g, f, _t)
+		if show.has_method("wants_shot"):
+			var sn := String(show.call("wants_shot"))
+			if sn != "":
+				_shot(sn)
 	match mode:
 		"flagship":
 			_flagship(g)
