@@ -79,7 +79,7 @@ func _ready() -> void:
 	sp.resume_requested.connect(_resume)
 	sp.closed.connect(_resume)
 	sp.reset_requested.connect(func(): load_scenario(scenario_id); _resume_and_close())
-	sp.practice_selected.connect(func(id): load_scenario(String(id)); _resume_and_close())
+	sp.practice_selected.connect(_on_practice_selected)
 	sp.reset_progress_requested.connect(_reset_progress)
 	sp.quit_to_lab_requested.connect(func(): load_scenario("molten_exchange"); _resume_and_close())
 	_apply_settings()
@@ -209,6 +209,19 @@ func _resume_and_close() -> void:
 	if hub.settings_panel.is_open():
 		hub.settings_panel.close_panel()
 	_resume()
+
+
+func _on_practice_selected(id: Variant) -> void:
+	var sid := String(id)
+	if sid == "__lab_mode":
+		progress.lab_mode = not progress.lab_mode
+		progress.save()
+		hub.settings_panel.set_practice_items(Scenarios.practice_items(progress))
+		load_scenario(scenario_id)
+		hud.toast("Lab mode " + ("on" if progress.lab_mode else "off"))
+	else:
+		load_scenario(sid)
+	_resume_and_close()
 
 
 func _reset_progress() -> void:

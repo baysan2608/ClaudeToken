@@ -52,6 +52,11 @@ func setup(id: int, palette: Dictionary) -> void:
 		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(CLIPS_JSON))
 		if j is Dictionary:
 			clips = j.get("clips", j)
+	# glTF carries no loop flag: apply the authored loop table.
+	if ap:
+		for c in clips:
+			if ap.has_animation(c):
+				ap.get_animation(c).loop_mode = Animation.LOOP_LINEAR if clips[c].get("loop", false) else Animation.LOOP_NONE
 
 
 func _find(n: Node, cls: String) -> Node:

@@ -86,6 +86,8 @@ static func practice_items(progress: Progression) -> Array[Dictionary]:
 			var done := progress.is_done(ch.id)
 			sub = ("✓ " if done else "◇ ") + ch.text + " → unlocks " + Moves.TECHNIQUES.get(ch.unlock, ch.unlock).split(":")[0] + ". " + sub
 		out.append({"id": s.id, "title": "%s · %s" % [s.group, s.title], "subtitle": sub, "locked": false})
+	out.append({"id": "__lab_mode", "title": "Testing · Lab mode %s" % ("ON" if progress.lab_mode else "OFF"),
+		"subtitle": "Toggle: every technique unlocked in Free Spar (for testing; progress is kept)", "locked": false})
 	return out
 
 
