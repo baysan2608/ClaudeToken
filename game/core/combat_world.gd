@@ -13,7 +13,10 @@ const GRIP_MARGIN := 0.12        # challenger must beat the holder by this much
 const RESIDUAL_START := 0.6      # thrower's leftover authority on release
 const RESIDUAL_DECAY := 1.7      # per second
 const TURN_RATE := 14.0          # rad/s free
-const RUN_SPEED := 5.6
+const RUN_SPEED := 5.5
+const RUN_MIN := 4.0
+const WALK_MAX := 1.8
+const RUN_STICK := 0.62
 const ACCEL := 34.0
 const DECEL := 42.0
 const WAVE_TURN_RATE := 32.0     # deg/s a fluid wave bends toward its owner's target
@@ -498,7 +501,14 @@ func _move_actor(a: ActorState, it: ActorIntent) -> void:
 	mv.y = 0.0
 	if mv.length() > 1.0:
 		mv = mv.normalized()
-	want = mv * RUN_SPEED * speed_scale
+	# Two clear gaits (matches the authored walk/run strides, no slow-motion runs):
+	# stick < RUN_STICK walks up to WALK_MAX, beyond it runs from RUN_MIN to RUN_SPEED.
+	var m := mv.length()
+	var gait_speed := 0.0
+	if m > 0.05:
+		gait_speed = lerpf(0.0, WALK_MAX, m / RUN_STICK) if m < RUN_STICK else lerpf(RUN_MIN, RUN_SPEED, (m - RUN_STICK) / (1.0 - RUN_STICK))
+	var running := m >= RUN_STICK and inst == null and a.stun <= 0.0
+	want = (mv / maxf(m, 1e-4)) * gait_speed * speed_scale
 	if a.gliding:
 		want = mv * float(Moves.DEFS.air_tech.glide_speed)
 	var hv := Vector3(a.vel.x, 0.0, a.vel.z)
@@ -513,14 +523,20 @@ func _move_actor(a: ActorState, it: ActorIntent) -> void:
 		a.vel.x = hv.x
 		a.vel.z = hv.z
 	# Facing: lock target while fighting, else movement direction.
+	# Facing: actions face their aim; running faces the run direction; otherwise
+	# (walking, guarding) face the locked target and strafe.
 	var face_dir := Vector3.ZERO
 	var tgt := get_actor(a.lock_target)
-	if tgt != null and a.pos.distance_to(tgt.pos) < 22.0:
+	if running:
+		face_dir = mv
+	elif tgt != null and a.pos.distance_to(tgt.pos) < 22.0:
 		face_dir = tgt.pos - a.pos
 	elif mv.length() > 0.1:
 		face_dir = mv
 	if inst != null and inst.data.has("face"):
 		face_dir = inst.data.face
+		if inst.phase == ActionInst.P.STARTUP:
+			turn_scale = maxf(turn_scale, 1.4)   # commit toward the aim during anticipation
 	face_dir.y = 0.0
 	if face_dir.length() > 0.01 and turn_scale > 0.0:
 		var target_yaw := atan2(face_dir.x, face_dir.z)
@@ -868,12 +884,27 @@ func actors_in_cone(a: ActorState, dir: Vector3, rng_m: float, cone_deg: float) 
 
 
 func _wall_between(p0: Vector3, p1: Vector3) -> bool:
+	return wall_hit(p0, p1) >= 0.0
+
+
+## Exact segment test against raised earth walls (oriented boxes). Returns t in 0..1 or -1.
+func wall_hit(p0: Vector3, p1: Vector3) -> float:
+	var best := -1.0
 	for b in bodies:
-		if b.alive and b.form == Sim.Form.WALL and b.wall_rise > 0.5:
-			for k in range(1, 8):
-				if point_in_wall(p0.lerp(p1, k / 8.0), b):
-					return true
-	return false
+		if not b.alive or b.form != Sim.Form.WALL or b.wall_rise <= 0.5:
+			continue
+		var c := cos(b.wall_yaw)
+		var s := sin(b.wall_yaw)
+		var r0 := p0 - b.pos
+		var r1 := p1 - b.pos
+		var l0 := Vector3(r0.x * c - r0.z * s, r0.y, r0.x * s + r0.z * c)
+		var l1 := Vector3(r1.x * c - r1.z * s, r1.y, r1.x * s + r1.z * c)
+		var mn := Vector3(-b.wall_half.x, -0.2, -b.wall_half.z)
+		var mx := Vector3(b.wall_half.x, b.wall_half.y * 2.0 * b.wall_rise, b.wall_half.z)
+		var t := ArenaMap._slab(l0, l1 - l0, mn, mx)
+		if t >= 0.0 and (best < 0.0 or t < best):
+			best = t
+	return best
 
 
 func los(p0: Vector3, p1: Vector3) -> bool:
@@ -1056,7 +1087,7 @@ func _update_bodies() -> void:
 			_:
 				_update_ballistic(b, dt)
 		if b.max_life > 0.0 and b.age > b.max_life and b.alive and b.form != Sim.Form.CLOUD:
-			_decay_body(b, "lifetime")
+			decay_body(b, "lifetime")
 
 
 func _on_phase_changed(b: MatBody, old_phase: int) -> void:
@@ -1289,7 +1320,7 @@ func _quench(lava: MatBody, water: MatBody, dt: float) -> void:
 	var applied := -Thermal.apply_heat(lava, -q).x
 	var kg := boil_water(water, applied, lava.pos + Vector3(0, 0.3, 0))
 	if water.form == Sim.Form.PUDDLE and water.mass <= 0.05:
-		remove_body(water, "boiled")
+		decay_body(water, "boiled")
 	if tick % 6 == 0:
 		emit("steam", {"body": lava.id, "water": water.id, "kg": kg})
 
@@ -1373,7 +1404,8 @@ func _shatter(b: MatBody) -> void:
 	b.max_life = Sim.REMNANT_LIFETIME
 
 
-func _decay_body(b: MatBody, why: String) -> void:
+## Removes a body that leaves the simulation, recording its mass and heat in the ledgers.
+func decay_body(b: MatBody, why: String) -> void:
 	if b.is_stone():
 		mass_ledger.ground_returned += b.mass
 	elif b.is_water():
@@ -1502,7 +1534,7 @@ func _enforce_cap() -> void:
 	# Decay the oldest inert remnant (never a held/attacking/static body).
 	for b in bodies:
 		if b.alive and b.controller < 0 and b.attack_id == 0 and not b.static_body and b.form != Sim.Form.WALL:
-			_decay_body(b, "cap")
+			decay_body(b, "cap")
 			return
 
 
@@ -1513,7 +1545,7 @@ func trim_remnants() -> void:
 		if b.alive and b.is_stone() and b.controller < 0 and b.attack_id == 0 and b.on_ground and b.form != Sim.Form.WALL:
 			rem.append(b)
 	while rem.size() > Sim.MAX_REMNANTS:
-		_decay_body(rem.pop_front(), "remnant_cap")
+		decay_body(rem.pop_front(), "remnant_cap")
 
 
 # ============================================================== accounting

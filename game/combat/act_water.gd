@@ -110,7 +110,8 @@ static func _draw(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorInte
 			src = pd
 			src_point = pd.pos
 	if src != null:
-		var take := minf(rate, src.mass)
+		var room := maxm - (b.mass if b != null else 0.0)
+		var take := minf(minf(rate, src.mass), room)
 		if b == null:
 			b = w.spawn_body(Sim.Mat.WATER, Sim.Form.STREAM, take, src_point + Vector3(0, 0.2, 0), "draw:%d" % src.id)
 			b.temp = src.temp
@@ -126,7 +127,7 @@ static func _draw(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorInte
 		if src.form == Sim.Form.PUDDLE:
 			src.update_radius_puddle()
 			if src.mass <= 0.05:
-				w.remove_body(src, "drained")
+				w.decay_body(src, "drained")
 		if w.tick % 8 == 0:
 			w.emit("draw_water", {"actor": a.id, "body": b.id, "from": src.id, "at": src_point})
 		return

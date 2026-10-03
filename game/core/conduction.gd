@@ -40,9 +40,11 @@ static func discharge(w: CombatWorld, caster: ActorState, aim: Vector3, def: Dic
 	var out := {"path": PackedVector3Array([start, end]), "arcs": [], "hits": [], "blocked": false}
 	# Barriers: arena solids and earth walls stop the bolt.
 	var hit_t := w.arena.segment_hit(start, end)
-	var wall_block := w._wall_between(start, end)
-	if hit_t >= 0.0 or wall_block:
-		var stop := start.lerp(end, hit_t) if hit_t >= 0.0 else _first_wall_point(w, start, end)
+	var wall_t := w.wall_hit(start, end)
+	if wall_t >= 0.0 and (hit_t < 0.0 or wall_t < hit_t):
+		hit_t = wall_t
+	if hit_t >= 0.0:
+		var stop := start.lerp(end, hit_t)
 		out.path = PackedVector3Array([start, stop])
 		out.blocked = true
 		w.emit("lightning", {"actor": caster.id, "path": out.path, "arcs": [], "blocked": true, "hits": []})
@@ -105,15 +107,6 @@ static func discharge(w: CombatWorld, caster: ActorState, aim: Vector3, def: Dic
 		w.emit("conduct", {"actor": caster.id, "nodes": reached.keys(), "victims": out.hits})
 	w.emit("lightning", {"actor": caster.id, "path": out.path, "arcs": out.arcs, "blocked": false, "hits": out.hits})
 	return out
-
-
-static func _first_wall_point(w: CombatWorld, a: Vector3, b: Vector3) -> Vector3:
-	for k in range(1, 17):
-		var p := a.lerp(b, k / 16.0)
-		for wb in w.bodies:
-			if wb.alive and wb.form == Sim.Form.WALL and w.point_in_wall(p, wb):
-				return p
-	return b
 
 
 ## Surface node an actor stands on/in: "pool", "metal", "puddle:<id>", or "".

@@ -246,7 +246,7 @@ static func _heat_water(w: CombatWorld, a: ActorState, inst: ActionInst, b: MatB
 	else:
 		w.boil_water(b, paid, b.pos)
 		if b.mass <= 0.05:
-			w.remove_body(b, "boiled")
+			w.decay_body(b, "boiled")
 			w.set_phase(a, inst, ActionInst.P.RECOVERY)
 
 
@@ -340,7 +340,7 @@ static func _flare(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 			w.boil_water(b, share, b.pos)
 			left -= share
 			if b.mass <= 0.05:
-				w.remove_body(b, "boiled")
+				w.decay_body(b, "boiled")
 		if b.controller >= 0:
 			shielded[b.controller] = true
 		w.emit("steam_block", {"actor": a.id, "body": b.id})

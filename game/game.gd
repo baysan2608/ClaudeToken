@@ -98,6 +98,9 @@ func _ready() -> void:
 			quality = int(arg.substr(10))
 			_auto_quality = false
 	if autoplay:
+		# Captures never touch the player's real save.
+		progress = Progression.new()
+		progress.path = "user://autoplay_progress.cfg"
 		start = autoplay.scenario
 	load_scenario(start)
 

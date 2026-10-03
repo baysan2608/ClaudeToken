@@ -26,7 +26,7 @@ static func make_lab() -> ArenaMap:
 	a.add_box(Vector3(-h - 1, 0, -h), Vector3(-h, 3.5, h), "wall", "stone", "west_wall")
 	a.add_box(Vector3(h, 0, -h), Vector3(h + 1, 3.5, h), "wall", "stone", "east_wall")
 	# Low cover wall west of the duel line (lava wave stop test, lightning barrier)
-	a.add_box(Vector3(-5.0, 0, -1.25), Vector3(-2.5, 1.1, -0.75), "wall", "stone", "cover_wall")
+	a.add_box(Vector3(-5.0, 0, -1.25), Vector3(-2.5, 1.7, -0.75), "wall", "stone", "cover_wall")
 	# Terrace behind the player: waves flowing off its edge drop down; waves can't climb it
 	a.add_box(Vector3(-4.0, 0, 10.0), Vector3(4.0, 0.6, 14.0), "ledge", "stone", "terrace")
 	# Walkable step block

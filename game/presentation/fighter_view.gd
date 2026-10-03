@@ -10,6 +10,8 @@ const GLB := "res://assets/characters/fighter.glb"
 const CLIPS_JSON := "res://assets/characters/fighter_clips.json"
 const WALK_SPEED := 1.4
 const RUN_SPEED := 5.5
+const STRAFE_SPEED := 1.1
+const BACK_SPEED := 1.0
 
 var actor_id := -1
 var ap: AnimationPlayer
@@ -211,15 +213,15 @@ func _animate(a: ActorState, dt: float) -> void:
 	var f := a.forward()
 	var fd := dir.dot(f)
 	var rd := dir.dot(f.cross(Vector3.UP))
-	if a.lock_target >= 0 and fd < 0.55:
+	if a.lock_target >= 0 and fd < 0.55 and spd < 3.0:
 		if fd < -0.5:
-			_play("walk_back", "wb", clampf(spd / WALK_SPEED, 0.6, 2.2), 0.18)
+			_play("walk_back", "wb", clampf(spd / BACK_SPEED, 0.5, 2.0), 0.18)
 		elif rd < 0.0:
-			_play("strafe_r", "sr", clampf(spd / WALK_SPEED, 0.6, 2.2), 0.18)
+			_play("strafe_r", "sr", clampf(spd / STRAFE_SPEED, 0.5, 2.0), 0.18)
 		else:
-			_play("strafe_l", "sl", clampf(spd / WALK_SPEED, 0.6, 2.2), 0.18)
+			_play("strafe_l", "sl", clampf(spd / STRAFE_SPEED, 0.5, 2.0), 0.18)
 		return
-	if spd < 2.8:
+	if spd < 2.9:
 		_play("walk", "walk", clampf(spd / WALK_SPEED, 0.5, 2.0), 0.2)
 	else:
 		_play("run", "run", clampf(spd / RUN_SPEED, 0.6, 1.5), 0.2)
