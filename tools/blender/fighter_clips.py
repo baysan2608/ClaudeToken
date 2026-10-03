@@ -311,6 +311,7 @@ clip("jump", 0.3, False, B_IDLE, [
     (0.0, {}, "lin"),
     (F(3), merged(dict(hp=(0, 0, -0.21), hips=(10, 0, 0), spine=(14, 0, 0), chest=(10, 0, 0), neck=(-14, 0, 0), head=(-8, 0, 0)),
                   JUMP_ARMS_BACK), "out"),
+    (F(4), dict(hp=(0, 0, -0.07), hips=(4, 0, 0), spine=(4, 0, 0), chest=(2, 0, 0), fl=Fd(pitch=-30, pv=0.135), fr=Fd(pitch=-30, pv=0.135)), "lin"),
     (F(5), merged(dict(hp=(0, 0.0, 0.06), hips=(-2, 0, 0), spine=(-5, 0, 0), chest=(-4, 0, 0), neck=(2, 0, 0), head=(4, 0, 0),
                        fl=Fd(pitch=-55, pv=0.135), fr=Fd(pitch=-55, pv=0.135)),
                   both(H((0.16, 0.24, 0.10), ((0, 1, 0.6), (-1, 0, 0)), (0.7, -0.4, -0.2)))), "in"),
@@ -459,8 +460,8 @@ clip("stagger", 0.5, False, B_IDLE, [
 ], contact=F(3), notes="Off-balance wobble in place: arms out, knees give, foot re-plants. Light reaction.")
 
 LYING = merged(
-    dict(hp=(0, -0.30, -0.78), hips=(-90, 0, 0), spine=(0, 0, 0), chest=(0, 0, 0), neck=(8, 0, 0), head=(8, 0, 0), sl=(0, 0), sr=(0, 0)),
-    both(H((0.22, -0.09, -0.50), ((0, 1, 0.1), (-1, 0, 0)), (0.8, -0.4, -0.5))),
+    dict(hp=(0, -0.30, -0.766), hips=(-90, 0, 0), spine=(0, 0, 0), chest=(0, 0, 0), neck=(8, 0, 0), head=(8, 0, 0), sl=(0, 0), sr=(0, 0)),
+    both(H((0.22, -0.06, -0.50), ((0, 1, 0.1), (-1, 0, 0)), (0.8, 0.3, -0.5))),
     dict(fl=Fd(x=0.15, y=0.52, lift=0.0, yaw=12, pitch=70, pv=-0.075, kup=1.5),
          fr=Fd(x=-0.15, y=0.52, lift=0.0, yaw=-12, pitch=70, pv=-0.075, kup=1.5)),
 )
@@ -476,11 +477,12 @@ clip("knockdown", 0.7, False, B_IDLE, [
     (F(11), merged(dict(hp=(0, -0.30, -0.55), hips=(-62, 0, 3), spine=(-3, 0, 0), chest=(-4, 0, 0), neck=(0, 0, 0), head=(0, 0, 0),
                         fl=Fd(lift=0.38, y=0.42, pitch=-10, pv=0.0, kup=1.0), fr=Fd(lift=0.22, y=0.34, pitch=-10, pv=0.0, kup=1.0)),
                    both(H((0.36, -0.10, 0.10), ((1, 0.2, 0.3), (0, 1, 0)), (0.5, -0.8, 0)))), "in"),
-    (F(15), dict(hp=(0, -0.31, -0.75), hips=(-88, 0, 0), fl=Fd(lift=0.22, y=0.42, pitch=20, pv=-0.075, kup=1.2),
-                 fr=Fd(lift=0.15, y=0.42, pitch=20, pv=-0.075, kup=1.2)), "in"),
-    (F(17), dict(hp=(0, -0.31, -0.78), hips=(-90, 0, 0), chest=(6, 0, 0), neck=(6, 0, 0), head=(4, 0, 0),
+    (F(15), merged(dict(hp=(0, -0.31, -0.74), hips=(-88, 0, 0), fl=Fd(lift=0.22, y=0.42, pitch=20, pv=-0.075, kup=1.2),
+                        fr=Fd(lift=0.15, y=0.42, pitch=20, pv=-0.075, kup=1.2)),
+                   both(H((0.34, 0.14, 0.05), ((1, 0.2, 0.3), (0, 1, 0)), (0.6, 0.6, -0.3)))), "in"),
+    (F(17), dict(hp=(0, -0.31, -0.766), hips=(-90, 0, 0), chest=(6, 0, 0), neck=(6, 0, 0), head=(4, 0, 0),
                  fl=Fd(lift=0.04, pitch=60, y=0.52, pv=-0.075, kup=1.5), fr=Fd(lift=0.02, pitch=60, y=0.52, pv=-0.075, kup=1.5),
-                 **both(H((0.28, -0.07, -0.46), ((0, 1, 0.1), (-1, 0, 0)), (0.8, -0.4, -0.5)))), "in"),
+                 **both(H((0.28, -0.04, -0.46), ((0, 1, 0.1), (-1, 0, 0)), (0.8, 0.4, -0.5)))), "in"),
     (F(21), {**{"_base": True}, **LYING}, "out"),
 ], contact=F(2), notes="Struck, tumbles backward, slams the ground (~0.55 s) and settles lying on the back; ends on LYING pose. contact = first impact. Body extends ~0.9 m behind and ~0.7 m ahead of root.")
 
@@ -488,7 +490,7 @@ clip("getup", 0.8, False, LYING, [
     (0.0, {}, "lin"),
     (F(3), dict(neck=(20, 0, 0), head=(16, 0, 0), chest=(5, 0, 0),
                 fl=Fd(x=0.15, y=0.30, lift=0.05, yaw=7, pitch=0, pv=0.0, kup=1.5), fr=Fd(x=-0.15, y=0.28, lift=0.05, yaw=-7, pitch=0, pv=0.0, kup=1.5),
-                **both(H((0.30, -0.08, -0.34), ((0, 1, 0.1), (-1, 0, 0)), (0.8, -0.4, -0.5)))), "io"),
+                **both(H((0.28, -0.03, -0.34), ((0, 1, 0.1), (-1, 0, 0)), (0.9, 0.5, -0.3)))), "io"),
     (F(5), dict(neck=(28, 0, 0), head=(22, 0, 0), chest=(8, 0, 0),
                 fl=Fd(x=0.15, y=0.07, lift=0.0, yaw=7, pitch=0, pv=0.0, kup=1.5), fr=Fd(x=-0.15, y=-0.06, lift=0.0, yaw=-7, pitch=0, pv=0.0, kup=1.5)), "io"),
     (F(9), dict(hp=(0, -0.28, -0.68), hips=(-72, 0, 0), spine=(30, 0, 0), chest=(25, 0, 0), neck=(-10, 0, 0), head=(-10, 0, 0),

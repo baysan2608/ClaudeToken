@@ -384,19 +384,19 @@
   }
  },
  "jump": {
-  "sole_skate_cm": 0.67,
+  "sole_skate_cm": 0.11,
   "contact_runs": 44,
   "worst_run": {
-   "vertex": 99,
+   "vertex": 41,
    "frames": [
     0,
-    4
+    5
    ]
   },
   "planted_bone_variance": {
    "L": {
-    "ankle_cm": 10.69,
-    "ball_cm": 2.06,
+    "ankle_cm": 9.76,
+    "ball_cm": 0.0,
     "runs": [
      [
       0,
@@ -405,8 +405,8 @@
     ]
    },
    "R": {
-    "ankle_cm": 10.69,
-    "ball_cm": 2.06,
+    "ankle_cm": 9.76,
+    "ball_cm": 0.0,
     "runs": [
      [
       0,
