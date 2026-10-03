@@ -308,7 +308,7 @@ func _opportunities(foe: ActorState) -> bool:
 	var held := w.get_body(foe.held_body)
 	if held != null and held.is_stone() and held.liquid > 0.3 and me.has("heat_draw") and cfg.elements.has(Sim.Element.FIRE):
 		var key := "molten%d" % held.id
-		if _perceived(key) and not _decided.has(key) and rng.randf() < float(cfg.counter) * 0.6 and me.pos.distance_to(held.pos) < 8.5:
+		if _perceived(key) and not _decided.has(key) and rng.randf() < float(cfg.counter) * 0.35 and me.pos.distance_to(held.pos) < 8.5:
 			_decided[key] = "draw"
 			return _act_on("draw", held)
 	return false
@@ -325,6 +325,15 @@ func _offense(foe: ActorState) -> void:
 		_switch_then(Sim.Element.EARTH, "attack")
 		_hold = "attack"
 		_hold_until = _t + (0.6 if rng.randf() < 0.25 else 0.05)
+		return
+	if drill == "seize":
+		var loose := _nearest_loose(9.0)
+		if loose != null:
+			debug_state = "seize"
+			_switch_then(Sim.Element.EARTH, "tech")
+			_hold = "tech"
+			_hold_body = loose.id
+			_hold_until = _t + 0.9
 		return
 	if drill == "lightning" and me.has("lightning"):
 		_switch_then(Sim.Element.FIRE, "attack")
@@ -360,6 +369,16 @@ func _offense(foe: ActorState) -> void:
 		_switch_then(Sim.Element.AIR, "attack")
 		_hold = "attack"
 		_hold_until = _t + 0.05
+
+
+func _nearest_loose(r: float) -> MatBody:
+	var best: MatBody = null
+	for b in w.bodies:
+		if b.alive and b.is_stone() and b.controller != me.id and b.attack_id == 0 and b.form == Sim.Form.CHUNK and b.mass <= me.max_control_mass:
+			var d := me.pos.distance_to(b.pos)
+			if d < r and (best == null or d < me.pos.distance_to(best.pos)):
+				best = b
+	return best
 
 
 func _nearby_rock() -> MatBody:

@@ -273,7 +273,9 @@ static func _draw_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: Acto
 			w.emit("reserve_full", {"actor": a.id})
 		return
 	var avail := maxf(0.0, b.thermal_energy())
-	var e := minf(float(d.draw_rate) * Sim.DT, minf(room, avail))
+	# Drawing is strongest up close: full rate within 3 m, half at max range.
+	var falloff := 1.0 - 0.5 * clampf((dist - 3.0) / (float(d.draw_range) - 3.0), 0.0, 1.0)
+	var e := minf(float(d.draw_rate) * falloff * Sim.DT, minf(room, avail))
 	var fcost := e / Sim.DRAW_HU_PER_FOCUS
 	if a.focus < fcost:
 		if not inst.data.get("starved", false):

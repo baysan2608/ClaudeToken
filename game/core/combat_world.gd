@@ -950,6 +950,9 @@ func take_control(a: ActorState, b: MatBody, strength: float, verb: String) -> v
 		emit("intercept", {"actor": a.id, "body": b.id, "impulse": impulse.length(), "verb": verb})
 	if a.held_body >= 0 and a.held_body != b.id:
 		release_body(a, Vector3.ZERO, false)
+	if b.form != Sim.Form.WAVE and b.wave_path.size() > 0:
+		b.wave_path = PackedVector3Array()   # a lifted ridge gathers into a chunk
+		emit("reform", {"body": b.id})
 	b.controller = a.id
 	b.authority = strength
 	b.residual_owner = -1
@@ -1091,6 +1094,8 @@ func _on_phase_changed(b: MatBody, old_phase: int) -> void:
 
 
 func _update_ballistic(b: MatBody, dt: float) -> void:
+	if b.static_body:
+		return
 	if b.on_ground and b.vel.length() < 0.05:
 		b.rest_time += dt
 		return
@@ -1512,6 +1517,10 @@ func trim_remnants() -> void:
 
 
 # ============================================================== accounting
+
+func player_focus_low(a: ActorState) -> bool:
+	return a.focus < 8.0
+
 
 func system_energy() -> float:
 	var e := 0.0
