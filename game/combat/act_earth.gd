@@ -93,7 +93,8 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 					w.set_phase(a, inst, ActionInst.P.RECOVERY)
 				return
 			var dir: Vector3 = inst.data.aim
-			b.hold_point = a.pos + Vector3(0, 1.75, 0) + dir * 0.9 + a.forward() * 0.2
+			# Held at chest height between the hands (earth_hold), nudged toward the aim.
+			b.hold_point = a.pos + Vector3(0, 1.2, 0) + a.forward() * (0.3 + b.radius) + dir * 0.15
 			if not it.tech_held:
 				w.set_phase(a, inst, ActionInst.P.ACTIVE)
 				_throw_held(w, a, inst)

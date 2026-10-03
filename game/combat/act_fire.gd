@@ -157,7 +157,7 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 				var dir: Vector3 = inst.data.get("aim", a.forward())
 				var g := a.pos + dir * 1.3
 				g.y = w.arena.ground_height(g.x, g.z, a.pos.y) + 0.2
-				b.hold_point = (a.pos + Vector3(0, 1.35, 0) + dir * 1.1).lerp(g, ease(k, 2.0))
+				b.hold_point = (a.pos + Vector3(0, 1.05, 0) + dir * (0.3 + b.radius)).lerp(g, ease(k, 2.0))
 
 
 static func on_interrupt(w: CombatWorld, a: ActorState, inst: ActionInst, _reason: String) -> void:
@@ -209,8 +209,8 @@ static func _heat_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: Acto
 		if not it.tech_held and inst.t > 0.05:
 			w.set_phase(a, inst, ActionInst.P.RECOVERY)
 		return
-	# Holding: shape in front of the hands and pour heat in at a bounded rate.
-	b.hold_point = a.pos + Vector3(0, 1.35, 0) + a.forward() * 1.1
+	# Holding: between the cupped hands (magma_hold pose) and pour heat in at a bounded rate.
+	b.hold_point = a.pos + Vector3(0, 1.05, 0) + a.forward() * (0.3 + b.radius)
 	if b.liquid < 1.0:
 		var want := float(d.heat_rate) * Sim.DT
 		var paid := w.pay_heat(a, want)

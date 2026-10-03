@@ -125,6 +125,8 @@ func _flagship(g: Game) -> void:
 				_shot("heating")
 		"wave":
 			var b := w.get_body(_body)
+			if OS.has_environment("AUTOPLAY_TRACE") and b and w.tick % 6 == 0:
+				print("trace t=%.2f %s pos=%s v=%.2f budget=%.1f rival=%s" % [_t, b.describe(), str(b.pos), b.vel.length(), b.wave_budget, g.ai.debug_state if g.ai else "-"])
 			if b and b.form == Sim.Form.WAVE and _t - _hold_t > 0.6:
 				_shot("wave")
 			if b and b.last_verb == "draw":

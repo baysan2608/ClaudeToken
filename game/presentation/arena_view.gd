@@ -45,41 +45,51 @@ func _mat(shader_name: String, fallback: Color, rough: float = 0.85, metal: floa
 
 
 func _build_lighting() -> void:
+	# Late-day key light: warm, low enough for readable contact shadows, cool sky fill.
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-48, -35, 0)
-	sun.light_color = Color(1.0, 0.94, 0.86)
-	sun.light_energy = 1.25
+	sun.rotation_degrees = Vector3(-38, -128, 0)
+	sun.light_color = Color(1.0, 0.86, 0.7)
+	sun.light_energy = 1.6
 	sun.shadow_enabled = _quality >= 1
-	sun.shadow_bias = 0.04
-	sun.shadow_normal_bias = 1.2
+	sun.shadow_bias = 0.03
+	sun.shadow_normal_bias = 1.0
+	sun.shadow_blur = 1.2
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 24.0
+	sun.directional_shadow_max_distance = 26.0
 	add_child(sun)
 	env = WorldEnvironment.new()
 	var e := Environment.new()
 	var sky := Sky.new()
 	var ps := ProceduralSkyMaterial.new()
-	ps.sky_top_color = Color(0.36, 0.47, 0.6)
-	ps.sky_horizon_color = Color(0.72, 0.71, 0.68)
-	ps.ground_bottom_color = Color(0.2, 0.19, 0.18)
-	ps.ground_horizon_color = Color(0.62, 0.6, 0.56)
-	ps.sun_angle_max = 20.0
+	ps.sky_top_color = Color(0.32, 0.43, 0.58)
+	ps.sky_horizon_color = Color(0.78, 0.7, 0.6)
+	ps.sky_curve = 0.12
+	ps.ground_bottom_color = Color(0.16, 0.15, 0.14)
+	ps.ground_horizon_color = Color(0.66, 0.6, 0.53)
+	ps.sun_angle_max = 18.0
+	ps.sun_curve = 0.08
 	sky.sky_material = ps
 	e.background_mode = Environment.BG_SKY
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.75
+	e.ambient_light_energy = 0.55
+	e.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	e.tonemap_mode = Environment.TONE_MAPPER_AGX
-	e.tonemap_white = 6.0
+	e.tonemap_white = 8.0
+	e.tonemap_exposure = 1.05
 	e.glow_enabled = _quality >= 1
-	e.glow_intensity = 0.35
-	e.glow_bloom = 0.04
-	e.glow_hdr_threshold = 1.2
+	e.glow_intensity = 0.4
+	e.glow_bloom = 0.03
+	e.glow_hdr_threshold = 1.1
 	e.fog_enabled = true
-	e.fog_light_color = Color(0.68, 0.67, 0.64)
-	e.fog_density = 0.006
-	e.fog_sky_affect = 0.3
+	e.fog_light_color = Color(0.74, 0.68, 0.6)
+	e.fog_density = 0.0045
+	e.fog_sky_affect = 0.25
+	e.fog_aerial_perspective = 0.3
+	e.adjustment_enabled = true
+	e.adjustment_contrast = 1.06
+	e.adjustment_saturation = 0.94
 	env.environment = e
 	add_child(env)
 
