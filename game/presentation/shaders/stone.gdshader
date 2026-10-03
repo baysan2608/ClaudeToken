@@ -79,4 +79,5 @@ void fragment() {
 	ROUGHNESS = rough;
 	SPECULAR = mix(0.28, 0.5, smoothstep(0.0, 0.6, u_melt) * (1.0 - u_crust));
 	EMISSION = emis;
+	EMISSION = albedo * 6.0 + vec3(0.0, 0.0, rough * 0.2);
 }

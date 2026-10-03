@@ -46,8 +46,9 @@ func setup(seed_value: int, width: float = 2.4, height: float = 1.0, thickness: 
 
 
 func _enter_tree() -> void:
-	# Instance uniforms written while the node was outside the tree are not reliable: re-push all.
-	_apply()
+	# Instance uniforms written before the MeshInstance3D is registered in the scene are not
+	# reliable (and children enter the tree after this callback): re-push everything deferred.
+	_apply.call_deferred()
 
 
 func set_rise(t01: float) -> void:

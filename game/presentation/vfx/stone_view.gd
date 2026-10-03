@@ -45,8 +45,9 @@ func setup(seed_value: int, radius: float) -> void:
 
 
 func _enter_tree() -> void:
-	# Instance uniforms written while the node was outside the tree are not reliable: re-push all.
-	_push_params()
+	# Instance uniforms written before the MeshInstance3D is registered in the scene are not
+	# reliable (and children enter the tree after this callback): re-push everything deferred.
+	_push_params.call_deferred()
 
 
 ## heat01: glowing crack network (0 = cold stone). melt01: softens into a molten blob.
