@@ -19,6 +19,12 @@ func reset() -> void:
 	set_process(false)
 
 
+## Called by VfxPool.get_fx(). One-shot effects stay hidden until play()/strike()/... is called;
+## persistent views (WaterBlobView, EarthWallView) override this to become visible.
+func on_acquire() -> void:
+	pass
+
+
 func is_playing() -> bool:
 	return false
 

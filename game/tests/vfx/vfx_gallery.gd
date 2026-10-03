@@ -10,6 +10,7 @@ extends Node3D
 
 const DEFAULT_OUT: String = "/tmp/claude-0/-home-user-ClaudeToken/1c5b9df4-f793-5f68-9f97-4ed835b254e3/scratchpad/vfx"
 const STATION_SPACING: float = 30.0
+const SETTLE_SECONDS: float = 3.0
 
 var _out_dir: String = DEFAULT_OUT
 var _only: Array[String] = []
@@ -39,6 +40,8 @@ func _ready() -> void:
 			_nomax = true
 		elif a.begins_with("--skip="):
 			_skip = a.substr(7).split(",")
+		elif a == "--lite":
+			VfxMaterials.screen_refraction = false
 		elif a == "--at0":
 			_only_origin = true
 		elif a == "--noenv":
@@ -93,7 +96,7 @@ func _build_environment() -> void:
 	_sun.light_color = Color(1.0, 0.93, 0.82)
 	_sun.light_energy = 2.8
 	_sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
-	_sun.shadow_enabled = not _no_shadow
+	_sun.shadow_enabled = not (_no_shadow or _only.has("cost"))
 	if _ortho:
 		_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	if not _nomax:
@@ -166,6 +169,7 @@ func _register_stations() -> void:
 	_stations.append({"name": "wall", "fn": _station_wall})
 	_stations.append({"name": "arena", "fn": _station_arena})
 	_stations.append({"name": "hero", "fn": _station_hero})
+	_stations.append({"name": "cost", "fn": _station_cost})
 
 
 func _run() -> void:
@@ -174,28 +178,40 @@ func _run() -> void:
 		await get_tree().process_frame
 	for i in _stations.size():
 		var st: Dictionary = _stations[i]
-		if not _only.is_empty() and not _only.has(st.name):
+		if (_only.is_empty() and st.name == "cost") or (not _only.is_empty() and not _only.has(st.name)):
 			continue
 		var origin := Vector3(STATION_SPACING * i, 0.0, 0.0)
-		if _only_origin:
+		if _only_origin or st.name == "cost":
 			origin = Vector3.ZERO
-		var cam_info: Dictionary = st.fn.call(origin)
+		var cam_info: Dictionary = await st.fn.call(origin)
+		if cam_info.get("skip_capture", false):
+			continue
 		await _capture(String(st.name), cam_info)
 	get_tree().quit()
 
 
+## Keep rendering for `seconds` of wall-clock time (and at least 8 frames).
+func _settle(seconds: float) -> void:
+	var t0: int = Time.get_ticks_msec()
+	var n: int = 0
+	while n < 8 or float(Time.get_ticks_msec() - t0) < seconds * 1000.0:
+		await get_tree().process_frame
+		n += 1
+
+
 func _capture(shot: String, cam_info: Dictionary) -> void:
 	var shots: Array = cam_info.get("shots", [cam_info])
-	# let freshly created materials finish compiling (first draws can be black / ubershader)
-	for _w in 12:
-		await get_tree().process_frame
 	for k in shots.size():
 		var ci: Dictionary = shots[k]
 		_cam.global_position = ci.pos
 		_cam.look_at(ci.look, Vector3.UP)
 		if ci.has("fov"):
 			_cam.fov = ci.fov
-		# let effects settle: advance manual time in small steps while rendering a few frames
+		# Let the renderer catch up with the new camera position (shadow cascades, pipelines): the
+		# software Vulkan driver (lavapipe) JIT-compiles shaders slowly and the engine draws with a
+		# fallback ubershader / stale shadow data in the meantime. Effects are NOT advanced here.
+		await _settle(SETTLE_SECONDS if k == 0 else 0.7)
+		# then advance the manually driven effects by exactly `frames` steps of `dt`
 		var frames: int = ci.get("frames", 3)
 		var dt: float = ci.get("dt", 0.0)
 		for _f in frames:
@@ -349,7 +365,7 @@ func _station_water(o: Vector3) -> Dictionary:
 
 
 func _station_particles(o: Vector3) -> Dictionary:
-	_box(o + Vector3(0, 0.02, 0.0), Vector3(10, 0.04, 6), Color(0.62, 0.60, 0.56))
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(10, 0.04, 6), Color(0.30, 0.29, 0.28))
 	var xs: Array[float] = [-3.6, -1.8, 0.0, 1.8, 3.6]
 	var names: Array[String] = ["dust", "steam", "splash", "ember", "dust (soft)"]
 	for i in 5:
@@ -379,8 +395,8 @@ func _station_particles(o: Vector3) -> Dictionary:
 				fx.play(pos, Vector3.UP, 0.4)
 		_label(names[i], pos + Vector3(0, 1.9, 0))
 	return {"shots": [
-		{"pos": o + Vector3(0, 1.4, 6.4), "look": o + Vector3(0, 0.8, 0), "frames": 1, "dt": 0.25, "fov": 36.0},
-		{"pos": o + Vector3(0, 1.4, 6.4), "look": o + Vector3(0, 0.8, 0), "frames": 1, "dt": 0.25, "fov": 36.0},
+		{"pos": o + Vector3(-1.8, 1.3, 3.8), "look": o + Vector3(-1.8, 0.6, 0.0), "frames": 1, "dt": 0.28, "fov": 40.0},
+		{"pos": o + Vector3(2.4, 1.3, 3.8), "look": o + Vector3(2.4, 0.6, 0.0), "frames": 1, "dt": 0.0, "fov": 40.0},
 	]}
 
 
@@ -747,3 +763,141 @@ func _station_hero(o: Vector3) -> Dictionary:
 		{"pos": o + Vector3(-3.4, 2.2, 5.6), "look": o + Vector3(-3.8, 0.4, 0.2), "frames": 1, "dt": 0.0, "fov": 38.0},
 		{"pos": o + Vector3(3.4, 2.4, 6.0), "look": o + Vector3(3.2, 1.0, 0.0), "frames": 1, "dt": 0.0, "fov": 40.0},
 	]}
+
+
+# --------------------------------------------------------------------------------------------
+# Cost table: instantiate each effect alone and log the visible-pass draw calls / primitives
+# (shadow casters are counted again in the shadow pass; printed separately).
+func _info() -> Vector3i:
+	var vp: Viewport = get_viewport()
+	return Vector3i(
+		vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_OBJECTS_IN_FRAME),
+		vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME),
+		vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_PRIMITIVES_IN_FRAME))
+
+
+func _station_cost(o_unused: Vector3) -> Dictionary:
+	var o := Vector3.ZERO  # effects are built in world space; always measured at the origin
+	_cam.global_position = o + Vector3(0, 2.0, 5.0)
+	_cam.look_at(o + Vector3(0, 0.8, 0), Vector3.UP)
+	await _settle(2.0)
+	var base: Vector3i = _info()
+	var rows: Array[String] = []
+	var makers: Array = [
+		["StoneView (melt 1)", func() -> Node:
+			var n := StoneView.new()
+			n.setup(3, 0.4)
+			n.use_light = false
+			n.set_thermal(1.0, 1.0)
+			return n],
+		["StoneView + OmniLight", func() -> Node:
+			var n := StoneView.new()
+			n.setup(3, 0.4)
+			n.set_thermal(1.0, 1.0)
+			return n],
+		["EarthWallView", func() -> Node:
+			var n := EarthWallView.new()
+			n.setup(3)
+			n.dust = false
+			n.set_rise(1.0)
+			return n],
+		["LavaWaveView (10 pts)", func() -> Node:
+			var n := LavaWaveView.new()
+			var p := PackedVector3Array()
+			var w := PackedFloat32Array()
+			for i in 10:
+				p.append(Vector3(-2.0 + i * 0.45, 0, 0))
+				w.append(1.0)
+			n.set_path(p, w)
+			return n],
+		["WaterRibbonView (18 pts)", func() -> Node:
+			var n := WaterRibbonView.new()
+			var p := PackedVector3Array()
+			var r := PackedFloat32Array()
+			for i in 18:
+				p.append(Vector3(-1.5 + i * 0.17, 0.8, 0))
+				r.append(0.08)
+			n.set_points(p, r)
+			return n],
+		["WaterBlobView", func() -> Node:
+			var n := WaterBlobView.new()
+			n.setup(0.4)
+			n.position = Vector3(0, 0.8, 0)
+			return n],
+		["FireBurstFX (t=0.2)", func() -> Node:
+			var n := FireBurstFX.new()
+			n.manual_time = true
+			n.play(Vector3(-1, 1, 0), Vector3.RIGHT, 2.0, 1.0)
+			n.advance(0.2)
+			return n],
+		["FireChargeFX (1.0)", func() -> Node:
+			var n := FireChargeFX.new()
+			n.position = Vector3(0, 0.8, 0)
+			n.set_charge(1.0)
+			return n],
+		["LightningArcFX", func() -> Node:
+			var n := LightningArcFX.new()
+			n.manual_time = true
+			n.strike(PackedVector3Array([Vector3(-2, 2, 0), Vector3(0, 1, 0), Vector3(2, 2, 0)]), 1)
+			n.advance(0.05)
+			return n],
+		["ChargeAimFX", func() -> Node:
+			var n := ChargeAimFX.new()
+			n.set_aim(Vector3(-2, 1, 0), Vector3(2, 1, 0), 0.5)
+			return n],
+		["AirPushFX", func() -> Node:
+			var n := AirPushFX.new()
+			n.manual_time = true
+			n.play(Vector3(-2, 1, 0), Vector3.RIGHT, 1.5, 4.0)
+			n.advance(0.25)
+			return n],
+		["GlideTrailFX", func() -> Node:
+			var n := GlideTrailFX.new()
+			n.manual_time = true
+			n.begin(null)
+			for i in 20:
+				n.push(Vector3(-2 + i * 0.2, 1.0 + 0.2 * sin(i * 0.5), 0))
+			n.advance(0.0)
+			return n],
+		["DustPuffFX", func() -> Node:
+			var n := DustPuffFX.new()
+			n.manual_time = true
+			n.play(Vector3.ZERO, Vector3.UP, 1.0)
+			n.advance(0.3)
+			return n],
+		["SteamFX", func() -> Node:
+			var n := SteamFX.new()
+			n.manual_time = true
+			n.play(Vector3.ZERO, 1.0)
+			n.advance(0.3)
+			return n],
+		["SplashFX", func() -> Node:
+			var n := SplashFX.new()
+			n.manual_time = true
+			n.play(Vector3.ZERO, Vector3.UP, 1.0)
+			n.advance(0.2)
+			return n],
+		["EmberFX", func() -> Node:
+			var n := EmberFX.new()
+			n.manual_time = true
+			n.play(Vector3.ZERO, Vector3.UP, 1.0)
+			n.advance(0.2)
+			return n],
+		["ScorchDecal", func() -> Node:
+			var n := ScorchDecal.new()
+			n.manual_time = true
+			n.place(Vector3.ZERO, 1.0, "scorch", 5.0)
+			n.advance(0.2)
+			return n],
+	]
+	print("COST baseline objects=%d draws=%d prims=%d" % [base.x, base.y, base.z])
+	for m in makers:
+		var node: Node = m[1].call()
+		add_child(node)
+		await _settle(0.6)
+		var cur: Vector3i = _info()
+		print("COST %-28s objects=%d draws=%d prims=%d" % [m[0], cur.x - base.x, cur.y - base.y, cur.z - base.z])
+		node.queue_free()
+		await get_tree().process_frame
+		await get_tree().process_frame
+	return {"pos": o + Vector3(0, 2.0, 5.0), "look": o + Vector3(0, 0.8, 0), "frames": 1, "skip_capture": true}

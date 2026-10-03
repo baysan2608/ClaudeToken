@@ -97,12 +97,18 @@ func _ready() -> void:
 		elif arg.begins_with("--quality="):
 			quality = int(arg.substr(10))
 			_auto_quality = false
+	# Screen-copy refraction (water/air distortion) only at the higher tiers; must be set
+	# before any effect material is created.
+	VfxMaterials.screen_refraction = quality >= 1
 	if autoplay:
 		# Captures never touch the player's real save.
 		progress = Progression.new()
 		progress.path = "user://autoplay_progress.cfg"
 		start = autoplay.scenario
 	load_scenario(start)
+	# Compile every effect's shaders once, out of sight under the floor, so the first
+	# lava or lightning of a session doesn't hitch or flash unlit.
+	body_views.pool.prewarm(Vector3(0, -6, 0))
 
 
 func load_scenario(id: String) -> void:

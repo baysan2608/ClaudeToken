@@ -36,9 +36,7 @@ var _built_rings: int = -1
 
 func _init() -> void:
 	_mesh = ArrayMesh.new()
-	_mat = VfxMaterials.make("water")
-	_mat.set_shader_parameter("noise_tex", VfxTextures.noise_2d())
-	_mat.set_shader_parameter("noise_vol", VfxTextures.noise_volume())
+	_mat = VfxMaterials.make_water()
 	_mat.set_shader_parameter("blob", 0.0)
 	_mi = MeshInstance3D.new()
 	_mi.name = "Tube"

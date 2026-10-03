@@ -6,11 +6,10 @@ extends VfxEffect
 ##
 ##   play(origin, dir, radius, length)     radius = radius of the cone at its far end, metres
 ##
-## Set `refraction = false` to drop the screen read and keep only a faint tinted band + streaks.
+## `VfxMaterials.screen_refraction = false` (set before creating the effect) swaps in the "lite" shader:
+## no screen read at all, just a faint tinted band + streaks.
 
 const DURATION: float = 0.55
-
-@export var refraction: bool = true
 
 var _body: Node3D
 var _cone: MeshInstance3D
@@ -25,8 +24,7 @@ func _init() -> void:
 	_body = Node3D.new()
 	_body.name = "Body"
 	add_child(_body)
-	_mat_cone = VfxMaterials.make("air_push")
-	_mat_cone.set_shader_parameter("noise_tex", VfxTextures.noise_2d())
+	_mat_cone = VfxMaterials.make_air_push()
 	_mat_streak = VfxMaterials.make("air_streak")
 	_cone = MeshInstance3D.new()
 	_cone.name = "Cone"
@@ -48,7 +46,6 @@ func play(origin: Vector3, dir: Vector3, radius: float, length: float) -> void:
 	var q: Quaternion = FireBurstFX._quat_up_to(d)
 	_place(Transform3D(Basis(q), origin))
 	_body.scale = Vector3(maxf(radius, 0.1), maxf(length, 0.3), maxf(radius, 0.1))
-	_mat_cone.set_shader_parameter("strength", 1.0 if refraction else 0.0)
 	_age = 0.0
 	_playing = true
 	visible = true

@@ -51,8 +51,8 @@ void vertex() {
 void fragment() {
 	vec3 off = vec3(fract(u_seed * 0.1371), fract(u_seed * 0.2913), fract(u_seed * 0.4573)) * 2.0;
 	vec3 pp = v_p * u_detail;
-	vec4 n1 = texture(noise_vol, vfx_mirror(pp * noise_scale + 0.5 + off));
-	vec4 n2 = texture(noise_vol, vfx_mirror(pp * noise_scale * 2.7 + 0.31 + off));
+	vec4 n1 = texture(noise_vol, vfx_smooth_uvw(vfx_mirror(pp * noise_scale + 0.5 + off), 32.0));
+	vec4 n2 = texture(noise_vol, vfx_smooth_uvw(vfx_mirror(pp * noise_scale * 2.7 + 0.31 + off), 32.0));
 	// organic crack network: analytic Voronoi, domain-warped by the smooth noise
 	vec3 vgrad;
 	vec4 vr = vfx_voronoi3(pp * plate_scale + off * 3.0 + (n1.gba - 0.5) * 0.55, vgrad);
@@ -73,7 +73,7 @@ void fragment() {
 	NORMAL = normalize(NORMAL - g_view);
 	// fine rock grain: tiny derivative bump (smooth input, no stipple)
 	float sc = length(MODEL_MATRIX[0].xyz);
-	NORMAL = vfx_bump(VERTEX, NORMAL, hgrain, 0.5 * sc);
+	NORMAL = vfx_bump(VERTEX, NORMAL, hgrain, 0.35 * sc);
 
 	ALBEDO = albedo;
 	ROUGHNESS = rough;

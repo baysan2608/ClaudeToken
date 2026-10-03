@@ -52,6 +52,7 @@ func play(pos: Vector3, normal: Vector3 = Vector3.UP, strength: float = 1.0) -> 
 	strength = clampf(strength, 0.1, 2.0)
 	var n: Vector3 = normal.normalized() if normal.length_squared() > 1e-6 else Vector3.UP
 	_place_at(pos + n * (0.10 + 0.08 * strength))
+	_mat.set_shader_parameter("floor_y", pos.y - 0.02)
 	_mat.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
 	_pm.direction = n
 	_pm.emission_sphere_radius = 0.12 + 0.12 * strength

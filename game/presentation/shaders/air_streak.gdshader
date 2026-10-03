@@ -6,10 +6,10 @@ shader_type spatial;
 render_mode blend_mix, unshaded, depth_draw_never, cull_disabled, fog_disabled;
 
 uniform float age : hint_range(0.0, 1.0) = 0.0;
-uniform float streak_len = 0.9;     // metres
+uniform float streak_len = 1.2;     // metres
 uniform float streak_width = 0.028;  // metres (half width)
 uniform vec3 tint : source_color = vec3(0.78, 0.72, 0.64);
-uniform float opacity = 0.5;
+uniform float opacity = 0.8;
 
 varying float v_alpha;
 varying float v_across;

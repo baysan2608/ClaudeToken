@@ -6,4 +6,5 @@
 shader_type spatial;
 render_mode blend_mix, unshaded, depth_draw_never, cull_disabled, fog_disabled;
 
+#define AIR_LITE
 #include "res://presentation/shaders/air_push_core.gdshaderinc"

@@ -85,8 +85,9 @@ func get_fx(key: Variant) -> Node:
 	active.append(node)
 	if node is VfxEffect:
 		(node as VfxEffect).pool = self
-	if node is Node3D:
-		(node as Node3D).visible = true
+		(node as VfxEffect).on_acquire()
+	elif node is Node3D:
+		(node as Node3D).visible = true  # plain views such as StoneView
 	return node
 
 
@@ -169,6 +170,8 @@ func release(node: Node) -> void:
 		return
 	active.remove_at(i)
 	_reset_node(node)
+	if node is Node3D:
+		(node as Node3D).visible = false
 	entry.free.append(node)
 
 

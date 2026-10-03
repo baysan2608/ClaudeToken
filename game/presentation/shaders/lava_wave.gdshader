@@ -30,8 +30,8 @@ void fragment() {
 	float u = sqrt(max(1.0 - v_fh.y * v_fh.y, 0.0));   // |across| 0 centre .. 1 edge
 	vec3 off = vec3(fract(seed * 0.137), fract(seed * 0.291), fract(seed * 0.457)) * 3.0;
 	vec2 q = vec2((v_sa.x - phase) * 0.78, v_sa.y) / plate_size;   // cells elongated along the flow
-	vec4 n1 = texture(noise_vol, vfx_mirror(vec3(q * 0.16 + off.xy, boil * 0.035 + off.z)));
-	vec4 n2 = texture(noise_vol, vfx_mirror(vec3(q * 0.5 + 0.3, boil * 0.05 + 0.2) + off));
+	vec4 n1 = texture(noise_vol, vfx_smooth_uvw(vfx_mirror(vec3(q * 0.16 + off.xy, boil * 0.035 + off.z)), 32.0));
+	vec4 n2 = texture(noise_vol, vfx_smooth_uvw(vfx_mirror(vec3(q * 0.5 + 0.3, boil * 0.05 + 0.2) + off), 32.0));
 	vec2 vgrad;
 	vec4 vr = vfx_voronoi2(q * 1.0 + (n1.gb - 0.5) * 0.7 + vec2(0.0, boil * 0.04), vgrad);
 	float ed = vr.y;

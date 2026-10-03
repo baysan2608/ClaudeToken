@@ -81,6 +81,8 @@ func play(pos: Vector3, normal: Vector3 = Vector3.UP, strength: float = 1.0) -> 
 	strength = clampf(strength, 0.1, 2.0)
 	var n: Vector3 = normal.normalized() if normal.length_squared() > 1e-6 else Vector3.UP
 	_place_at(pos + n * 0.02)
+	_drop_mat.set_shader_parameter("floor_y", pos.y - 0.02)
+	_mist_mat.set_shader_parameter("floor_y", pos.y - 0.02)
 	_drop_pm.direction = n
 	_mist_pm.direction = n
 	_drop_pm.initial_velocity_min = 1.2 + 0.8 * strength

@@ -12,6 +12,16 @@ vec2 vfx_mirror2(vec2 x) {
 	return 1.0 - abs(f - 1.0);
 }
 
+// Smooth (C1) trilinear sampling coordinates: removes the visible texel-grid creases that plain
+// bilinear/trilinear filtering leaves in derivative-based bump maps. n = texture size in texels.
+vec3 vfx_smooth_uvw(vec3 uvw, float n) {
+	vec3 t = uvw * n - 0.5;
+	vec3 i = floor(t);
+	vec3 f = t - i;
+	f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+	return (i + f + 0.5) / n;
+}
+
 float vfx_hash11(float p) {
 	p = fract(p * 0.1031);
 	p *= p + 33.33;

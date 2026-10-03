@@ -18,11 +18,9 @@ func _init() -> void:
 		_sphere = SphereMesh.new()
 		_sphere.radius = 1.0
 		_sphere.height = 2.0
-		_sphere.radial_segments = 32
-		_sphere.rings = 16
-	_mat = VfxMaterials.make("water")
-	_mat.set_shader_parameter("noise_tex", VfxTextures.noise_2d())
-	_mat.set_shader_parameter("noise_vol", VfxTextures.noise_volume())
+		_sphere.radial_segments = 24
+		_sphere.rings = 12
+	_mat = VfxMaterials.make_water()
 	_mat.set_shader_parameter("blob", 1.0)
 	_mi = MeshInstance3D.new()
 	_mi.name = "Orb"
@@ -50,6 +48,10 @@ func set_wobble(amount: float) -> void:
 
 func get_radius() -> float:
 	return _radius
+
+
+func on_acquire() -> void:
+	visible = true
 
 
 func reset() -> void:

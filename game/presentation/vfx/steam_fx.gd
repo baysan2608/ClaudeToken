@@ -54,6 +54,7 @@ func _build() -> void:
 func play(pos: Vector3, amount01: float = 1.0) -> void:
 	amount01 = clampf(amount01, 0.05, 1.0)
 	_place_at(pos)
+	_mat.set_shader_parameter("floor_y", pos.y - 0.02)
 	_ps.amount_ratio = clampf(0.25 + 0.75 * amount01, 0.2, 1.0)
 	_pm.scale_min = 0.25 + 0.2 * amount01
 	_pm.scale_max = 0.4 + 0.3 * amount01

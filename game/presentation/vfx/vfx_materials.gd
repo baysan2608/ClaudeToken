@@ -6,6 +6,11 @@ extends RefCounted
 
 const SHADER_DIR: String = "res://presentation/shaders/"
 
+## Global quality switch. False drops every screen-texture read (water refraction, air-push
+## distortion), so the engine skips the per-frame opaque-framebuffer copy. Set it BEFORE creating
+## the water / air effects (e.g. from the graphics options); it only affects newly made materials.
+static var screen_refraction: bool = true
+
 static var _shaders: Dictionary = {}
 static var _shared: Dictionary = {}
 
@@ -55,3 +60,18 @@ static func arena(shader_name: String) -> ShaderMaterial:
 static func set_arena_wetness(w: float) -> void:
 	for n in ["arena_ground", "metal_plate", "ledge_stone"]:
 		shared(n).set_shader_parameter("wetness", clampf(w, 0.0, 1.0))
+
+
+## Water material (screen refraction or the "lite" alpha-only variant, see screen_refraction).
+static func make_water() -> ShaderMaterial:
+	var m: ShaderMaterial = make("water" if screen_refraction else "water_lite")
+	m.set_shader_parameter("noise_tex", VfxTextures.noise_2d())
+	m.set_shader_parameter("noise_vol", VfxTextures.noise_volume())
+	return m
+
+
+## Air-push cone material (screen distortion or the "lite" tinted band, see screen_refraction).
+static func make_air_push() -> ShaderMaterial:
+	var m: ShaderMaterial = make("air_push" if screen_refraction else "air_push_lite")
+	m.set_shader_parameter("noise_tex", VfxTextures.noise_2d())
+	return m

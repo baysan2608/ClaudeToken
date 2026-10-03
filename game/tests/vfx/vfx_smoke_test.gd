@@ -14,10 +14,11 @@ func _check(cond: bool, msg: String) -> void:
 
 func _initialize() -> void:
 	await process_frame
-	_run()
+	await _run()
 
 
 func _run() -> void:
+	# (async: prewarm awaits frames)
 	var root_node := Node3D.new()
 	root.add_child(root_node)
 	var pool := VfxPool.new()
@@ -117,6 +118,13 @@ func _run() -> void:
 	pool.release(a)
 	pool.release(a)  # double release is safe
 	_check(pool.get_stats()["dust_puff"][0] == 0, "double release safe")
+
+	# --- prewarm cycles every built-in type through the pool and releases them
+	await pool.prewarm(Vector3(0, -50, 0), 2)
+	var total_active: int = 0
+	for key in pool.get_stats():
+		total_active += int(pool.get_stats()[key][0])
+	_check(total_active == 0, "prewarm releases everything (active %d)" % total_active)
 
 	# --- textures built
 	_check(VfxTextures.noise_volume().get_width() == VfxTextures.VOLUME_SIZE, "noise volume built")

@@ -76,6 +76,10 @@ func get_damage() -> float:
 	return _damage
 
 
+func on_acquire() -> void:
+	visible = true
+
+
 func reset() -> void:
 	_rise = 0.0
 	_damage = 0.0
