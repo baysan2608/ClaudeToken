@@ -17,7 +17,8 @@ var rng := RandomNumberGenerator.new()
 var _t := 0.0
 var _seen := {}            # threat key -> time first perceived
 var _decided := {}         # threat key -> decision string (decide once per threat)
-var _pour_seen := {}       # body id -> when the foe's pour of it was perceived (its wave's telegraph)
+var _pour_body := -1       # body the foe is pouring: its wave is perceived from the pour wind-up
+var _pour_seen := 0.0      # when that pour was first seen
 var _next_attack := 2.0
 var _strafe := 1.0
 var _strafe_t := 0.0
@@ -61,7 +62,7 @@ func think(dt: float) -> ActorIntent:
 		_press(_pending_press)
 		_pending_press = ""
 		return intent
-	if _guard_at >= 0.0 or _hold != "":
+	if _guard_at >= 0.0 or _hold != "" or _await_draw >= 0:
 		_react_to_threats(foe, true)   # keep perceiving while busy; decide once free
 	if _guard_at >= 0.0:
 		if _t >= _guard_at:
@@ -191,21 +192,22 @@ func _react_to_threats(foe: ActorState, stamp_only: bool = false) -> bool:
 	if foe != null and foe.action != null and foe.action.id == "pour" and foe.held_body >= 0:
 		var pk := "pour%d" % foe.action.attack_id
 		_perceived(pk)
-		_pour_seen[foe.held_body] = _seen[pk]
+		_pour_body = foe.held_body
+		_pour_seen = _seen[pk]
 	# Incoming material attacks.
 	for b in w.bodies:
 		if not b.alive or b.attack_id == 0 or b.attack_owner == me.id or b.controller >= 0:
 			continue
 		var key := "b%d:%d" % [b.id, b.attack_id]
 		if b.form == Sim.Form.WAVE:
+			if b.id == _pour_body:
+				_pour_body = -1
+				if not _seen.has(key):
+					_seen[key] = _pour_seen   # seen coming since the pour began
 			var to := me.pos - b.pos
 			to.y = 0
 			if to.length() > 16.0 or to.normalized().dot(b.wave_dir) < 0.5:
 				continue
-			if _pour_seen.has(b.id):
-				if not _seen.has(key):
-					_seen[key] = _pour_seen[b.id]   # seen coming since the pour began
-				_pour_seen.erase(b.id)
 			if not _perceived(key) or stamp_only:
 				continue
 			if _decided.has(key):
@@ -244,13 +246,14 @@ func _react_to_threats(foe: ActorState, stamp_only: bool = false) -> bool:
 				_hold_until = _t + 0.9
 				_guard_attack = foe.action.attack_id
 			return true
-	# Close-range strikes still winding up: taps (< 0.2 s) end before any reaction, held
-	# blaze / gust / lance charges do not. Lightning charges are handled above.
-	if foe != null and foe.action != null and foe.pos.distance_to(me.pos) < 5.0:
+	# Close-range strikes still winding up, within their reach: taps (< 0.2 s) end before any
+	# reaction, held blaze / gust / lance charges do not. Lightning charges are handled above.
+	if foe != null and foe.action != null:
 		var mid: String = foe.action.id
-		var winding := foe.action.phase == ActionInst.P.STARTUP \
-				or (foe.action.phase == ActionInst.P.CHARGE and not (mid == "fire_attack" and foe.has("lightning")))
-		if winding and mid in ["fire_attack", "air_attack", "water_attack"]:
+		var charging := foe.action.phase == ActionInst.P.CHARGE
+		var winding := foe.action.phase == ActionInst.P.STARTUP or (charging and not (mid == "fire_attack" and foe.has("lightning")))
+		var reach := float(foe.action.def.get("heavy_range" if charging else "range", 4.5)) + 0.5
+		if winding and mid in ["fire_attack", "air_attack", "water_attack"] and foe.pos.distance_to(me.pos) < reach:
 			var key := "m%d" % foe.action.attack_id
 			if _perceived(key) and not stamp_only and not _decided.has(key):
 				_decided[key] = "melee"
@@ -300,11 +303,11 @@ func _draw_sets_in_time(b: MatBody) -> bool:
 	var budget := b.wave_budget
 	var cap := minf(Sim.RESERVE_MAX - me.heat_reserve, me.focus * Sim.DRAW_HU_PER_FOCUS)
 	var free := roundi(_busy_time() / Sim.DT) + (0 if me.element == Sim.Element.FIRE else 1)
-	var first := 1 << 30   # tick of the first draw
+	var first := -1   # tick of the first draw
 	for i in 4 * Sim.HZ:
-		if first == 1 << 30 and flat <= float(fd.draw_range) - 0.5:
+		if first < 0 and flat <= float(fd.draw_range) - 0.5:
 			first = maxi(i, free) + roundi(float(fd.draw_startup) / Sim.DT)
-		if i >= first and cap > 0.0:
+		if first >= 0 and i >= first and cap > 0.0:
 			var d := sqrt(flat * flat + dy * dy)
 			var rate := float(fd.draw_rate) * (1.0 - 0.5 * clampf((d - 3.0) / (float(fd.draw_range) - 3.0), 0.0, 1.0))
 			cap += Thermal.heat(c, -minf(rate * Sim.DT, cap))

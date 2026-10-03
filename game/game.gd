@@ -10,6 +10,8 @@ const RIVAL_COLORS := {"cloth_main": Color(0.4, 0.2, 0.15), "cloth_accent": Colo
 	"wraps": Color(0.72, 0.68, 0.62), "skin": Color(0.62, 0.45, 0.34), "hair": Color(0.08, 0.07, 0.07)}
 const DUMMY_COLORS := {"cloth_main": Color(0.56, 0.5, 0.4), "cloth_accent": Color(0.4, 0.36, 0.3),
 	"wraps": Color(0.76, 0.71, 0.62), "skin": Color(0.6, 0.52, 0.42), "hair": Color(0.45, 0.4, 0.33)}
+const DUMMY_REVIVE_S := 2.0   # a downed practice target stays down this long, then stands at full health
+const KO_RESET_S := 2.5       # a downed player or rival: the knockdown plays, then the round resets
 
 var settings: GameSettings
 var progress: Progression
@@ -42,6 +44,8 @@ var _paused := false
 var quality := 2             # 2 high, 1 medium, 0 low
 var _auto_quality := true
 var _q_timer := 0.0
+var _q_eval_t := 0.0
+var _down := {}              # actor id -> seconds spent at 0 HP
 
 
 func _ready() -> void:
@@ -71,7 +75,9 @@ func _ready() -> void:
 	fx.settings = settings
 	hub = PlayerInputHub.new()
 	hub.force_touch_ui = "--touchui" in OS.get_cmdline_user_args()
-	hub.process_mode = Node.PROCESS_MODE_ALWAYS
+	# The hub stays pausable: only its own PanelLayer runs ALWAYS. Touch / desktop input must
+	# stop while paused and get PAUSED / UNPAUSED (release held controls, re-sync the Esc that
+	# closed the menu), or menu taps and keys leak into gameplay on resume.
 	add_child(hub)
 	hub.paused_requested.connect(_on_pause)
 	hub.settings_changed.connect(_apply_settings)
@@ -97,6 +103,8 @@ func _ready() -> void:
 		elif arg.begins_with("--quality="):
 			quality = int(arg.substr(10))
 			_auto_quality = false
+	# The per-second perf log grows for the whole session: keep it only for --perf captures.
+	perf.record_session = autoplay != null and autoplay.perf_path != ""
 	# Screen-copy refraction (water/air distortion) only at the higher tiers; must be set
 	# before any effect material is created.
 	VfxMaterials.screen_refraction = quality >= 1
@@ -124,6 +132,7 @@ func load_scenario(id: String) -> void:
 	_launch_i = 0
 	_launch_body = -1
 	_challenge_n = 0
+	_down.clear()
 	intents.clear()
 	arena_view.build(world.arena, quality)
 	_apply_quality()
@@ -173,20 +182,28 @@ func _apply_quality() -> void:
 
 func _adapt_quality(dt: float) -> void:
 	## Sustained frame-time p95 over budget for 4 s steps quality down (never up mid-session).
+	## p95 covers only frames rendered at the current tier (the window restarts after a step,
+	## so the slow frames that caused it can't cause the next) and is sampled 4x a second.
 	if not _auto_quality or quality == 0:
 		return
-	if perf.total_frames < 240:
+	if perf.window_frames() < 240:
+		_q_eval_t = 0.0
+		return
+	_q_eval_t += dt
+	if _q_eval_t < 0.25:
 		return
 	var st := perf.stats()
 	if float(st.p95_ms) > 18.5:
-		_q_timer += dt
+		_q_timer += _q_eval_t
 		if _q_timer > 4.0:
 			quality -= 1
 			_q_timer = 0.0
 			_apply_quality()
+			perf.reset_window()
 			print("[quality] stepped down to %d (p95 %.1f ms)" % [quality, st.p95_ms])
 	else:
 		_q_timer = 0.0
+	_q_eval_t = 0.0
 
 
 func _apply_settings() -> void:
@@ -264,6 +281,8 @@ func _physics_process(_dt: float) -> void:
 	var t0 := Time.get_ticks_usec()
 	world.step(intents)
 	perf.sim_us(Time.get_ticks_usec() - t0)
+	if _ko_tick():
+		return     # round reset: the fresh scenario runs from the next tick
 	var evs := world.take_events()
 	fx.handle(evs)
 	_challenges(evs)
@@ -277,10 +296,46 @@ func _physics_process(_dt: float) -> void:
 		autoplay.after_tick(self, evs)
 
 
+## Health never regenerates and the sim ignores 0-HP actors, so KOs are resolved here.
+## A downed target is knocked down and stands back up at full health; a downed player or
+## rival is knocked down and then the round resets (challenge progress is kept).
+## Returns true when the scenario was reloaded.
+func _ko_tick() -> bool:
+	for a in world.actors:
+		if a.health > 0.0:
+			_down.erase(a.id)
+			continue
+		var t: float = _down.get(a.id, 0.0)
+		if t == 0.0:
+			world._stagger(a, "knockdown", DUMMY_REVIVE_S if a.is_dummy else KO_RESET_S + 0.5, {})
+			if not a.is_dummy:
+				hud.toast("You're down" if a == player else "%s down" % a.name)
+		t += Sim.DT
+		_down[a.id] = t
+		if a.is_dummy and t >= DUMMY_REVIVE_S:
+			a.health = Sim.HEALTH_MAX
+			_down.erase(a.id)
+		elif not a.is_dummy and t >= KO_RESET_S:
+			var n := _challenge_n
+			load_scenario(scenario_id)
+			_challenge_n = n
+			_update_challenge_text()
+			return true
+	return false
+
+
 func _scenario_tick() -> void:
 	if not _launcher.is_empty():
 		_launch_t -= Sim.DT
 		var lb := world.get_body(_launch_body)
+		if lb != null and lb.controller >= 0:
+			# Seized off the plinth during the telegraph: it is the holder's stone now (free to
+			# move, decays like any loose stone) and the launcher reloads.
+			lb.static_body = false
+			lb.max_life = Sim.REMNANT_LIFETIME
+			lb = null
+			_launch_body = -1
+			_launch_t = float(_launcher.interval)
 		if lb == null and _launch_t <= 0.6:
 			# Telegraph: the next stone appears on the plinth 0.6 s before it fires.
 			var masses: Array = _launcher.masses
@@ -302,9 +357,10 @@ func _scenario_tick() -> void:
 			world.emit("launch", {"actor": -1, "body": lb.id, "speed": spd, "heavy": lb.mass > 40.0})
 			_launch_body = -1
 			_launch_t = float(_launcher.interval)
-	# Vents keep training lava molten until someone draws it solid.
+	# Vents keep training lava molten until someone draws it solid. Set rock (SOLID, which
+	# hysteresis keeps up to 0.15 liquid) is left alone: re-heating it would re-melt it.
 	for b in world.bodies:
-		if b.alive and b.origin == "vent" and b.liquid > 0.0 and b.liquid < 1.0 and b.controller < 0:
+		if b.alive and b.origin == "vent" and b.phase != Sim.Phase.SOLID and b.liquid > 0.0 and b.liquid < 1.0 and b.controller < 0:
 			var e := 55.0 * Sim.DT
 			var used := Thermal.heat(b, e)
 			world.ledger.generated += used
@@ -322,7 +378,9 @@ func _challenges(evs: Array[Dictionary]) -> void:
 					_challenge_n += 1
 		"m_storm_eye":
 			for e in evs:
-				if e.type == "conduct" and e.actor == player.id and (e.victims as Array).size() >= 2:
+				# A caster standing in the connected water is a victim too; only targets count.
+				var victims: Array = e.get("victims", [])
+				if e.type == "conduct" and e.actor == player.id and victims.size() - int(victims.has(player.id)) >= 2:
 					_challenge_n += 1
 		"m_return":
 			for e in evs:
@@ -400,7 +458,7 @@ func _hud_context(tgt: ActorState) -> Dictionary:
 			label = "THROW" if held else "LIFT"
 		Sim.Element.WATER:
 			label = "STREAM" if held else "DRAW"
-			ok = held != null or player.water_carried > 0.5 or player.pos.distance_to(Vector3(10, 0, -1)) < 9.0
+			ok = held != null or player.water_carried >= 1.0 or _water_in_reach()
 		Sim.Element.FIRE:
 			if held and held.is_stone():
 				label = "POUR" if held.phase == Sim.Phase.MOLTEN else "HEAT"
@@ -429,6 +487,18 @@ func _hud_context(tgt: ActorState) -> Dictionary:
 	else:
 		ctx["target_screen_pos"] = null
 	return ctx
+
+
+## The sources ActWater._draw takes from: the pool edge within reach, or a liquid puddle in the
+## aim cone. (The waterskin, >= 1 kg carried, is checked by the caller.)
+func _water_in_reach() -> bool:
+	var ar := world.arena
+	var reach := float(Moves.DEFS.water_tech.reach)
+	var pn := Vector2(clampf(player.pos.x, ar.pool_min.x, ar.pool_max.x), clampf(player.pos.z, ar.pool_min.y, ar.pool_max.y))
+	if pn.distance_to(Vector2(player.pos.x, player.pos.z)) < reach and world.pool.mass > float(Moves.DEFS.water_tech.draw_rate) * Sim.DT:
+		return true
+	var aim := world.aim_dir(player, intents.get(player.id, ActorIntent.new()))
+	return world.find_body(player, aim, reach, 70.0, ActWater._water_filter) != null
 
 
 func _debug_lines() -> PackedStringArray:

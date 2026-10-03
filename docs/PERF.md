@@ -17,14 +17,21 @@ GPU frame time, thermal throttling, touch latency, haptics, iPad workload, Metal
 iPhone 12 / A14 (and iPad 9th gen / A13 as the iPad floor). Rationale: Godot 4.7 Mobile renderer over Metal,
 current budgets (≤32 bodies, ≤2 transparent layers per effect, one shadowed directional light, 0.85 render scale fallback).
 Target sustained 60 fps; adaptive quality steps down (render scale 1.0 → 0.85 → 0.7, shadows/glow/MSAA off)
-when frame p95 > 18.5 ms for 4 s. Input handling and attack telegraphs are never degraded.
+when frame p95 > 18.5 ms for 4 s. After a step the p95 window restarts, so the next decision uses only frames
+rendered at the new tier (at least 240 of them). Input handling and attack telegraphs are never degraded.
+ProMotion devices are capped at 60 Hz (`display/window/ios/allow_high_refresh_rate=false`): the sim runs at 60 Hz,
+so 120 Hz rendering would double the per-second cost for interpolation only.
 
 ## On-device checklist (do this on the Mac)
 1. `tools/scripts/export_ios.sh <TEAM_ID>` → open `build/ios/Fourfold.xcodeproj`, scheme Release, run on device.
 2. Settings ▸ show debug: the overlay shows fps / avg / p95 / p99 frame time and sim p95.
-3. Play **Molten Exchange** 10–15 min continuously (or autoplay: add `--autoplay=flagship:900 --perf=user://perf.json`
-   to the Xcode scheme arguments). Note quality step-downs printed as `[quality]` in the Xcode console.
+3. Play **Molten Exchange** 10–15 min continuously (or autoplay: Edit Scheme ▸ Run ▸ Arguments Passed On Launch, add
+   `--`, `--autoplay=flagship:900` and `--perf=user://perf.json` in that order; the game reads only arguments after `--`).
+   Note quality step-downs printed as `[quality]` in the Xcode console. `user://` is not visible in the Files app
+   (`user_data/accessible_from_files_app=false`): fetch `perf.json` with Xcode ▸ Devices and Simulators ▸ the app ▸
+   Download Container… (it is under `AppData/Documents/`).
 4. Xcode ▸ Debug Navigator: watch CPU, GPU, memory trend (should flatten after ~1 min) and Thermal State.
+   The per-second perf log is kept only for `--perf` runs, so it adds no growth to a normal session.
 5. Instruments ▸ Game Performance (or Metal System Trace) for 2 minutes of combat: report average, p95, p99 frame time,
    longest hitches, GPU vs CPU bound.
 6. Repeat on iPad. Check layout (safe areas, control size), touch: move + guard + camera simultaneously, technique drag + cancel.

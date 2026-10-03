@@ -11,6 +11,7 @@ var _j := 0
 var total_frames := 0
 var spikes_over_20ms := 0
 var session := []        # per-second samples: {t, fps, p95, p99, sim_ms, mem_mb, bodies}
+var record_session := false   # fill `session` (for dump()); off by default, it grows all session
 var _acc := 0.0
 var _t := 0.0
 
@@ -31,12 +32,26 @@ func frame(dt: float) -> void:
 	_t += dt
 	if _acc >= 1.0:
 		_acc = 0.0
+		if not record_session:
+			return
 		var st := stats()
 		st["t"] = snappedf(_t, 0.1)
 		st["mem_mb"] = snappedf(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, 0.1)
 		st["objects"] = Performance.get_monitor(Performance.OBJECT_COUNT)
 		st["nodes"] = Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
 		session.append(st)
+
+
+## Frames in the current frame-time window (at most N).
+func window_frames() -> int:
+	return mini(_i, N)
+
+
+## Restart the frame-time window, e.g. after a quality change, so the stats describe only
+## frames rendered since.
+func reset_window() -> void:
+	_i = 0
+	_ft.fill(0.0)
 
 
 func sim_us(us: int) -> void:

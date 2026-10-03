@@ -3,7 +3,8 @@ extends SceneTree
 ## tools/scripts/godot.sh --headless -s res://../tools/scripts/make_icon.gd  (or copy into res://)
 func _init() -> void:
 	var n := 1024
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	# Opaque RGB: App Store Connect rejects a 1024 px app icon that has an alpha channel.
+	var img := Image.create(n, n, false, Image.FORMAT_RGB8)
 	var bg0 := Color(0.09, 0.1, 0.12)
 	var bg1 := Color(0.16, 0.17, 0.2)
 	var cols := [Color(0.72, 0.58, 0.36), Color(0.38, 0.66, 0.8), Color(0.93, 0.46, 0.24), Color(0.84, 0.87, 0.82)]

@@ -67,22 +67,16 @@ func _wave_trial(mass: float, dist: float, seed_value: int) -> Dictionary:
 func test_ai_walls_a_wave_it_cannot_draw_in_time() -> void:
 	# A 45 kg wave holds ~2.25x the heat of a 20 kg one: the draw cannot set it before
 	# contact, so the AI must pick the wall (which always stops it) instead.
+	# (A close 20 kg wave is just as hopeless for a draw.)
 	var hits := 0
 	var draws := 0
 	var n := 0
-	for mass in [45.0]:
-		for dist in [6.0, 8.4, 10.0]:
-			for s in [1, 2, 3]:
-				var r := _wave_trial(mass, dist, s)
-				n += 1
-				hits += 1 if r.hit else 0
-				draws += 1 if r.decision == "draw" else 0
-	# Close 20 kg waves are just as hopeless for a draw.
-	for s in [1, 2, 3]:
-		var r := _wave_trial(20.0, 6.0, s)
-		n += 1
-		hits += 1 if r.hit else 0
-		draws += 1 if r.decision == "draw" else 0
+	for md in [[45.0, 6.0], [45.0, 8.4], [45.0, 10.0], [20.0, 6.0]]:
+		for s in [1, 2, 3]:
+			var r := _wave_trial(md[0], md[1], s)
+			n += 1
+			hits += 1 if r.hit else 0
+			draws += 1 if r.decision == "draw" else 0
 	note("unwinnable waves: %d hits, %d draws of %d" % [hits, draws, n])
 	check(hits == 0, "waves the draw cannot set are stopped another way (%d/%d hit)" % [hits, n])
 	check(draws == 0, "the AI does not pick a draw it cannot finish (%d/%d)" % [draws, n])
@@ -96,6 +90,35 @@ func test_ai_still_draws_a_wave_it_can_set() -> void:
 		if r.decision == "draw" and not r.hit:
 			ok += 1
 	check(ok == 4, "a settable wave is drawn and stopped (%d/4)" % ok)
+
+
+func test_wave_is_perceived_from_the_pour_wind_up() -> void:
+	# The pour's 0.25 s wind-up is the wave's visible telegraph (same body): the reaction
+	# clock starts there, so the decision lands well before a fresh look at the wave would.
+	for s in [1, 2, 3]:
+		var d := _duel(s, Vector3(0, 0, -3), {})
+		var h: SimHarness = d.h
+		var ai: AiBrain = d.ai
+		var p: ActorState = d.p
+		var b := h.w.spawn_body(Sim.Mat.STONE, Sim.Form.BLOB, 20.0, p.hand_point(), "test", Sim.STONE_MELT_C)
+		b.liquid = 0.85
+		b.phase = Sim.Phase.MOLTEN
+		b.update_radius()
+		b.controller = p.id
+		p.held_body = b.id
+		var aim := Vector3(0, 0, -1)
+		h.w.start_action(p, "pour", h.it(p), {"aim": aim, "face": aim, "body": b.id})
+		var spawn_t := -1.0
+		var decided_t := -1.0
+		for k in 60:
+			h.intents[d.o.id] = ai.think(Sim.DT)
+			if spawn_t >= 0.0 and decided_t < 0.0 and ai._decided.has("b%d:%d" % [b.id, b.attack_id]):
+				decided_t = ai._t
+			h.step()
+			if spawn_t < 0.0 and b.form == Sim.Form.WAVE:
+				spawn_t = ai._t
+		check(spawn_t >= 0.0 and decided_t >= 0.0, "seed %d: the poured wave is decided on" % s)
+		check(decided_t - spawn_t < float(ai.cfg.reaction) - 0.1, "seed %d: decided %.2f s after the wave appeared (pour seen first)" % [s, decided_t - spawn_t])
 
 
 func test_draw_pressed_mid_throw_starts_when_the_throw_ends() -> void:
@@ -274,10 +297,10 @@ func test_bolt_guard_lasts_as_long_as_the_charge() -> void:
 		check(blocked == 4, "a %.1f s charge is still blocked (%d/4)" % [hold, blocked])
 
 
-func _strike_run(el: int, hold_ticks: int, secs: float, kit: Dictionary = {}) -> Dictionary:
+func _strike_run(el: int, hold_ticks: int, secs: float, gap: float = 3.0) -> Dictionary:
 	var h := SimHarness.new(3)
-	var p := h.actor("player", Vector3(0, 0, 1.5), 0, kit, el)
-	var o := h.actor("opponent", Vector3(0, 0, -1.5), 1, {"heat_draw": true}, Sim.Element.EARTH)
+	var p := h.actor("player", Vector3(0, 0, gap * 0.5), 0, {}, el)
+	var o := h.actor("opponent", Vector3(0, 0, -gap * 0.5), 1, {"heat_draw": true}, Sim.Element.EARTH)
 	o.elements = [true, false, true, false]
 	var ai := AiBrain.new(h.w, o, {"counter": 1.0, "elements": [0, 2], "aggression": 0.6, "drill": "passive"}, 3)
 	var res := {"strikes": 0, "melee": 0, "defended": 0, "landed": 0, "max_seen": 0}
@@ -318,6 +341,10 @@ func test_ai_defends_a_held_close_strike() -> void:
 		note("%s held: %s" % [Sim.ELEMENT_NAMES[el], str(r)])
 		check(r.melee > 0 and r.defended > 0, "%s: held strikes are guarded or evaded (%d decisions)" % [Sim.ELEMENT_NAMES[el], r.melee])
 		check(r.landed * 2 < r.strikes, "%s: most held strikes are stopped (%d of %d landed)" % [Sim.ELEMENT_NAMES[el], r.landed, r.strikes])
+	# A held blaze reaches 6.5 m: it is answered from beyond plain flare range too.
+	var far := _strike_run(Sim.Element.FIRE, 50, 12.0, 5.8)
+	note("Fire held from 5.8 m: %s" % str(far))
+	check(far.melee > 0 and far.landed * 2 < far.strikes, "a held blaze from 5.8 m is defended (%d decisions, %d of %d landed)" % [far.melee, far.landed, far.strikes])
 
 
 func test_perceived_strike_keys_stay_bounded() -> void:
