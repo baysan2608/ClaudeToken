@@ -22,7 +22,8 @@ func build(f: InputFrame, cam_yaw: float) -> ActorIntent:
 	intent.tech_held = f.tech_held
 	intent.tech_released = f.tech_released
 	intent.tech_cancel = f.tech_cancel
-	intent.aim_active = f.tech_aim_active and f.tech_held
+	# The release tick still carries the final aim (InputFrame contract) and is the commit.
+	intent.aim_active = f.tech_aim_active and (f.tech_held or f.tech_released)
 	if intent.aim_active:
 		var a := f.tech_aim
 		var d := right * a.x + fwd * maxf(a.y, -0.2)

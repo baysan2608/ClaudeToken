@@ -52,14 +52,15 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 					inst.heavy = false
 					w.set_phase(a, inst, ActionInst.P.ACTIVE)
 		"water_tech":
-			if inst.phase != ActionInst.P.CHANNEL:
-				return
-			if it.tech_cancel:
+			if it.tech_cancel and (inst.phase == ActionInst.P.STARTUP or inst.phase == ActionInst.P.CHANNEL):
+				# Honoured from the first frame: a cancel during startup never draws or fires.
 				var hb := w.held(a)
 				if hb != null:
 					w.release_body(a, Vector3(0, -1, 0), false)   # falls and becomes a puddle
 				w.emit("cancel", {"actor": a.id, "move": inst.id})
 				w.set_phase(a, inst, ActionInst.P.RECOVERY)
+				return
+			if inst.phase != ActionInst.P.CHANNEL:
 				return
 			inst.data["aim"] = w.aim_dir(a, it)
 			inst.data["aim_active"] = it.aim_active

@@ -40,8 +40,14 @@ static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorI
 			a.guard_tick = w.tick
 			if a.element == Sim.Element.EARTH and a.grounded:
 				_raise_wall(w, a, inst)
-			elif a.element == Sim.Element.WATER:
-				_water_shield(w, a, inst)
+			else:
+				a.wall_body = -1   # only a grounded Earth guard keeps a wall: the previous one sinks
+				if a.element == Sim.Element.WATER:
+					_water_shield(w, a, inst)
+			# Held material (water kept from a cancelled technique) that did not become the
+			# shield is dropped, like any interrupted action's material.
+			if w.held(a) != null and not inst.data.get("shield", false):
+				w.release_body(a, Vector3(0, -1, 0), false)
 			w.emit("guard", {"actor": a.id, "element": a.element, "wall": a.wall_body})
 
 
@@ -91,12 +97,14 @@ static func _end_guard(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 		if b != null and b.is_water():
 			# Shield water returns to the waterskin; overflow falls as a puddle.
 			var back := minf(b.mass, 6.0 - a.water_carried)
+			# The waterskin holds water at ambient: the heat (or cold) of the returned kg leaves the ledger.
+			w.ledger.removed += back * (Sim.WATER_C * (b.temp - Sim.AMBIENT_C) - Sim.WATER_LATENT_FUSION * (1.0 - b.liquid))
 			a.water_carried += back
 			b.mass -= back
 			if b.mass <= 0.01:
 				a.held_body = -1
 				b.controller = -1
-				w.remove_body(b, "absorbed")
+				w.decay_body(b, "absorbed")   # books any sliver left over
 			else:
 				w.release_body(a, Vector3.ZERO, false)
 		inst.data["shield"] = false

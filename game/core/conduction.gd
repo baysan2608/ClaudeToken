@@ -54,7 +54,7 @@ static func discharge(w: CombatWorld, caster: ActorState, aim: Vector3, def: Dic
 	var seeds: Array = []
 	if target != null:
 		# Redirect: equipped technique + Fire element + perfect-timed guard.
-		if allow_redirect and target.has("redirect_current") and target.element == Sim.Element.FIRE and w.perfect_guard(target):
+		if allow_redirect and target.has("redirect_current") and w.guard_element(target) == Sim.Element.FIRE and w.perfect_guard(target):
 			w.emit("lightning", {"actor": caster.id, "path": out.path, "arcs": [], "blocked": false, "hits": [], "redirected": true})
 			w.emit("lightning_redirect", {"actor": target.id, "from": caster.id})
 			target.hits_taken[attack_id] = w.tick
@@ -64,7 +64,7 @@ static func discharge(w: CombatWorld, caster: ActorState, aim: Vector3, def: Dic
 			discharge(w, target, caster.chest(), def, back, false, 0.8)
 			target.lock_target = saved
 			return out
-		var grounded := target.guarding and target.element == Sim.Element.EARTH and target.surface == "stone" and target.grounded
+		var grounded := target.guarding and w.guard_element(target) == Sim.Element.EARTH and target.surface == "stone" and target.grounded
 		var dmg := base_dmg * (0.4 if grounded else 1.0)
 		if grounded:
 			w.emit("grounded", {"actor": target.id})

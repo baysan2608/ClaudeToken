@@ -254,17 +254,23 @@ func _process_intent(a: ActorState, it: ActorIntent) -> void:
 		_cycle_target(a)
 	if a.lock_target < 0 or not _valid_target(a, a.lock_target):
 		a.lock_target = _auto_target(a)
+	# A technique cancel is an abort, never a commit: it drops a buffered technique press, and a
+	# press that arrives with it (focus loss right after touch-down) never starts one.
+	if it.tech_cancel and a.buffered == "tech":
+		a.buffered = ""
 	var press := ""
 	if it.evade_pressed:
 		press = "evade"
 	elif it.guard_pressed:
 		press = "guard"
-	elif it.tech_pressed:
+	elif it.tech_pressed and not it.tech_cancel:
 		press = "tech"
 	elif it.attack_pressed:
 		press = "attack"
 	if press != "":
-		if not _try_start(a, press, it):
+		if _try_start(a, press, it):
+			a.buffered = ""   # the newest explicit press supersedes an older buffered one
+		else:
 			a.buffered = press
 			a.buffered_tick = tick
 	elif a.buffered != "" and tick - a.buffered_tick <= int(Moves.BUFFER_TIME * Sim.HZ):
@@ -578,6 +584,8 @@ func _update_surface(a: ActorState) -> void:
 		a.wetness = 1.0
 		var take := minf(6.0 - a.water_carried, pool.mass)
 		if take > 0.0:
+			# The waterskin holds water at ambient: the heat the drawn kg carried leaves the ledger.
+			ledger.removed += take * (Sim.WATER_C * (pool.temp - Sim.AMBIENT_C) - Sim.WATER_LATENT_FUSION * (1.0 - pool.liquid))
 			a.water_carried += take
 			pool.mass -= take
 	a.surface = arena.surface_at(a.pos.x, a.pos.z, a.pos.y)
@@ -804,6 +812,10 @@ func hit_actor(t: ActorState, info: Dictionary) -> String:
 			if att != null and att.pos.distance_to(t.pos) < 3.0:
 				att.balance -= 18.0
 				att.balance_idle = 0.0
+				if att.balance <= 0.0:
+					# Balance 0 is a knockdown for the attacker too.
+					_stagger(att, "knockdown", 1.1, info)
+					att.balance = 45.0
 			return "perfect"
 		t.health -= dmg * 0.12
 		t.balance -= bal * 0.55
@@ -859,6 +871,14 @@ func perfect_guard(t: ActorState) -> bool:
 	if t.action != null and t.action.data.get("mashed", false):
 		return false
 	return float(tick - t.guard_tick) * Sim.DT <= Moves.PERFECT_WINDOW
+
+
+## Element whose guard rules apply: a running guard keeps the element it started with
+## (switching mid-guard only affects the next action).
+func guard_element(a: ActorState) -> int:
+	if a.action != null and a.action.id == "guard":
+		return a.action.element
+	return a.element
 
 
 ## Cone query helper for melee-range elemental strikes.
@@ -918,7 +938,7 @@ func request_grip(a: ActorState, b: MatBody, strength: float, verb: String) -> v
 	if b.mass > a.max_control_mass:
 		emit("control_fail", {"actor": a.id, "body": b.id, "reason": "mass", "mass": b.mass})
 		return
-	_grips.append({"actor": a.id, "body": b.id, "strength": strength, "verb": verb})
+	_grips.append({"actor": a.id, "body": b.id, "strength": strength, "verb": verb, "inst": a.action})
 
 
 func grip_strength(a: ActorState, b: MatBody, base: float, reach: float) -> float:
@@ -943,6 +963,10 @@ func _resolve_grips() -> void:
 		var b := get_body(g.body)
 		var a := get_actor(g.actor)
 		if b == null or not b.alive or a == null:
+			continue
+		# The request is withdrawn unless the action that reached is still channelling: a whiff,
+		# release or cancel later in the tick, or a hit from a later actor, never leaves an orphan hold.
+		if a.stun > 0.0 or a.action == null or a.action != g.inst or a.action.phase != ActionInst.P.CHANNEL:
 			continue
 		if done.has(b.id):
 			if b.controller != a.id:
@@ -993,6 +1017,8 @@ func take_control(a: ActorState, b: MatBody, strength: float, verb: String) -> v
 	b.hit_set.clear()
 	b.on_ground = false
 	b.rest_time = 0.0
+	b.age = 0.0                      # remnant lifetime / trim order count from the last hold
+	b.hold_point = a.hand_point()    # never home to a stale point before the action sets one
 	b.touch(a.id, verb, tick)
 	a.held_body = b.id
 	emit("control_won", {"actor": a.id, "body": b.id, "verb": verb})
@@ -1086,8 +1112,8 @@ func _update_bodies() -> void:
 					remove_body(b, "dissipated")
 			_:
 				_update_ballistic(b, dt)
-		if b.max_life > 0.0 and b.age > b.max_life and b.alive and b.form != Sim.Form.CLOUD:
-			decay_body(b, "lifetime")
+		if b.max_life > 0.0 and b.age > b.max_life and b.alive and b.form != Sim.Form.CLOUD and b.attack_id == 0:
+			decay_body(b, "lifetime")   # a live projectile is never removed mid-flight
 
 
 func _on_phase_changed(b: MatBody, old_phase: int) -> void:
@@ -1129,6 +1155,7 @@ func _update_ballistic(b: MatBody, dt: float) -> void:
 		return
 	if b.on_ground and b.vel.length() < 0.05:
 		b.rest_time += dt
+		_quench_contact(b, dt)   # lava at rest in water still quenches
 		return
 	b.vel.y -= Sim.GRAVITY * dt
 	if b.vel.length() > b.max_speed:
@@ -1175,8 +1202,19 @@ func _update_ballistic(b: MatBody, dt: float) -> void:
 	else:
 		b.on_ground = false
 	b.pos = np
-	if arena.in_pool(b.pos.x, b.pos.z) and b.pos.y < arena.pool_level + 0.1 and b.is_stone() and b.liquid > 0.0:
+	_quench_contact(b, dt)
+
+
+## Molten/softened stone touching the pool or a puddle is quenched, moving or at rest.
+func _quench_contact(b: MatBody, dt: float) -> void:
+	if not b.is_stone() or b.liquid <= 0.0:
+		return
+	if arena.in_pool(b.pos.x, b.pos.z) and b.pos.y < arena.pool_level + 0.1:
 		_quench(b, pool, dt)
+		return
+	var pd := puddle_at(b.pos)
+	if pd != null:
+		_quench(b, pd, dt)
 
 
 func _body_impact(b: MatBody, what: String) -> void:
@@ -1430,6 +1468,8 @@ func decay_body(b: MatBody, why: String) -> void:
 		mass_ledger.ground_returned += b.mass
 	elif b.is_water():
 		mass_ledger.evaporated += b.mass
+	elif b.mat == Sim.Mat.STEAM:
+		mass_ledger.vapor += b.mass   # its heat was booked as vapour when it boiled off
 	ledger.removed += b.thermal_energy()
 	remove_body(b, why)
 
@@ -1484,7 +1524,8 @@ func _projectile_hits_actor(b: MatBody, a: ActorState) -> void:
 		return
 	if a.guarding and facing_ok:
 		var perfect := perfect_guard(a)
-		if perfect and a.element == Sim.Element.EARTH and b.is_stone() and b.mass <= a.max_control_mass:
+		var ge := guard_element(a)
+		if perfect and ge == Sim.Element.EARTH and b.is_stone() and b.mass <= a.max_control_mass:
 			var tgt := get_actor(b.attack_owner)
 			var spd := maxf(Vector2(b.vel.x, b.vel.z).length(), 12.0) * 1.05
 			b.vel = ActEarth.launch_vel(b.pos, tgt.chest(), spd) if tgt != null else a.forward() * spd
@@ -1495,7 +1536,7 @@ func _projectile_hits_actor(b: MatBody, a: ActorState) -> void:
 			b.touch(a.id, "redirect", tick)
 			emit("perfect_deflect", {"actor": a.id, "body": b.id, "verb": "redirect", "kind": "stone"})
 			return
-		if perfect or (a.element == Sim.Element.AIR and b.mass < 30.0):
+		if perfect or (ge == Sim.Element.AIR and b.mass < 30.0):
 			var side := a.forward().cross(Vector3.UP).normalized()
 			if side.dot(b.vel) < 0.0:
 				side = -side
@@ -1564,6 +1605,14 @@ func trim_remnants() -> void:
 	for b in bodies:
 		if b.alive and b.is_stone() and b.controller < 0 and b.attack_id == 0 and b.on_ground and b.form != Sim.Form.WALL:
 			rem.append(b)
+	if rem.size() <= Sim.MAX_REMNANTS:
+		return
+	# Oldest first by age, which restarts whenever a body is seized or becomes rock: a reused
+	# stone that just landed or freshly cooled lava outlives rubble that has lain untouched.
+	rem.sort_custom(func(x: MatBody, y: MatBody) -> bool:
+		if x.age != y.age:
+			return x.age > y.age
+		return x.id < y.id)
 	while rem.size() > Sim.MAX_REMNANTS:
 		decay_body(rem.pop_front(), "remnant_cap")
 

@@ -4,6 +4,13 @@ extends Control
 ## rival vitals while locked on, objective line, short toasts, off-screen threat
 ## arrows and an optional debug/state overlay (Settings > show debug).
 
+## Physical floors (mm) for HUD text and bars. iPhone landscape is ~11 viewport
+## units per mm, where the viewport-scaled sizes alone give ~1 mm glyphs.
+const TEXT_MM := 2.0     # stat text, rival name (~11-12 pt)
+const LINE_MM := 2.2     # objective / challenge lines
+const TOAST_MM := 3.0
+const BAR_MM := 0.6
+
 var world: CombatWorld
 var player_id := 1
 var cam: CameraRig
@@ -21,6 +28,10 @@ var _alpha := 0.35
 var _calm := 0.0
 var _font: Font
 var _last_health := 100.0
+# Per-draw sizing: viewport scale, physical density (0 = unknown) and bar thickness.
+var _s := 1.0
+var _ppm := 0.0
+var _bar_h := 4.0
 
 
 func _ready() -> void:
@@ -62,9 +73,26 @@ func _safe_rect() -> Rect2:
 	return Rect2(Vector2(sa.position) * Vector2(sx, sy), Vector2(sa.size) * Vector2(sx, sy)).grow(-12)
 
 
+## Viewport units per mm where the density is real (device, or a pinned DPI for
+## screenshots/tests), else 0: desktop keeps the viewport-scaled sizes unchanged.
+static func density_ppm(vp: Viewport) -> float:
+	if vp == null or not (OS.has_feature("mobile") or UiScale.dpi_override > 0.0):
+		return 0.0
+	return UiScale.px_per_mm(vp)
+
+
+## Font size: the viewport-scaled `base`, never below `mm` millimetres when `ppm` > 0.
+static func font_px(base: float, mm: float, s: float, ppm: float) -> int:
+	return maxi(int(base * s), int(round(mm * ppm)))
+
+
+func _fs(base: float, mm: float) -> int:
+	return font_px(base, mm, _s, _ppm)
+
+
 func _bar(pos: Vector2, w: float, frac: float, col: Color, a: float) -> void:
-	draw_rect(Rect2(pos, Vector2(w, 4)), Color(0, 0, 0, 0.35 * a))
-	draw_rect(Rect2(pos, Vector2(w * clampf(frac, 0.0, 1.0), 4)), Color(col, a))
+	draw_rect(Rect2(pos, Vector2(w, _bar_h)), Color(0, 0, 0, 0.35 * a))
+	draw_rect(Rect2(pos, Vector2(w * clampf(frac, 0.0, 1.0), _bar_h)), Color(col, a))
 
 
 func _draw() -> void:
@@ -75,32 +103,49 @@ func _draw() -> void:
 	var p := world.get_actor(player_id)
 	if p == null:
 		return
+	_s = s
+	_ppm = density_ppm(get_viewport())
+	_bar_h = maxf(4.0, BAR_MM * _ppm)
+	var fs_stat := _fs(11, TEXT_MM)
+	var fs_name := _fs(12, TEXT_MM)
+	var fs_line := _fs(13, LINE_MM)
+	# Growth over the viewport-scaled layout (all 0 on desktop) pushes rows apart.
+	var grow_bar := _bar_h - 4.0
+	var grow_stat := float(fs_stat - int(11 * s))
+	var grow_line := float(fs_line - int(13 * s))
+	var row := 9 * s + grow_bar
 	var x := sr.position.x + 8 * s
 	var y := sr.position.y + 8 * s
 	var bw := 190.0 * s
 	_bar(Vector2(x, y), bw, p.health / Sim.HEALTH_MAX, Color(0.92, 0.9, 0.86), _alpha)
-	_bar(Vector2(x, y + 9 * s), bw * 0.8, p.balance / Sim.BALANCE_MAX, Color(0.75, 0.82, 0.92), _alpha * 0.9)
-	_bar(Vector2(x, y + 18 * s), bw * 0.8, p.focus / Sim.FOCUS_MAX, Color(0.96, 0.82, 0.45), _alpha * 0.9)
+	_bar(Vector2(x, y + row), bw * 0.8, p.balance / Sim.BALANCE_MAX, Color(0.75, 0.82, 0.92), _alpha * 0.9)
+	_bar(Vector2(x, y + 2 * row), bw * 0.8, p.focus / Sim.FOCUS_MAX, Color(0.96, 0.82, 0.45), _alpha * 0.9)
+	# The HEAT label sits beside its bar, under the end of the longer focus bar: keep it clear.
+	var heat_y := y + 3 * row + grow_stat * 0.5
+	var heat_base := heat_y + 6 * s + grow_bar * 0.5 + grow_stat * 0.35
 	if p.heat_reserve > 1.0:
-		_bar(Vector2(x, y + 27 * s), bw * 0.6, p.heat_reserve / Sim.RESERVE_MAX, Color(1.0, 0.45, 0.2), 1.0)
-		draw_string(_font, Vector2(x + bw * 0.62, y + 33 * s), "HEAT %d" % int(p.heat_reserve), HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * s), Color(1, 0.6, 0.4, 0.9))
+		_bar(Vector2(x, heat_y), bw * 0.6, p.heat_reserve / Sim.RESERVE_MAX, Color(1.0, 0.45, 0.2), 1.0)
+		draw_string(_font, Vector2(x + bw * 0.62, heat_base), "HEAT %d" % int(p.heat_reserve), HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(1, 0.6, 0.4, 0.9))
+	var water_base := heat_base + 11 * s + grow_stat
 	if p.element == Sim.Element.WATER:
-		draw_string(_font, Vector2(x, y + 44 * s), "water %.0f kg" % p.water_carried, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * s), Color(0.6, 0.85, 1.0, 0.8 * _alpha))
+		draw_string(_font, Vector2(x, water_base), "water %.0f kg" % p.water_carried, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(0.6, 0.85, 1.0, 0.8 * _alpha))
 	# Rival vitals (locked target), top centre, compact.
 	var t := world.get_actor(p.lock_target)
 	if t != null:
 		var cx := sr.get_center().x
 		_bar(Vector2(cx - 80 * s, y), 160 * s, t.health / Sim.HEALTH_MAX, Color(0.95, 0.55, 0.45), 0.85)
-		_bar(Vector2(cx - 64 * s, y + 9 * s), 128 * s, t.balance / Sim.BALANCE_MAX, Color(0.75, 0.82, 0.92), 0.7)
-		draw_string(_font, Vector2(cx - 80 * s, y + 28 * s), t.name, HORIZONTAL_ALIGNMENT_CENTER, 160 * s, int(12 * s), Color(1, 1, 1, 0.7))
+		_bar(Vector2(cx - 64 * s, y + row), 128 * s, t.balance / Sim.BALANCE_MAX, Color(0.75, 0.82, 0.92), 0.7)
+		var name_base := y + 28 * s + grow_bar + (fs_name - int(12 * s)) * 0.75
+		draw_string(_font, Vector2(cx - 80 * s, name_base), t.name, HORIZONTAL_ALIGNMENT_CENTER, 160 * s, fs_name, Color(1, 1, 1, 0.7))
 	# Objective + challenge.
+	var obj_base := sr.end.y - 10 * s
 	if objective != "":
-		draw_string(_font, Vector2(sr.position.x, sr.end.y - 10 * s), objective, HORIZONTAL_ALIGNMENT_CENTER, sr.size.x, int(13 * s), Color(1, 1, 1, 0.55))
+		draw_string(_font, Vector2(sr.position.x, obj_base), objective, HORIZONTAL_ALIGNMENT_CENTER, sr.size.x, fs_line, Color(1, 1, 1, 0.55))
 	if challenge_text != "":
-		draw_string(_font, Vector2(sr.position.x, sr.end.y - 28 * s), challenge_text, HORIZONTAL_ALIGNMENT_CENTER, sr.size.x, int(13 * s), Color(1.0, 0.86, 0.55, 0.85))
+		draw_string(_font, Vector2(sr.position.x, obj_base - 18 * s - grow_line), challenge_text, HORIZONTAL_ALIGNMENT_CENTER, sr.size.x, fs_line, Color(1.0, 0.86, 0.55, 0.85))
 	if _toast_t > 0.0:
 		var a := clampf(_toast_t / 0.4, 0.0, 1.0)
-		draw_string(_font, Vector2(sr.position.x, sr.get_center().y - 90 * s), _toast, HORIZONTAL_ALIGNMENT_CENTER, sr.size.x, int(18 * s), Color(1, 1, 1, 0.9 * a))
+		draw_string(_font, Vector2(sr.position.x, sr.get_center().y - 90 * s), _toast, HORIZONTAL_ALIGNMENT_CENTER, sr.size.x, _fs(18, TOAST_MM), Color(1, 1, 1, 0.9 * a))
 	if _flash_t > 0.0:
 		var col := Color(1.0, 0.95, 0.8, 0.10) if _flash == "perfect" else Color(0.8, 0.85, 1.0, 0.08)
 		if GameSettings.current().flashes > 0.0:
@@ -109,11 +154,11 @@ func _draw() -> void:
 	_threat_arrows(sr, s)
 	if show_debug:
 		_timing_bars(s)
-		var dy := y + 60 * s
+		var dy := water_base + 16 * s
 		for line in debug_lines:
 			draw_string(_font, Vector2(x, dy), line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * s), Color(0.85, 1.0, 0.85, 0.9))
 			dy += 14 * s
-		draw_string(_font, Vector2(sr.end.x - 260 * s, sr.end.y - 50 * s), perf_text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * s), Color(0.85, 1.0, 0.85, 0.9))
+		draw_string(_font, Vector2(sr.end.x - 260 * s, sr.end.y - 50 * s - grow_line), perf_text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * s), Color(0.85, 1.0, 0.85, 0.9))
 
 
 func _timing_bars(s: float) -> void:

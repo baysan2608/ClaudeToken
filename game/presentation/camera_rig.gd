@@ -9,6 +9,7 @@ var yaw := PI                 # camera looks along (sin(yaw), 0, cos(yaw))
 var pitch := 0.32             # radians above horizontal
 var distance := 5.6
 var height := 1.45
+# Not applied by add_input: the input producers already fold them into cam_delta.
 var sensitivity := 1.0
 var invert_y := false
 var shake_scale := 1.0
@@ -47,11 +48,14 @@ func forward_flat() -> Vector3:
 	return Vector3(sin(yaw), 0.0, cos(yaw))
 
 
+## `delta` is InputFrame.cam_delta: radians, x = look right +, y = look up +, with
+## camera_sensitivity and invert_y already applied by the producer (applied once).
 func add_input(delta: Vector2) -> void:
 	if delta.length_squared() > 1e-8:
 		_idle = 0.0
-	yaw -= delta.x * sensitivity
-	pitch = clampf(pitch + delta.y * sensitivity * (-1.0 if invert_y else 1.0), -0.12, 0.95)
+	yaw -= delta.x
+	# pitch is the camera's elevation: looking up lowers the camera.
+	pitch = clampf(pitch - delta.y, -0.12, 0.95)
 
 
 func shake(amount: float) -> void:

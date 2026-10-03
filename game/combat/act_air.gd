@@ -64,6 +64,11 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 					inst.heavy = false
 					w.set_phase(a, inst, ActionInst.P.ACTIVE)
 		"air_tech":
+			if it.tech_cancel and inst.phase == ActionInst.P.STARTUP:
+				# A cancel during the crouch never launches the updraft.
+				w.emit("cancel", {"actor": a.id, "move": inst.id})
+				w.finish_action(a, inst)
+				return
 			if inst.phase != ActionInst.P.CHANNEL:
 				return
 			if a.grounded and inst.t > 0.1:

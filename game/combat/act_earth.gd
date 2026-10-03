@@ -46,7 +46,13 @@ static func on_phase(w: CombatWorld, a: ActorState, inst: ActionInst, p: int) ->
 			b.update_radius()
 			w.mass_ledger.ground_taken += extra
 			w.emit("acquire", {"actor": a.id, "body": b.id, "mass": extra})
-		w.emit("telegraph", {"actor": a.id, "move": "earth_heavy", "body": a.held_body, "time": inst.def.heavy_min})
+		elif extra > 0.0:
+			# The heave can't be paid: it stays a light shot (like water/air), mass-scaled as usual.
+			inst.heavy = false
+			if b != null:
+				w.emit("insufficient", {"actor": a.id, "what": "focus", "move": "earth_heavy"})
+		if inst.heavy:
+			w.emit("telegraph", {"actor": a.id, "move": "earth_heavy", "body": a.held_body, "time": inst.def.heavy_min})
 	elif p == ActionInst.P.ACTIVE:
 		var b := w.held(a)
 		if b == null:
@@ -79,12 +85,13 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 				if inst.data.get("released", false) and inst.total >= float(inst.def.heavy_min):
 					w.set_phase(a, inst, ActionInst.P.ACTIVE)
 		"earth_tech":
-			if inst.phase != ActionInst.P.CHANNEL:
-				return
-			if it.tech_cancel:
+			if it.tech_cancel and (inst.phase == ActionInst.P.STARTUP or inst.phase == ActionInst.P.CHANNEL):
+				# Honoured from the first frame: a cancel during startup never seizes or throws.
 				_drop(w, a)
 				w.emit("cancel", {"actor": a.id, "move": inst.id})
 				w.set_phase(a, inst, ActionInst.P.RECOVERY)
+				return
+			if inst.phase != ActionInst.P.CHANNEL:
 				return
 			inst.data["aim"] = w.aim_dir(a, it)
 			inst.data["aim_active"] = it.aim_active

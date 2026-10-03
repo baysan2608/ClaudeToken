@@ -207,9 +207,9 @@ func test_attack_tap_versus_hold() -> void:
 	step(c, 0.10)
 	f = poll(c)
 	check(f.attack_held and not f.attack_pressed, "still held at 0.10 s, no repeat edge")
-	check(c._attack_t < TouchControls.CHARGE_HINT_SEC, "below the charge threshold")
+	check(c._attack_t < c.charge_time(), "below the charge threshold")
 	step(c, 0.20)
-	check(c._attack_t >= TouchControls.CHARGE_HINT_SEC, "past 0.22 s the charge cue is full")
+	check(c._attack_t >= c.charge_time(), "past the element's hold threshold the charge cue is full")
 	f = poll(c)
 	check(f.attack_held, "held through the charge")
 	touch_up(3, a)
@@ -221,7 +221,7 @@ func test_attack_tap_versus_hold() -> void:
 	touch_down(3, a)
 	step(c, 0.08)
 	touch_up(3, a)
-	check(c._attack_t < TouchControls.CHARGE_HINT_SEC, "tap stays under the threshold")
+	check(c._attack_t < c.charge_time(), "tap stays under the threshold")
 
 
 func test_guard_hold_and_evade_edge() -> void:

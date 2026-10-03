@@ -7,6 +7,7 @@ extends SceneTree
 const SUITES: Array[String] = [
 	"res://tests/ui/test_touch_controls.gd",
 	"res://tests/ui/test_ui_misc.gd",
+	"res://tests/ui/test_input_regressions.gd",
 ]
 
 

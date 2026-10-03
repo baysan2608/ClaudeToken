@@ -28,9 +28,8 @@ const ROLE_DEAD := 4
 
 ## Stick dead zone as a fraction of the stick radius.
 const DEADZONE := 0.08
-## Visual cue only: the attack ring fills over this long (the game decides
-## what a "charged" attack is from pressed -> released timing).
-const CHARGE_HINT_SEC := 0.22
+## Attack move per element (CombatWorld picks the same ids) for the charge-ring timing.
+const ATTACK_MOVES: Array[String] = ["earth_attack", "water_attack", "fire_attack", "air_attack"]
 ## Minimum drag (viewport px) before technique aim counts as intentional.
 const AIM_ACTIVE_PX := 12.0
 ## ... and never less than this physically (finger roll on press is ~1 mm).
@@ -40,8 +39,8 @@ const CAM_RAD_PER_MM := 0.055
 ## Pause fires on release when the finger is still within this many hit radii.
 const PAUSE_RELEASE_SLACK := 1.8
 
-## Seconds before a "charged" cue (mirrors CHARGE_HINT_SEC, settable by the game).
-var charge_hold_sec: float = CHARGE_HINT_SEC
+## Attack ring fill time override (s); 0 = the selected element's rule (attack_charge_sec).
+var charge_hold_sec: float = 0.0
 ## Desktop debug: treat the left mouse button as a finger (index 15).
 var mouse_emulation: bool = false
 var settings: GameSettings = null
@@ -183,27 +182,58 @@ func relayout() -> void:
 	queue_redraw()
 
 
-## HUD hints from the game (see PlayerInputHub.set_context).
-func set_context(ctx: Dictionary) -> void:
+## HUD hints from the game (see PlayerInputHub.set_context). The game sends them
+## every frame, so this redraws only when a value changed (returns true then).
+func set_context(ctx: Dictionary) -> bool:
+	var changed := false
 	if ctx.has("element"):
-		_ctx_element = clampi(int(ctx["element"]), 0, UiStyle.ELEMENT_COUNT - 1)
+		var el := clampi(int(ctx["element"]), 0, UiStyle.ELEMENT_COUNT - 1)
+		changed = changed or el != _ctx_element
+		_ctx_element = el
 	if ctx.has("unlocked_elements"):
-		_ctx_unlocked.fill(0)
+		var mask := 0
 		for e in ctx["unlocked_elements"]:
 			var ei := int(e)
 			if ei >= 0 and ei < UiStyle.ELEMENT_COUNT:
-				_ctx_unlocked[ei] = 1
+				mask |= 1 << ei
+		for ei in UiStyle.ELEMENT_COUNT:
+			var u := (mask >> ei) & 1
+			if _ctx_unlocked[ei] != u:
+				_ctx_unlocked[ei] = u
+				changed = true
 	if ctx.has("tech_label"):
-		_ctx_label = str(ctx["tech_label"])
+		var label := str(ctx["tech_label"])
+		changed = changed or label != _ctx_label
+		_ctx_label = label
 	if ctx.has("tech_available"):
-		_ctx_available = bool(ctx["tech_available"])
+		var ok := bool(ctx["tech_available"])
+		changed = changed or ok != _ctx_available
+		_ctx_available = ok
 	if ctx.has("holding"):
-		_ctx_holding = bool(ctx["holding"])
-	queue_redraw()
+		var holding := bool(ctx["holding"])
+		changed = changed or holding != _ctx_holding
+		_ctx_holding = holding
+	if changed:
+		queue_redraw()
+	return changed
 
 
 func is_element_unlocked(e: int) -> bool:
 	return e >= 0 and e < UiStyle.ELEMENT_COUNT and _ctx_unlocked[e] == 1
+
+
+## Hold time (s) after which the sim commits `element`'s attack to a charge:
+## max(startup, Moves.HOLD_THRESHOLD) from the press (CombatWorld.attack_after_startup),
+## rounded up to whole 60 Hz ticks.
+static func attack_charge_sec(element: int) -> float:
+	var def: Dictionary = Moves.DEFS.get(ATTACK_MOVES[clampi(element, 0, ATTACK_MOVES.size() - 1)], {})
+	var t := maxf(float(def.get("startup", 0.0)), Moves.HOLD_THRESHOLD)
+	return ceilf(t / Sim.DT - 0.001) * Sim.DT
+
+
+## Seconds the attack ring takes to fill (the "charged" cue) for the selected element.
+func charge_time() -> float:
+	return charge_hold_sec if charge_hold_sec > 0.0 else attack_charge_sec(_ctx_element)
 
 
 ## Write this tick's input into `f` (all touch-owned fields are overwritten)
@@ -682,7 +712,7 @@ func _draw_attack(op: float, rw: float, strong: bool, reduced: bool) -> void:
 	if _btn_finger[id] != -1:
 		var c := _layout.centers[id]
 		var r := _layout.radii[id]
-		var f := clampf(_attack_t / maxf(charge_hold_sec, 0.01), 0.0, 1.0)
+		var f := clampf(_attack_t / maxf(charge_time(), 0.01), 0.0, 1.0)
 		if f > 0.05:
 			var col := Color(1, 1, 1, 0.9)
 			if f >= 1.0:

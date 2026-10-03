@@ -133,15 +133,16 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 					else:
 						w.set_phase(a, inst, ActionInst.P.ACTIVE)
 		"fire_tech":
+			if it.tech_cancel and (inst.phase == ActionInst.P.STARTUP or inst.phase == ActionInst.P.CHANNEL):
+				# Honoured from the first frame: a cancel during startup never grips, draws or vents.
+				ActEarth._drop(w, a)
+				w.emit("cancel", {"actor": a.id, "move": inst.id})
+				w.set_phase(a, inst, ActionInst.P.RECOVERY)
+				return
 			if inst.phase == ActionInst.P.STARTUP:
 				inst.data["face"] = _face_target(w, a, inst)
 				return
 			if inst.phase != ActionInst.P.CHANNEL:
-				return
-			if it.tech_cancel:
-				ActEarth._drop(w, a)
-				w.emit("cancel", {"actor": a.id, "move": inst.id})
-				w.set_phase(a, inst, ActionInst.P.RECOVERY)
 				return
 			inst.data["aim"] = w.aim_dir(a, it)
 			inst.data["aim_active"] = it.aim_active
@@ -155,8 +156,7 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 			if b != null:
 				var k := clampf(inst.t / float(inst.def.startup), 0.0, 1.0)
 				var dir: Vector3 = inst.data.get("aim", a.forward())
-				var g := a.pos + dir * 1.3
-				g.y = w.arena.ground_height(g.x, g.z, a.pos.y) + 0.2
+				var g: Vector3 = _pour_start(w, a, dir).pos + Vector3(0, 0.2, 0)
 				b.hold_point = (a.pos + Vector3(0, 1.05, 0) + dir * (0.3 + b.radius)).lerp(g, ease(k, 2.0))
 
 
@@ -298,8 +298,8 @@ static func _pour(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	var dir: Vector3 = inst.data.get("aim", a.forward())
 	dir.y = 0
 	dir = dir.normalized()
-	var start := a.pos + dir * 1.3
-	start.y = w.arena.ground_height(start.x, start.z, a.pos.y)
+	var ps := _pour_start(w, a, dir)
+	var start: Vector3 = ps.pos
 	w.release_body(a, Vector3.ZERO, true, float(d.damage), float(d.balance))
 	var old_form := b.form
 	b.form = Sim.Form.WAVE
@@ -312,6 +312,27 @@ static func _pour(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	b.age = 0.0
 	b.touch(a.id, "pour", w.tick)
 	w.emit("transform", {"body": b.id, "from": Sim.FORM_NAMES[old_form], "to": "wave", "why": "poured"})
+	if ps.blocked:
+		# Poured point-blank into cover: the lava stays on this side and pools there.
+		w.emit("wave_blocked", {"body": b.id, "at": start})
+		w._settle_wave(b, "blocked")
+
+
+## Where a pour along dir starts: on the ground 1.3 m ahead, or pulled back short of any wall,
+## earth wall or rise in between (never beyond it). Tested level at the pourer's feet, so pouring
+## off a ledge is not blocked. Returns {pos, blocked}.
+static func _pour_start(w: CombatWorld, a: ActorState, dir: Vector3) -> Dictionary:
+	var start := a.pos + dir * 1.3
+	var from := a.pos + Vector3(0, 0.2, 0)
+	var to := Vector3(start.x, from.y, start.z)
+	var hit_t := w.arena.segment_hit(from, to, 0.1)
+	var wall_t := w.wall_hit(from, to)
+	if wall_t >= 0.0 and (hit_t < 0.0 or wall_t < hit_t):
+		hit_t = wall_t
+	if hit_t >= 0.0:
+		start = a.pos + dir * maxf(0.0, 1.3 * hit_t - 0.25)
+	start.y = w.arena.ground_height(start.x, start.z, a.pos.y)
+	return {"pos": start, "blocked": hit_t >= 0.0}
 
 
 static func _flare(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
@@ -348,13 +369,13 @@ static func _flare(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 		if shielded.has(t.id):
 			w.emit("block", {"actor": t.id, "attacker": a.id, "kind": "fire_water"})
 			continue
-		if t.element == Sim.Element.AIR and t.guarding:
+		if t.guarding and w.guard_element(t) == Sim.Element.AIR:
 			w.emit("block", {"actor": t.id, "attacker": a.id, "kind": "fire_air"})
 			continue
 		var res := w.hit_actor(t, {"attacker": a.id, "attack_id": inst.attack_id,
 			"damage": d.heavy_damage if heavy else d.damage, "balance": d.heavy_balance if heavy else d.balance,
 			"knock": dir * (3.0 if heavy else 1.2), "kind": "fire", "from": a.chest()})
-		if res == "perfect" and t.element == Sim.Element.FIRE:
+		if res == "perfect" and w.guard_element(t) == Sim.Element.FIRE:
 			# Perfect fire guard absorbs part of the flame into the reserve.
 			var gain := minf(left * 0.5, Sim.RESERVE_MAX - t.heat_reserve)
 			t.heat_reserve += gain
