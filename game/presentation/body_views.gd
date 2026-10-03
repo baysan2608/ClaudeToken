@@ -150,7 +150,7 @@ func _make(b: MatBody, kind: String) -> Dictionary:
 		"wall":
 			n = pool.get_fx("earth_wall")
 			if n and n.has_method("setup"):
-				n.call("setup", b.id, b.wall_half * 2.0)
+				n.call("setup", b.id, b.wall_half.x * 2.0, b.wall_half.y * 2.0, b.wall_half.z * 2.0)
 		"blob":
 			n = pool.get_fx("water_blob")
 			if n:

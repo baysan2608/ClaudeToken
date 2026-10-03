@@ -143,10 +143,13 @@ func loop(key: String, nm: String, on: bool, pos: Vector3, vol_db: float = 0.0) 
 
 
 func _process(dt: float) -> void:
+	var dead: Array = []
 	for key in _loops:
 		var l: Dictionary = _loops[key]
 		var pl: AudioStreamPlayer3D = l.player
 		if not pl.playing:
+			if not l.on:
+				dead.append(key)   # free idle loop players so per-body keys never accumulate
 			continue
 		if l.on:
 			pl.volume_db = move_toward(pl.volume_db, float(l.get("target", -6.0)), 90.0 * dt)
@@ -154,6 +157,9 @@ func _process(dt: float) -> void:
 			pl.volume_db = move_toward(pl.volume_db, -40.0, 60.0 * dt)
 			if pl.volume_db <= -39.0:
 				pl.stop()
+	for key in dead:
+		(_loops[key].player as Node).queue_free()
+		_loops.erase(key)
 
 
 func stop_all_loops() -> void:
