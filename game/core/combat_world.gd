@@ -16,6 +16,7 @@ const TURN_RATE := 14.0          # rad/s free
 const RUN_SPEED := 5.6
 const ACCEL := 34.0
 const DECEL := 42.0
+const WAVE_TURN_RATE := 32.0     # deg/s a fluid wave bends toward its owner's target
 
 var arena: ArenaMap
 var actors: Array[ActorState] = []
@@ -940,9 +941,8 @@ func _resolve_grips() -> void:
 
 func take_control(a: ActorState, b: MatBody, strength: float, verb: String) -> void:
 	# Catching a moving body: its momentum goes into the catcher (pushback + Focus).
-	var rel := b.vel - a.vel
-	var impulse := rel * b.mass
-	if impulse.length() > 1.0:
+	var impulse := b.vel * b.mass
+	if impulse.length() > 20.0:
 		var push := impulse / Sim.ACTOR_MASS * 0.45
 		push.y = 0.0
 		a.vel += push
@@ -1217,6 +1217,22 @@ func _update_wave(b: MatBody, dt: float) -> void:
 	if b.wave_budget <= 0.0 or speed < 0.35:
 		_settle_wave(b, "budget" if b.wave_budget <= 0.0 else "viscous")
 		return
+	# The pouring fighter keeps bending the wave toward their target while it is fluid
+	# (fantasy rule: limited turn rate, fades as it cools).
+	var owner := get_actor(b.attack_owner)
+	if owner != null and b.liquid > 0.4:
+		var tgt := get_actor(owner.lock_target)
+		if tgt != null:
+			var to := tgt.pos - b.pos
+			to.y = 0.0
+			if to.length() > 1.0:
+				var want := atan2(to.x, to.z)
+				var cur := atan2(b.wave_dir.x, b.wave_dir.z)
+				var diff := wrapf(want - cur, -PI, PI)
+				var max_turn := deg_to_rad(WAVE_TURN_RATE) * dt * Thermal.flow_factor(b)
+				if absf(diff) < deg_to_rad(70.0):
+					cur += clampf(diff, -max_turn, max_turn)
+					b.wave_dir = Vector3(sin(cur), 0.0, cos(cur))
 	var stepv := b.wave_dir * speed * dt
 	var np := b.pos + stepv
 	var g0 := b.pos.y
