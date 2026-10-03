@@ -1,0 +1,498 @@
+{
+  "step_stone_1": {
+    "category": "movement",
+    "loop": false,
+    "duration_s": 0.169,
+    "suggested_volume_db": -6.5,
+    "max_voices": 2,
+    "notes": "Light stone footstep (heel tap + toe tap + grit); rotate the 4 variants, add +/-1.5 dB random volume and +/-4% pitch."
+  },
+  "step_stone_2": {
+    "category": "movement",
+    "loop": false,
+    "duration_s": 0.179,
+    "suggested_volume_db": -8.5,
+    "max_voices": 2,
+    "notes": "Light stone footstep (heel tap + toe tap + grit); rotate the 4 variants, add +/-1.5 dB random volume and +/-4% pitch."
+  },
+  "step_stone_3": {
+    "category": "movement",
+    "loop": false,
+    "duration_s": 0.169,
+    "suggested_volume_db": -8.0,
+    "max_voices": 2,
+    "notes": "Light stone footstep (heel tap + toe tap + grit); rotate the 4 variants, add +/-1.5 dB random volume and +/-4% pitch."
+  },
+  "step_stone_4": {
+    "category": "movement",
+    "loop": false,
+    "duration_s": 0.189,
+    "suggested_volume_db": -9.5,
+    "max_voices": 2,
+    "notes": "Light stone footstep (heel tap + toe tap + grit); rotate the 4 variants, add +/-1.5 dB random volume and +/-4% pitch."
+  },
+  "land": {
+    "category": "movement",
+    "loop": false,
+    "duration_s": 0.463,
+    "suggested_volume_db": -6.5,
+    "max_voices": 3,
+    "notes": "Landing from a jump/knockback: low thump, dust and a small scuff."
+  },
+  "evade_whoosh": {
+    "category": "movement",
+    "loop": false,
+    "duration_s": 0.408,
+    "suggested_volume_db": -7.0,
+    "max_voices": 2,
+    "notes": "Quick body-evade swish: narrow cloth-like band sweep, low in level."
+  },
+  "dash_air": {
+    "category": "movement",
+    "loop": false,
+    "duration_s": 0.58,
+    "suggested_volume_db": -4.0,
+    "max_voices": 2,
+    "notes": "Air-propelled dash: pressure pop, bright rising sweep and a hissing tail."
+  },
+  "whoosh_light": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.294,
+    "suggested_volume_db": -7.0,
+    "max_voices": 3,
+    "notes": "Fast light strike swish; mid-high band sweep."
+  },
+  "whoosh_heavy": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.589,
+    "suggested_volume_db": -9.0,
+    "max_voices": 3,
+    "notes": "Heavy strike swing: lower, wider, with body and saturation."
+  },
+  "hit_light": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.219,
+    "suggested_volume_db": -3.0,
+    "max_voices": 4,
+    "notes": "Light impact: crisp click, slap and short body knock."
+  },
+  "hit_heavy": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.513,
+    "suggested_volume_db": -2.0,
+    "max_voices": 3,
+    "notes": "Heavy impact: crack, saturated body thud, crunch and room tail."
+  },
+  "block": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.323,
+    "suggested_volume_db": -2.5,
+    "max_voices": 3,
+    "notes": "Dull solid thud for a blocked hit. Dark, no ring, no top end; contrasts with deflect."
+  },
+  "deflect": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.862,
+    "suggested_volume_db": -3.0,
+    "max_voices": 3,
+    "notes": "Bright clean ring/ping for a successful deflect. Rewarding, distinct from block."
+  },
+  "perfect_deflect": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.897,
+    "suggested_volume_db": -1.5,
+    "max_voices": 2,
+    "notes": "Deflect ping plus a short rising crystalline shimmer; the premium variant."
+  },
+  "control_lost": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 0.583,
+    "suggested_volume_db": -8.0,
+    "max_voices": 2,
+    "notes": "Strained descending grind: jittery detuned buzz with a downward formant, for loss of elemental control."
+  },
+  "guard_break": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 1.097,
+    "suggested_volume_db": 0.0,
+    "max_voices": 2,
+    "notes": "Guard shattered: sharp crack, stone/glass fragments, descending break tone and low boom."
+  },
+  "knockdown": {
+    "category": "combat",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -1.0,
+    "max_voices": 2,
+    "notes": "Body slam to the ground: big thud, smaller bounce, gravel slide and dust."
+  },
+  "stone_rip": {
+    "category": "earth",
+    "loop": false,
+    "duration_s": 1.002,
+    "suggested_volume_db": -3.5,
+    "max_voices": 2,
+    "notes": "Stone pulled out of the ground: initial crack then stick-slip grind and a release pop."
+  },
+  "stone_launch": {
+    "category": "earth",
+    "loop": false,
+    "duration_s": 0.747,
+    "suggested_volume_db": -6.0,
+    "max_voices": 3,
+    "notes": "Stone thrown: low release thump with grit, then a receding whoosh."
+  },
+  "stone_impact_1": {
+    "category": "earth",
+    "loop": false,
+    "duration_s": 0.697,
+    "suggested_volume_db": -0.5,
+    "max_voices": 4,
+    "notes": "Boulder/stone hit: solid body thud, dead stone ring, a spray of debris."
+  },
+  "stone_impact_2": {
+    "category": "earth",
+    "loop": false,
+    "duration_s": 0.717,
+    "suggested_volume_db": -2.5,
+    "max_voices": 4,
+    "notes": "Stone hit, cracking/crumbling variant: split-crack, lower thump, more debris."
+  },
+  "stone_roll_loop": {
+    "category": "earth",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -16.5,
+    "max_voices": 2,
+    "notes": "Boulder rolling: lumpy low rumble, gritty mids, pebble ticks (loop 2.0 s)."
+  },
+  "wall_raise": {
+    "category": "earth",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -2.5,
+    "max_voices": 2,
+    "notes": "Stone wall rising: building rumble and grind, then a heavy slam with debris."
+  },
+  "wall_crumble": {
+    "category": "earth",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -4.0,
+    "max_voices": 2,
+    "notes": "Wall collapsing: cracks, falling blocks, dense then thinning rubble and dust."
+  },
+  "heat_crackle_loop": {
+    "category": "thermal",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -14.5,
+    "max_voices": 2,
+    "notes": "Stone heating: ticks, resonant cracks, faint sizzle (loop 2.0 s)."
+  },
+  "melt_rise": {
+    "category": "thermal",
+    "loop": false,
+    "duration_s": 1.106,
+    "suggested_volume_db": -5.5,
+    "max_voices": 2,
+    "notes": "Stone becoming molten: heat swell opening up, glowing tone, bubbles emerging (~1.1 s)."
+  },
+  "lava_bubble_loop": {
+    "category": "thermal",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -16.5,
+    "max_voices": 2,
+    "notes": "Thick, low viscous bubbling with soft pops and faint crackle (loop 2.0 s)."
+  },
+  "lava_wave_loop": {
+    "category": "thermal",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -13.5,
+    "max_voices": 2,
+    "notes": "Rushing viscous lava flow: dark thick surge with slow swells and slow gurgle (loop 2.0 s)."
+  },
+  "lava_splat": {
+    "category": "thermal",
+    "loop": false,
+    "duration_s": 0.697,
+    "suggested_volume_db": -5.0,
+    "max_voices": 3,
+    "notes": "Lava poured onto the ground: wet slap, low thud, viscous blobs and sizzle."
+  },
+  "crust_hiss": {
+    "category": "thermal",
+    "loop": false,
+    "duration_s": 1.05,
+    "suggested_volume_db": -11.5,
+    "max_voices": 2,
+    "notes": "Cooling crust forming: hiss with sparse ticks over a dull warm body (~1 s). Darker and more crackly than steam_hiss."
+  },
+  "cool_crack": {
+    "category": "thermal",
+    "loop": false,
+    "duration_s": 0.737,
+    "suggested_volume_db": -6.0,
+    "max_voices": 3,
+    "notes": "Rock cracking as it sets: quick series of dwindling resonant cracks and a tiny settle."
+  },
+  "heat_draw_loop": {
+    "category": "thermal",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -15.0,
+    "max_voices": 2,
+    "notes": "Tonal inward-pulling whoosh: endlessly rising Shepard glide under a breathy inhale (loop 2.0 s)."
+  },
+  "vent_heat": {
+    "category": "thermal",
+    "loop": false,
+    "duration_s": 0.932,
+    "suggested_volume_db": -6.5,
+    "max_voices": 2,
+    "notes": "Exhaling flame burst: soft-attack breathy roar with pressure thump and dwindling crackle."
+  },
+  "water_draw_loop": {
+    "category": "water",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -12.0,
+    "max_voices": 2,
+    "notes": "Water being drawn in: flowing band, rolling swirl resonance, bubbly plinks (loop 2.0 s)."
+  },
+  "water_whip": {
+    "category": "water",
+    "loop": false,
+    "duration_s": 0.451,
+    "suggested_volume_db": -4.5,
+    "max_voices": 3,
+    "notes": "Water lash: fast rising whoosh into a sharp wet crack, then droplet spray."
+  },
+  "water_splash": {
+    "category": "water",
+    "loop": false,
+    "duration_s": 0.822,
+    "suggested_volume_db": -5.0,
+    "max_voices": 3,
+    "notes": "Splash: bright noise burst that darkens, droplet/bubble scatter, watery body."
+  },
+  "water_shield_loop": {
+    "category": "water",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -15.5,
+    "max_voices": 1,
+    "notes": "Water barrier: smooth shimmering flow, glassy partials and liquid wobble (loop 2.0 s)."
+  },
+  "freeze": {
+    "category": "water",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -7.0,
+    "max_voices": 2,
+    "notes": "Water crystallizing: dense glassy crunch grains, icy twinkles, cold hiss (~0.9 s)."
+  },
+  "ice_shatter": {
+    "category": "water",
+    "loop": false,
+    "duration_s": 0.957,
+    "suggested_volume_db": -1.0,
+    "max_voices": 3,
+    "notes": "Ice breaking: bright crack, small body knock, shower of glassy shards."
+  },
+  "ice_melt_drip": {
+    "category": "water",
+    "loop": false,
+    "duration_s": 0.892,
+    "suggested_volume_db": -11.5,
+    "max_voices": 3,
+    "notes": "Three melting drips with a faint trickle and small-room echo."
+  },
+  "steam_hiss": {
+    "category": "water",
+    "loop": false,
+    "duration_s": 1.0,
+    "suggested_volume_db": -8.5,
+    "max_voices": 2,
+    "notes": "Pure breathy steam release: bright hiss with air band and gentle flutter (~1 s)."
+  },
+  "fire_jab": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 0.32,
+    "suggested_volume_db": -3.5,
+    "max_voices": 3,
+    "notes": "Quick flame punch: sharp flare burst, snappy thump, pops and a short ember tail."
+  },
+  "fire_charge_loop": {
+    "category": "fire",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -14.0,
+    "max_voices": 1,
+    "notes": "Fire energy building: low roar with flutter, flame hiss and crackle, subtle rising tone (loop 2.0 s)."
+  },
+  "fire_release": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -1.5,
+    "max_voices": 2,
+    "notes": "Fire blast release: pressure thump, wide roar that falls in pitch, whoosh, crackle tail."
+  },
+  "fire_ignite": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 0.892,
+    "suggested_volume_db": -6.5,
+    "max_voices": 3,
+    "notes": "Ignition: spark flick, a soft gas 'whump' flare, settling crackle."
+  },
+  "lightning_charge_loop": {
+    "category": "lightning",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -11.5,
+    "max_voices": 1,
+    "notes": "Building electrical buzz: beating mains-style hum, bright spark ticks and a rising whine (loop 2.0 s)."
+  },
+  "lightning_strike": {
+    "category": "lightning",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": 0.0,
+    "max_voices": 2,
+    "notes": "Sharp crack with zap, low boom and a buzzy sizzling tail."
+  },
+  "lightning_redirect": {
+    "category": "lightning",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -0.5,
+    "max_voices": 2,
+    "notes": "Strike that twists mid-air: first crack, warbling pitch-bent buzz, a second rising zap."
+  },
+  "conduct_buzz": {
+    "category": "lightning",
+    "loop": false,
+    "duration_s": 0.6,
+    "suggested_volume_db": -4.5,
+    "max_voices": 2,
+    "notes": "Short electrical buzz crossing water/metal: gated harmonic buzz, metallic ring, sparks."
+  },
+  "air_push": {
+    "category": "air",
+    "loop": false,
+    "duration_s": 0.56,
+    "suggested_volume_db": -5.0,
+    "max_voices": 3,
+    "notes": "Palm air push: low pressure pulse, quick band-passed gust, airy tail."
+  },
+  "air_gust": {
+    "category": "air",
+    "loop": false,
+    "duration_s": 0.903,
+    "suggested_volume_db": -8.0,
+    "max_voices": 2,
+    "notes": "Wide wind gust: swelling resonant band with turbulence, breathy body and airy top."
+  },
+  "glide_loop": {
+    "category": "air",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -18.0,
+    "max_voices": 1,
+    "notes": "Gentle gliding wind: smooth wandering resonances, no events (loop 2.0 s)."
+  },
+  "ui_tap": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.109,
+    "suggested_volume_db": -5.5,
+    "max_voices": 4,
+    "notes": "Soft tick for taps and hovers."
+  },
+  "ui_select": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.398,
+    "suggested_volume_db": -10.0,
+    "max_voices": 3,
+    "notes": "Confirm: soft rising pair (D5 to A5)."
+  },
+  "ui_back": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.398,
+    "suggested_volume_db": -12.5,
+    "max_voices": 3,
+    "notes": "Back/cancel: softer falling pair (A5 to D5), a little darker."
+  },
+  "element_earth": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.34,
+    "suggested_volume_db": -11.0,
+    "max_voices": 2,
+    "notes": "Earth motif: low warm A3-D4 pluck pair with a stone knock."
+  },
+  "element_water": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.34,
+    "suggested_volume_db": -10.0,
+    "max_voices": 2,
+    "notes": "Water motif: falling droplet-like D5-A4 ripple, soft vibrato glass."
+  },
+  "element_fire": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.34,
+    "suggested_volume_db": -8.5,
+    "max_voices": 2,
+    "notes": "Fire motif: quick rising D4-F#4-A4-D5 arpeggio, bright with a crackle accent."
+  },
+  "element_air": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.34,
+    "suggested_volume_db": -10.5,
+    "max_voices": 2,
+    "notes": "Air motif: high breathy A5-E6 sigh with a soft upward glide."
+  },
+  "unlock": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 1.45,
+    "suggested_volume_db": -4.5,
+    "max_voices": 1,
+    "notes": "Warm reward motif: rising D-major pentatonic bell arpeggio resolving to a soft chord."
+  },
+  "challenge_fail": {
+    "category": "ui",
+    "loop": false,
+    "duration_s": 0.892,
+    "suggested_volume_db": -7.5,
+    "max_voices": 1,
+    "notes": "Restrained fail cue: muted falling F4-D4 pluck pair over a soft low knock; no buzzer."
+  },
+  "amb_courtyard_loop": {
+    "category": "ambience",
+    "loop": true,
+    "duration_s": 3.0,
+    "suggested_volume_db": -8.5,
+    "max_voices": 1,
+    "notes": "Quiet courtyard bed: distant airy wind and soft leaf-rustle air, very low level (-18 dBFS peak) (loop 3.0 s)."
+  }
+}
