@@ -39,6 +39,9 @@ var _launch_body := -1
 var _challenge_n := 0
 var _seed := 1
 var _paused := false
+var quality := 2             # 2 high, 1 medium, 0 low
+var _auto_quality := true
+var _q_timer := 0.0
 
 
 func _ready() -> void:
@@ -91,6 +94,9 @@ func _ready() -> void:
 			settings.show_debug = true
 		elif arg.begins_with("--seed="):
 			_seed = int(arg.substr(7))
+		elif arg.begins_with("--quality="):
+			quality = int(arg.substr(10))
+			_auto_quality = false
 	if autoplay:
 		start = autoplay.scenario
 	load_scenario(start)
@@ -110,7 +116,8 @@ func load_scenario(id: String) -> void:
 	_launch_body = -1
 	_challenge_n = 0
 	intents.clear()
-	arena_view.build(world.arena, 1)
+	arena_view.build(world.arena, quality)
+	_apply_quality()
 	body_views.bind(world)
 	for f in fighters.values():
 		f.queue_free()
@@ -141,6 +148,36 @@ func load_scenario(id: String) -> void:
 	progress.save()
 	if autoplay:
 		autoplay.bind(self)
+
+
+## Quality tiers trade secondary cost (resolution, shadows, glow) before ever touching
+## input handling or attack readability.
+func _apply_quality() -> void:
+	var vp := get_viewport()
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = [0.7, 0.85, 1.0][quality]
+	arena_view.set_quality(quality)
+	if arena_view.env and arena_view.env.environment:
+		arena_view.env.environment.glow_enabled = quality >= 1
+	vp.msaa_3d = Viewport.MSAA_2X if quality >= 2 else Viewport.MSAA_DISABLED
+
+
+func _adapt_quality(dt: float) -> void:
+	## Sustained frame-time p95 over budget for 4 s steps quality down (never up mid-session).
+	if not _auto_quality or quality == 0:
+		return
+	if perf.total_frames < 240:
+		return
+	var st := perf.stats()
+	if float(st.p95_ms) > 18.5:
+		_q_timer += dt
+		if _q_timer > 4.0:
+			quality -= 1
+			_q_timer = 0.0
+			_apply_quality()
+			print("[quality] stepped down to %d (p95 %.1f ms)" % [quality, st.p95_ms])
+	else:
+		_q_timer = 0.0
 
 
 func _apply_settings() -> void:
@@ -306,6 +343,7 @@ func _process(dt: float) -> void:
 	if world == null:
 		return
 	perf.frame(dt)
+	_adapt_quality(dt)
 	var alpha := Engine.get_physics_interpolation_fraction()
 	for a in world.actors:
 		fighters[a.id].render(a, alpha, dt)

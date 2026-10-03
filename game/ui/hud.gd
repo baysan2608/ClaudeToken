@@ -108,11 +108,39 @@ func _draw() -> void:
 			draw_rect(get_viewport_rect(), col)
 	_threat_arrows(sr, s)
 	if show_debug:
+		_timing_bars(s)
 		var dy := y + 60 * s
 		for line in debug_lines:
 			draw_string(_font, Vector2(x, dy), line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * s), Color(0.85, 1.0, 0.85, 0.9))
 			dy += 14 * s
 		draw_string(_font, Vector2(sr.end.x - 260 * s, sr.end.y - 50 * s), perf_text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * s), Color(0.85, 1.0, 0.85, 0.9))
+
+
+func _timing_bars(s: float) -> void:
+	## Practice overlay: each fighter's current move as startup / active / recovery segments.
+	if cam == null:
+		return
+	for a in world.actors:
+		var inst := a.action
+		if inst == null or inst.id == "guard":
+			continue
+		var sp: Variant = cam.world_to_screen(a.pos + Vector3(0, 2.1, 0))
+		if sp == null:
+			continue
+		var su := float(inst.data.get("startup", inst.def.startup))
+		var ac := float(inst.data.get("active", inst.def.active))
+		var rc := float(inst.def.recovery)
+		var tot := maxf(su + ac + rc, 0.01)
+		var w := 90.0 * s
+		var o: Vector2 = (sp as Vector2) - Vector2(w * 0.5, 0)
+		draw_rect(Rect2(o, Vector2(w * su / tot, 5 * s)), Color(1.0, 0.85, 0.3, 0.85))
+		draw_rect(Rect2(o + Vector2(w * su / tot, 0), Vector2(w * ac / tot, 5 * s)), Color(1.0, 0.35, 0.3, 0.9))
+		draw_rect(Rect2(o + Vector2(w * (su + ac) / tot, 0), Vector2(w * rc / tot, 5 * s)), Color(0.6, 0.6, 0.65, 0.8))
+		var elapsed := inst.total
+		if inst.phase == ActionInst.P.CHARGE or inst.phase == ActionInst.P.CHANNEL:
+			elapsed = su
+		draw_rect(Rect2(o + Vector2(w * clampf(elapsed / tot, 0.0, 1.0) - 1.0, -3 * s), Vector2(2, 11 * s)), Color.WHITE)
+		draw_string(_font, o + Vector2(0, -5 * s), "%s %s" % [inst.id, inst.phase_name()], HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * s), Color(1, 1, 1, 0.8))
 
 
 func _threat_arrows(sr: Rect2, s: float) -> void:
