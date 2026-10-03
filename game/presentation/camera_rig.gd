@@ -21,6 +21,7 @@ var _idle := 0.0
 var _shake := 0.0
 var _shake_t := 0.0
 var _focus := Vector3.ZERO
+var _lift := 0.0               # extra pitch when walls pull the camera in
 
 
 func _ready() -> void:
@@ -81,11 +82,20 @@ func update_rig(dt: float, player_pos: Vector3, target_pos: Variant, threat_pos:
 	if target_pos != null:
 		var sep := (target_pos as Vector3).distance_to(player_pos)
 		want_dist = clampf(distance + (sep - 8.0) * 0.12, distance - 0.6, distance + 1.6)
-	# Collision: never place the camera inside arena geometry.
-	var dir := _offset_dir()
-	var desired := _pivot + dir * want_dist
-	var t := arena.segment_hit(_pivot, desired, 0.3) if arena != null else -1.0
+	# Collision: never place the camera inside arena geometry. When a wall pulls it in,
+	# rise and look down over the fighter instead of filling the screen with their back.
+	# Measure the obstruction along the un-lifted direction (stable, no oscillation).
+	var f0 := forward_flat()
+	var base_dir := (-f0 * cos(pitch) + Vector3.UP * sin(pitch)).normalized()
+	var t := arena.segment_hit(_pivot, _pivot + base_dir * want_dist, 0.3) if arena != null else -1.0
 	var limit := want_dist if t < 0.0 else maxf(0.8, want_dist * t - 0.15)
+	var dir := base_dir
+	var want_lift := clampf(1.0 - limit / want_dist, 0.0, 1.0) * 0.75
+	_lift = lerpf(_lift, want_lift, 1.0 - exp(-(10.0 if want_lift > _lift else 2.5) * dt))
+	if _lift > 0.01:
+		dir = _offset_dir()
+		var t2 := arena.segment_hit(_pivot, _pivot + dir * want_dist, 0.3)
+		limit = want_dist if t2 < 0.0 else maxf(0.8, want_dist * t2 - 0.15)
 	if limit < _cur_dist:
 		_cur_dist = limit  # pull in immediately
 	else:
@@ -100,7 +110,8 @@ func update_rig(dt: float, player_pos: Vector3, target_pos: Variant, threat_pos:
 
 func _offset_dir() -> Vector3:
 	var f := forward_flat()
-	return (-f * cos(pitch) + Vector3.UP * sin(pitch)).normalized()
+	var p := minf(pitch + _lift, 1.2)
+	return (-f * cos(p) + Vector3.UP * sin(p)).normalized()
 
 
 func _update_transform(shake_off: Vector3) -> void:
