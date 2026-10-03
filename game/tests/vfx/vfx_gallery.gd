@@ -548,9 +548,9 @@ func _station_arena(o: Vector3) -> Dictionary:
 	g_wet.mesh = pm
 	g_wet.position = o + Vector3(4, 0.01, 0)
 	var wm := VfxMaterials.make("arena_ground")
+	wm.set_shader_parameter("wetness", 0.8)
 	g_wet.material_override = wm
 	add_child(g_wet)
-	g_wet.set_instance_shader_parameter("wetness", 0.8)
 	# metal deck
 	var deck := MeshInstance3D.new()
 	var dm := PlaneMesh.new()
@@ -600,33 +600,35 @@ func _station_arena(o: Vector3) -> Dictionary:
 func _station_hero(o: Vector3) -> Dictionary:
 	# A composite "courtyard" frame: ledge + lava cascade, heated / molten stones, rising wall with
 	# dust, frozen water whip, fire burst, lightning, air push, steam, scorch + wet marks.
-	var ledge := MeshInstance3D.new()
-	var lb := BoxMesh.new()
-	lb.size = Vector3(3.2, 0.5, 2.2)
-	ledge.mesh = lb
-	ledge.position = o + Vector3(-5.6, 0.25, -1.6)
-	ledge.material_override = VfxMaterials.make("ledge_stone")
-	add_child(ledge)
-	# lava cascade: runs along the ledge top then steps down and across the floor
-	var pts := PackedVector3Array()
-	var ws := PackedFloat32Array()
-	for i in 4:
-		pts.append(o + Vector3(-6.8 + i * 0.5, 0.5, -1.6))
-		ws.append(0.9)
-	pts.append(o + Vector3(-4.85, 0.5, -1.6))
-	ws.append(1.1)
-	pts.append(o + Vector3(-4.7, 0.0, -1.55))
-	ws.append(1.25)
-	for i in 6:
-		var t: float = float(i) / 5.0
-		pts.append(o + Vector3(-4.2 + i * 0.55, 0.0, -1.5 + t * 1.0 + sin(t * 3.0) * 0.2))
-		ws.append(1.3 + t * 0.2)
-	var lava := LavaWaveView.new()
-	add_child(lava)
-	lava.pattern_seed = 3.3
-	lava.set_path(pts, ws)
-	lava.set_state(1.0, 0.1, 1.0)
-	_track(lava)
+	if not _skip.has("ledge"):
+		var ledge := MeshInstance3D.new()
+		var lb := BoxMesh.new()
+		lb.size = Vector3(3.2, 0.5, 2.2)
+		ledge.mesh = lb
+		ledge.position = o + Vector3(-5.6, 0.25, -1.6)
+		ledge.material_override = VfxMaterials.make("ledge_stone")
+		add_child(ledge)
+	if not _skip.has("lava"):
+		# lava cascade: runs along the ledge top then steps down and across the floor
+		var pts := PackedVector3Array()
+		var ws := PackedFloat32Array()
+		for i in 4:
+			pts.append(o + Vector3(-6.8 + i * 0.5, 0.5, -1.6))
+			ws.append(0.9)
+		pts.append(o + Vector3(-4.85, 0.5, -1.6))
+		ws.append(1.1)
+		pts.append(o + Vector3(-4.7, 0.0, -1.55))
+		ws.append(1.25)
+		for i in 6:
+			var t: float = float(i) / 5.0
+			pts.append(o + Vector3(-4.2 + i * 0.55, 0.0, -1.5 + t * 1.0 + sin(t * 3.0) * 0.2))
+			ws.append(1.3 + t * 0.2)
+		var lava := LavaWaveView.new()
+		add_child(lava)
+		lava.pattern_seed = 3.3
+		lava.set_path(pts, ws)
+		lava.set_state(1.0, 0.1, 1.0)
+		_track(lava)
 	# stones
 	var s1 := StoneView.new()
 	s1.use_light = not _skip.has("stonelight")
@@ -646,12 +648,13 @@ func _station_hero(o: Vector3) -> Dictionary:
 	add_child(s3)
 	s3.position = o + Vector3(-2.2, 0.26, 2.7)
 	s3.set_thermal(0.0, 0.0)
-	# steam where the lava meets the wet stone
-	var sf := SteamFX.new()
-	add_child(sf)
-	_track(sf)
-	sf.play(o + Vector3(-2.3, 0.1, -1.0), 1.0)
-	sf.advance(0.45)
+	if not _skip.has("steam"):
+		# steam where the lava meets the wet stone
+		var sf := SteamFX.new()
+		add_child(sf)
+		_track(sf)
+		sf.play(o + Vector3(-2.3, 0.1, -1.0), 1.0)
+		sf.advance(0.45)
 	# earth wall rising with dust
 	var wall := EarthWallView.new()
 	add_child(wall)
@@ -660,31 +663,32 @@ func _station_hero(o: Vector3) -> Dictionary:
 	wall.manual_time = true
 	_manual.append(wall)
 	wall.set_rise(0.62)
-	# frozen water whip arcing to the right of the wall
-	var wp := PackedVector3Array()
-	var wr := PackedFloat32Array()
-	for i in 16:
-		var t: float = float(i) / 15.0
-		wp.append(o + Vector3(1.8 + t * 2.4, 0.5 + 1.1 * sin(t * PI) * (1.0 - 0.3 * t), 1.6 - t * 0.8))
-		wr.append(lerpf(0.11, 0.06, t))
-	var wh := WaterRibbonView.new()
-	add_child(wh)
-	wh.set_points(wp, wr)
-	wh.set_state(0.0)
-	_track(wh)
-	var wh2 := WaterRibbonView.new()
-	add_child(wh2)
-	var wp2 := PackedVector3Array()
-	for p in wp:
-		wp2.append(p + Vector3(0.0, 0.0, 1.1))
-	wh2.set_points(wp2, wr)
-	wh2.set_state(0.85)
-	_track(wh2)
-	var orb := WaterBlobView.new()
-	orb.setup(0.3)
-	add_child(orb)
-	orb.position = o + Vector3(1.3, 0.8, 2.6)
-	_track(orb)
+	if not _skip.has("water"):
+		# frozen water whip arcing to the right of the wall
+		var wp := PackedVector3Array()
+		var wr := PackedFloat32Array()
+		for i in 16:
+			var t: float = float(i) / 15.0
+			wp.append(o + Vector3(1.8 + t * 2.4, 0.5 + 1.1 * sin(t * PI) * (1.0 - 0.3 * t), 1.6 - t * 0.8))
+			wr.append(lerpf(0.11, 0.06, t))
+		var wh := WaterRibbonView.new()
+		add_child(wh)
+		wh.set_points(wp, wr)
+		wh.set_state(0.0)
+		_track(wh)
+		var wh2 := WaterRibbonView.new()
+		add_child(wh2)
+		var wp2 := PackedVector3Array()
+		for p in wp:
+			wp2.append(p + Vector3(0.0, 0.0, 1.1))
+		wh2.set_points(wp2, wr)
+		wh2.set_state(0.85)
+		_track(wh2)
+		var orb := WaterBlobView.new()
+		orb.setup(0.3)
+		add_child(orb)
+		orb.position = o + Vector3(1.3, 0.8, 2.6)
+		_track(orb)
 	# defender stand-ins
 	for x in [3.8, 5.0]:
 		var cm := MeshInstance3D.new()
@@ -717,27 +721,28 @@ func _station_hero(o: Vector3) -> Dictionary:
 		ap.play(o + Vector3(6.4, 1.0, 1.4), Vector3(-1, 0.0, -0.1), 1.3, 5.0)
 		ap.advance(0.2)
 		_track(ap)
-	# scorch + wet marks, dust on the floor, embers at the lava front
-	var sd := ScorchDecal.new()
-	add_child(sd)
-	sd.place(o + Vector3(5.0, 0.0, 0.4), 0.8, "scorch", 8.0)
-	sd.advance(0.4)
-	_track(sd)
-	var wd := ScorchDecal.new()
-	add_child(wd)
-	wd.place(o + Vector3(2.2, 0.0, 2.0), 0.9, "wet", 8.0)
-	wd.advance(0.4)
-	_track(wd)
-	var em := EmberFX.new()
-	add_child(em)
-	em.play(o + Vector3(-1.3, 0.3, -0.7), Vector3.UP, 1.0)
-	em.advance(0.3)
-	_track(em)
-	var dp := DustPuffFX.new()
-	add_child(dp)
-	dp.play(o + Vector3(-0.6, 0.0, 1.0), Vector3.UP, 0.8)
-	dp.advance(0.3)
-	_track(dp)
+	if not _skip.has("marks"):
+		# scorch + wet marks, dust on the floor, embers at the lava front
+		var sd := ScorchDecal.new()
+		add_child(sd)
+		sd.place(o + Vector3(5.0, 0.0, 0.4), 0.8, "scorch", 8.0)
+		sd.advance(0.4)
+		_track(sd)
+		var wd := ScorchDecal.new()
+		add_child(wd)
+		wd.place(o + Vector3(2.2, 0.0, 2.0), 0.9, "wet", 8.0)
+		wd.advance(0.4)
+		_track(wd)
+		var em := EmberFX.new()
+		add_child(em)
+		em.play(o + Vector3(-1.3, 0.3, -0.7), Vector3.UP, 1.0)
+		em.advance(0.3)
+		_track(em)
+		var dp := DustPuffFX.new()
+		add_child(dp)
+		dp.play(o + Vector3(-0.6, 0.0, 1.0), Vector3.UP, 0.8)
+		dp.advance(0.3)
+		_track(dp)
 	return {"shots": [
 		{"pos": o + Vector3(1.0, 6.6, 10.4), "look": o + Vector3(0.2, 0.5, 0.0), "frames": 3, "dt": 0.0, "fov": 46.0},
 		{"pos": o + Vector3(-3.4, 2.2, 5.6), "look": o + Vector3(-3.8, 0.4, 0.2), "frames": 1, "dt": 0.0, "fov": 38.0},

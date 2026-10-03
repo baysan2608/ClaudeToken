@@ -10,7 +10,7 @@ uniform vec3 metal_color : source_color = vec3(0.22, 0.23, 0.25);
 uniform float bolt_radius = 0.032;
 uniform float bolt_inset = 0.085;
 uniform float rust : hint_range(0.0, 1.0) = 0.12;
-instance uniform float wetness : hint_range(0.0, 1.0) = 0.0;
+uniform float wetness : hint_range(0.0, 1.0) = 0.0;   // 0 dry .. 1 soaked (see VfxMaterials.set_arena_wetness)
 
 varying vec3 v_world;
 

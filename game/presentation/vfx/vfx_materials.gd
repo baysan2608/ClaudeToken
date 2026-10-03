@@ -42,3 +42,18 @@ static func shared(shader_name: String) -> ShaderMaterial:
 		m = make(shader_name)
 		_shared[shader_name] = m
 	return m
+
+
+const ARENA_SHADERS: Array[String] = ["arena_ground", "metal_plate", "ledge_stone", "pool_water"]
+
+
+## Shared arena material (arena_ground / metal_plate / ledge_stone / pool_water). One instance per
+## shader so wetness can be driven globally; duplicate() it for a local variation.
+static func arena(shader_name: String) -> ShaderMaterial:
+	return shared(shader_name)
+
+
+## "Global" wetness 0..1 for every shared arena surface (flagstones, metal, ledge stone).
+static func set_arena_wetness(w: float) -> void:
+	for n in ["arena_ground", "metal_plate", "ledge_stone"]:
+		shared(n).set_shader_parameter("wetness", clampf(w, 0.0, 1.0))

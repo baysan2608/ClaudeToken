@@ -11,7 +11,7 @@ uniform vec3 stone_a : source_color = vec3(0.47, 0.45, 0.41);
 uniform vec3 stone_b : source_color = vec3(0.36, 0.36, 0.37);
 uniform vec3 seam_color : source_color = vec3(0.10, 0.09, 0.09);
 uniform float grime : hint_range(0.0, 1.0) = 0.5;
-instance uniform float wetness : hint_range(0.0, 1.0) = 0.0;
+uniform float wetness : hint_range(0.0, 1.0) = 0.0;   // 0 dry .. 1 soaked (see VfxMaterials.set_arena_wetness)
 
 varying vec3 v_world;
 

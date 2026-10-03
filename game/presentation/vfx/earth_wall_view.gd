@@ -42,9 +42,11 @@ func setup(seed_value: int, width: float = 2.4, height: float = 1.0, thickness: 
 	_thick = maxf(thickness, 0.15)
 	_mi.mesh = VfxMesh.wall_mesh(seed_value)
 	_mi.scale = Vector3(_width * 0.5, _height, _thick * 2.0)
-	_mi.set_instance_shader_parameter("u_seed", float(absi(seed_value) % 977) + 0.5)
-	_mi.set_instance_shader_parameter("u_rise_height", 1.25)
-	_mi.set_instance_shader_parameter("u_detail", 2.2)
+	_apply()
+
+
+func _enter_tree() -> void:
+	# Instance uniforms written while the node was outside the tree are not reliable: re-push all.
 	_apply()
 
 
@@ -86,6 +88,13 @@ func reset() -> void:
 
 
 func _apply() -> void:
+	# every instance uniform is set explicitly (unset ones can read stale instance-buffer data)
+	_mi.set_instance_shader_parameter("u_seed", float(absi(_seed) % 977) + 0.5)
+	_mi.set_instance_shader_parameter("u_rise_height", 1.25)
+	_mi.set_instance_shader_parameter("u_detail", 2.2)
+	_mi.set_instance_shader_parameter("u_heat", 0.0)
+	_mi.set_instance_shader_parameter("u_melt", 0.0)
+	_mi.set_instance_shader_parameter("u_crust", 0.0)
 	_mi.set_instance_shader_parameter("u_rise", _rise)
 	_mi.set_instance_shader_parameter("u_damage", _damage)
 

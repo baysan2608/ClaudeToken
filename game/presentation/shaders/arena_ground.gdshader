@@ -3,9 +3,9 @@
 // Expects mostly horizontal (+Y up) surfaces; the layout is in world XZ so adjacent meshes line up.
 // Cost: 2 value-noise evaluations + tile hashing, no texture fetches.
 //
-// Wetness: set the per-instance `wetness` (0 dry .. 1 soaked) with
-//   mesh_instance.set_instance_shader_parameter("wetness", 0.6)
-// or override globally by assigning the `wetness_global` uniform on the material.
+// Wetness: the `wetness` uniform (0 dry .. 1 soaked). Use one shared material per look and call
+// VfxMaterials.set_arena_wetness(w) to change it for every arena surface at once ("global"), or
+// give a mesh its own material copy for local puddles.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
@@ -15,8 +15,7 @@ uniform vec3 stone_a : source_color = vec3(0.50, 0.47, 0.43);   // warm sandston
 uniform vec3 stone_b : source_color = vec3(0.38, 0.38, 0.38);   // cool grey granite
 uniform vec3 seam_color : source_color = vec3(0.12, 0.11, 0.10);
 uniform float wear : hint_range(0.0, 1.0) = 0.55;  // dust / scuffing amount
-uniform float wetness_global : hint_range(0.0, 1.0) = 0.0;
-instance uniform float wetness : hint_range(0.0, 1.0) = 0.0;
+uniform float wetness : hint_range(0.0, 1.0) = 0.0;   // 0 dry .. 1 soaked (see VfxMaterials.set_arena_wetness)
 
 varying vec3 v_world;
 
@@ -75,7 +74,7 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
 
 	// wetness: darker, glossy, puddling in the lower parts of stones and along seams
-	float wet = clamp(max(wetness, wetness_global), 0.0, 1.0);
+	float wet = clamp(wetness, 0.0, 1.0);
 	float puddle = smoothstep(0.35, 0.7, vnoise(p * 1.7 + 11.0) + seam * 0.25);
 	float w_amt = wet * mix(0.6, 1.0, puddle);
 	albedo *= mix(1.0, 0.52, w_amt);

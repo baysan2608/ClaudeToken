@@ -41,8 +41,12 @@ func setup(seed_value: int, radius: float) -> void:
 	_radius = maxf(radius, 0.01)
 	_mesh_inst.mesh = VfxMesh.rock_mesh(seed_value)
 	_mesh_inst.scale = Vector3.ONE * _radius
-	_mesh_inst.set_instance_shader_parameter("u_seed", float(absi(seed_value) % 977) + 0.5)
 	_apply()
+
+
+func _enter_tree() -> void:
+	# Instance uniforms written while the node was outside the tree are not reliable: re-push all.
+	_push_params()
 
 
 ## heat01: glowing crack network (0 = cold stone). melt01: softens into a molten blob.
@@ -90,9 +94,7 @@ func get_crust() -> float:
 
 
 func _apply() -> void:
-	_mesh_inst.set_instance_shader_parameter("u_heat", _heat)
-	_mesh_inst.set_instance_shader_parameter("u_melt", _melt)
-	_mesh_inst.set_instance_shader_parameter("u_crust", _crust)
+	_push_params()
 	var glow: float = clampf(0.75 * _heat + 0.45 * _melt, 0.0, 1.0) * (1.0 - 0.8 * _crust)
 	if use_light and glow > 0.12:
 		_light.visible = true
@@ -101,3 +103,17 @@ func _apply() -> void:
 		_light.light_color = Color(1.0, 0.36 + 0.3 * glow, 0.1 + 0.12 * glow)
 	else:
 		_light.visible = false
+
+
+## Every instance uniform is written explicitly: unset instance uniforms are NOT reliably
+## initialised to the shader default (stale instance-buffer data can show through).
+func _push_params() -> void:
+	var mi: MeshInstance3D = _mesh_inst
+	mi.set_instance_shader_parameter("u_seed", float(absi(_seed) % 977) + 0.5)
+	mi.set_instance_shader_parameter("u_heat", _heat)
+	mi.set_instance_shader_parameter("u_melt", _melt)
+	mi.set_instance_shader_parameter("u_crust", _crust)
+	mi.set_instance_shader_parameter("u_damage", 0.0)
+	mi.set_instance_shader_parameter("u_rise", 1.0)
+	mi.set_instance_shader_parameter("u_rise_height", 1.0)
+	mi.set_instance_shader_parameter("u_detail", 1.0)
