@@ -49,7 +49,7 @@ const DEFS := {
 		"range": 14.0, "damage": 24.0, "balance": 40.0, "conduct_budget": 26.0, "max_hops": 4,
 		"cost": 22.0, "anim": "lightning_release"},
 	"fire_tech": {"module": "fire", "element": 2, "startup": 0.12, "draw_startup": 0.35, "active": 0.08, "recovery": 0.26,
-		"cancel": 0.5, "reach": 6.0, "draw_range": 9.0, "heat_rate": 650.0, "draw_rate": 320.0,
+		"cancel": 0.5, "reach": 5.0, "draw_range": 9.0, "heat_rate": 650.0, "draw_rate": 320.0,
 		"grip": 0.9, "speed": 15.0, "damage": 13.0, "balance": 26.0,
 		"anim": "magma_hold", "anim_draw": "heat_draw", "anim_active": "pour"},
 	"pour": {"module": "fire", "element": 2, "startup": 0.25, "active": 0.05, "recovery": 0.35,

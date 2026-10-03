@@ -41,7 +41,7 @@ const SOLID_DOWN := 0.05
 const ICE_DOWN := 0.10
 const ICE_UP := 0.60
 ## Passive heat loss to ambient for exposed bodies: HU/s per kg^(2/3) per 100 °C above ambient.
-const AMBIENT_LOSS := 2.2
+const AMBIENT_LOSS := 0.6
 ## Molten material held by a magma-capable controller does not lose heat (upkeep is paid in Focus).
 const HOLD_UPKEEP_FOCUS := 3.0          # Focus per second while holding molten mass
 const QUENCH_RATE := 1400.0             # HU/s lava loses while touching water

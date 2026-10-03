@@ -11,7 +11,8 @@ extends RefCounted
 ##   target water / ice                      -> HEAT  (boil / melt)
 ##   no target and heat reserve > 40 HU      -> VENT
 
-const GRIP_WINDOW := 0.45      # after startup, how long the magma grip reaches for a stone
+const GRIP_WINDOW := 0.25      # after startup, how long the magma grip reaches for a stone
+const INCOMING_RANGE := 14.0   # incoming projectiles can be selected from this far
 const VENT_MIN := 40.0
 
 
@@ -26,14 +27,16 @@ static func preview(w: CombatWorld, a: ActorState, dir: Vector3) -> Dictionary:
 		if not w.los(a.chest(), hot.pos + Vector3(0, 0.3, 0)):
 			return {"mode": "DRAW", "body": hot.id, "ok": false, "reason": "sight"}
 		return {"mode": "DRAW", "body": hot.id, "ok": true, "reason": ""}
-	var stone := w.find_body(a, dir, float(d.reach) + 2.0, 55.0, func(b: MatBody) -> bool:
-		return b.is_stone() and b.form != Sim.Form.WALL and b.controller != a.id and b.phase != Sim.Phase.MOLTEN)
+	var stone := w.find_body(a, dir, INCOMING_RANGE, 40.0, func(b: MatBody) -> bool:
+		return b.is_stone() and b.is_projectile() and b.attack_owner != a.id and b.vel.dot(a.chest() - b.pos) > 0.0)
+	if stone == null:
+		stone = w.find_body(a, dir, float(d.draw_range), 55.0, func(b: MatBody) -> bool:
+			return b.is_stone() and b.form != Sim.Form.WALL and b.controller != a.id and b.phase != Sim.Phase.MOLTEN)
 	if stone != null:
 		if not a.has("magma"):
 			return {"mode": "HEAT", "body": stone.id, "ok": false, "reason": "technique"}
-		if stone.mass > a.max_control_mass:
-			return {"mode": "HEAT", "body": stone.id, "ok": false, "reason": "mass"}
-		return {"mode": "HEAT", "body": stone.id, "ok": true, "reason": ""}
+		# Too heavy is still attempted (the grip strains and fails); the HUD warns first.
+		return {"mode": "HEAT", "body": stone.id, "ok": true, "reason": "mass" if stone.mass > a.max_control_mass else ""}
 	var wet := w.find_body(a, dir, float(d.reach), 45.0, func(b: MatBody) -> bool:
 		return b.is_water() and b.form != Sim.Form.POOL and b.controller != a.id)
 	if wet != null:
@@ -194,6 +197,10 @@ static func _heat_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: Acto
 		# Magma grip: reach for the stone during the grip window only (early press = whiff).
 		var dist := a.chest().distance_to(b.pos)
 		if dist <= float(d.reach):
+			if b.mass > a.max_control_mass:
+				w.request_grip(a, b, 0.0, "magma_grip")   # emits control_fail (mass)
+				w.set_phase(a, inst, ActionInst.P.RECOVERY)
+				return
 			w.request_grip(a, b, w.grip_strength(a, b, float(d.grip), float(d.reach)), "magma_grip")
 		if inst.t > GRIP_WINDOW and w.get_body(inst.data.target).controller != a.id:
 			w.emit("whiff", {"actor": a.id, "move": "magma_grip", "body": b.id, "dist": dist})
