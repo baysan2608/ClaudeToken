@@ -16,13 +16,22 @@ var settings: GameSettings
 var hud: Node = null         # receives toast(text) / flash(kind)
 
 var _charge_fx := {}         # actor id -> Node (FireChargeFX / ChargeAimFX)
+var _transient: Array[Dictionary] = []   # short-lived driven views (water lash arcs)
 var _step_t := {}
 var _slowmo := 0.0
 
 
 func bind(w: CombatWorld) -> void:
 	world = w
+	if views and views.pool:
+		for n in _charge_fx.values():
+			if is_instance_valid(n):
+				views.pool.release(n)
+		for tr in _transient:
+			if is_instance_valid(tr.node):
+				views.pool.release(tr.node)
 	_charge_fx.clear()
+	_transient.clear()
 	if audio:
 		audio.stop_all_loops()
 
@@ -223,6 +232,9 @@ func _event(e: Dictionary) -> void:
 			pass
 		"lash":
 			audio.play("water_whip", _apos(a))
+			var rib := _fx("water_ribbon")
+			if rib:
+				_transient.append({"node": rib, "t": 0.0, "dur": 0.28, "actor": a, "dir": e.dir, "range": float(e.range)})
 			_call(_fx("splash"), "play", [_apos(a) + (e.dir as Vector3) * 2.5, Vector3.UP, 0.4])
 		"shield":
 			audio.play("water_splash", _apos(a), -6.0)
@@ -258,8 +270,37 @@ func _call(n: Node, m: String, args: Array) -> void:
 		n.callv(m, args)
 
 
+func _update_transient(dt: float) -> void:
+	for k in range(_transient.size() - 1, -1, -1):
+		var tr: Dictionary = _transient[k]
+		tr.t = float(tr.t) + dt
+		var n: Node = tr.node
+		if float(tr.t) >= float(tr.dur) or not is_instance_valid(n):
+			if is_instance_valid(n):
+				views.pool.release(n)
+			_transient.remove_at(k)
+			continue
+		# Water lash: an arc sweeping from the off side across the front.
+		var x := float(tr.t) / float(tr.dur)
+		var o := _hand(tr.actor)
+		var d: Vector3 = tr.dir
+		var side := d.cross(Vector3.UP)
+		var pts := PackedVector3Array()
+		var rad := PackedFloat32Array()
+		var reach := float(tr.range) * (0.4 + 0.6 * sin(x * PI))
+		for i in 8:
+			var u := float(i) / 7.0
+			var ang := lerpf(-1.1, 1.1, clampf(x * 1.6 - (1.0 - u) * 0.6, 0.0, 1.0))
+			var p := o + (d * cos(ang) + side * sin(ang)) * reach * u + Vector3(0, -0.4 * u, 0)
+			pts.append(p)
+			rad.append(lerpf(0.05, 0.11, u) * (1.0 - x * 0.5))
+		n.call("set_points", pts, rad)
+		n.call("set_state", 0.0)
+
+
 func update_continuous(dt: float) -> void:
 	## Per frame: loops and held effects driven by current state.
+	_update_transient(dt)
 	if _slowmo > 0.0:
 		_slowmo -= dt / maxf(Engine.time_scale, 0.1)
 		Engine.time_scale = 0.55 if _slowmo > 0.0 else 1.0
