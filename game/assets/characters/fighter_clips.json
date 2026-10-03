@@ -1,0 +1,331 @@
+{
+  "idle": {
+    "duration": 2.0,
+    "loop": true,
+    "contact": null,
+    "notes": "Relaxed ready stance, breathing; feet planted.",
+    "frames": 60
+  },
+  "stance_earth": {
+    "duration": 2.0,
+    "loop": true,
+    "contact": null,
+    "notes": "Wide low horse stance; slow heavy breathing, feet planted.",
+    "frames": 60
+  },
+  "stance_water": {
+    "duration": 2.4,
+    "loop": true,
+    "contact": null,
+    "notes": "Fluid weight shift; feet planted.",
+    "frames": 72
+  },
+  "stance_fire": {
+    "duration": 1.2,
+    "loop": true,
+    "contact": null,
+    "notes": "Forward pressure stance with light bounce.",
+    "frames": 36
+  },
+  "stance_air": {
+    "duration": 2.0,
+    "loop": true,
+    "contact": null,
+    "notes": "Light on the balls of the feet, open palms.",
+    "frames": 60
+  },
+  "walk": {
+    "duration": 0.9,
+    "loop": true,
+    "contact": null,
+    "notes": "Natural forward walk, relaxed opposite arm swing. In-place loop for ground speed 1.4 m/s: stride 1.26 m per cycle (two steps of 0.63 m); stance footprints move backwards at exactly 1.4 m/s, so feet do not skate when the root moves at that speed (scale playback by actual_speed / 1.4). Hips are lowered automatically wherever a planted leg would overstretch.",
+    "frames": 27
+  },
+  "run": {
+    "duration": 0.6,
+    "loop": true,
+    "contact": null,
+    "notes": "Forward run, forefoot-ish contacts, 90-degree arm drive, 12 deg lean. In-place loop for ground speed 5.5 m/s: stride 3.30 m per cycle (two steps of 1.65 m); stance footprints move backwards at exactly 5.5 m/s, so feet do not skate when the root moves at that speed (scale playback by actual_speed / 5.5). Hips are lowered automatically wherever a planted leg would overstretch.",
+    "frames": 18
+  },
+  "strafe_l": {
+    "duration": 0.9,
+    "loop": true,
+    "contact": null,
+    "notes": "Combat strafe to the character's left, guard up, facing forward. In-place loop for ground speed 1.1 m/s: stride 0.99 m per cycle (two steps of 0.50 m); stance footprints move backwards at exactly 1.1 m/s, so feet do not skate when the root moves at that speed (scale playback by actual_speed / 1.1). Hips are lowered automatically wherever a planted leg would overstretch.",
+    "frames": 27
+  },
+  "strafe_r": {
+    "duration": 0.9,
+    "loop": true,
+    "contact": null,
+    "notes": "Combat strafe to the character's right, guard up, facing forward. In-place loop for ground speed 1.1 m/s: stride 0.99 m per cycle (two steps of 0.50 m); stance footprints move backwards at exactly 1.1 m/s, so feet do not skate when the root moves at that speed (scale playback by actual_speed / 1.1). Hips are lowered automatically wherever a planted leg would overstretch.",
+    "frames": 27
+  },
+  "walk_back": {
+    "duration": 0.9,
+    "loop": true,
+    "contact": null,
+    "notes": "Backpedal with guard up, toe-first contacts. In-place loop for ground speed 1.0 m/s: stride 0.90 m per cycle (two steps of 0.45 m); stance footprints move backwards at exactly 1.0 m/s, so feet do not skate when the root moves at that speed (scale playback by actual_speed / 1.0). Hips are lowered automatically wherever a planted leg would overstretch.",
+    "frames": 27
+  },
+  "evade_l": {
+    "duration": 0.4667,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Quick low sidestep/hop to the character's left; feet leave the ground ~0.2-0.3 s, land on the stance spots. contact = apex of the dodge.",
+    "frames": 14
+  },
+  "evade_r": {
+    "duration": 0.4667,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Quick low sidestep/hop to the character's right. contact = apex of the dodge.",
+    "frames": 14
+  },
+  "evade_back": {
+    "duration": 0.4667,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Backward hop with lean away, low silhouette. contact = apex of the dodge.",
+    "frames": 14
+  },
+  "evade_fwd": {
+    "duration": 0.4667,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Forward dive-step, head low. contact = apex of the dodge.",
+    "frames": 14
+  },
+  "jump": {
+    "duration": 0.3,
+    "loop": false,
+    "contact": 0.1667,
+    "notes": "Crouch, explosive extension, feet leave ground at contact (0.17 s). Ends in rising pose; blend to fall/glide.",
+    "frames": 9
+  },
+  "fall": {
+    "duration": 0.8,
+    "loop": true,
+    "contact": null,
+    "notes": "Airborne descent: arms up/out for balance, legs staggered and trailing. Loops.",
+    "frames": 24
+  },
+  "land": {
+    "duration": 0.3,
+    "loop": false,
+    "contact": 0.0667,
+    "notes": "Touchdown at contact (0.07 s), knees absorb, rise to ready. Feet planted from contact on.",
+    "frames": 9
+  },
+  "glide": {
+    "duration": 1.6,
+    "loop": true,
+    "contact": null,
+    "notes": "Arms spread, body pitched ~35 deg forward, legs trailing; gentle wing flutter. Loops.",
+    "frames": 48
+  },
+  "air_dash": {
+    "duration": 0.3,
+    "loop": false,
+    "contact": 0.1333,
+    "notes": "Burst: tuck then streamline forward (superman). Hold last pose or blend to glide/fall.",
+    "frames": 9
+  },
+  "guard": {
+    "duration": 1.6,
+    "loop": true,
+    "contact": null,
+    "notes": "Held block: forearms up in front of face/chest, knees bent; slight tension breathing.",
+    "frames": 48
+  },
+  "deflect": {
+    "duration": 0.3667,
+    "loop": false,
+    "contact": 0.0667,
+    "notes": "Sharp cross-body parry with hip turn; contact = hand meets the strike.",
+    "frames": 11
+  },
+  "earth_wall": {
+    "duration": 0.4,
+    "loop": false,
+    "contact": 0.1667,
+    "notes": "Stomp (contact 0.17 s) then both palms rise to push up the wall. Starts/ends in earth stance.",
+    "frames": 12
+  },
+  "hit_front": {
+    "duration": 0.3667,
+    "loop": false,
+    "contact": 0.0667,
+    "notes": "Hit from the front: chest and head snap back, arms jerk up; feet planted. contact = impact frame.",
+    "frames": 11
+  },
+  "hit_back": {
+    "duration": 0.3667,
+    "loop": false,
+    "contact": 0.0667,
+    "notes": "Hit from behind: arches back, head thrown up, arms swing back; feet planted.",
+    "frames": 11
+  },
+  "hit_heavy": {
+    "duration": 0.6,
+    "loop": false,
+    "contact": 0.1,
+    "notes": "Big balance loss: thrown back, front foot leaves ground, arms fling wide, stumbles forward and recovers.",
+    "frames": 18
+  },
+  "knockdown": {
+    "duration": 0.7,
+    "loop": false,
+    "contact": 0.0667,
+    "notes": "Struck, tumbles backward, slams the ground (~0.55 s) and settles lying on the back; ends on LYING pose. contact = first impact. Body extends ~0.9 m behind and ~0.7 m ahead of root.",
+    "frames": 21
+  },
+  "getup": {
+    "duration": 0.8,
+    "loop": false,
+    "contact": null,
+    "notes": "Lying on back -> heels pulled in -> sit-up -> squat -> stand into the idle ready pose. Feet planted on the idle spots from 0.17 s. contact = null.",
+    "frames": 24
+  },
+  "stagger": {
+    "duration": 0.5,
+    "loop": false,
+    "contact": 0.1,
+    "notes": "Off-balance wobble in place: arms out, knees give, foot re-plants. Light reaction.",
+    "frames": 15
+  },
+  "earth_lift": {
+    "duration": 0.4,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Stomp (0.1 s), hands drive up pulling a stone: contact = stone pops (0.2 s). Starts/ends in earth stance.",
+    "frames": 12
+  },
+  "earth_throw": {
+    "duration": 0.4667,
+    "loop": false,
+    "contact": 0.1667,
+    "notes": "Driving straight punch/push with the right hand; hips drive forward, feet planted. contact = fist lands (0.17 s).",
+    "frames": 14
+  },
+  "earth_heavy": {
+    "duration": 0.8,
+    "loop": false,
+    "contact": 0.4667,
+    "notes": "Scoop low, heave overhead, drive forward-down; contact at the end of the heave (0.47 s). Starts/ends in earth stance.",
+    "frames": 24
+  },
+  "earth_hold": {
+    "duration": 1.2,
+    "loop": true,
+    "contact": null,
+    "notes": "Both hands cupped around an invisible mass at chest height (mass centre ~ (0, 0.30 fwd, 1.2 m)); strained tremble. Loops.",
+    "frames": 36
+  },
+  "water_draw": {
+    "duration": 0.5,
+    "loop": false,
+    "contact": 0.3667,
+    "notes": "Flowing S-curve pull from low-and-back to high-and-forward; contact = water released at the top (0.37 s).",
+    "frames": 15
+  },
+  "water_hold": {
+    "duration": 1.6,
+    "loop": true,
+    "contact": null,
+    "notes": "Both hands circling a sphere of water in front of the chest (opposite phase), weight swaying; planted feet. Loops.",
+    "frames": 48
+  },
+  "water_whip": {
+    "duration": 0.5,
+    "loop": false,
+    "contact": 0.2333,
+    "notes": "Wide horizontal arm arc (right arm) with torso whip; contact = arm sweeps through the front (0.23 s).",
+    "frames": 15
+  },
+  "water_freeze": {
+    "duration": 0.4,
+    "loop": false,
+    "contact": 0.2667,
+    "notes": "Reach out with open hands then clench both fists with a shoulder-tensed squeeze; contact = clench (0.27 s).",
+    "frames": 12
+  },
+  "water_shield": {
+    "duration": 1.6,
+    "loop": true,
+    "contact": null,
+    "notes": "Arms rounded in front like a ring/shield, hands slowly orbiting; low planted stance. Loops.",
+    "frames": 48
+  },
+  "fire_jab": {
+    "duration": 0.3,
+    "loop": false,
+    "contact": 0.1,
+    "notes": "Quick lead-hand jab, hips and shoulder snap forward; contact = fist extension (0.1 s).",
+    "frames": 9
+  },
+  "fire_charge": {
+    "duration": 0.8,
+    "loop": true,
+    "contact": null,
+    "notes": "Both fists chambered at the hips, torso coiled forward, tense vibration. Loops.",
+    "frames": 24
+  },
+  "fire_release": {
+    "duration": 0.4,
+    "loop": false,
+    "contact": 0.1,
+    "notes": "Double palm strike from the chambered pose; contact = palms land (0.1 s). Ends in fire stance.",
+    "frames": 12
+  },
+  "heat_draw": {
+    "duration": 1.6,
+    "loop": true,
+    "contact": null,
+    "notes": "Rooted stance; open palms slowly pull toward the chest (extracting heat) then push out. Loops.",
+    "frames": 48
+  },
+  "magma_hold": {
+    "duration": 0.8,
+    "loop": true,
+    "contact": null,
+    "notes": "Cupped hands around a glowing mass (centre ~ (0, 0.26 fwd, 1.0 m)), hunched, intense fast tremble. Loops.",
+    "frames": 24
+  },
+  "pour": {
+    "duration": 0.5,
+    "loop": false,
+    "contact": 0.2667,
+    "notes": "Raise, then push the mass down and sweep it forward along the ground; contact = mass hits the floor (0.27 s). Feet stay planted in the wide stance; starts/ends in the magma_hold stance.",
+    "frames": 15
+  },
+  "lightning_charge": {
+    "duration": 1.2,
+    "loop": true,
+    "contact": null,
+    "notes": "Both arms trace a vertical ring (r=0.25 m) in front of the chest with extended fingers; hands half a turn apart. Loops.",
+    "frames": 36
+  },
+  "lightning_release": {
+    "duration": 0.3667,
+    "loop": false,
+    "contact": 0.0667,
+    "notes": "Right-hand two-finger thrust; contact = fingertips land (0.07 s). Ends in a ready pose.",
+    "frames": 11
+  },
+  "air_push": {
+    "duration": 0.3667,
+    "loop": false,
+    "contact": 0.1333,
+    "notes": "Two-hand open palm push with a small pivot of the hips; stays on the balls of the feet; contact = palms release (0.13 s).",
+    "frames": 11
+  },
+  "air_gust": {
+    "duration": 0.6,
+    "loop": false,
+    "contact": 0.3667,
+    "notes": "Wind-up, airborne 360-degree pirouette on the balls of the feet, lands with a two-palm thrust; contact = landing + thrust (0.37 s). Hips/foot yaw end at -360 (== rest orientation).",
+    "frames": 18
+  }
+}

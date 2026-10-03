@@ -101,13 +101,21 @@ func _build_ground() -> void:
 	pm.size = Vector2(STATION_SPACING * 14.0, 60.0)
 	mi.mesh = pm
 	mi.position = Vector3(STATION_SPACING * 6.0, 0.0, 0.0)
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.50, 0.47, 0.43)
-	m.roughness = 0.9
-	mi.material_override = m
+	var gm: ShaderMaterial = VfxMaterials.make("arena_ground")
+	gm.set_shader_parameter("wear", 0.4)
+	mi.material_override = gm
 	mi.name = "Ground"
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
+
+
+func _matte(color: Color, rough: float = 0.9) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load("res://tests/vfx/gallery_matte.gdshader") as Shader
+	var lin: Color = color.srgb_to_linear()
+	m.set_shader_parameter("albedo", Vector3(lin.r, lin.g, lin.b))
+	m.set_shader_parameter("rough", rough)
+	return m
 
 
 func _track(fx: Node) -> void:
@@ -121,10 +129,7 @@ func _box(pos: Vector3, size: Vector3, color: Color, rough: float = 0.9) -> Mesh
 	bm.size = size
 	mi.mesh = bm
 	mi.position = pos
-	var m := StandardMaterial3D.new()
-	m.albedo_color = color
-	m.roughness = rough
-	mi.material_override = m
+	mi.material_override = _matte(color, rough)
 	add_child(mi)
 	return mi
 
@@ -147,12 +152,22 @@ func _label(text: String, pos: Vector3, size: float = 0.0028) -> void:
 func _register_stations() -> void:
 	_stations.append({"name": "stones", "fn": _station_stones})
 	_stations.append({"name": "lava", "fn": _station_lava})
+	_stations.append({"name": "water", "fn": _station_water})
+	_stations.append({"name": "particles", "fn": _station_particles})
+	_stations.append({"name": "fire", "fn": _station_fire})
+	_stations.append({"name": "lightning", "fn": _station_lightning})
+	_stations.append({"name": "air", "fn": _station_air})
+	_stations.append({"name": "wall", "fn": _station_wall})
+	_stations.append({"name": "arena", "fn": _station_arena})
+	_stations.append({"name": "hero", "fn": _station_hero})
 	_stations.append({"name": "empty", "fn": _station_empty})
 	_stations.append({"name": "emptybox", "fn": _station_emptybox})
 
 
 func _run() -> void:
-	await get_tree().process_frame
+	# warm-up: let the renderer build pipelines / shadow maps before the first capture
+	for _i in 10:
+		await get_tree().process_frame
 	for i in _stations.size():
 		var st: Dictionary = _stations[i]
 		if not _only.is_empty() and not _only.has(st.name):
@@ -248,6 +263,7 @@ func _station_lava(o: Vector3) -> Dictionary:
 		var w := LavaWaveView.new()
 		add_child(w)
 		w.position = o
+		w.pattern_seed = float(i) * 1.7 + 0.3
 		w.set_path(pp[0], pp[1])
 		w.set_state(l[0], l[1], l[2])
 		_track(w)
@@ -270,12 +286,13 @@ func _station_lava(o: Vector3) -> Dictionary:
 	var wl := LavaWaveView.new()
 	add_child(wl)
 	wl.position = o
+	wl.pattern_seed = 7.1
 	wl.set_path(pts, ws)
 	wl.set_state(1.0, 0.15, 1.0)
 	_track(wl)
 	_label("ledge step 0.5 m", o + Vector3(-3.3, 1.2, zl))
 	return {"shots": [
-		{"pos": o + Vector3(-1.5, 3.4, 5.2), "look": o + Vector3(-0.8, 0.0, -0.4), "frames": 4, "dt": 0.25, "fov": 42.0},
+		{"pos": o + Vector3(-2.2, 4.6, 6.4), "look": o + Vector3(-0.8, 0.0, 0.2), "frames": 4, "dt": 0.25, "fov": 42.0},
 		{"pos": o + Vector3(-1.5, 1.0, 1.2), "look": o + Vector3(-1.2, 0.2, 0.3), "frames": 1, "dt": 0.0, "fov": 36.0},
 		{"pos": o + Vector3(1.8, 1.4, 4.4), "look": o + Vector3(-0.3, 0.2, 2.7), "frames": 1, "dt": 0.0, "fov": 34.0},
 	]}
@@ -288,3 +305,761 @@ func _station_empty(o: Vector3) -> Dictionary:
 func _station_emptybox(o: Vector3) -> Dictionary:
 	_box(o + Vector3(0, 0.5, 0), Vector3(1, 1, 1), Color(0.5, 0.5, 0.5))
 	return {"pos": o + Vector3(0, 3.4, 5.2), "look": o + Vector3(0, 0.0, 0.0), "frames": 10}
+
+
+func _whip_points(o: Vector3, z: float, phase: float) -> Array:
+	var pts := PackedVector3Array()
+	var rad := PackedFloat32Array()
+	var n: int = 18
+	for i in n:
+		var t: float = float(i) / float(n - 1)
+		var x: float = lerpf(-1.6, 1.5, t)
+		var y: float = 0.55 + 0.45 * sin(t * 4.2 + phase) * (0.3 + 0.7 * t)
+		var zz: float = z + 0.35 * sin(t * 6.0 + phase * 1.3)
+		pts.append(o + Vector3(x, y, zz))
+		rad.append(lerpf(0.11, 0.07, t) * (1.0 + 0.15 * sin(t * 9.0)))
+	return [pts, rad]
+
+
+func _station_water(o: Vector3) -> Dictionary:
+	var states: Array = [0.0, 0.5, 1.0]
+	for i in 3:
+		var pr: Array = _whip_points(o, -2.0 + i * 1.7, 0.4 + i * 0.5)
+		var wr := WaterRibbonView.new()
+		add_child(wr)
+		wr.set_points(pr[0], pr[1])
+		wr.set_state(states[i])
+		_track(wr)
+		_label("whip frozen %.1f" % states[i], o + Vector3(-1.9, 1.7, -2.0 + i * 1.7))
+	for i in 3:
+		var wb := WaterBlobView.new()
+		wb.setup(0.38)
+		add_child(wb)
+		wb.position = o + Vector3(-1.2 + i * 1.3, 0.55, 2.0)
+		wb.set_state(states[i])
+		_track(wb)
+		_label("orb frozen %.1f" % states[i], wb.position + Vector3(0, 0.7, 0))
+	# a backdrop so transparency has something to read against
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(8, 0.04, 6), Color(0.30, 0.29, 0.28))
+	_box(o + Vector3(0.0, 0.9, -3.4), Vector3(8, 1.8, 0.2), Color(0.34, 0.24, 0.18))
+	return {"shots": [
+		{"pos": o + Vector3(0.5, 3.2, 5.8), "look": o + Vector3(0, 0.5, 0.2), "frames": 3, "dt": 0.3, "fov": 40.0},
+		{"pos": o + Vector3(-0.6, 1.4, 3.6), "look": o + Vector3(0.1, 0.55, 1.4), "frames": 1, "fov": 32.0},
+	]}
+
+
+func _station_particles(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(10, 0.04, 6), Color(0.62, 0.60, 0.56))
+	var xs: Array[float] = [-3.6, -1.8, 0.0, 1.8, 3.6]
+	var names: Array[String] = ["dust", "steam", "splash", "ember", "dust (soft)"]
+	for i in 5:
+		var fx: VfxEffect
+		var pos := o + Vector3(xs[i], 0.0, 0.0)
+		match i:
+			0, 4:
+				fx = DustPuffFX.new()
+			1:
+				fx = SteamFX.new()
+			2:
+				fx = SplashFX.new()
+			3:
+				fx = EmberFX.new()
+		add_child(fx)
+		_track(fx)
+		match i:
+			0:
+				fx.play(pos, Vector3.UP, 1.2)
+			1:
+				fx.play(pos, 1.0)
+			2:
+				fx.play(pos, Vector3.UP, 1.0)
+			3:
+				fx.play(pos, Vector3.UP, 1.0)
+			4:
+				fx.play(pos, Vector3.UP, 0.4)
+		_label(names[i], pos + Vector3(0, 1.9, 0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 1.4, 6.4), "look": o + Vector3(0, 0.8, 0), "frames": 1, "dt": 0.25, "fov": 36.0},
+		{"pos": o + Vector3(0, 1.4, 6.4), "look": o + Vector3(0, 0.8, 0), "frames": 1, "dt": 0.25, "fov": 36.0},
+	]}
+
+
+func _station_fire(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(12, 0.04, 7), Color(0.30, 0.29, 0.28))
+	_box(o + Vector3(0, 1.4, -3.2), Vector3(12, 2.8, 0.2), Color(0.36, 0.33, 0.30))
+	# bursts at several ages
+	var ages: Array[float] = [0.08, 0.2, 0.34, 0.46]
+	for i in ages.size():
+		var fb := FireBurstFX.new()
+		add_child(fb)
+		_track(fb)
+		fb.play(o + Vector3(-5.0 + i * 2.6, 1.2, 0.0), Vector3(1, 0.0, 0.0), 2.2, 1.0)
+		fb.advance(ages[i])
+		fb.manual_time = true
+		_label("burst t=%.2fs" % ages[i], o + Vector3(-4.0 + i * 2.6, 2.4, 0.0))
+	# held charge at 0.25 / 0.6 / 1.0
+	var cs: Array[float] = [0.25, 0.6, 1.0]
+	for i in cs.size():
+		var fc := FireChargeFX.new()
+		add_child(fc)
+		fc.position = o + Vector3(-3.0 + i * 1.4, 0.7, 2.2)
+		_track(fc)
+		fc.set_charge(cs[i])
+		_label("charge %.2f" % cs[i], fc.position + Vector3(0, 1.0, 0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 1.9, 6.8), "look": o + Vector3(-0.5, 1.0, 0.5), "frames": 2, "dt": 0.0, "fov": 44.0},
+		{"pos": o + Vector3(-4.6, 1.5, 4.2), "look": o + Vector3(-3.4, 1.1, 0.0), "frames": 1, "dt": 0.0, "fov": 34.0},
+	]}
+
+
+func _station_lightning(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(14, 0.04, 8), Color(0.34, 0.33, 0.32))
+	_box(o + Vector3(0, 1.6, -3.4), Vector3(14, 3.2, 0.2), Color(0.20, 0.20, 0.24))
+	# bolts: straight-ish conduction path through 3 "targets", and a longer bent path
+	var path_a := PackedVector3Array([o + Vector3(-5.5, 1.6, 0.0), o + Vector3(-3.4, 1.0, 0.4), o + Vector3(-1.8, 1.4, -0.4)])
+	var path_b := PackedVector3Array([o + Vector3(0.6, 2.4, 0.0), o + Vector3(2.0, 1.2, 0.6), o + Vector3(3.4, 0.3, -0.2), o + Vector3(5.0, 1.0, 0.3)])
+	var arcs: Array = []
+	for i in 2:
+		var la := LightningArcFX.new()
+		add_child(la)
+		_track(la)
+		la.strike(path_a if i == 0 else path_b, 11 + i * 5)
+		la.advance(0.05)
+		arcs.append(la)
+	# conduction targets (stand-ins)
+	for p in [path_a[1], path_a[2], path_b[1], path_b[2], path_b[3]]:
+		var m := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.18
+		sm.height = 0.36
+		m.mesh = sm
+		m.position = p
+		add_child(m)
+	# charge / aim line
+	var ca := ChargeAimFX.new()
+	add_child(ca)
+	_track(ca)
+	ca.set_aim(o + Vector3(-5.0, 0.9, 2.2), o + Vector3(-0.5, 0.9, 2.2), 0.3)
+	var cb := ChargeAimFX.new()
+	add_child(cb)
+	_track(cb)
+	cb.set_aim(o + Vector3(0.5, 0.9, 2.2), o + Vector3(5.0, 0.9, 2.2), 0.95)
+	_label("bolt A (3 nodes)", o + Vector3(-3.6, 2.6, 0.0))
+	_label("bolt B (4 nodes)", o + Vector3(2.8, 3.1, 0.0))
+	_label("aim t=0.3", o + Vector3(-2.8, 1.4, 2.2))
+	_label("aim t=0.95", o + Vector3(2.8, 1.4, 2.2))
+	return {"shots": [
+		{"pos": o + Vector3(0, 1.8, 7.6), "look": o + Vector3(0, 1.1, 0.0), "frames": 2, "dt": 0.0, "fov": 40.0},
+		{"pos": o + Vector3(-3.6, 1.4, 3.6), "look": o + Vector3(-3.4, 1.1, 0.4), "frames": 1, "dt": 0.0, "fov": 30.0},
+	]}
+
+
+func _station_air(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(14, 0.04, 8), Color(0.55, 0.53, 0.50))
+	# backdrop with a checker-ish pattern so distortion is visible
+	var back := _box(o + Vector3(0, 1.6, -3.4), Vector3(14, 3.2, 0.2), Color(0.62, 0.50, 0.38))
+	for i in 14:
+		_box(o + Vector3(-6.5 + i, 0.9, -3.28), Vector3(0.18, 1.8, 0.05), Color(0.25, 0.25, 0.3) if i % 2 == 0 else Color(0.85, 0.8, 0.7))
+	# stand-in "enemies"
+	for i in 3:
+		var cm := MeshInstance3D.new()
+		var cap := CapsuleMesh.new()
+		cap.radius = 0.28
+		cap.height = 1.7
+		cm.mesh = cap
+		cm.position = o + Vector3(-1.5 + i * 2.6, 0.85, -0.6)
+		cm.material_override = _matte(Color(0.7, 0.2, 0.15) if i == 1 else Color(0.2, 0.35, 0.6))
+		add_child(cm)
+	var ages: Array[float] = [0.18, 0.38]
+	for i in ages.size():
+		var ap := AirPushFX.new()
+		add_child(ap)
+		_track(ap)
+		ap.play(o + Vector3(-5.2, 1.0, 0.8 - i * 1.6), Vector3(1, 0.0, -0.1), 1.5, 8.0)
+		ap.advance(ages[i])
+	# glide trail: a figure-8-ish path
+	var gt := GlideTrailFX.new()
+	add_child(gt)
+	_track(gt)
+	gt.begin(null)
+	for i in 20:
+		var t: float = float(i) / 19.0
+		gt.push(o + Vector3(-2.0 + t * 4.0, 2.4 + 0.5 * sin(t * 6.0), 1.6 + 0.4 * cos(t * 5.0)))
+	gt.advance(0.0)
+	_label("air push t=0.18 / 0.38", o + Vector3(-3.0, 2.4, 0.8))
+	_label("glide trail", o + Vector3(0.0, 3.4, 1.6))
+	return {"shots": [
+		{"pos": o + Vector3(-3.0, 1.9, 6.6), "look": o + Vector3(-0.5, 1.2, -0.4), "frames": 2, "dt": 0.0, "fov": 46.0},
+	]}
+
+
+func _station_wall(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, -0.02, 0.0), Vector3(14, 0.04, 8), Color(0.50, 0.47, 0.43))
+	var rises: Array[float] = [0.0, 0.25, 0.55, 1.0]
+	var dmg: Array[float] = [0.0, 0.0, 0.0, 0.0]
+	for i in 4:
+		var w := EarthWallView.new()
+		add_child(w)
+		w.position = o + Vector3(-5.2 + i * 3.0, 0.0, 0.0)
+		w.setup(5 + i)
+		w.manual_time = true
+		_manual.append(w)
+		w.set_rise(rises[i])
+		_label("rise %.2f" % rises[i], w.position + Vector3(0, 1.7, 0))
+	for i in 3:
+		var w2 := EarthWallView.new()
+		add_child(w2)
+		w2.position = o + Vector3(-3.7 + i * 3.0, 0.0, 2.8)
+		w2.setup(11 + i)
+		w2.dust = false
+		w2.set_rise(1.0)
+		w2.set_damage([0.0, 0.5, 1.0][i])
+		_label("damage %.1f" % [0.0, 0.5, 1.0][i], w2.position + Vector3(0, 1.5, 0))
+	# scorch / wet decals
+	if not _only.has("nodecal"):
+		var sd := ScorchDecal.new()
+		add_child(sd)
+		_track(sd)
+		sd.place(o + Vector3(4.4, 0.0, 2.8), 0.9, "scorch", 9.0)
+		sd.advance(0.5)
+		var wd := ScorchDecal.new()
+		add_child(wd)
+		_track(wd)
+		wd.place(o + Vector3(5.6, 0.0, 1.2), 0.8, "wet", 9.0)
+		wd.advance(0.5)
+	_label("scorch / wet", o + Vector3(5.0, 1.2, 2.0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 3.6, 7.2), "look": o + Vector3(0, 0.5, 0.8), "frames": 2, "dt": 0.3, "fov": 44.0},
+		{"pos": o + Vector3(-2.8, 1.4, 3.2), "look": o + Vector3(-1.8, 0.5, 0.0), "frames": 1, "fov": 34.0},
+	]}
+
+
+func _station_arena(o: Vector3) -> Dictionary:
+	# courtyard: flagstones (dry / wet), metal plate deck, ledge blocks, pool
+	var g_dry := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(8, 8)
+	g_dry.mesh = pm
+	g_dry.position = o + Vector3(-4, 0.01, 0)
+	g_dry.material_override = VfxMaterials.make("arena_ground")
+	add_child(g_dry)
+	var g_wet := MeshInstance3D.new()
+	g_wet.mesh = pm
+	g_wet.position = o + Vector3(4, 0.01, 0)
+	var wm := VfxMaterials.make("arena_ground")
+	g_wet.material_override = wm
+	add_child(g_wet)
+	g_wet.set_instance_shader_parameter("wetness", 0.8)
+	# metal deck
+	var deck := MeshInstance3D.new()
+	var dm := PlaneMesh.new()
+	dm.size = Vector2(4, 3)
+	deck.mesh = dm
+	deck.position = o + Vector3(-1.2, 0.01, 3.4)
+	deck.material_override = VfxMaterials.make("metal_plate")
+	add_child(deck)
+	# ledge: cut stone block 0.5 m high with vertical + top faces
+	var ledge := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(4.0, 0.5, 1.6)
+	ledge.mesh = bm
+	ledge.position = o + Vector3(-4.0, 0.25, -2.4)
+	ledge.material_override = VfxMaterials.make("ledge_stone")
+	add_child(ledge)
+	var ledge2 := MeshInstance3D.new()
+	var bm2 := BoxMesh.new()
+	bm2.size = Vector3(1.6, 1.1, 1.6)
+	ledge2.mesh = bm2
+	ledge2.position = o + Vector3(-1.2, 0.55, -2.4)
+	ledge2.material_override = VfxMaterials.make("ledge_stone")
+	add_child(ledge2)
+	# pool: recessed look via a dark rim box + water plane at ground level
+	var pool_rim := MeshInstance3D.new()
+	var prm := PlaneMesh.new()
+	prm.size = Vector2(6.4, 4.4)
+	pool_rim.mesh = prm
+	pool_rim.position = o + Vector3(4.0, 0.012, -1.0)
+	var wmat := VfxMaterials.make("pool_water")
+	wmat.set_shader_parameter("half_extent", Vector2(3.0, 2.0))
+	wmat.set_shader_parameter("corner_radius", 0.7)
+	pool_rim.material_override = wmat
+	add_child(pool_rim)
+	_label("flagstones dry", o + Vector3(-4, 1.0, 1.0))
+	_label("flagstones wet 0.8", o + Vector3(4, 1.0, 3.0))
+	_label("metal plate", o + Vector3(-1.2, 0.8, 3.4))
+	_label("ledge stone", o + Vector3(-4.0, 1.2, -2.4))
+	_label("pool water", o + Vector3(4.0, 0.8, -1.0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 7.2, 8.0), "look": o + Vector3(0, 0.0, 0.0), "frames": 2, "dt": 0.2, "fov": 46.0},
+		{"pos": o + Vector3(-5.5, 1.5, 4.5), "look": o + Vector3(-3.0, 0.2, 0.5), "frames": 1, "fov": 40.0},
+		{"pos": o + Vector3(5.0, 1.6, 4.0), "look": o + Vector3(4.2, 0.0, -1.0), "frames": 1, "fov": 40.0},
+	]}
+
+
+func _station_empty(o: Vector3) -> Dictionary:
+	return {"pos": o + Vector3(0, 3.4, 5.2), "look": o + Vector3(0, 0.0, 0.0), "frames": 10}
+
+
+func _station_emptybox(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.5, 0), Vector3(1, 1, 1), Color(0.5, 0.5, 0.5))
+	return {"pos": o + Vector3(0, 3.4, 5.2), "look": o + Vector3(0, 0.0, 0.0), "frames": 10}
+
+
+func _whip_points(o: Vector3, z: float, phase: float) -> Array:
+	var pts := PackedVector3Array()
+	var rad := PackedFloat32Array()
+	var n: int = 18
+	for i in n:
+		var t: float = float(i) / float(n - 1)
+		var x: float = lerpf(-1.6, 1.5, t)
+		var y: float = 0.55 + 0.45 * sin(t * 4.2 + phase) * (0.3 + 0.7 * t)
+		var zz: float = z + 0.35 * sin(t * 6.0 + phase * 1.3)
+		pts.append(o + Vector3(x, y, zz))
+		rad.append(lerpf(0.11, 0.07, t) * (1.0 + 0.15 * sin(t * 9.0)))
+	return [pts, rad]
+
+
+func _station_water(o: Vector3) -> Dictionary:
+	var states: Array = [0.0, 0.5, 1.0]
+	for i in 3:
+		var pr: Array = _whip_points(o, -2.0 + i * 1.7, 0.4 + i * 0.5)
+		var wr := WaterRibbonView.new()
+		add_child(wr)
+		wr.set_points(pr[0], pr[1])
+		wr.set_state(states[i])
+		_track(wr)
+		_label("whip frozen %.1f" % states[i], o + Vector3(-1.9, 1.7, -2.0 + i * 1.7))
+	for i in 3:
+		var wb := WaterBlobView.new()
+		wb.setup(0.38)
+		add_child(wb)
+		wb.position = o + Vector3(-1.2 + i * 1.3, 0.55, 2.0)
+		wb.set_state(states[i])
+		_track(wb)
+		_label("orb frozen %.1f" % states[i], wb.position + Vector3(0, 0.7, 0))
+	# a backdrop so transparency has something to read against
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(8, 0.04, 6), Color(0.30, 0.29, 0.28))
+	_box(o + Vector3(0.0, 0.9, -3.4), Vector3(8, 1.8, 0.2), Color(0.34, 0.24, 0.18))
+	return {"shots": [
+		{"pos": o + Vector3(0.5, 3.2, 5.8), "look": o + Vector3(0, 0.5, 0.2), "frames": 3, "dt": 0.3, "fov": 40.0},
+		{"pos": o + Vector3(-0.6, 1.4, 3.6), "look": o + Vector3(0.1, 0.55, 1.4), "frames": 1, "fov": 32.0},
+	]}
+
+
+func _station_particles(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(10, 0.04, 6), Color(0.62, 0.60, 0.56))
+	var xs: Array[float] = [-3.6, -1.8, 0.0, 1.8, 3.6]
+	var names: Array[String] = ["dust", "steam", "splash", "ember", "dust (soft)"]
+	for i in 5:
+		var fx: VfxEffect
+		var pos := o + Vector3(xs[i], 0.0, 0.0)
+		match i:
+			0, 4:
+				fx = DustPuffFX.new()
+			1:
+				fx = SteamFX.new()
+			2:
+				fx = SplashFX.new()
+			3:
+				fx = EmberFX.new()
+		add_child(fx)
+		_track(fx)
+		match i:
+			0:
+				fx.play(pos, Vector3.UP, 1.2)
+			1:
+				fx.play(pos, 1.0)
+			2:
+				fx.play(pos, Vector3.UP, 1.0)
+			3:
+				fx.play(pos, Vector3.UP, 1.0)
+			4:
+				fx.play(pos, Vector3.UP, 0.4)
+		_label(names[i], pos + Vector3(0, 1.9, 0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 1.4, 6.4), "look": o + Vector3(0, 0.8, 0), "frames": 1, "dt": 0.25, "fov": 36.0},
+		{"pos": o + Vector3(0, 1.4, 6.4), "look": o + Vector3(0, 0.8, 0), "frames": 1, "dt": 0.25, "fov": 36.0},
+	]}
+
+
+func _station_fire(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(12, 0.04, 7), Color(0.30, 0.29, 0.28))
+	_box(o + Vector3(0, 1.4, -3.2), Vector3(12, 2.8, 0.2), Color(0.36, 0.33, 0.30))
+	# bursts at several ages
+	var ages: Array[float] = [0.08, 0.2, 0.34, 0.46]
+	for i in ages.size():
+		var fb := FireBurstFX.new()
+		add_child(fb)
+		_track(fb)
+		fb.play(o + Vector3(-5.0 + i * 2.6, 1.2, 0.0), Vector3(1, 0.0, 0.0), 2.2, 1.0)
+		fb.advance(ages[i])
+		fb.manual_time = true
+		_label("burst t=%.2fs" % ages[i], o + Vector3(-4.0 + i * 2.6, 2.4, 0.0))
+	# held charge at 0.25 / 0.6 / 1.0
+	var cs: Array[float] = [0.25, 0.6, 1.0]
+	for i in cs.size():
+		var fc := FireChargeFX.new()
+		add_child(fc)
+		fc.position = o + Vector3(-3.0 + i * 1.4, 0.7, 2.2)
+		_track(fc)
+		fc.set_charge(cs[i])
+		_label("charge %.2f" % cs[i], fc.position + Vector3(0, 1.0, 0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 1.9, 6.8), "look": o + Vector3(-0.5, 1.0, 0.5), "frames": 2, "dt": 0.0, "fov": 44.0},
+		{"pos": o + Vector3(-4.6, 1.5, 4.2), "look": o + Vector3(-3.4, 1.1, 0.0), "frames": 1, "dt": 0.0, "fov": 34.0},
+	]}
+
+
+func _station_lightning(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(14, 0.04, 8), Color(0.34, 0.33, 0.32))
+	_box(o + Vector3(0, 1.6, -3.4), Vector3(14, 3.2, 0.2), Color(0.20, 0.20, 0.24))
+	# bolts: straight-ish conduction path through 3 "targets", and a longer bent path
+	var path_a := PackedVector3Array([o + Vector3(-5.5, 1.6, 0.0), o + Vector3(-3.4, 1.0, 0.4), o + Vector3(-1.8, 1.4, -0.4)])
+	var path_b := PackedVector3Array([o + Vector3(0.6, 2.4, 0.0), o + Vector3(2.0, 1.2, 0.6), o + Vector3(3.4, 0.3, -0.2), o + Vector3(5.0, 1.0, 0.3)])
+	var arcs: Array = []
+	for i in 2:
+		var la := LightningArcFX.new()
+		add_child(la)
+		_track(la)
+		la.strike(path_a if i == 0 else path_b, 11 + i * 5)
+		la.advance(0.05)
+		arcs.append(la)
+	# conduction targets (stand-ins)
+	for p in [path_a[1], path_a[2], path_b[1], path_b[2], path_b[3]]:
+		var m := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.18
+		sm.height = 0.36
+		m.mesh = sm
+		m.position = p
+		add_child(m)
+	# charge / aim line
+	var ca := ChargeAimFX.new()
+	add_child(ca)
+	_track(ca)
+	ca.set_aim(o + Vector3(-5.0, 0.9, 2.2), o + Vector3(-0.5, 0.9, 2.2), 0.3)
+	var cb := ChargeAimFX.new()
+	add_child(cb)
+	_track(cb)
+	cb.set_aim(o + Vector3(0.5, 0.9, 2.2), o + Vector3(5.0, 0.9, 2.2), 0.95)
+	_label("bolt A (3 nodes)", o + Vector3(-3.6, 2.6, 0.0))
+	_label("bolt B (4 nodes)", o + Vector3(2.8, 3.1, 0.0))
+	_label("aim t=0.3", o + Vector3(-2.8, 1.4, 2.2))
+	_label("aim t=0.95", o + Vector3(2.8, 1.4, 2.2))
+	return {"shots": [
+		{"pos": o + Vector3(0, 1.8, 7.6), "look": o + Vector3(0, 1.1, 0.0), "frames": 2, "dt": 0.0, "fov": 40.0},
+		{"pos": o + Vector3(-3.6, 1.4, 3.6), "look": o + Vector3(-3.4, 1.1, 0.4), "frames": 1, "dt": 0.0, "fov": 30.0},
+	]}
+
+
+func _station_air(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, 0.02, 0.0), Vector3(14, 0.04, 8), Color(0.55, 0.53, 0.50))
+	# backdrop with a checker-ish pattern so distortion is visible
+	var back := _box(o + Vector3(0, 1.6, -3.4), Vector3(14, 3.2, 0.2), Color(0.62, 0.50, 0.38))
+	for i in 14:
+		_box(o + Vector3(-6.5 + i, 0.9, -3.28), Vector3(0.18, 1.8, 0.05), Color(0.25, 0.25, 0.3) if i % 2 == 0 else Color(0.85, 0.8, 0.7))
+	# stand-in "enemies"
+	for i in 3:
+		var cm := MeshInstance3D.new()
+		var cap := CapsuleMesh.new()
+		cap.radius = 0.28
+		cap.height = 1.7
+		cm.mesh = cap
+		cm.position = o + Vector3(-1.5 + i * 2.6, 0.85, -0.6)
+		cm.material_override = _matte(Color(0.7, 0.2, 0.15) if i == 1 else Color(0.2, 0.35, 0.6))
+		add_child(cm)
+	var ages: Array[float] = [0.18, 0.38]
+	for i in ages.size():
+		var ap := AirPushFX.new()
+		add_child(ap)
+		_track(ap)
+		ap.play(o + Vector3(-5.2, 1.0, 0.8 - i * 1.6), Vector3(1, 0.0, -0.1), 1.5, 8.0)
+		ap.advance(ages[i])
+	# glide trail: a figure-8-ish path
+	var gt := GlideTrailFX.new()
+	add_child(gt)
+	_track(gt)
+	gt.begin(null)
+	for i in 20:
+		var t: float = float(i) / 19.0
+		gt.push(o + Vector3(-2.0 + t * 4.0, 2.4 + 0.5 * sin(t * 6.0), 1.6 + 0.4 * cos(t * 5.0)))
+	gt.advance(0.0)
+	_label("air push t=0.18 / 0.38", o + Vector3(-3.0, 2.4, 0.8))
+	_label("glide trail", o + Vector3(0.0, 3.4, 1.6))
+	return {"shots": [
+		{"pos": o + Vector3(-3.0, 1.9, 6.6), "look": o + Vector3(-0.5, 1.2, -0.4), "frames": 2, "dt": 0.0, "fov": 46.0},
+	]}
+
+
+func _station_wall(o: Vector3) -> Dictionary:
+	_box(o + Vector3(0, -0.02, 0.0), Vector3(14, 0.04, 8), Color(0.50, 0.47, 0.43))
+	var rises: Array[float] = [0.0, 0.25, 0.55, 1.0]
+	var dmg: Array[float] = [0.0, 0.0, 0.0, 0.0]
+	for i in 4:
+		var w := EarthWallView.new()
+		add_child(w)
+		w.position = o + Vector3(-5.2 + i * 3.0, 0.0, 0.0)
+		w.setup(5 + i)
+		w.manual_time = true
+		_manual.append(w)
+		w.set_rise(rises[i])
+		_label("rise %.2f" % rises[i], w.position + Vector3(0, 1.7, 0))
+	for i in 3:
+		var w2 := EarthWallView.new()
+		add_child(w2)
+		w2.position = o + Vector3(-3.7 + i * 3.0, 0.0, 2.8)
+		w2.setup(11 + i)
+		w2.dust = false
+		w2.set_rise(1.0)
+		w2.set_damage([0.0, 0.5, 1.0][i])
+		_label("damage %.1f" % [0.0, 0.5, 1.0][i], w2.position + Vector3(0, 1.5, 0))
+	# scorch / wet decals
+	if not _only.has("nodecal"):
+		var sd := ScorchDecal.new()
+		add_child(sd)
+		_track(sd)
+		sd.place(o + Vector3(4.4, 0.0, 2.8), 0.9, "scorch", 9.0)
+		sd.advance(0.5)
+		var wd := ScorchDecal.new()
+		add_child(wd)
+		_track(wd)
+		wd.place(o + Vector3(5.6, 0.0, 1.2), 0.8, "wet", 9.0)
+		wd.advance(0.5)
+	_label("scorch / wet", o + Vector3(5.0, 1.2, 2.0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 3.6, 7.2), "look": o + Vector3(0, 0.5, 0.8), "frames": 2, "dt": 0.3, "fov": 44.0},
+		{"pos": o + Vector3(-2.8, 1.4, 3.2), "look": o + Vector3(-1.8, 0.5, 0.0), "frames": 1, "fov": 34.0},
+	]}
+
+
+func _station_arena(o: Vector3) -> Dictionary:
+	# courtyard: flagstones (dry / wet), metal plate deck, ledge blocks, pool
+	var g_dry := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(8, 8)
+	g_dry.mesh = pm
+	g_dry.position = o + Vector3(-4, 0.01, 0)
+	g_dry.material_override = VfxMaterials.make("arena_ground")
+	add_child(g_dry)
+	var g_wet := MeshInstance3D.new()
+	g_wet.mesh = pm
+	g_wet.position = o + Vector3(4, 0.01, 0)
+	var wm := VfxMaterials.make("arena_ground")
+	g_wet.material_override = wm
+	add_child(g_wet)
+	g_wet.set_instance_shader_parameter("wetness", 0.8)
+	# metal deck
+	var deck := MeshInstance3D.new()
+	var dm := PlaneMesh.new()
+	dm.size = Vector2(4, 3)
+	deck.mesh = dm
+	deck.position = o + Vector3(-1.2, 0.01, 3.4)
+	deck.material_override = VfxMaterials.make("metal_plate")
+	add_child(deck)
+	# ledge: cut stone block 0.5 m high with vertical + top faces
+	var ledge := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(4.0, 0.5, 1.6)
+	ledge.mesh = bm
+	ledge.position = o + Vector3(-4.0, 0.25, -2.4)
+	ledge.material_override = VfxMaterials.make("ledge_stone")
+	add_child(ledge)
+	var ledge2 := MeshInstance3D.new()
+	var bm2 := BoxMesh.new()
+	bm2.size = Vector3(1.6, 1.1, 1.6)
+	ledge2.mesh = bm2
+	ledge2.position = o + Vector3(-1.2, 0.55, -2.4)
+	ledge2.material_override = VfxMaterials.make("ledge_stone")
+	add_child(ledge2)
+	# pool: recessed look via a dark rim box + water plane at ground level
+	var pool_rim := MeshInstance3D.new()
+	var prm := PlaneMesh.new()
+	prm.size = Vector2(6.4, 4.4)
+	pool_rim.mesh = prm
+	pool_rim.position = o + Vector3(4.0, 0.012, -1.0)
+	var wmat := VfxMaterials.make("pool_water")
+	wmat.set_shader_parameter("half_extent", Vector2(3.0, 2.0))
+	wmat.set_shader_parameter("corner_radius", 0.7)
+	pool_rim.material_override = wmat
+	add_child(pool_rim)
+	_label("flagstones dry", o + Vector3(-4, 1.0, 1.0))
+	_label("flagstones wet 0.8", o + Vector3(4, 1.0, 3.0))
+	_label("metal plate", o + Vector3(-1.2, 0.8, 3.4))
+	_label("ledge stone", o + Vector3(-4.0, 1.2, -2.4))
+	_label("pool water", o + Vector3(4.0, 0.8, -1.0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 7.2, 8.0), "look": o + Vector3(0, 0.0, 0.0), "frames": 2, "dt": 0.2, "fov": 46.0},
+		{"pos": o + Vector3(-5.5, 1.5, 4.5), "look": o + Vector3(-3.0, 0.2, 0.5), "frames": 1, "fov": 40.0},
+		{"pos": o + Vector3(5.0, 1.6, 4.0), "look": o + Vector3(4.2, 0.0, -1.0), "frames": 1, "fov": 40.0},
+	]}
+
+
+func _station_dbg(o: Vector3) -> Dictionary:
+	# lighting comparison: box floor / standard plane / shader plane
+	_box(o + Vector3(-5.0, 0.02, 0.0), Vector3(3.5, 0.04, 6), Color(0.5, 0.47, 0.43))
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(3.5, 6)
+	var m1 := MeshInstance3D.new()
+	m1.mesh = pm
+	m1.position = o + Vector3(-1.4, 0.03, 0.0)
+	var sm := StandardMaterial3D.new()
+	sm.albedo_color = Color(0.5, 0.47, 0.43)
+	m1.material_override = sm
+	add_child(m1)
+	var m2 := MeshInstance3D.new()
+	m2.mesh = pm
+	m2.position = o + Vector3(2.2, 0.03, 0.0)
+	m2.material_override = VfxMaterials.make("arena_ground")
+	add_child(m2)
+	var m3 := MeshInstance3D.new()
+	m3.mesh = pm
+	m3.position = o + Vector3(5.8, 0.03, 0.0)
+	var sm3 := StandardMaterial3D.new()
+	sm3.albedo_color = Color(0.5, 0.47, 0.43)
+	m3.material_override = sm3
+	m3.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(m3)
+	return {"pos": o + Vector3(0, 6.0, 7.0), "look": o + Vector3(0, 0.0, 0.0), "frames": 3, "fov": 50.0}
+
+
+func _station_hero(o: Vector3) -> Dictionary:
+	# A composite "courtyard" frame: ledge + lava cascade, heated / molten stones, rising wall with
+	# dust, frozen water whip, fire burst, lightning, air push, steam, scorch + wet marks.
+	var ledge := MeshInstance3D.new()
+	var lb := BoxMesh.new()
+	lb.size = Vector3(3.2, 0.5, 2.2)
+	ledge.mesh = lb
+	ledge.position = o + Vector3(-5.6, 0.25, -1.6)
+	ledge.material_override = VfxMaterials.make("ledge_stone")
+	add_child(ledge)
+	# lava cascade: runs along the ledge top then steps down and across the floor
+	var pts := PackedVector3Array()
+	var ws := PackedFloat32Array()
+	for i in 4:
+		pts.append(o + Vector3(-6.8 + i * 0.5, 0.5, -1.6))
+		ws.append(0.9)
+	pts.append(o + Vector3(-4.85, 0.5, -1.6))
+	ws.append(1.1)
+	pts.append(o + Vector3(-4.7, 0.0, -1.55))
+	ws.append(1.25)
+	for i in 6:
+		var t: float = float(i) / 5.0
+		pts.append(o + Vector3(-4.2 + i * 0.55, 0.0, -1.5 + t * 1.0 + sin(t * 3.0) * 0.2))
+		ws.append(1.3 + t * 0.2)
+	var lava := LavaWaveView.new()
+	add_child(lava)
+	lava.pattern_seed = 3.3
+	lava.set_path(pts, ws)
+	lava.set_state(1.0, 0.1, 1.0)
+	_track(lava)
+	# stones
+	var s1 := StoneView.new()
+	s1.setup(21, 0.42)
+	add_child(s1)
+	s1.position = o + Vector3(-3.6, 0.38, 1.8)
+	s1.set_thermal(1.0, 0.85)
+	var s2 := StoneView.new()
+	s2.setup(5, 0.34)
+	add_child(s2)
+	s2.position = o + Vector3(-5.0, 0.3, 1.6)
+	s2.rotation.y = 1.1
+	s2.set_thermal(0.85, 0.2)
+	var s3 := StoneView.new()
+	s3.setup(33, 0.3)
+	add_child(s3)
+	s3.position = o + Vector3(-2.2, 0.26, 2.7)
+	s3.set_thermal(0.0, 0.0)
+	# steam where the lava meets the wet stone
+	var sf := SteamFX.new()
+	add_child(sf)
+	_track(sf)
+	sf.play(o + Vector3(-2.3, 0.1, -1.0), 1.0)
+	sf.advance(0.45)
+	# earth wall rising with dust
+	var wall := EarthWallView.new()
+	add_child(wall)
+	wall.position = o + Vector3(0.4, 0.0, 0.2)
+	wall.setup(8, 2.6, 1.05, 0.6)
+	wall.manual_time = true
+	_manual.append(wall)
+	wall.set_rise(0.62)
+	# frozen water whip arcing to the right of the wall
+	var wp := PackedVector3Array()
+	var wr := PackedFloat32Array()
+	for i in 16:
+		var t: float = float(i) / 15.0
+		wp.append(o + Vector3(1.8 + t * 2.4, 0.5 + 1.1 * sin(t * PI) * (1.0 - 0.3 * t), 1.6 - t * 0.8))
+		wr.append(lerpf(0.11, 0.06, t))
+	var wh := WaterRibbonView.new()
+	add_child(wh)
+	wh.set_points(wp, wr)
+	wh.set_state(0.0)
+	_track(wh)
+	var wh2 := WaterRibbonView.new()
+	add_child(wh2)
+	var wp2 := PackedVector3Array()
+	for p in wp:
+		wp2.append(p + Vector3(0.0, 0.0, 1.1))
+	wh2.set_points(wp2, wr)
+	wh2.set_state(0.85)
+	_track(wh2)
+	var orb := WaterBlobView.new()
+	orb.setup(0.3)
+	add_child(orb)
+	orb.position = o + Vector3(1.3, 0.8, 2.6)
+	_track(orb)
+	# defender stand-ins
+	for x in [3.8, 5.0]:
+		var cm := MeshInstance3D.new()
+		var cap := CapsuleMesh.new()
+		cap.radius = 0.27
+		cap.height = 1.7
+		cm.mesh = cap
+		cm.position = o + Vector3(x, 0.85, -1.0)
+		cm.material_override = _matte(Color(0.28, 0.30, 0.38))
+		add_child(cm)
+	# fire burst from the first defender's hand toward the second
+	var fb := FireBurstFX.new()
+	add_child(fb)
+	fb.play(o + Vector3(3.5, 1.2, -1.0), Vector3(1, 0.05, 0.0), 2.4, 1.0)
+	fb.advance(0.16)
+	fb.manual_time = true
+	_manual.append(fb)
+	# lightning through three targets, high
+	var la := LightningArcFX.new()
+	add_child(la)
+	la.strike(PackedVector3Array([o + Vector3(1.0, 2.8, -2.2), o + Vector3(2.6, 2.0, -1.8), o + Vector3(4.2, 2.5, -2.4), o + Vector3(5.8, 1.6, -2.0)]), 4)
+	la.advance(0.04)
+	_track(la)
+	# air push from the far right
+	var ap := AirPushFX.new()
+	add_child(ap)
+	ap.play(o + Vector3(6.4, 1.0, 1.4), Vector3(-1, 0.0, -0.1), 1.3, 5.0)
+	ap.advance(0.2)
+	_track(ap)
+	# scorch + wet marks, dust on the floor, embers at the lava front
+	var sd := ScorchDecal.new()
+	add_child(sd)
+	sd.place(o + Vector3(5.0, 0.0, 0.4), 0.8, "scorch", 8.0)
+	sd.advance(0.4)
+	_track(sd)
+	var wd := ScorchDecal.new()
+	add_child(wd)
+	wd.place(o + Vector3(2.2, 0.0, 2.0), 0.9, "wet", 8.0)
+	wd.advance(0.4)
+	_track(wd)
+	var em := EmberFX.new()
+	add_child(em)
+	em.play(o + Vector3(-1.3, 0.3, -0.7), Vector3.UP, 1.0)
+	em.advance(0.3)
+	_track(em)
+	var dp := DustPuffFX.new()
+	add_child(dp)
+	dp.play(o + Vector3(-0.6, 0.0, 1.0), Vector3.UP, 0.8)
+	dp.advance(0.3)
+	_track(dp)
+	return {"shots": [
+		{"pos": o + Vector3(1.0, 6.6, 10.4), "look": o + Vector3(0.2, 0.5, 0.0), "frames": 3, "dt": 0.0, "fov": 46.0},
+		{"pos": o + Vector3(-3.4, 2.2, 5.6), "look": o + Vector3(-3.8, 0.4, 0.2), "frames": 1, "dt": 0.0, "fov": 38.0},
+		{"pos": o + Vector3(3.4, 2.4, 6.0), "look": o + Vector3(3.2, 1.0, 0.0), "frames": 1, "dt": 0.0, "fov": 40.0},
+	]}

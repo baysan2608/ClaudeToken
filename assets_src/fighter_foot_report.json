@@ -1,0 +1,1436 @@
+{
+ "idle": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 50,
+   "frames": [
+    0,
+    60
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      60
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      60
+     ]
+    ]
+   }
+  }
+ },
+ "stance_earth": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 12,
+   "frames": [
+    0,
+    60
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      60
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      60
+     ]
+    ]
+   }
+  }
+ },
+ "stance_water": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 60,
+   "frames": [
+    0,
+    72
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      72
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      72
+     ]
+    ]
+   }
+  }
+ },
+ "stance_fire": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 28,
+  "worst_run": {
+   "vertex": 43,
+   "frames": [
+    0,
+    36
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      36
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      36
+     ]
+    ]
+   }
+  }
+ },
+ "stance_air": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 28,
+  "worst_run": {
+   "vertex": 62,
+   "frames": [
+    0,
+    60
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      60
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      60
+     ]
+    ]
+   }
+  }
+ },
+ "walk": {
+  "sole_skate_cm": 1.36,
+  "contact_runs": 54,
+  "worst_run": {
+   "vertex": 51,
+   "frames": [
+    2,
+    17
+   ]
+  }
+ },
+ "run": {
+  "sole_skate_cm": 0.74,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 117,
+   "frames": [
+    10,
+    13
+   ]
+  }
+ },
+ "strafe_l": {
+  "sole_skate_cm": 0.74,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 34,
+   "frames": [
+    0,
+    14
+   ]
+  }
+ },
+ "strafe_r": {
+  "sole_skate_cm": 0.74,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 34,
+   "frames": [
+    0,
+    14
+   ]
+  }
+ },
+ "walk_back": {
+  "sole_skate_cm": 1.13,
+  "contact_runs": 54,
+  "worst_run": {
+   "vertex": 108,
+   "frames": [
+    0,
+    3
+   ]
+  }
+ },
+ "evade_l": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 88,
+  "worst_run": {
+   "vertex": 5,
+   "frames": [
+    0,
+    3
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   }
+  }
+ },
+ "evade_r": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 88,
+  "worst_run": {
+   "vertex": 5,
+   "frames": [
+    0,
+    3
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   }
+  }
+ },
+ "evade_back": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 88,
+  "worst_run": {
+   "vertex": 71,
+   "frames": [
+    9,
+    14
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   }
+  }
+ },
+ "evade_fwd": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 88,
+  "worst_run": {
+   "vertex": 6,
+   "frames": [
+    0,
+    3
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      9,
+      14
+     ]
+    ]
+   }
+  }
+ },
+ "jump": {
+  "sole_skate_cm": 0.67,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 99,
+   "frames": [
+    0,
+    4
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 10.69,
+    "ball_cm": 2.06,
+    "runs": [
+     [
+      0,
+      5
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 10.69,
+    "ball_cm": 2.06,
+    "runs": [
+     [
+      0,
+      5
+     ]
+    ]
+   }
+  }
+ },
+ "fall": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 0,
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   }
+  }
+ },
+ "land": {
+  "sole_skate_cm": 0.76,
+  "contact_runs": 40,
+  "worst_run": {
+   "vertex": 108,
+   "frames": [
+    2,
+    5
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.14,
+    "ball_cm": 0.14,
+    "runs": [
+     [
+      2,
+      4
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.09,
+    "ball_cm": 0.09,
+    "runs": [
+     [
+      2,
+      4
+     ]
+    ]
+   }
+  }
+ },
+ "glide": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 0,
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   }
+  }
+ },
+ "air_dash": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 0,
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   }
+  }
+ },
+ "guard": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 50,
+   "frames": [
+    0,
+    48
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   }
+  }
+ },
+ "deflect": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 62,
+   "frames": [
+    0,
+    11
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   }
+  }
+ },
+ "earth_wall": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 126,
+   "frames": [
+    5,
+    12
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      12
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      5,
+      12
+     ]
+    ]
+   }
+  }
+ },
+ "hit_front": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 5,
+   "frames": [
+    0,
+    11
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   }
+  }
+ },
+ "hit_back": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 5,
+   "frames": [
+    0,
+    11
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   }
+  }
+ },
+ "hit_heavy": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 66,
+  "worst_run": {
+   "vertex": 72,
+   "frames": [
+    0,
+    18
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      10,
+      18
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      18
+     ]
+    ]
+   }
+  }
+ },
+ "knockdown": {
+  "sole_skate_cm": 1.61,
+  "contact_runs": 52,
+  "worst_run": {
+   "vertex": 127,
+   "frames": [
+    0,
+    7
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      2
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 2.93,
+    "ball_cm": 0.63,
+    "runs": [
+     [
+      0,
+      6
+     ]
+    ]
+   }
+  }
+ },
+ "getup": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 71,
+   "frames": [
+    5,
+    24
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      5,
+      24
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      5,
+      24
+     ]
+    ]
+   }
+  }
+ },
+ "stagger": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 5,
+   "frames": [
+    0,
+    15
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      6,
+      15
+     ]
+    ]
+   }
+  }
+ },
+ "earth_lift": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 12,
+   "frames": [
+    0,
+    12
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      12
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      3,
+      12
+     ]
+    ]
+   }
+  }
+ },
+ "earth_throw": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 63,
+   "frames": [
+    0,
+    14
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      14
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      14
+     ]
+    ]
+   }
+  }
+ },
+ "earth_heavy": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 6,
+   "frames": [
+    0,
+    24
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   }
+  }
+ },
+ "earth_hold": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 77,
+   "frames": [
+    0,
+    36
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      36
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      36
+     ]
+    ]
+   }
+  }
+ },
+ "water_draw": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 11,
+   "frames": [
+    0,
+    15
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   }
+  }
+ },
+ "water_hold": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 72,
+   "frames": [
+    0,
+    48
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   }
+  }
+ },
+ "water_whip": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 77,
+   "frames": [
+    0,
+    15
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   }
+  }
+ },
+ "water_freeze": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 5,
+   "frames": [
+    0,
+    12
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      12
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      12
+     ]
+    ]
+   }
+  }
+ },
+ "water_shield": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 33,
+   "frames": [
+    0,
+    48
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   }
+  }
+ },
+ "fire_jab": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 28,
+  "worst_run": {
+   "vertex": 43,
+   "frames": [
+    0,
+    9
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      9
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      9
+     ]
+    ]
+   }
+  }
+ },
+ "fire_charge": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 28,
+  "worst_run": {
+   "vertex": 50,
+   "frames": [
+    0,
+    24
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   }
+  }
+ },
+ "fire_release": {
+  "sole_skate_cm": 0.35,
+  "contact_runs": 28,
+  "worst_run": {
+   "vertex": 100,
+   "frames": [
+    0,
+    12
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      12
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.91,
+    "ball_cm": 0.05,
+    "runs": [
+     [
+      0,
+      12
+     ]
+    ]
+   }
+  }
+ },
+ "heat_draw": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 60,
+   "frames": [
+    0,
+    48
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      48
+     ]
+    ]
+   }
+  }
+ },
+ "magma_hold": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 52,
+   "frames": [
+    0,
+    24
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   }
+  }
+ },
+ "pour": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 44,
+  "worst_run": {
+   "vertex": 6,
+   "frames": [
+    0,
+    15
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   }
+  }
+ },
+ "lightning_charge": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 28,
+  "worst_run": {
+   "vertex": 41,
+   "frames": [
+    0,
+    36
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      36
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      36
+     ]
+    ]
+   }
+  }
+ },
+ "lightning_release": {
+  "sole_skate_cm": 0.11,
+  "contact_runs": 32,
+  "worst_run": {
+   "vertex": 127,
+   "frames": [
+    0,
+    11
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.17,
+    "ball_cm": 0.17,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   }
+  }
+ },
+ "air_push": {
+  "sole_skate_cm": 0.29,
+  "contact_runs": 28,
+  "worst_run": {
+   "vertex": 99,
+   "frames": [
+    0,
+    11
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.61,
+    "ball_cm": 0.02,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.61,
+    "ball_cm": 0.02,
+    "runs": [
+     [
+      0,
+      11
+     ]
+    ]
+   }
+  }
+ },
+ "air_gust": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 56,
+  "worst_run": {
+   "vertex": 50,
+   "frames": [
+    11,
+    18
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      11,
+      18
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      3
+     ],
+     [
+      11,
+      18
+     ]
+    ]
+   }
+  }
+ }
+}
