@@ -12,6 +12,9 @@ extends Node
 ## set_context(ctx) keys (all optional, absent = unchanged):
 ##   "element": int, "unlocked_elements": Array[int], "tech_label": String,
 ##   "tech_available": bool, "holding": bool,
+##   "attack_charge": float (s since the player's attack action started while its tap/hold
+##     decision or charge runs, 0 while its press is buffered, -1 otherwise; the touch charge
+##     ring follows it), "attack_element": int (that attack's element, -1 = selected),
 ##   "target_screen_pos": Vector2 or null (null hides the marker),
 ##   "target_label": String
 

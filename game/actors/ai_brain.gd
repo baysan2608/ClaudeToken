@@ -28,6 +28,7 @@ var _hold_body := -1
 var _hold_start := 0.0
 var _hold_started := false # tech hold: our technique action has actually begun
 var _hold_from: ActionInst = null  # action that was running when the tech hold was pressed
+var _hold_draw := false    # the tech hold is a heat draw: stand still (_draw_sets_in_time assumes it)
 var _guard_attack := 0     # foe attack instance a guard hold answers (kept up while it charges)
 var _detour := 1.0         # which way round the pool we turn (+1 / -1)
 var _detour_t := 0.0       # > 0 shortly after detouring (probe further: no edge dithering)
@@ -73,7 +74,9 @@ func think(dt: float) -> ActorIntent:
 		_move_tactical(foe, 0.0)
 		return intent
 	if _hold != "":
-		_move_tactical(foe, 0.3)
+		# No walking while drawing: approaching the foe (and so their wave) can make a draw
+		# that was estimated to set the lava in time arrive too late.
+		_move_tactical(foe, 0.0 if _hold == "tech" and _hold_draw else 0.3)
 		return intent
 	if _await_draw >= 0:
 		var wb := w.get_body(_await_draw)
@@ -287,10 +290,11 @@ func _choose_wave_response(b: MatBody, dist: float) -> String:
 
 func _draw_sets_in_time(b: MatBody) -> bool:
 	## Can a heat draw decided now stop this wave short of us? Tick-by-tick estimate with the
-	## sim's own rules: finish the current action (and switch to Fire), wait for draw range,
-	## wind up; then the draw (rate falls off with range, bounded by reserve room and Focus)
-	## and passive loss cool a scratch copy of the wave while it flows at its fluidity-scaled
-	## speed, straight at us (worst case). Lava damage is all-or-nothing: a late draw is no draw.
+	## sim's own rules, standing still from now on: finish the current action (and switch to
+	## Fire), wait for draw range, wind up; then the draw (rate falls off with range, bounded
+	## by reserve room and Focus) and passive loss cool a scratch copy of the wave while it
+	## flows at its fluidity-scaled speed, straight at us (worst case). Lava damage is
+	## all-or-nothing: a late draw is no draw.
 	var fd: Dictionary = Moves.DEFS.fire_tech
 	var c := MatBody.new()
 	c.mat = b.mat
@@ -298,7 +302,11 @@ func _draw_sets_in_time(b: MatBody) -> bool:
 	c.temp = b.temp
 	c.liquid = b.liquid
 	var reach := b.wave_width * 0.5 + Sim.ACTOR_RADIUS + 0.1
-	var flat := Vector2(me.pos.x - b.pos.x, me.pos.z - b.pos.z).length()
+	# Measured from where I come to rest: I stop walking once committed (no steps while
+	# drawing), but momentum still carries me v^2 / 2a further, often toward the wave.
+	var hv := Vector3(me.vel.x, 0, me.vel.z)
+	var rest := me.pos + hv * (hv.length() / (2.0 * CombatWorld.DECEL))
+	var flat := Vector2(rest.x - b.pos.x, rest.z - b.pos.z).length()
 	var dy := me.chest().y - b.pos.y
 	var budget := b.wave_budget
 	var cap := minf(Sim.RESERVE_MAX - me.heat_reserve, me.focus * Sim.DRAW_HU_PER_FOCUS)
@@ -388,6 +396,7 @@ func _act_on(decision: String, b: MatBody, tti: float = 1.0) -> bool:
 func _start_draw(b: MatBody) -> void:
 	debug_state = "draw"
 	_hold_tech(b.id, 4.0)
+	_hold_draw = true
 	if me.element != Sim.Element.FIRE:
 		intent.element_select = Sim.Element.FIRE
 		_pending_press = "tech"
@@ -403,6 +412,7 @@ func _hold_tech(body_id: int, secs: float) -> void:
 	_hold_until = _t + secs
 	_hold_started = false
 	_hold_from = me.action
+	_hold_draw = false
 
 
 # ------------------------------------------------------------------ opportunities / offense

@@ -15,8 +15,12 @@ var player_id := 1
 var settings: GameSettings
 var hud: Node = null         # receives toast(text) / flash(kind)
 
+## Seconds a water-draw stream outlives the latest "draw_water" report (reported every 8 ticks).
+const DRAW_HOLD := 0.2
+
 var _charge_fx := {}         # actor id -> Node (FireChargeFX / ChargeAimFX)
-var _transient: Array[Dictionary] = []   # short-lived driven views (water lash arcs)
+## Short-lived driven views: water lash arcs, water-draw streams (kind "draw"), dash trails ("dash").
+var _transient: Array[Dictionary] = []
 var _loop_bodies := {}       # stone body id -> last position (its heat/lava/draw loops may be on)
 var _step_t := {}
 var _slowmo := 0.0
@@ -177,7 +181,7 @@ func _event(e: Dictionary) -> void:
 			_call(_fx("dust_puff"), "play", [_bpos(e.body), Vector3.UP, 1.4])
 		"transform":
 			var to := String(e.get("to", ""))
-			var p := _bpos(e.body)
+			var p: Vector3 = e.get("at", _bpos(e.body))   # the body may already be merged away
 			match to:
 				"molten":
 					audio.play("melt_rise", p)
@@ -193,6 +197,8 @@ func _event(e: Dictionary) -> void:
 					audio.play("freeze", p)
 				"water":
 					audio.play("ice_melt_drip", p)
+					# The melted ice slumps into a puddle (often merging into one nearby).
+					_call(_fx("splash"), "play", [p, Vector3.UP, 0.35])
 				"puddle":
 					audio.play("water_splash", p, -4.0)
 					_call(_fx("splash"), "play", [p, Vector3.UP, 0.7])
@@ -233,8 +239,21 @@ func _event(e: Dictionary) -> void:
 		"grounded":
 			_call(_fx("dust_puff"), "play", [world.get_actor(a).pos, Vector3.UP, 0.6])
 		"gust":
-			_call(_fx("air_push"), "play", [_apos(a), e.dir, 1.2, float(e.range)])
-			audio.play("air_gust" if e.get("heavy", false) else "air_push", _apos(a))
+			# Tap: a narrow palm push. Hold (cyclone): a wide, long blast doubled by a tighter inner
+			# cone, with dust torn up in front of the feet, so it reads as clearly the bigger move.
+			var heavy: bool = e.get("heavy", false)
+			var o3 := _apos(a)
+			var gd: Vector3 = e.dir
+			var rng := float(e.range)
+			if heavy:
+				_call(_fx("air_push"), "play", [o3, gd, 2.4, rng * 1.15])
+				_call(_fx("air_push"), "play", [o3, gd, 1.3, rng * 0.8])
+				var ga := world.get_actor(a)
+				if ga and ga.grounded:
+					_call(_fx("dust_puff"), "play", [ga.pos + gd * 1.0, (gd + Vector3.UP).normalized(), 1.2])
+			else:
+				_call(_fx("air_push"), "play", [o3, gd, 0.75, rng * 0.8])
+			audio.play("air_gust" if heavy else "air_push", o3)
 		"disperse":
 			pass
 		"lash":
@@ -246,9 +265,11 @@ func _event(e: Dictionary) -> void:
 		"shield":
 			audio.play("water_splash", _apos(a), -6.0)
 		"draw_water":
-			pass
+			_draw_stream(a, e.get("at", _apos(a)), int(e.get("body", -1)))
 		"evade":
 			audio.play("dash_air" if e.get("dash", false) else "evade_whoosh", _apos(a))
+			if e.get("dash", false):
+				_dash_trail(a, e.get("dir", Vector3.ZERO))
 		"updraft":
 			audio.play("air_gust", _apos(a), -4.0)
 			_call(_fx("dust_puff"), "play", [world.get_actor(a).pos, Vector3.UP, 0.9])
@@ -282,10 +303,21 @@ func _update_transient(dt: float) -> void:
 		var tr: Dictionary = _transient[k]
 		tr.t = float(tr.t) + dt
 		var n: Node = tr.node
+		var kind := String(tr.get("kind", "lash"))
 		if float(tr.t) >= float(tr.dur) or not is_instance_valid(n):
 			if is_instance_valid(n):
-				views.pool.release(n)
+				if kind == "dash":
+					n.call("end")   # the trail fades out, then returns itself to the pool
+				else:
+					views.pool.release(n)
 			_transient.remove_at(k)
+			continue
+		if kind == "draw":
+			_draw_ribbon(tr, n)
+			continue
+		if kind == "dash":
+			var fv: FighterView = fighters.get(tr.actor, null)
+			n.call("push", fv.global_position + Vector3(0, 0.95, 0) if fv else _apos(tr.actor))
 			continue
 		# Water lash: an arc sweeping from the off side across the front.
 		var x := float(tr.t) / float(tr.dur)
@@ -303,6 +335,71 @@ func _update_transient(dt: float) -> void:
 			rad.append(lerpf(0.05, 0.11, u) * (1.0 - x * 0.5))
 		n.call("set_points", pts, rad)
 		n.call("set_state", 0.0)
+
+
+## Drawing water: a thin stream arcs from the source (pool / puddle surface) up into the held orb.
+## The sim reports the draw every 8 ticks; each report keeps the actor's one stream alive a bit
+## longer, so it lasts exactly as long as water is flowing and then thins away.
+func _draw_stream(a: int, at: Vector3, body: int) -> void:
+	for tr in _transient:
+		if String(tr.get("kind", "")) == "draw" and int(tr.actor) == a:
+			tr.dur = float(tr.t) + DRAW_HOLD
+			tr.at = at
+			tr.body = body
+			if float(tr.t) - float(tr.splash) > 0.45:
+				tr.splash = tr.t
+				_call(_fx("splash"), "play", [at, Vector3.UP, 0.25])
+			return
+	var rib := _hold("water_ribbon")
+	if rib == null:
+		return
+	_transient.append({"node": rib, "t": 0.0, "dur": DRAW_HOLD, "actor": a, "kind": "draw", "at": at,
+		"body": body, "splash": 0.0})
+	_call(_fx("splash"), "play", [at, Vector3.UP, 0.3])
+
+
+func _draw_ribbon(tr: Dictionary, n: Node) -> void:
+	var t := float(tr.t)
+	var b := world.get_body(int(tr.body))
+	var held := b != null and b.alive and b.controller == int(tr.actor)
+	if not held:
+		# Released (or dropped): the stream lets go at once instead of chasing the thrown water.
+		tr.dur = minf(float(tr.dur), t + 0.06)
+	var end := _hand(tr.actor)
+	if held:
+		var vn: Node3D = views.view_of(b.id) if views else null
+		end = vn.global_position if vn != null and vn.is_inside_tree() else b.pos
+	var start: Vector3 = tr.at
+	var d := end - start
+	var side := d.cross(Vector3.UP)
+	side = side.normalized() if side.length_squared() > 1e-6 else Vector3.RIGHT
+	var lift := 0.25 + 0.12 * d.length()
+	var r_end := clampf(b.radius * 0.5, 0.04, 0.12) if held else 0.04
+	var env := clampf(t / 0.1, 0.0, 1.0) * clampf((float(tr.dur) - t) / 0.06, 0.0, 1.0)
+	var pts := PackedVector3Array()
+	var rad := PackedFloat32Array()
+	for i in 10:
+		var u := float(i) / 9.0
+		var arc := sin(u * PI)
+		pts.append(start.lerp(end, u) + Vector3.UP * arc * lift + side * sin(u * 6.0 - t * 9.0) * 0.05 * arc)
+		# Wide where it leaves the surface, thin in flight, swelling into the orb; pulses run upward.
+		var r := 0.035 + 0.04 * (1.0 - smoothstep(0.0, 0.25, u)) + (r_end - 0.035) * u * u
+		rad.append(r * env * (1.0 + 0.3 * sin(u * 14.0 - t * 22.0)))
+	n.call("set_points", pts, rad)
+	n.call("set_state", 0.0)
+
+
+## Air dash: a faint wind streak along the dash path plus a puff where it pushed off the ground.
+func _dash_trail(a: int, dir: Vector3) -> void:
+	var ac := world.get_actor(a)
+	if ac and ac.grounded:
+		_call(_fx("dust_puff"), "play", [ac.pos, (Vector3.UP - dir * 0.8).normalized(), 0.35])
+	var tr := _hold("glide_trail")
+	if tr == null:
+		return
+	tr.call("set_width", 0.18)
+	tr.call("begin", null)
+	_transient.append({"node": tr, "t": 0.0, "dur": 0.28, "actor": a, "kind": "dash"})
 
 
 func update_continuous(dt: float) -> void:

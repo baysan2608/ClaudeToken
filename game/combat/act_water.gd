@@ -200,7 +200,7 @@ static func _ice_lance(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	shard.form = Sim.Form.SHARD
 	shard.update_radius()
 	w.ledger.freeze_dump += shard.thermal_energy() - e0
-	w.emit("transform", {"body": shard.id, "from": "water", "to": "ice", "why": "frozen"})
+	w.emit("transform", {"body": shard.id, "at": shard.pos, "from": "water", "to": "ice", "why": "frozen"})
 	shard.controller = -1
 	shard.pos = a.hand_point()
 	var target := ActEarth._throw_target(w, a, inst)

@@ -30,6 +30,8 @@ const ROLE_DEAD := 4
 const DEADZONE := 0.08
 ## Attack move per element (CombatWorld picks the same ids) for the charge-ring timing.
 const ATTACK_MOVES: Array[String] = ["earth_attack", "water_attack", "fire_attack", "air_attack"]
+## Slack (s) so a ring time summed from 60 Hz steps reads full on the tick it is reached.
+const CHARGE_EPS := 0.001
 ## Minimum drag (viewport px) before technique aim counts as intentional.
 const AIM_ACTIVE_PX := 12.0
 ## ... and never less than this physically (finger roll on press is ~1 mm).
@@ -95,6 +97,10 @@ var _ctx_unlocked := PackedByteArray([1, 1, 1, 1])
 var _ctx_label := ""
 var _ctx_available := true
 var _ctx_holding := false
+var _ctx_has_charge := false     # the game reports the sim's attack progress (else the ring self-times)
+var _ctx_attack_charge := -1.0
+var _ctx_attack_element := -1
+var _attack_sent := false        # this hold's press has reached the sim (fill_frame)
 
 # --- visual state ----------------------------------------------------------------------------
 var _vis_press := PackedFloat32Array()
@@ -213,6 +219,14 @@ func set_context(ctx: Dictionary) -> bool:
 		var holding := bool(ctx["holding"])
 		changed = changed or holding != _ctx_holding
 		_ctx_holding = holding
+	if ctx.has("attack_charge"):
+		var ac := float(ctx["attack_charge"])
+		var ae := int(ctx.get("attack_element", -1))
+		# Only the ring shows it, and only while ATTACK is held.
+		changed = changed or (_btn_finger[TouchLayout.Id.ATTACK] != -1 and (ac != _ctx_attack_charge or ae != _ctx_attack_element))
+		_ctx_has_charge = true
+		_ctx_attack_charge = ac
+		_ctx_attack_element = ae
 	if changed:
 		queue_redraw()
 	return changed
@@ -231,9 +245,25 @@ static func attack_charge_sec(element: int) -> float:
 	return ceilf(t / Sim.DT - 0.001) * Sim.DT
 
 
-## Seconds the attack ring takes to fill (the "charged" cue) for the selected element.
+## Seconds the attack ring takes to fill (the "charged" cue): the running attack's element
+## when the game reports one, else the selected element.
 func charge_time() -> float:
-	return charge_hold_sec if charge_hold_sec > 0.0 else attack_charge_sec(_ctx_element)
+	if charge_hold_sec > 0.0:
+		return charge_hold_sec
+	return attack_charge_sec(_ctx_attack_element if _ctx_attack_element >= 0 else _ctx_element)
+
+
+## Attack ring fill (0..1) while ATTACK is held. With the game's "attack_charge" context it
+## follows the sim's attack action (a press still buffered or dropped shows empty), so a full
+## ring always means the sim commits the charge; standalone it times itself from touch-down.
+func attack_ring_fill() -> float:
+	if _btn_finger[TouchLayout.Id.ATTACK] == -1:
+		return 0.0
+	var t := _attack_t
+	if _ctx_has_charge:
+		t = _ctx_attack_charge if _attack_sent else 0.0
+	var ct := maxf(charge_time(), 0.01)
+	return 1.0 if t >= ct - CHARGE_EPS else clampf(t / ct, 0.0, 1.0)
 
 
 ## Write this tick's input into `f` (all touch-owned fields are overwritten)
@@ -244,6 +274,8 @@ func fill_frame(f: InputFrame) -> void:
 	_cam_accum = Vector2.ZERO
 
 	f.attack_pressed = _l_attack_pressed
+	if _l_attack_pressed:
+		_attack_sent = true
 	f.attack_released = _l_attack_released
 	f.attack_held = _btn_finger[TouchLayout.Id.ATTACK] != -1
 	f.guard_pressed = _l_guard_pressed
@@ -518,6 +550,7 @@ func _press_button(idx: int, id: int, pos: Vector2) -> void:
 			_own_button(idx, id)
 			_l_attack_pressed = true
 			_attack_t = 0.0
+			_attack_sent = false
 		TouchLayout.Id.GUARD:
 			_own_button(idx, id)
 			_l_guard_pressed = true
@@ -712,7 +745,7 @@ func _draw_attack(op: float, rw: float, strong: bool, reduced: bool) -> void:
 	if _btn_finger[id] != -1:
 		var c := _layout.centers[id]
 		var r := _layout.radii[id]
-		var f := clampf(_attack_t / maxf(charge_time(), 0.01), 0.0, 1.0)
+		var f := attack_ring_fill()
 		if f > 0.05:
 			var col := Color(1, 1, 1, 0.9)
 			if f >= 1.0:

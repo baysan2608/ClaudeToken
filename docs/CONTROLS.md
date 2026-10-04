@@ -27,7 +27,7 @@ player guide, then a technical section for anyone touching the input layer
 |---|---|
 | **Left half** | Floating movement stick. Put your thumb down anywhere in the left half; the stick appears under it and moves relative to where you landed. Drag further than the ring and the ring follows your thumb. |
 | **Right side, empty space** | Camera. Drag to turn and tilt. |
-| **ATTACK** | Tap for a fast strike. Hold (about a fifth of a second or more) for a charged attack; a ring fills around the button so you can see the charge, and releasing delivers it. |
+| **ATTACK** | Tap for a fast strike. Hold (about a fifth of a second; a quarter for Earth) for a charged attack; a ring fills around the button as the strike winds up, and releasing once it is full delivers the charge. A press made while the previous move is still recovering is kept for up to 0.15 s; the ring stays empty until the strike actually starts. |
 | **GUARD** | Hold to block. The moment you press is the timed deflection window: press just before a hit lands to deflect instead of merely blocking. |
 | **EVADE** | Tap. The direction you are steering decides where you go. |
 | **TECHNIQUE** | Press to acquire / shape the technique for the selected element. While you keep holding, drag the *same finger* to aim (a thin ring shows the aim range). Lift to commit. |
@@ -132,12 +132,17 @@ hub.settings_panel.quit_to_lab_requested.connect(...)
 func _physics_process(_dt):
     hub.set_context({ "element": 2, "unlocked_elements": [0, 1, 2], "tech_label": "HEAT",
                       "tech_available": true, "holding": false,
+                      "attack_charge": 0.05, "attack_element": 2,
                       "target_screen_pos": cam.unproject_position(p), "target_label": "Dummy" })
     var f := hub.poll_frame()
 ```
 
 `set_context` keys are all optional; an absent key leaves that hint unchanged,
-`"target_screen_pos": null` hides the marker. `hub.controls_visible = false`
+`"target_screen_pos": null` hides the marker. `"attack_charge"` is the seconds
+since the player's attack action started while its tap/hold decision or charge
+runs (0 while the press waits in the sim's buffer, -1 when no attack is running
+or pending) and `"attack_element"` that attack's element (-1 = the selected
+one); `Game.attack_ring_context(actor)` builds both. `hub.controls_visible = false`
 hides the touch HUD (cutscenes). The touch HUD is shown automatically when a
 touchscreen / mobile platform is detected or a real touch arrives;
 `force_touch_ui` shows it on desktop and `emulate_touch_with_mouse` lets the
@@ -191,7 +196,7 @@ Events are consumed in `_input` and marked handled; the overlay uses
 | Stick radius | `clamp(0.11 x viewport height, 9 mm, 15 mm) x control_scale` |
 | Stick dead zone | 8 % of radius, output rescaled so it leaves 0 smoothly and reaches 1 at the ring; base follows the thumb past the ring |
 | Camera | `0.055 rad / mm x camera_sensitivity` of finger travel (physical, so iPhone and iPad feel alike) |
-| Attack charge cue | ring fills over 0.22 s (`TouchControls.charge_hold_sec`); the game decides what "charged" means from pressed to released timing |
+| Attack charge cue | ring fills over the attack's tap/hold decision time, `max(startup, Moves.HOLD_THRESHOLD 0.18 s)` rounded up to whole 60 Hz ticks (`TouchControls.attack_charge_sec`: Earth 0.25 s, Water / Fire / Air 0.183 s), of the running attack's element (else the selected one). With the game's `attack_charge` context it follows the sim's attack action, so a press buffered behind a recovery shows an empty ring until the attack starts and a full ring means the sim has already committed the charge; without it the ring times itself from touch-down. Reads full from 1 ms before the threshold (float sums of 60 Hz steps). `charge_hold_sec` > 0 overrides the time |
 | Technique aim radius | `min(0.15 x viewport height, 16 mm)` maps to aim length 1 (the cap keeps iPad drags short) |
 | `tech_aim_active` | drag > `max(12 px, 2 mm)` from the press point, sticky until release |
 | Cancel zone | 14 mm disc, centred >= aim radius + zone radius + 0.8 x button radius + 3 mm from the technique button (so aiming at full range cannot touch it); entering it cancels immediately |
@@ -284,6 +289,7 @@ The suites inject `InputEventScreenTouch` / `ScreenDrag` through
 
 - Multi-touch, safe-area insets and DPI scaling are exercised synthetically;
   they still need a pass on real iPhone / iPad hardware.
-- The hold-for-charge cue is visual only; the authoritative threshold lives
-  with the combat rules (currently `Moves.HOLD_THRESHOLD`).
+- The hold-for-charge cue is visual only; the authoritative tap/hold decision
+  lives with the combat rules (`CombatWorld.attack_after_startup`, the move's
+  startup and `Moves.HOLD_THRESHOLD`) and the ring mirrors it.
 - Gamepad auto-hide of the touch HUD only applies on mobile platforms.

@@ -1,7 +1,8 @@
 extends TestCase
-## Regressions for sparring-AI decision bugs: drawing waves it cannot set in time,
-## dropped technique presses, pool-edge jitter, blind throws into cover, guards that
-## drop during a visible charge, unreachable strike defence, and the per-tick contest roll.
+## Regressions for sparring-AI decision bugs: drawing waves it cannot set in time (or walking
+## into them while drawing), dropped technique presses, pool-edge jitter, blind throws into
+## cover, guards that drop during a visible charge, unreachable strike defence, and the
+## per-tick contest roll.
 
 
 func _wave(w: CombatWorld, owner: ActorState, mass: float, p: Vector3, dir: Vector3) -> MatBody:
@@ -39,16 +40,19 @@ func _duel(seed_value: int, opp_pos: Vector3, cfg: Dictionary, player_kit: Dicti
 	return {"h": h, "p": p, "o": o, "ai": ai}
 
 
-## Pours a wave of `mass` straight at the AI from `dist` m; returns its decision and whether it was hit.
-func _wave_trial(mass: float, dist: float, seed_value: int) -> Dictionary:
+## Pours a wave of `mass` straight at the AI from `dist` m; returns its decision, whether it was
+## hit and how far it moved while channelling a draw (before any hit).
+func _wave_trial(mass: float, dist: float, seed_value: int, cfg: Dictionary = {}) -> Dictionary:
 	var start := Vector3(0, 0, 4.7)
-	var d := _duel(seed_value, start - Vector3(0, 0, dist), {})
+	var d := _duel(seed_value, start - Vector3(0, 0, dist), cfg)
 	var h: SimHarness = d.h
 	var ai: AiBrain = d.ai
 	var o: ActorState = d.o
+	ai._next_attack = 1e9   # free sparring: no throws of its own
 	var b := _wave(h.w, d.p, mass, start, Vector3(0, 0, -1))
 	var key := "b%d:%d" % [b.id, b.attack_id]
-	var res := {"decision": "", "hit": false}
+	var res := {"decision": "", "hit": false, "drift": 0.0}
+	var at = null
 	for k in 400:
 		h.intents[o.id] = ai.think(Sim.DT)
 		if res.decision == "" and ai._decided.has(key):
@@ -59,6 +63,11 @@ func _wave_trial(mass: float, dist: float, seed_value: int) -> Dictionary:
 			var e: Dictionary = h.log[i]
 			if e.type == "hit" and e.actor == o.id and e.kind == "lava":
 				res.hit = true
+		var a := o.action
+		if not res.hit and a != null and a.id == "fire_tech" and a.phase == ActionInst.P.CHANNEL:
+			if at == null:
+				at = o.pos
+			res.drift = maxf(res.drift, o.pos.distance_to(at))
 		if b.form != Sim.Form.WAVE:
 			break
 	return res
@@ -90,6 +99,26 @@ func test_ai_still_draws_a_wave_it_can_set() -> void:
 		if r.decision == "draw" and not r.hit:
 			ok += 1
 	check(ok == 4, "a settable wave is drawn and stopped (%d/4)" % ok)
+
+
+func test_ai_stands_still_while_it_draws() -> void:
+	# The draw estimate assumes the AI stays put. It used to keep walking toward the foe (and
+	# so into their wave) while holding the draw, and to slide on from a run when it committed:
+	# draws estimated to set the lava in time arrived too late (13 of 17 here were hit before).
+	var draws := 0
+	var bad := 0
+	var drift := 0.0
+	for c in [["passive", 45.0, 13.0], ["", 30.0, 10.5], ["", 30.0, 11.5], ["", 20.0, 10.0]]:
+		for s in [1, 2, 3, 4, 5, 6]:
+			var r := _wave_trial(c[1], c[2], s, {"drill": c[0]})
+			if r.decision == "draw":
+				draws += 1
+				bad += 1 if r.hit else 0
+				drift = maxf(drift, r.drift)
+	note("draws %d, hit through the draw %d, max drift while drawing %.2f m" % [draws, bad, drift])
+	check(draws >= 8, "setup: the draw is still chosen (%d/24)" % draws)
+	check(bad == 0, "a chosen draw sets the wave before it arrives (%d/%d hit)" % [bad, draws])
+	check(drift < 0.01, "no steps while channelling the draw (%.2f m)" % drift)
 
 
 func test_wave_is_perceived_from_the_pour_wind_up() -> void:

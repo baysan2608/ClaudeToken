@@ -5,12 +5,26 @@ extends Node3D
 ## changes: a stone that heats, melts, pours and cools keeps its id while its
 ## view crossfades stone -> molten blob -> lava wave -> crusted ridge.
 
+## The Mobile renderer specialises every lit surface's pipeline by how many omni lights touch it
+## (none / one / several). Until a variant has compiled the surface draws through the fallback
+## ubershader, which flashed the arena dark for a frame or two on the session's first flare (then
+## first lava glow, first bolt). After each scenario load two imperceptible arena-wide lights touch
+## everything in view, one and then both, so both variants compile during load instead.
+const WARM_LIGHT_FRAMES := 4
+## Puddle water lens: fraction of the puddle radius (the wet mark's dark rim shows around it) and
+## its half-thickness (a thin flattened orb, mostly above the floor).
+const PUDDLE_LENS := 0.78
+const PUDDLE_LENS_H := 0.025
+
 var pool: VfxPool
 var world: CombatWorld
 ## body id -> {kind: String, node: Node3D, prev: Vector3, curr: Vector3, trail: PackedVector3Array}, plus
-## the ridge path/state last built (sig, st: "wave") and the radius the wet mark was placed with (r: "puddle").
+## the ridge path/state last built (sig, st: "wave"), the radius the view was sized for (r: "blob",
+## "puddle": the wet mark's placed radius) and the puddle's water lens and fitted state (surf, fit).
 var _views := {}
 var _tmp_w := PackedFloat32Array()
+var _warm_lights: Array[OmniLight3D] = []
+var _warm := 0
 
 
 func _init() -> void:
@@ -25,6 +39,7 @@ func _ready() -> void:
 func bind(w: CombatWorld) -> void:
 	clear()
 	world = w
+	_warm = WARM_LIGHT_FRAMES
 
 
 func clear() -> void:
@@ -65,6 +80,8 @@ func push_state() -> void:
 
 
 func render(alpha: float) -> void:
+	if _warm > 0:
+		_warm_light_variants()
 	for id in _views:
 		var b := world.get_body(id)
 		if b == null:
@@ -91,6 +108,10 @@ func render(alpha: float) -> void:
 				n.call("set_damage", b.wall_damage)
 			"blob":
 				n.global_position = p
+				# Drawn water grows from a first sip to 12 kg (and a shield shrinks as it boils off).
+				if b.radius != float(v.get("r", 0.0)):
+					v.r = b.radius
+					n.call("setup", b.radius)
 				n.call("set_state", 1.0 - b.liquid)
 			"ribbon":
 				var tr: PackedVector3Array = v.trail
@@ -105,11 +126,13 @@ func render(alpha: float) -> void:
 				n.call("set_points", pts, rad)
 				n.call("set_state", 1.0 - b.liquid)
 			"puddle":
-				# Puddles grow as water merges in and shrink as they are drawn or boiled: keep the wet
-				# patch on the live radius by scaling the placed quad (re-placing restarts its fade-in).
-				var k := maxf(b.radius, 0.05) / maxf(float(v.get("r", b.radius)), 0.05)
-				if absf(n.scale.x - k) > 0.01:
-					n.scale = Vector3(k, 1.0, k)
+				var fit := Vector4(b.pos.x, b.pos.y, b.pos.z, b.radius)
+				if fit != v.get("fit", Vector4.INF):
+					v.fit = fit
+					_fit_puddle(b, n, v)
+				if v.get("surf") != null and b.liquid != float(v.get("liq", -1.0)):
+					v.liq = b.liquid
+					(v.surf as Node3D).call("set_state", 1.0 - b.liquid)
 
 
 func _crust(b: MatBody) -> float:
@@ -161,6 +184,7 @@ func _make(b: MatBody, kind: String) -> Dictionary:
 			n = acquire("water_blob")
 			if n:
 				n.call("setup", b.radius)
+				v.r = b.radius
 		"ribbon":
 			n = acquire("water_ribbon")
 		"puddle":
@@ -168,6 +192,18 @@ func _make(b: MatBody, kind: String) -> Dictionary:
 			if n and n.has_method("place"):
 				n.call("place", b.pos, b.radius, "wet", 9999.0)
 				v.r = b.radius
+			# The dark wet mark alone all but vanishes under its glossy sheen at a low camera angle:
+			# a calm, thin water lens over it makes the puddle read as water.
+			var s := acquire("water_blob")
+			if s:
+				s.call("set_wobble", 0.2)
+				# Draw the lens before other transparent water/ice so shards resting in the puddle stay
+				# visible (the lens refracts only the opaque scene behind it).
+				_set_sorting_offset(s, -2.0)
+				v.surf = s
+			if n:
+				v.fit = Vector4(b.pos.x, b.pos.y, b.pos.z, b.radius)
+				_fit_puddle(b, n, v)
 	if n != null:
 		n.visible = true
 	v.node = n
@@ -186,10 +222,61 @@ func acquire(key: String) -> Node3D:
 
 func _release(id: int) -> void:
 	var v: Dictionary = _views.get(id, {})
+	if v.get("surf") != null:
+		_set_sorting_offset(v.surf, 0.0)
+		pool.release(v.surf)
+		v.surf = null
 	if v.is_empty() or v.node == null:
 		return
 	pool.release(v.node)
 	v.node = null
+
+
+## Puddles grow as water merges in (melted ice, landed streams) and shrink as they are drawn or
+## boiled: keep the wet mark and the water lens on the live radius and position. The placed mark is
+## scaled rather than re-placed (re-placing restarts its fade-in). Runs only when the puddle changes.
+func _fit_puddle(b: MatBody, n: Node3D, v: Dictionary) -> void:
+	var r := maxf(b.radius, 0.05)
+	var k := r / maxf(float(v.get("r", b.radius)), 0.05)
+	n.scale = Vector3(k, 1.0, k)
+	# Pooled nodes live under the pool (a plain Node): their local transform is their world one.
+	n.position = b.pos + Vector3(0.0, ScorchDecal.LIFT, 0.0)
+	var s: Node3D = v.get("surf")
+	if s == null:
+		return
+	var rl := r * PUDDLE_LENS
+	s.call("setup", rl)
+	s.scale = Vector3(1.0, PUDDLE_LENS_H / rl, 1.0)
+	# Just above the mark, so the lens sorts (and refracts) over it.
+	s.position = b.pos + Vector3(0.0, ScorchDecal.LIFT + 0.006, 0.0)
+	v.liq = b.liquid
+	s.call("set_state", 1.0 - b.liquid)
+
+
+func _set_sorting_offset(n: Node, off: float) -> void:
+	if n is VisualInstance3D:
+		(n as VisualInstance3D).sorting_offset = off
+	for c in n.get_children():
+		_set_sorting_offset(c, off)
+
+
+func _warm_light_variants() -> void:
+	if _warm_lights.is_empty():
+		for i in 2:
+			var l := OmniLight3D.new()
+			l.name = "WarmLight%d" % i
+			l.shadow_enabled = false
+			l.light_energy = 0.001
+			l.omni_range = 30.0       # the whole 32 x 32 m arena from above its centre
+			l.position = Vector3(0.0, 4.0, 0.0)
+			l.visible = false
+			add_child(l)
+			_warm_lights.append(l)
+	_warm -= 1
+	# The first frame draws without them so its own (no omni light) pipelines are queued first and
+	# are ready again when the lights go off; then one light, then two, then off.
+	_warm_lights[0].visible = _warm == 2 or _warm == 1
+	_warm_lights[1].visible = _warm == 1
 
 
 func _update_wave(b: MatBody, n: Node3D, p: Vector3, v: Dictionary) -> void:

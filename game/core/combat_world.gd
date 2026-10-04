@@ -1125,15 +1125,15 @@ func _on_phase_changed(b: MatBody, old_phase: int) -> void:
 			b.on_ground = true
 			b.max_life = Sim.REMNANT_LIFETIME
 			b.age = 0.0
-			emit("transform", {"body": b.id, "from": "wave", "to": "rock", "why": "cooled"})
+			emit("transform", {"body": b.id, "at": b.pos, "from": "wave", "to": "rock", "why": "cooled"})
 		elif b.phase == Sim.Phase.SOLID and b.form == Sim.Form.BLOB:
 			b.form = Sim.Form.CHUNK
 			b.max_life = Sim.REMNANT_LIFETIME
 			b.age = 0.0
-			emit("transform", {"body": b.id, "from": "lava", "to": "rock", "why": "cooled"})
+			emit("transform", {"body": b.id, "at": b.pos, "from": "lava", "to": "rock", "why": "cooled"})
 		elif b.phase == Sim.Phase.MOLTEN and old_phase != Sim.Phase.MOLTEN and b.form == Sim.Form.CHUNK:
 			b.form = Sim.Form.BLOB
-			emit("transform", {"body": b.id, "from": "stone", "to": "molten", "why": "heated"})
+			emit("transform", {"body": b.id, "at": b.pos, "from": "stone", "to": "molten", "why": "heated"})
 	elif b.is_water():
 		if b.phase == Sim.Phase.LIQUID and old_phase == Sim.Phase.FROZEN:
 			if b.form == Sim.Form.SHARD or b.form == Sim.Form.CHUNK:
@@ -1142,12 +1142,12 @@ func _on_phase_changed(b: MatBody, old_phase: int) -> void:
 				b.attack_id = 0
 				b.pos.y = arena.ground_height(b.pos.x, b.pos.z, b.pos.y + 0.2)
 				b.update_radius_puddle()
-				emit("transform", {"body": b.id, "from": "ice", "to": "water", "why": "melted"})
+				emit("transform", {"body": b.id, "at": b.pos, "from": "ice", "to": "water", "why": "melted"})
 				_merge_puddle(b)
 			elif b.form == Sim.Form.PUDDLE:
-				emit("transform", {"body": b.id, "from": "ice", "to": "water", "why": "melted"})
+				emit("transform", {"body": b.id, "at": b.pos, "from": "ice", "to": "water", "why": "melted"})
 		elif b.phase == Sim.Phase.FROZEN:
-			emit("transform", {"body": b.id, "from": "water", "to": "ice", "why": "frozen"})
+			emit("transform", {"body": b.id, "at": b.pos, "from": "water", "to": "ice", "why": "frozen"})
 
 
 func _update_ballistic(b: MatBody, dt: float) -> void:
@@ -1416,7 +1416,7 @@ func _water_to_puddle(b: MatBody) -> void:
 		merge_bodies(pool, b)
 		return
 	b.update_radius_puddle()
-	emit("transform", {"body": b.id, "from": "stream", "to": "puddle", "why": "landed"})
+	emit("transform", {"body": b.id, "at": b.pos, "from": "stream", "to": "puddle", "why": "landed"})
 	_merge_puddle(b)
 
 

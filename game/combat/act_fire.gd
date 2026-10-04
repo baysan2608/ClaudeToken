@@ -311,7 +311,7 @@ static func _pour(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	b.max_life = -1.0
 	b.age = 0.0
 	b.touch(a.id, "pour", w.tick)
-	w.emit("transform", {"body": b.id, "from": Sim.FORM_NAMES[old_form], "to": "wave", "why": "poured"})
+	w.emit("transform", {"body": b.id, "at": b.pos, "from": Sim.FORM_NAMES[old_form], "to": "wave", "why": "poured"})
 	if ps.blocked:
 		# Poured point-blank into cover: the lava stays on this side and pools there.
 		w.emit("wave_blocked", {"body": b.id, "at": start})

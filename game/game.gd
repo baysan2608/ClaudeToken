@@ -403,9 +403,15 @@ func _challenges(evs: Array[Dictionary]) -> void:
 			progress.complete(ch.id, ch.unlock)
 			audio.ui("unlock")
 			Haptics.play("transform")
-			hud.toast("Mastered %s · unlocked %s" % [ch.title, String(ch.unlock).replace("_", " ")])
+			hud.toast(mastery_toast(ch))
 			_update_challenge_text()
 			hub.settings_panel.set_practice_items(Scenarios.practice_items(progress))
+
+
+## Practice kits often grant the technique already, so the unlock is named for what it
+## changes: the player's own Free Spar loadout.
+static func mastery_toast(ch: Dictionary) -> String:
+	return "Mastered %s — %s now in your Free Spar kit" % [ch.title, String(ch.unlock).replace("_", " ")]
 
 
 func _update_challenge_text() -> void:
@@ -479,6 +485,7 @@ func _hud_context(tgt: ActorState) -> Dictionary:
 			unlocked.append(i)
 	var ctx := {"element": player.element, "unlocked_elements": unlocked, "tech_label": label,
 		"tech_available": ok, "holding": held != null}
+	ctx.merge(attack_ring_context(player))
 	if marker_pos != null:
 		ctx["target_screen_pos"] = marker_pos
 		ctx["target_label"] = marker_label
@@ -488,6 +495,18 @@ func _hud_context(tgt: ActorState) -> Dictionary:
 	else:
 		ctx["target_screen_pos"] = null
 	return ctx
+
+
+## The touch charge ring follows the sim, not the finger: "attack_charge" is the seconds since
+## the actor's attack action started while its tap/hold decision or charge runs (0 while a press
+## waits in the buffer, -1 when no attack is running or pending), "attack_element" its element.
+static func attack_ring_context(a: ActorState) -> Dictionary:
+	if a.buffered == "attack":
+		return {"attack_charge": 0.0, "attack_element": -1}
+	var inst := a.action
+	if inst != null and TouchControls.ATTACK_MOVES.has(inst.id) and (inst.phase == ActionInst.P.STARTUP or inst.phase == ActionInst.P.CHARGE):
+		return {"attack_charge": inst.total, "attack_element": inst.element}
+	return {"attack_charge": -1.0, "attack_element": -1}
 
 
 ## The sources ActWater._draw takes from: the pool edge within reach, or a liquid puddle in the

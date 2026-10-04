@@ -2,7 +2,7 @@ extends "res://tests/ui/ui_test_case.gd"
 ## Regressions for the input -> sim / camera / HUD pipeline: drag aim on the
 ## technique release tick, camera sensitivity / invert / pitch direction applied
 ## once, attack charge ring timing vs the sim's tap/hold rule, touch overlay
-## redraw only on context change, HUD text physical size on iPhone.
+## redraw only on context change, HUD text physical size on iPhone, mastery toast wording.
 
 const Id := TouchLayout.Id
 
@@ -162,6 +162,132 @@ func test_charge_ring_fills_when_the_sim_commits_heavy() -> void:
 		check_near(c.charge_time(), sec, 0.0001, "%s: ring follows the selected element" % Sim.ELEMENT_NAMES[elem])
 	c.charge_hold_sec = 0.4
 	check_near(c.charge_time(), 0.4, 0.0001, "an explicit override still wins")
+
+
+## One real-touch attack through TouchControls -> PlayerController -> CombatWorld in Godot's frame
+## order (input events, physics tick, the game's HUD context, _process). Optionally a tap at tick 0
+## first (`gap` >= 0: the held press comes `gap` ticks later, buffered behind that attack); the
+## held press lifts after `hold` frames; `switch_elem` >= 0 is tapped on its chip 3 frames into the hold.
+## Returns [ring read full before the lift, the sim charged the held attack, ticks from the
+## held press to its attack's start (< 0: it never started)].
+func _ring_trial(c: TouchControls, elem: int, gap: int, hold: int, switch_elem: int = -1) -> Array:
+	c.release_all(true)
+	poll(c)
+	c.set_context({"element": elem, "unlocked_elements": [0, 1, 2, 3]})
+	var pc := PlayerController.new()
+	var w := CombatWorld.new(5)
+	var p := w.add_actor("P", Vector3(-8, 0, 6), 0, {}, elem)
+	p.in_water = false
+	var o := w.add_actor("O", Vector3(-8, 0, -4), 1, {}, Sim.Element.EARTH)
+	o.is_dummy = true
+	var intents := {}
+	for k in 20:
+		_step(w, intents, p, pc, poll(c), PI)
+	var a := btn(c, Id.ATTACK)
+	var press := maxi(gap, 0) + (2 if gap >= 0 else 0)
+	var full := false
+	var heavy := false
+	var held_start := -1
+	for k in press + hold + 40:
+		if gap >= 0 and k == 0:
+			touch_down(4, a)
+		if gap >= 0 and k == 2:
+			touch_up(4, a)
+		if k == press:
+			touch_down(4, a)
+		if k == press + 3 and switch_elem >= 0:
+			touch_down(5, btn(c, Id.ELEM_0 + switch_elem))
+			touch_up(5, btn(c, Id.ELEM_0 + switch_elem))
+		if k == press + hold:
+			touch_up(4, a)
+		for e in _step(w, intents, p, pc, poll(c), PI):
+			if e.type == "action" and e.get("actor", -1) == p.id and e.get("move", "") in TouchControls.ATTACK_MOVES:
+				if e.get("phase", "") == "startup" and k >= press:
+					held_start = k
+				if e.get("phase", "") == "charge" and held_start >= 0:
+					heavy = true
+		var ctx := Game.attack_ring_context(p)
+		ctx["element"] = p.element
+		c.set_context(ctx)
+		c._process(Sim.DT)
+		if k >= press and k < press + hold and c.attack_ring_fill() >= 1.0:
+			full = true
+	return [full, heavy, held_start - press if held_start >= 0 else -1]
+
+
+func test_charge_ring_follows_the_sim_attack_even_when_buffered() -> void:
+	var c := make_controls()
+	for elem in 4:
+		# gap -1: a fresh press; 6 / 20 / 28: pressed again during the tap's startup / recovery
+		# (buffered: dropped once the buffer expires, or started some ticks after the press).
+		var late_heavy := false
+		for gap in [-1, 6, 20, 28]:
+			var fulls := 0
+			for hold in range(1, 34):
+				var r := _ring_trial(c, elem, gap, hold)
+				check(r[0] == r[1], "%s gap %d, lift after %d frames: ring full (%s) <=> charged attack (%s)" % [
+					Sim.ELEMENT_NAMES[elem], gap, hold, str(r[0]), str(r[1])])
+				fulls += int(r[0])
+				late_heavy = late_heavy or (r[1] and r[2] > 0)
+			if gap == -1:
+				check(fulls > 0, "%s: a long enough hold fills the ring" % Sim.ELEMENT_NAMES[elem])
+		check(late_heavy, "%s: covers a buffered press that starts late and still charges" % Sim.ELEMENT_NAMES[elem])
+	# Switching element mid-hold: the ring keeps the running attack's (Earth's) timing.
+	for hold in range(12, 20):
+		var r := _ring_trial(c, Sim.Element.EARTH, -1, hold, Sim.Element.WATER)
+		check(r[0] == r[1], "Earth attack, Water chip mid-hold, lift after %d: ring full (%s) <=> charged (%s)" % [hold, str(r[0]), str(r[1])])
+
+
+func test_charge_ring_reads_full_on_the_threshold_frame() -> void:
+	# Standalone (no game context): the ring times itself and float sums of 60 Hz frames
+	# must not make it read full one frame late.
+	var c := make_controls()
+	var a := btn(c, Id.ATTACK)
+	for elem in 4:
+		c.set_context({"element": elem})
+		var n := int(round(TouchControls.attack_charge_sec(elem) / Sim.DT))
+		touch_down(3, a)
+		poll(c)
+		for k in n - 1:
+			c._process(Sim.DT)
+		check(c.attack_ring_fill() < 1.0, "%s: %d frames is not full yet" % [Sim.ELEMENT_NAMES[elem], n - 1])
+		c._process(Sim.DT)
+		check(c.attack_ring_fill() >= 1.0, "%s: full on frame %d" % [Sim.ELEMENT_NAMES[elem], n])
+		touch_up(3, a)
+		poll(c)
+		check_eq(c.attack_ring_fill(), 0.0, "no ring once released")
+	# With the game's context the sim's action time drives it, once the press reached the sim
+	# (until then the context still describes an older attack); -1 (nothing running) is empty.
+	c.set_context({"element": Sim.Element.EARTH})
+	touch_down(3, a)
+	c.set_context({"attack_charge": 0.3, "attack_element": Sim.Element.EARTH})
+	check_eq(c.attack_ring_fill(), 0.0, "a press the sim has not polled yet shows an empty ring")
+	poll(c)
+	c.set_context({"attack_charge": 15 * Sim.DT, "attack_element": Sim.Element.EARTH})
+	check(c.attack_ring_fill() >= 1.0, "15 ticks of an Earth attack read full")
+	c.set_context({"attack_charge": 14 * Sim.DT, "attack_element": Sim.Element.EARTH})
+	check(c.attack_ring_fill() < 1.0, "14 ticks do not")
+	c.set_context({"attack_charge": -1.0, "attack_element": -1})
+	step(c, 1.0)
+	check_eq(c.attack_ring_fill(), 0.0, "no attack running or pending: the ring stays empty however long the finger holds")
+	touch_up(3, a)
+	poll(c)
+
+
+func test_mastery_toast_names_the_free_spar_kit_and_fits_a_phone() -> void:
+	var font := ThemeDB.fallback_font
+	var fs := Hud.font_px(18, Hud.TOAST_MM, 657.0 / 720.0, PHONE_PPM)
+	var n := 0
+	for s: Dictionary in Scenarios.LIST:
+		var ch: Dictionary = s.get("challenge", {})
+		if ch.is_empty():
+			continue
+		n += 1
+		var text := Game.mastery_toast(ch)
+		check(text.begins_with("Mastered " + String(ch.title)) and text.contains("Free Spar kit"), "toast: " + text)
+		var wpx := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		check(wpx < PHONE.x - 2 * 60.0, "'%s' fits the iPhone safe width (%d px)" % [text, int(wpx)])
+	check(n >= 5, "every mastery challenge checked")
 
 
 # --- touch overlay redraw ---------------------------------------------------------------------------------------

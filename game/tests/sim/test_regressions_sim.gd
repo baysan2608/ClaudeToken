@@ -1,9 +1,10 @@
 extends TestCase
-## Regressions for verified simulation findings: grip requests that outlive their action, technique
-## cancels during startup / buffer, a stale buffered press eating a guard, held water and walls
-## outliving their guard, pours through thin walls, lava at rest in water, remnant lifetime and trim
-## order, guard element switching, attacker Balance below 0, unpaid Earth heaves, and the
-## waterskin / steam-cap ledger holes. Each scenario failed before its fix.
+## Regressions for verified simulation findings: grip requests that outlive their action, a seize
+## on a too-heavy stone that ripped one from the ground instead, technique cancels during
+## startup / buffer, a stale buffered press eating a guard, held water and walls outliving their
+## guard, pours through thin walls, lava at rest in water, remnant lifetime and trim order, guard
+## element switching, attacker Balance below 0, unpaid Earth heaves, and the waterskin /
+## steam-cap ledger holes. Each scenario failed before its fix.
 
 var h: SimHarness
 
@@ -98,6 +99,40 @@ func test_grip_is_withdrawn_when_a_later_actor_staggers_the_requester_that_tick(
 		else:
 			check(behind.controller == c.id, "control: an uninterrupted request is granted")
 			check(behind.hold_point.distance_to(c.hand_point()) < 1e-4, "a newly won body homes to the hand, not a stale point (%s)" % behind.hold_point)
+
+
+func test_earth_tech_on_a_too_heavy_stone_whiffs_instead_of_ripping() -> void:
+	# Held on a boulder, the seize used to report control_fail(mass) and then, past rip_time,
+	# quietly rip a 20 kg stone from the ground and hand that over instead.
+	for hold in [4, 60]:
+		h = SimHarness.new(1)
+		var a := h.actor("A", Vector3(0, 0, 6), 0, {}, Sim.Element.EARTH)
+		h.actor("T", Vector3(0, 0, -6), 1, {}, Sim.Element.EARTH)
+		var boulder := h.w.spawn_body(Sim.Mat.STONE, Sim.Form.CHUNK, 200.0, Vector3(0, 0.6, 3.0), "scenario")
+		h.step(30)
+		h.log.clear()
+		h.press(a, "tech")
+		var recovering := false
+		for k in 90:
+			if k == hold:
+				h.release(a, "tech")
+			h.step()
+			if not recovering and h.has_event("whiff"):
+				recovering = a.action != null and a.action.id == "earth_tech" and a.action.phase == ActionInst.P.RECOVERY
+		var label := "held %d ticks" % hold
+		check(_events_for("control_fail", a).any(func(e): return e.reason == "mass" and e.body == boulder.id), "%s: the boulder is too heavy" % label)
+		check(_events_for("whiff", a).size() == 1, "%s: the technique whiffs once (%d)" % [label, _events_for("whiff", a).size()])
+		check(recovering, "%s: the whiff goes straight to recovery" % label)
+		check(_events_for("rip", a).is_empty() and _events_for("control_won", a).is_empty(), "%s: no ground stone is ripped instead" % label)
+		check(a.held_body == -1 and a.action == null, "%s: nothing held, the technique is over" % label)
+	# Control: with nothing in reach, the same hold does rip a stone.
+	h = SimHarness.new(1)
+	var c := h.actor("C", Vector3(0, 0, 6), 0, {}, Sim.Element.EARTH)
+	h.actor("T", Vector3(0, 0, -6), 1, {}, Sim.Element.EARTH)
+	h.step(30)
+	h.press(c, "tech")
+	h.step(40)
+	check(_events_for("rip", c).size() == 1 and c.held_body >= 0, "control: with no target the held technique rips a stone")
 
 
 # ================================================================ technique cancels

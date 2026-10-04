@@ -98,7 +98,7 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 			inst.data["face"] = inst.data.aim
 			if b == null:
 				_seek(w, a, inst, it)
-				if not it.tech_held and w.held(a) == null:
+				if inst.phase == ActionInst.P.CHANNEL and not it.tech_held and w.held(a) == null:
 					w.emit("whiff", {"actor": a.id, "move": inst.id})
 					w.set_phase(a, inst, ActionInst.P.RECOVERY)
 				return
@@ -121,17 +121,17 @@ static func _seek(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorInte
 	var tid: int = inst.data.get("target", -1)
 	var tb := w.get_body(tid)
 	if tb == null or not tb.alive or not _stone_filter(tb) or tb.controller == a.id:
-		tb = null
-		if not inst.data.get("target_failed", false):
-			tb = w.find_body(a, w.aim_dir(a, it), reach, 65.0, _stone_filter)
-			if tb != null:
-				inst.data["target"] = tb.id
-				w.emit("target_body", {"actor": a.id, "body": tb.id})
+		tb = w.find_body(a, w.aim_dir(a, it), reach, 65.0, _stone_filter)
+		if tb != null:
+			inst.data["target"] = tb.id
+			w.emit("target_body", {"actor": a.id, "body": tb.id})
 	if tb != null:
 		if tb.mass > a.max_control_mass:
+			# Too heavy: the technique visibly fails (whiff -> recovery). It does not go on to
+			# rip a ground stone instead; that is only for when there is nothing to seize.
 			w.request_grip(a, tb, 0.0, "seize")   # emits control_fail (mass)
-			inst.data["target_failed"] = true
-			inst.data["target"] = -1
+			w.emit("whiff", {"actor": a.id, "move": inst.id, "body": tb.id})
+			w.set_phase(a, inst, ActionInst.P.RECOVERY)
 			return
 		var s := w.grip_strength(a, tb, 0.85, reach)
 		w.request_grip(a, tb, s, "seize")
