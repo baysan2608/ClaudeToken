@@ -24,7 +24,7 @@ exports to Xcode on a Mac.
 | What | Command (repo root) |
 |---|---|
 | Godot (Mac) | Install Godot 4.7.2; for iPhone also Editor ▸ Manage Export Templates ▸ download 4.7.2 |
-| Play on desktop | Open `game/project.godot` in Godot ▸ Play, or `tools/scripts/godot.sh` (Linux path; set `GODOT_BIN` on macOS) |
+| Play on desktop | Open `game/project.godot` in Godot ▸ Play, or `tools/scripts/godot.sh` (finds `/Applications/Godot.app` on macOS; `GODOT_BIN` overrides) |
 | Touch overlay on desktop | `tools/scripts/godot.sh -- --touchui` |
 | Pick a scenario | `-- --scenario=<id>` (ids in `game/scenarios/scenarios.gd`); in game: Esc ▸ Practice |
 | Sim tests | `tools/scripts/godot.sh --headless -s res://tests/run_tests.gd` |
@@ -35,6 +35,14 @@ exports to Xcode on a Mac.
 | Soak | `tools/scripts/godot.sh --headless --fixed-fps 60 -- --autoplay=soak:600 --perf=<file.json>` |
 
 Evidence (real renders from this build): `docs/media/` — flagship + four element videos and stills.
+
+## Working locally on a Mac
+1. Get the repo: `git clone -b claude/kind-noether-t8enqd https://github.com/baysan2608/ClaudeToken.git Fourfold` (or GitHub ▸ branch ▸ Code ▸ Download ZIP).
+2. Install **Godot 4.7.2** (standard, not .NET) into `/Applications`; for iOS export also Editor ▸ Manage Export Templates ▸ 4.7.2.
+3. Open `game/project.godot` in Godot (first open imports assets, ~1 min), press Play. Scripts in `tools/scripts/` work as-is on macOS.
+4. Optional, only to regenerate assets: Blender 4.5 LTS (`blender -b -P tools/blender/build_fighter.py`), Python 3 + `pip install numpy scipy`
+   (`python3 tools/audio/synth_sfx.py`).
+5. `CLAUDE.md` has the conventions and test commands for Claude Code sessions on the repo.
 
 ## Versions
 Godot 4.7.2.stable.official.ed1daf0bf · Blender 4.5.14 LTS (bpy module) · Python 3.11 · Mesa lavapipe (CPU Vulkan) for renders.
