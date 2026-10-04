@@ -4,7 +4,7 @@
 
 | Run | Scene / settings | Result |
 |---|---|---|
-| Headless 10-min soak (`--headless --fixed-fps 60 -- --autoplay=soak:600`) | Free Spar, random inputs across all elements, all techniques, AI opponent | Sim step p95 **0.13–0.20 ms**/tick (60 Hz budget 16.7 ms). Static memory 48.8 MB → 53.4 MB after 10 min, nodes 217 → ~410 (pools filling to their caps, then flat). 0 script errors after fixes. |
+| Headless 10-min soak, final build (`--headless --fixed-fps 60 -- --autoplay=soak:600`) | Free Spar, random inputs across all elements, all techniques, AI opponent | Sim step p95 **0.12–0.23 ms**/tick (60 Hz budget 16.7 ms). Static memory 50.4 MB at start, 54.2 MB at 3 min, 55.1 MB at 10 min (flat). Nodes 266 → 425, bounded by VFX/audio pool caps. **0 script errors.** |
 | Sim invariants under soak (tests) | `test_energy_and_soak`, `test_scenarios` | Body count ≤ 32, mass/energy ledgers balance, deterministic. |
 
 Frame-time numbers from `--render` runs here are **not meaningful**: rendering is done on the CPU by Mesa lavapipe.
