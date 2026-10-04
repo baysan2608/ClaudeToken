@@ -142,6 +142,8 @@ func test_insufficient_focus_partial_conversion() -> void:
 	h.step(90)
 	check(h.events("insufficient").any(func(e): return e.actor == p.id), "player told Focus ran out")
 	check(stone.phase != Sim.Phase.MOLTEN, "not enough energy to fully melt (liquid %.2f)" % stone.liquid)
+	check(stone.controller == p.id, "running dry stalls the conversion with the stone still held")
+	check(not h.has_event("control_lost"), "no control loss from spending the last Focus on heat")
 	h.aim(p, o.pos - p.pos)
 	h.release(p, "tech")
 	h.step(3)

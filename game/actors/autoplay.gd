@@ -112,7 +112,15 @@ func _flagship(g: Game) -> void:
 			f.move = Vector2.ZERO
 			f.attack_held = false
 			for b in w.bodies:
-				if b.alive and b.is_projectile() and b.attack_owner != p.id and b.is_stone() and b.pos.distance_to(p.chest()) < 7.5 + rng.randf() * 1.0:
+				if b.alive and b.is_projectile() and b.attack_owner != p.id and b.is_stone() and b.mass > 25.0 \
+						and b.pos.distance_to(p.chest()) < 4.5:
+					# Too much mass to melt with the Focus at hand: sidestep it instead.
+					f.move = Vector2(1.0, 0.0)
+					f.evade_pressed = true
+					_shot("sidestep_heavy")
+					break
+				if b.alive and b.is_projectile() and b.attack_owner != p.id and b.is_stone() and b.mass <= 25.0 \
+						and b.pos.distance_to(p.chest()) < 7.5 + rng.randf() * 1.0:
 					_body = b.id
 					f.tech_pressed = true
 					f.tech_held = true
@@ -221,5 +229,11 @@ func _tour(g: Game) -> void:
 		_shot("lightning_%d" % int(_t / 4.0))
 
 
-func after_tick(_g: Game, _evs: Array[Dictionary]) -> void:
-	pass
+func after_tick(g: Game, evs: Array[Dictionary]) -> void:
+	if not OS.has_environment("AUTOPLAY_TRACE"):
+		return
+	for e in evs:
+		if e.get("actor", -99) == g.player.id or e.type in ["transform", "control_lost", "control_fail", "launch"]:
+			if e.type in ["action"] and e.get("phase", "") != "startup":
+				continue
+			print("ev t=%.2f %s foc=%.0f heat=%.0f" % [_t, str(e), g.player.focus, g.player.heat_reserve])

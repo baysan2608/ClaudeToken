@@ -213,8 +213,13 @@ static func _heat_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: Acto
 	b.hold_point = a.pos + Vector3(0, 1.05, 0) + a.forward() * (0.3 + b.radius)
 	if b.liquid < 1.0:
 		var want := float(d.heat_rate) * Sim.DT
-		var paid := w.pay_heat(a, want)
-		if paid < want * 0.5 and not inst.data.get("starved", false):
+		# Never spend the Focus needed to keep holding molten mass (≈2 s of upkeep): running dry
+		# stalls the conversion partway with the stone still in hand, it doesn't drop it.
+		var keep := Sim.HOLD_UPKEEP_FOCUS * 2.0
+		var affordable := a.heat_reserve + maxf(0.0, a.focus - keep) * Sim.HU_PER_FOCUS
+		want = minf(want, affordable)
+		var paid := w.pay_heat(a, want) if want > 0.0 else 0.0
+		if paid < float(d.heat_rate) * Sim.DT * 0.5 and not inst.data.get("starved", false):
 			inst.data["starved"] = true
 			w.emit("insufficient", {"actor": a.id, "what": "focus", "move": "heat"})
 		var used := w.heat_body(b, paid)
