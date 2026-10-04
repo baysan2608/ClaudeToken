@@ -3,7 +3,7 @@ import bmesh
 import bpy
 from mathutils import Vector
 
-from fighter_skeleton import ALL_BONES, bone_table
+from fighter_skeleton import BONE_ORDER, bone_table
 from fighter_mesh import MAT_NAMES, MAT_COLORS, DOUBLE_SIDED, build_character
 
 ARM_NAME = "FighterArmature"
@@ -28,14 +28,14 @@ def make_armature():
     ob.select_set(True)
     bpy.ops.object.mode_set(mode="EDIT")
     ebs = {}
-    for name in ALL_BONES:
+    for name in BONE_ORDER:
         d = table[name]
         eb = arm.edit_bones.new(name)
         eb.head = d["head"]
         eb.tail = d["tail"]
         eb.align_roll(d["roll"])
         ebs[name] = eb
-    for name in ALL_BONES:
+    for name in BONE_ORDER:
         d = table[name]
         if d["parent"]:
             ebs[name].parent = ebs[d["parent"]]
@@ -89,7 +89,7 @@ def make_mesh_object(arm_ob, mb):
     bpy.context.scene.collection.objects.link(ob)
     # vertex groups (one per bone, spec order)
     groups = {}
-    for name in ALL_BONES:
+    for name in BONE_ORDER:
         groups[name] = ob.vertex_groups.new(name=name)
     for vi, w in enumerate(mb.weights):
         for bn, val in w.items():

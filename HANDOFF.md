@@ -54,6 +54,11 @@ Godot 4.7.2.stable.official.ed1daf0bf · Blender 4.5.14 LTS (bpy module) · Pyth
 - Haptics use `Input.vibrate_handheld`; patterned Core Haptics needs a native iOS plugin.
 - Metal, sand, mist, vortex are documented extension points only (`docs/COMBAT_SPEC.md` §10).
 
+## Paused work (resume here)
+A quality pass (character mesh/textures, animation runtime, environment textures/props/lighting, material-physics VFX,
+in-game Dev/Test panel) was started and paused on 2026-10-04. Its unfinished changes are saved in `wip/` (see `wip/README.md`)
+and are NOT applied to the playable code. To resume: `git apply wip/quality-pass-wip.patch`, then re-run `tools/workflows/quality_pass.js`.
+
 ## Next concrete steps (priority order)
 1. On the Mac: export, run on the oldest available iPhone, play Molten Exchange 10–15 min with Settings ▸ show debug; follow `docs/PERF.md` checklist.
 2. Human playtest of feel: grip window (0.25 s), draw rate (260 HU/s), wave speed/steer, guard perfect window (0.18 s). Log changes in `docs/TUNING_LOG.md`.

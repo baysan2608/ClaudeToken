@@ -1,0 +1,2955 @@
+diff --git a/game/presentation/anim/anim_clip_sampler.gd b/game/presentation/anim/anim_clip_sampler.gd
+new file mode 100644
+index 0000000..5c4acc1
+--- /dev/null
++++ b/game/presentation/anim/anim_clip_sampler.gd
+@@ -0,0 +1,110 @@
++class_name AnimClipSampler
++extends RefCounted
++## Samples the baked fighter clips straight from their Animation resources and blends any
++## number of them with per-clip times and weights (normalised quaternion average). This is
++## the synced locomotion blend space: every gait is sampled at the same normalised phase, so
++## walk/run/strafe/backpedal mix without foot pops and without an AnimationTree (the
++## AnimationPlayer keeps driving the actions and their contact-frame alignment).
++##
++## Track maps are cached per Animation (all fighters share the imported glb resources), so a
++## blend costs one native interpolate call per bone track and clip.
++
++const _ROT := Animation.TYPE_ROTATION_3D
++const _POS := Animation.TYPE_POSITION_3D
++
++## Animation instance id -> PackedInt32Array of (track, bone, type) triples.
++static var _maps := {}
++
++var bone_count := 0
++var rots: Array[Quaternion] = []      # blended local rotations (valid where has_rot)
++var has_rot := PackedByteArray()
++var pos_acc := Vector3.ZERO           # blended hips local position (if has_pos)
++var pos_bone := -1
++var has_pos := false
++
++
++func _init(n_bones: int = 0) -> void:
++	resize(n_bones)
++
++
++func resize(n_bones: int) -> void:
++	bone_count = n_bones
++	rots.resize(n_bones)
++	has_rot.resize(n_bones)
++
++
++static func track_map(anim: Animation, skel: Skeleton3D) -> PackedInt32Array:
++	var key := anim.get_instance_id()
++	if _maps.has(key):
++		return _maps[key]
++	var out := PackedInt32Array()
++	for t in anim.get_track_count():
++		var ty := anim.track_get_type(t)
++		if ty != _ROT and ty != _POS:
++			continue
++		var b := skel.find_bone(String(anim.track_get_path(t).get_concatenated_subnames()))
++		if b < 0:
++			continue
++		out.append(t)
++		out.append(b)
++		out.append(ty)
++	_maps[key] = out
++	return out
++
++
++## entries: Array of [Animation, time_sec, weight]; weights need not sum to 1.
++## mask: optional per-bone 0/1 bytes (empty = all bones).
++func blend(entries: Array, skel: Skeleton3D, mask: PackedByteArray = PackedByteArray()) -> void:
++	for i in bone_count:
++		rots[i] = Quaternion(0, 0, 0, 0)
++		has_rot[i] = 0
++	pos_acc = Vector3.ZERO
++	has_pos = false
++	var wsum := 0.0
++	for e in entries:
++		wsum += float(e[2])
++	if wsum <= 1e-5:
++		return
++	var use_mask := mask.size() == bone_count
++	for e in entries:
++		var w := float(e[2]) / wsum
++		if w <= 1e-4:
++			continue
++		var anim: Animation = e[0]
++		var tm := float(e[1])
++		var m := track_map(anim, skel)
++		var i := 0
++		while i < m.size():
++			var tr := m[i]
++			var b := m[i + 1]
++			var ty := m[i + 2]
++			i += 3
++			if use_mask and mask[b] == 0:
++				continue
++			if ty == _ROT:
++				var q := anim.rotation_track_interpolate(tr, tm)
++				var acc := rots[b]
++				if acc.dot(q) < 0.0:
++					q = -q
++				rots[b] = acc + q * w
++				has_rot[b] = 1
++			else:
++				pos_acc += anim.position_track_interpolate(tr, tm) * w
++				pos_bone = b
++				has_pos = true
++
++
++## Writes the blend over the skeleton's current (mixer) pose with weight w.
++func apply(skel: Skeleton3D, w: float) -> void:
++	if w <= 1e-4:
++		return
++	for b in bone_count:
++		if has_rot[b] == 0:
++			continue
++		var q := rots[b].normalized()
++		if w >= 0.999:
++			skel.set_bone_pose_rotation(b, q)
++		else:
++			skel.set_bone_pose_rotation(b, skel.get_bone_pose_rotation(b).slerp(q, w))
++	if has_pos and pos_bone >= 0:
++		skel.set_bone_pose_position(pos_bone, skel.get_bone_pose_position(pos_bone).lerp(pos_acc, w))
+diff --git a/game/presentation/anim/anim_clip_sampler.gd.uid b/game/presentation/anim/anim_clip_sampler.gd.uid
+new file mode 100644
+index 0000000..9acfbce
+--- /dev/null
++++ b/game/presentation/anim/anim_clip_sampler.gd.uid
+@@ -0,0 +1 @@
++uid://bwyfbusevuw2n
+diff --git a/game/presentation/anim/anim_debug_draw.gd b/game/presentation/anim/anim_debug_draw.gd
+new file mode 100644
+index 0000000..2c23f8d
+--- /dev/null
++++ b/game/presentation/anim/anim_debug_draw.gd
+@@ -0,0 +1,39 @@
++class_name AnimDebugDraw
++extends MeshInstance3D
++## Debug markers for one fighter's rig: foot IK goals (green crosses) and the look target
++## (yellow). Enabled with AnimRigSettings.debug_draw (anim lab, or F10 with --animdebug).
++
++var _im := ImmediateMesh.new()
++
++
++func _init() -> void:
++	mesh = _im
++	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
++	var m := StandardMaterial3D.new()
++	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
++	m.vertex_color_use_as_albedo = true
++	m.no_depth_test = true
++	material_override = m
++	top_level = true
++
++
++func draw(rig: FighterAnimRig) -> void:
++	_im.clear_surfaces()
++	_im.surface_begin(Mesh.PRIMITIVE_LINES)
++	for p in rig.dbg_points:
++		_cross(p, 0.07, Color(0.3, 1.0, 0.4))
++	if rig.look_w > 0.05:
++		_cross(rig.look_world, 0.15, Color(1.0, 0.9, 0.2))
++	# keep the surface valid even when empty
++	_im.surface_set_color(Color(0, 0, 0, 0))
++	_im.surface_add_vertex(Vector3.ZERO)
++	_im.surface_add_vertex(Vector3.ZERO)
++	_im.surface_end()
++
++
++func _cross(p: Vector3, s: float, c: Color) -> void:
++	for ax in [Vector3.RIGHT, Vector3.UP, Vector3.BACK]:
++		_im.surface_set_color(c)
++		_im.surface_add_vertex(p - ax * s)
++		_im.surface_set_color(c)
++		_im.surface_add_vertex(p + ax * s)
+diff --git a/game/presentation/anim/anim_debug_draw.gd.uid b/game/presentation/anim/anim_debug_draw.gd.uid
+new file mode 100644
+index 0000000..944039f
+--- /dev/null
++++ b/game/presentation/anim/anim_debug_draw.gd.uid
+@@ -0,0 +1 @@
++uid://b875cgvb0ay1a
+diff --git a/game/presentation/anim/anim_debug_hotkeys.gd b/game/presentation/anim/anim_debug_hotkeys.gd
+new file mode 100644
+index 0000000..de29bf0
+--- /dev/null
++++ b/game/presentation/anim/anim_debug_hotkeys.gd
+@@ -0,0 +1,55 @@
++class_name AnimDebugHotkeys
++extends CanvasLayer
++## In-game toggles for the animation layers, installed once when the game is started with
++## `-- --animdebug` (FighterView.setup). Keys: F5 blend space, F6 foot IK, F7 look-at,
++## F8 hit springs, F9 lean/landing, F10 debug markers, Shift+F10 cycles a forced detail level.
++## The label in the top-left corner shows the current state.
++
++static var _installed: AnimDebugHotkeys = null
++var _label := Label.new()
++
++
++static func install(from: Node) -> void:
++	if is_instance_valid(_installed) or not from.is_inside_tree():
++		return
++	_installed = AnimDebugHotkeys.new()
++	from.get_tree().root.add_child.call_deferred(_installed)
++
++
++func _ready() -> void:
++	layer = 50
++	_label.position = Vector2(12, 64)
++	_label.add_theme_font_size_override("font_size", 13)
++	_label.add_theme_color_override("font_outline_color", Color.BLACK)
++	_label.add_theme_constant_override("outline_size", 4)
++	add_child(_label)
++	_refresh()
++
++
++func _unhandled_key_input(event: InputEvent) -> void:
++	var k := event as InputEventKey
++	if k == null or not k.pressed or k.echo:
++		return
++	match k.physical_keycode:
++		KEY_F5:
++			AnimRigSettings.loco_blend = not AnimRigSettings.loco_blend
++		KEY_F6:
++			AnimRigSettings.foot_ik = not AnimRigSettings.foot_ik
++		KEY_F7:
++			AnimRigSettings.look_at = not AnimRigSettings.look_at
++		KEY_F8:
++			AnimRigSettings.hit_springs = not AnimRigSettings.hit_springs
++		KEY_F9:
++			AnimRigSettings.lean = not AnimRigSettings.lean
++		KEY_F10:
++			if k.shift_pressed:
++				AnimRigSettings.force_lod = AnimRigSettings.force_lod + 1 if AnimRigSettings.force_lod < 2 else -1
++			else:
++				AnimRigSettings.debug_draw = not AnimRigSettings.debug_draw
++		_:
++			return
++	_refresh()
++
++
++func _refresh() -> void:
++	_label.text = "anim  " + AnimRigSettings.summary() + "\nF5 blend  F6 IK  F7 look  F8 hits  F9 lean  F10 markers  Shift+F10 LOD"
+diff --git a/game/presentation/anim/anim_debug_hotkeys.gd.uid b/game/presentation/anim/anim_debug_hotkeys.gd.uid
+new file mode 100644
+index 0000000..9065dd2
+--- /dev/null
++++ b/game/presentation/anim/anim_debug_hotkeys.gd.uid
+@@ -0,0 +1 @@
++uid://c4iirqbb1v7rf
+diff --git a/game/presentation/anim/anim_rig_settings.gd b/game/presentation/anim/anim_rig_settings.gd
+new file mode 100644
+index 0000000..6c0ce45
+--- /dev/null
++++ b/game/presentation/anim/anim_rig_settings.gd
+@@ -0,0 +1,24 @@
++class_name AnimRigSettings
++extends RefCounted
++## Global switches for the procedural animation layers (FighterAnimRig). Toggled by the
++## animation lab (tests/anim/anim_lab.tscn) and, in the game, by F5-F10 when started with
++## `-- --animdebug` (AnimDebugHotkeys). Defaults are the shipping configuration.
++
++static var loco_blend := true      # synced gait blend space (else the AnimationPlayer's single clip)
++static var foot_ik := true         # ground the feet on steps/ledges/pool floor + pelvis drop
++static var look_at := true         # head/chest look toward the lock target or an incoming threat
++static var hit_springs := true     # additive spring-damper hit and block reactions
++static var lean := true            # acceleration lean, turn banking, landing compression
++static var secondary := true       # SpringBoneSimulator3D chains (sash tails, hair) when present
++static var debug_draw := false     # foot targets / look target markers
++static var force_lod := -1         # >= 0 forces a detail level on every fighter
++
++
++static func summary() -> String:
++	return "blend %s  ik %s  look %s  hits %s  lean %s  2nd %s  lod %s" % [
++		_on(loco_blend), _on(foot_ik), _on(look_at), _on(hit_springs), _on(lean), _on(secondary),
++		"auto" if force_lod < 0 else str(force_lod)]
++
++
++static func _on(b: bool) -> String:
++	return "on" if b else "off"
+diff --git a/game/presentation/anim/anim_rig_settings.gd.uid b/game/presentation/anim/anim_rig_settings.gd.uid
+new file mode 100644
+index 0000000..ab418a2
+--- /dev/null
++++ b/game/presentation/anim/anim_rig_settings.gd.uid
+@@ -0,0 +1 @@
++uid://ql516fqtmpx4
+diff --git a/game/presentation/anim/fighter_anim_rig.gd b/game/presentation/anim/fighter_anim_rig.gd
+new file mode 100644
+index 0000000..7bd6b38
+--- /dev/null
++++ b/game/presentation/anim/fighter_anim_rig.gd
+@@ -0,0 +1,248 @@
++class_name FighterAnimRig
++extends SkeletonModifier3D
++## Procedural animation layers for one fighter, run by the Skeleton3D after the AnimationPlayer
++## has posed it (a SkeletonModifier3D: the changes are re-applied every frame, never saved).
++## Order inside one pass:
++##   1. synced locomotion blend space (full body, or legs only under guard/charge walking)
++##   2. snapshot of the animated ankles/feet (the IK goal: the clip's own footprints)
++##   3. additive layers: pelvis shift + landing compression, acceleration lean and turn banking,
++##      spring-damper hit/block reactions, chest aim and head look-at (clamped, smoothed)
++##   4. foot IK (LegIK): planted feet onto the analytic ArenaMap ground, soles kept flat
++## FighterView feeds the inputs each frame from the sim state and calls tick(dt); nothing here
++## moves the fighter (the simulation stays the only movement authority).
++
++const LEG_BONES := ["thigh.L", "shin.L", "foot.L", "toe.L", "thigh.R", "shin.R", "foot.R", "toe.R"]
++const ANKLE_REST_H := 0.085          # ankle height of a flat planted foot (docs/ANIMATION.md)
++const PLANT_FROM := 0.115            # animated ankle height where a foot stops counting as planted
++const PLANT_TO := 0.19
++const MAX_DROP := 0.38               # never reach further down than a step (deeper = ledge edge)
++const MAX_LIFT := 0.45
++const LOOK_YAW_MAX := 1.05           # rad (about 60 deg) beyond the animated head direction
++const LOOK_PITCH_MAX := 0.45
++
++# ---- inputs (set by FighterView every frame) ----
++var loco_target := 0.0               # 1 = locomotion owns the whole body
++var legs_target := 0.0               # >0 = gait legs under an upper-body action (guard walk)
++var local_vel := Vector2.ZERO        # x = toward the character's right, y = forward (m/s)
++var stance := "idle"
++var lean_target := Vector2.ZERO      # x = pitch (+ forward), y = roll (+ toward the character's right)
++var look_world := Vector3.ZERO
++var look_target_w := 0.0
++var aim_yaw := 0.0                   # rad, + turns the chest toward the character's left
++var aim_target_w := 0.0
++var ik_target_w := 0.0
++var arena: ArenaMap = null
++var lod := 0                         # 0 full, 1 reduced (no look-at, 2-clip blend)
++
++# ---- state ----
++var loco := LocomotionBlender.new()
++var hits := HitReactor.new()
++var sampler := AnimClipSampler.new()
++var anims := {}                      # clip -> Animation
++var loco_w := 0.0
++var legs_w := 0.0
++var ik_w := 0.0
++var look_w := 0.0
++var aim_w := 0.0
++var lean := Vector2.ZERO
++var land_y := 0.0
++var land_v := 0.0
++var pelvis_shift := 0.0
++var foot_off := [0.0, 0.0]
++var look_yaw := 0.0
++var look_pitch := 0.0
++var hand_world := [Vector3.ZERO, Vector3.ZERO]   # [right, left] after all layers
++var hand_frame := -1
++var dbg_points := PackedVector3Array()
++var last_reach_error := 0.0
++var _dt := 1.0 / 60.0
++var _legs_mask := PackedByteArray()
++var _b := {}
++var _head_fwd_local := Vector3(0, 0, 1)
++var _ready_ok := false
++
++
++func setup_rig(sk: Skeleton3D, ap: AnimationPlayer) -> void:
++	for n in ["root", "hips", "spine", "chest", "neck", "head", "shoulder.L", "shoulder.R", "upper_arm.L",
++			"upper_arm.R", "hand.L", "hand.R"] + LEG_BONES:
++		_b[n] = sk.find_bone(n)
++	_ready_ok = _b.hips >= 0 and _b["thigh.L"] >= 0 and _b["shin.L"] >= 0 and _b["foot.L"] >= 0 \
++		and _b["thigh.R"] >= 0 and _b["shin.R"] >= 0 and _b["foot.R"] >= 0
++	sampler.resize(sk.get_bone_count())
++	_legs_mask.resize(sk.get_bone_count())
++	_legs_mask.fill(0)
++	for n in LEG_BONES:
++		if _b[n] >= 0:
++			_legs_mask[_b[n]] = 1
++	if _b.head >= 0:
++		var rb := sk.get_bone_global_rest(_b.head).basis
++		_head_fwd_local = (rb.inverse() * Vector3(0, 0, 1)).normalized()
++	if ap:
++		for c in LocomotionBlender.GAITS.keys() + ["idle", "stance_earth", "stance_water", "stance_fire", "stance_air"]:
++			if ap.has_animation(c):
++				anims[c] = ap.get_animation(c)
++
++
++func is_rig_ready() -> bool:
++	return _ready_ok
++
++
++## Landing / heavy compression: v is the downward pelvis speed kick (m/s).
++func kick_pelvis(v: float) -> void:
++	land_v -= clampf(v, 0.0, 3.2)
++
++
++## Advances every time-dependent part (blend weights, springs, smoothing). Called once per frame.
++func tick(dt: float) -> void:
++	_dt = clampf(dt, 0.0, 0.1)
++	var k8 := 1.0 - exp(-8.0 * _dt)
++	var k12 := 1.0 - exp(-12.0 * _dt)
++	loco.update(_dt, local_vel, stance)
++	var lt := loco_target if AnimRigSettings.loco_blend else 0.0
++	loco_w = move_toward(loco_w, lt, _dt / (0.16 if lt > loco_w else 0.1))
++	legs_w += ((legs_target if AnimRigSettings.loco_blend else 0.0) - legs_w) * k8
++	ik_w = move_toward(ik_w, ik_target_w if AnimRigSettings.foot_ik else 0.0, _dt / (0.08 if ik_target_w > ik_w else 0.12))
++	var lw := look_target_w if (AnimRigSettings.look_at and lod == 0) else 0.0
++	look_w += (lw - look_w) * (1.0 - exp(-5.0 * _dt))
++	aim_w += ((aim_target_w if AnimRigSettings.look_at else 0.0) - aim_w) * k12
++	var lt2 := lean_target if AnimRigSettings.lean else Vector2.ZERO
++	lean = lean.lerp(lt2, 1.0 - exp(-6.0 * _dt))
++	# Landing compression: under-damped pelvis spring (2.4 Hz, zeta 0.55).
++	var w := TAU * 2.4
++	var h := _dt
++	while h > 1e-6:
++		var s := minf(h, 1.0 / 120.0)
++		h -= s
++		land_v += (-land_y * w * w - land_v * 2.0 * 0.55 * w) * s
++		land_y = clampf(land_y + land_v * s, -0.22, 0.05)
++	if not AnimRigSettings.lean:
++		land_y = 0.0
++		land_v = 0.0
++	if AnimRigSettings.hit_springs:
++		hits.step(_dt)
++	else:
++		hits.reset()
++
++
++func _process_modification_with_delta(_delta: float) -> void:
++	var sk := get_skeleton()
++	if sk == null or not _ready_ok:
++		return
++	# 1. locomotion blend space
++	if loco_w > 0.002 or legs_w > 0.01:
++		var ents := loco.entries(anims, 6 if lod == 0 else 2)
++		if not ents.is_empty():
++			if loco_w > 0.002:
++				sampler.blend(ents, sk)
++				sampler.apply(sk, loco_w)
++			if legs_w > 0.01 and loco_w < 0.99:
++				sampler.blend(ents, sk, _legs_mask)
++				sampler.apply(sk, legs_w * (1.0 - loco_w))
++	# 2. animated foot goals (skeleton space), before any additive layer moves the hips
++	var xf := sk.global_transform
++	var ank: Array[Vector3] = [sk.get_bone_global_pose(_b["foot.L"]).origin, sk.get_bone_global_pose(_b["foot.R"]).origin]
++	var fbas: Array[Basis] = [sk.get_bone_global_pose(_b["foot.L"]).basis, sk.get_bone_global_pose(_b["foot.R"]).basis]
++	var use_ik := ik_w > 0.002 and arena != null
++	var off_eff := [0.0, 0.0]
++	if use_ik:
++		var floor_y := xf.origin.y
++		var k := 1.0 - exp(-22.0 * _dt)
++		for i in 2:
++			var toe: int = _b["toe.L" if i == 0 else "toe.R"]
++			var aw := xf * ank[i]
++			var bw := xf * (sk.get_bone_global_pose(toe).origin if toe >= 0 else ank[i])
++			var from_y := floor_y + Sim.STEP_HEIGHT + 0.02
++			var g := maxf(arena.ground_height(aw.x, aw.z, from_y), arena.ground_height(bw.x, bw.z, from_y))
++			var off := g - floor_y
++			if off < -MAX_DROP:
++				off = 0.0          # past a ledge edge: the foot stays on the edge, no reaching into the void
++			off = clampf(off, -MAX_DROP, MAX_LIFT)
++			var plant := 1.0 - smoothstep(PLANT_FROM, PLANT_TO, ank[i].y)
++			var tgt := off if off > 0.0 else off * plant
++			foot_off[i] = lerpf(float(foot_off[i]), tgt, k)
++			off_eff[i] = foot_off[i]
++		var shift_t := clampf(minf(float(off_eff[0]), float(off_eff[1])), -MAX_DROP, 0.4)
++		pelvis_shift = lerpf(pelvis_shift, shift_t, 1.0 - exp(-10.0 * _dt))
++	else:
++		pelvis_shift = lerpf(pelvis_shift, 0.0, 1.0 - exp(-10.0 * _dt))
++		foot_off[0] = 0.0
++		foot_off[1] = 0.0
++	# 3. additive layers
++	var hips: int = _b.hips
++	var dy := pelvis_shift * ik_w + land_y
++	if absf(dy) > 1e-5:
++		var p := sk.get_bone_parent(hips)
++		var pb := sk.get_bone_global_pose(p).basis if p >= 0 else Basis.IDENTITY
++		sk.set_bone_pose_position(hips, sk.get_bone_pose_position(hips) + pb.inverse() * Vector3(0, dy, 0))
++	var pitch := lean.x - land_y * 0.9        # landing folds the chest forward a little
++	var roll := lean.y
++	var t := hits.torso if AnimRigSettings.hit_springs else Vector3.ZERO
++	var ax_pitch := Vector3.RIGHT              # +X tips the top toward +Z (forward)
++	var ax_roll := Vector3(0, 0, 1)            # +Z tips the top toward -X (the character's right)
++	# hips take part of the lean only when the feet are pinned by IK
++	var hip_share := 0.35 * ik_w
++	if hip_share > 0.001:
++		LegIK.rotate_global(sk, hips, Quaternion(ax_pitch, pitch * hip_share) * Quaternion(ax_roll, roll * hip_share) * HitReactor.quat(t, 0.25 * ik_w))
++	var rest := 1.0 - hip_share
++	var torso_rest := 1.0 - 0.25 * ik_w
++	var spine_q := Quaternion(Vector3.UP, aim_yaw * aim_w * 0.4) * Quaternion(ax_pitch, pitch * rest * 0.5) \
++		* Quaternion(ax_roll, roll * rest * 0.5) * HitReactor.quat(t, torso_rest * 0.45)
++	LegIK.rotate_global(sk, _b.spine, spine_q)
++	var chest_q := Quaternion(Vector3.UP, aim_yaw * aim_w * 0.6) * Quaternion(ax_pitch, pitch * rest * 0.5) \
++		* Quaternion(ax_roll, roll * rest * 0.5) * HitReactor.quat(t, torso_rest * 0.55)
++	LegIK.rotate_global(sk, _b.chest, chest_q)
++	if AnimRigSettings.hit_springs:
++		LegIK.rotate_global(sk, _b["upper_arm.L"], HitReactor.quat(hits.arm_l))
++		LegIK.rotate_global(sk, _b["upper_arm.R"], HitReactor.quat(hits.arm_r))
++	# head: keep it a little more level than the banked torso, then spring + look-at
++	LegIK.rotate_global(sk, _b.neck, Quaternion(ax_roll, -roll * 0.25) * HitReactor.quat(hits.head, 0.4))
++	LegIK.rotate_global(sk, _b.head, Quaternion(ax_roll, -roll * 0.25) * HitReactor.quat(hits.head, 0.6))
++	_apply_look(sk, xf)
++	# 4. foot IK
++	dbg_points.clear()
++	last_reach_error = 0.0
++	if use_ik or ik_w > 0.002:
++		for i in 2:
++			var s := "L" if i == 0 else "R"
++			var goal: Vector3 = ank[i] + Vector3(0, float(off_eff[i]), 0)
++			last_reach_error = maxf(last_reach_error, LegIK.solve(sk, _b["thigh." + s], _b["shin." + s], _b["foot." + s], goal, fbas[i], ik_w))
++			if AnimRigSettings.debug_draw:
++				dbg_points.append(xf * goal)
++	# hands for VFX anchoring
++	if _b["hand.R"] >= 0:
++		hand_world[0] = xf * sk.get_bone_global_pose(_b["hand.R"]).origin
++	if _b["hand.L"] >= 0:
++		hand_world[1] = xf * sk.get_bone_global_pose(_b["hand.L"]).origin
++	hand_frame = Engine.get_process_frames()
++
++
++## Head/neck/chest turn toward look_world, relative to where the clip already points the head,
++## clamped and smoothed (never a snap: the correction itself is filtered).
++func _apply_look(sk: Skeleton3D, xf: Transform3D) -> void:
++	var head: int = _b.head
++	if head < 0:
++		return
++	var want_yaw := 0.0
++	var want_pitch := 0.0
++	if look_w > 0.002:
++		var hg := sk.get_bone_global_pose(head)
++		var to := xf.affine_inverse() * look_world - hg.origin
++		var fwd := hg.basis * _head_fwd_local
++		var hl := Vector2(to.x, to.z).length()
++		if hl > 0.3:
++			want_yaw = clampf(wrapf(atan2(to.x, to.z) - atan2(fwd.x, fwd.z), -PI, PI), -LOOK_YAW_MAX, LOOK_YAW_MAX) * look_w
++			want_pitch = clampf(atan2(to.y, hl) - asin(clampf(fwd.y, -1.0, 1.0)), -LOOK_PITCH_MAX, LOOK_PITCH_MAX) * look_w
++	var k := 1.0 - exp(-7.0 * _dt)
++	look_yaw = lerpf(look_yaw, want_yaw, k)
++	look_pitch = lerpf(look_pitch, want_pitch, k)
++	if absf(look_yaw) < 1e-4 and absf(look_pitch) < 1e-4:
++		return
++	# Yaw is shared chest 20% / neck 35% / head 45%; pitch neck 40% / head 60% (about the
++	# character's own right axis, so a turned head still nods correctly).
++	# Rotating about the character's right (-X) by +a raises the face.
++	var right := Vector3(-1, 0, 0)
++	LegIK.rotate_global(sk, _b.chest, Quaternion(Vector3.UP, look_yaw * 0.2))
++	var ax_n := Quaternion(Vector3.UP, look_yaw * 0.55) * right
++	LegIK.rotate_global(sk, _b.neck, Quaternion(ax_n, look_pitch * 0.4) * Quaternion(Vector3.UP, look_yaw * 0.35))
++	var ax_h := Quaternion(Vector3.UP, look_yaw) * right
++	LegIK.rotate_global(sk, head, Quaternion(ax_h, look_pitch * 0.6) * Quaternion(Vector3.UP, look_yaw * 0.45))
+diff --git a/game/presentation/anim/fighter_anim_rig.gd.uid b/game/presentation/anim/fighter_anim_rig.gd.uid
+new file mode 100644
+index 0000000..cdf9a93
+--- /dev/null
++++ b/game/presentation/anim/fighter_anim_rig.gd.uid
+@@ -0,0 +1 @@
++uid://d2w11j8mckd2r
+diff --git a/game/presentation/anim/fighter_secondary_motion.gd b/game/presentation/anim/fighter_secondary_motion.gd
+new file mode 100644
+index 0000000..d195c37
+--- /dev/null
++++ b/game/presentation/anim/fighter_secondary_motion.gd
+@@ -0,0 +1,95 @@
++class_name FighterSecondaryMotion
++extends RefCounted
++## Secondary motion for cloth/hair chains with Godot's SpringBoneSimulator3D.
++## The chains are found by bone name at runtime, so the rig can grow them later without code
++## changes: sash tails `sash_tail.L.001..00N` / `sash_tail.R.001..00N`, and any chain whose bone
++## names start with "hair" (root = the hair bone whose parent is not a hair bone). With no such
++## bones nothing is created (clean no-op). Thigh capsules keep the sash out of the legs.
++
++const SASH_PREFIXES := ["sash_tail.L", "sash_tail.R"]
++
++
++## Returns [[root_name, end_name, kind], ...] for every chain present in the skeleton.
++static func find_chains(sk: Skeleton3D) -> Array:
++	var out: Array = []
++	for pre in SASH_PREFIXES:
++		var first := "%s.001" % pre
++		if sk.find_bone(first) < 0:
++			continue
++		var last := first
++		for i in range(2, 10):
++			var nm := "%s.%03d" % [pre, i]
++			if sk.find_bone(nm) < 0:
++				break
++			last = nm
++		out.append([first, last, "sash"])
++	for b in sk.get_bone_count():
++		var nm := sk.get_bone_name(b)
++		if not nm.to_lower().begins_with("hair"):
++			continue
++		var p := sk.get_bone_parent(b)
++		if p >= 0 and sk.get_bone_name(p).to_lower().begins_with("hair"):
++			continue
++		# Follow the first hair child down to the chain's end.
++		var end := b
++		var guard := 0
++		while guard < 16:
++			guard += 1
++			var nxt := -1
++			for c in sk.get_bone_children(end):
++				if sk.get_bone_name(c).to_lower().begins_with("hair"):
++					nxt = c
++					break
++			if nxt < 0:
++				break
++			end = nxt
++		if end != b:
++			out.append([nm, sk.get_bone_name(end), "hair"])
++	return out
++
++
++## Adds a configured SpringBoneSimulator3D under the skeleton, or returns null when the skeleton
++## has no secondary chains.
++static func attach(sk: Skeleton3D) -> SpringBoneSimulator3D:
++	var chains := find_chains(sk)
++	if chains.is_empty():
++		return null
++	var sim := SpringBoneSimulator3D.new()
++	sim.name = "SecondaryMotion"
++	sim.setting_count = chains.size()
++	var has_sash := false
++	for i in chains.size():
++		var ch: Array = chains[i]
++		sim.set_root_bone_name(i, ch[0])
++		sim.set_end_bone_name(i, ch[1])
++		sim.set_extend_end_bone(i, true)
++		sim.set_center_from(i, SpringBoneSimulator3D.CENTER_FROM_WORLD_ORIGIN)
++		if ch[2] == "sash":
++			has_sash = true
++			sim.set_end_bone_length(i, 0.06)
++			sim.set_stiffness(i, 0.9)
++			sim.set_drag(i, 0.35)
++			sim.set_gravity(i, 0.9)
++			sim.set_radius(i, 0.025)
++		else:
++			sim.set_end_bone_length(i, 0.04)
++			sim.set_stiffness(i, 2.4)
++			sim.set_drag(i, 0.55)
++			sim.set_gravity(i, 0.25)
++			sim.set_radius(i, 0.015)
++		sim.set_gravity_direction(i, Vector3.DOWN)
++	if has_sash:
++		for side in ["L", "R"]:
++			var thigh: String = "thigh." + side
++			if sk.find_bone(thigh) < 0:
++				continue
++			var cap := SpringBoneCollisionCapsule3D.new()
++			cap.name = "ThighCapsule" + side
++			cap.bone_name = thigh
++			cap.radius = 0.085
++			cap.height = 0.5
++			# The capsule's axis is its local Y; bone Y runs along the thigh, centre it mid-bone.
++			cap.position_offset = Vector3(0, 0.2, 0)
++			sim.add_child(cap)
++	sk.add_child(sim)
++	return sim
+diff --git a/game/presentation/anim/fighter_secondary_motion.gd.uid b/game/presentation/anim/fighter_secondary_motion.gd.uid
+new file mode 100644
+index 0000000..5f42a28
+--- /dev/null
++++ b/game/presentation/anim/fighter_secondary_motion.gd.uid
+@@ -0,0 +1 @@
++uid://bbm4sbkrbpxng
+diff --git a/game/presentation/anim/hit_reactor.gd b/game/presentation/anim/hit_reactor.gd
+new file mode 100644
+index 0000000..d083ca4
+--- /dev/null
++++ b/game/presentation/anim/hit_reactor.gd
+@@ -0,0 +1,118 @@
++class_name HitReactor
++extends RefCounted
++## Physical hit reactions as additive spring-damper rotations (presentation only; the sim
++## already moved the fighter and chose the stun). Each spring is an axis-angle Vector3 in the
++## fighter's skeleton space (+Z forward, +Y up, +X the character's left). A hit kicks the springs'
++## angular velocity so the torso tips along the hit direction, the head whips a beat later, the
++## arms flail; they ring out in about half a second. Blocks give a short recoil.
++
++const TORSO := {"f": 2.6, "z": 0.45}
++const HEAD := {"f": 2.1, "z": 0.34}
++const ARM := {"f": 2.3, "z": 0.4}
++const MAX_ANGLE := 0.65              # rad, hard clamp per spring
++const HEAD_DELAY := 0.045            # s, the head lags the torso (whiplash)
++
++var torso := Vector3.ZERO
++var torso_v := Vector3.ZERO
++var head := Vector3.ZERO
++var head_v := Vector3.ZERO
++var arm_l := Vector3.ZERO
++var arm_l_v := Vector3.ZERO
++var arm_r := Vector3.ZERO
++var arm_r_v := Vector3.ZERO
++var _pending_head := Vector3.ZERO
++var _pending_t := -1.0
++var last_kind := ""
++
++
++## Axis that tips the +Y "up" of a bone toward `dir` (horizontal, skeleton space).
++static func tip_axis(dir: Vector3) -> Vector3:
++	var d := Vector3(dir.x, 0.0, dir.z)
++	if d.length_squared() < 1e-6:
++		d = Vector3(0, 0, -1)
++	return Vector3.UP.cross(d.normalized())
++
++
++## dir: direction the blow travels (attacker -> victim), skeleton space. strength ~0.3..1.2.
++func hit(dir: Vector3, strength: float) -> void:
++	var s := clampf(strength, 0.0, 1.4)
++	var ax := tip_axis(dir)
++	var lateral := clampf(dir.x, -1.0, 1.0)   # +: blow travels toward the character's left
++	torso_v += ax * (6.5 * s) + Vector3.UP * (lateral * 1.6 * s)
++	_pending_head += ax * (7.5 * s) + Vector3.UP * (lateral * 3.0 * s)
++	_pending_t = HEAD_DELAY
++	# Arms are thrown opposite to the torso's motion (they lag), plus a little outward.
++	arm_l_v += -ax * (5.0 * s) + Vector3(0, 0, 1) * (2.0 * s)
++	arm_r_v += -ax * (5.0 * s) + Vector3(0, 0, -1) * (2.0 * s)
++	last_kind = "hit"
++
++
++## A guarded blow: a short push back of the torso and both forearms, no head whip.
++func block(dir: Vector3, strength: float) -> void:
++	var s := clampf(strength, 0.0, 1.0)
++	var ax := tip_axis(dir)
++	torso_v += ax * (3.2 * s)
++	head_v += ax * (1.6 * s)
++	arm_l_v += ax * (4.0 * s)
++	arm_r_v += ax * (4.0 * s)
++	last_kind = "block"
++
++
++func reset() -> void:
++	torso = Vector3.ZERO
++	torso_v = Vector3.ZERO
++	head = Vector3.ZERO
++	head_v = Vector3.ZERO
++	arm_l = Vector3.ZERO
++	arm_l_v = Vector3.ZERO
++	arm_r = Vector3.ZERO
++	arm_r_v = Vector3.ZERO
++	_pending_head = Vector3.ZERO
++	_pending_t = -1.0
++
++
++func active() -> bool:
++	return (torso.length_squared() + head.length_squared() + arm_l.length_squared() + arm_r.length_squared()
++		+ (torso_v.length_squared() + head_v.length_squared() + arm_l_v.length_squared() + arm_r_v.length_squared()) * 0.01) > 1e-6 or _pending_t >= 0.0
++
++
++func step(dt: float) -> void:
++	var left := clampf(dt, 0.0, 0.1)
++	if _pending_t >= 0.0:
++		_pending_t -= left
++		if _pending_t < 0.0:
++			head_v += _pending_head
++			_pending_head = Vector3.ZERO
++	while left > 1e-6:
++		var h := minf(left, 1.0 / 120.0)
++		left -= h
++		var r := _spring(torso, torso_v, TORSO, h)
++		torso = r[0]
++		torso_v = r[1]
++		r = _spring(head, head_v, HEAD, h)
++		head = r[0]
++		head_v = r[1]
++		r = _spring(arm_l, arm_l_v, ARM, h)
++		arm_l = r[0]
++		arm_l_v = r[1]
++		r = _spring(arm_r, arm_r_v, ARM, h)
++		arm_r = r[0]
++		arm_r_v = r[1]
++
++
++static func _spring(x: Vector3, v: Vector3, p: Dictionary, h: float) -> Array:
++	var w := TAU * float(p.f)
++	var acc := -x * (w * w) - v * (2.0 * float(p.z) * w)
++	v += acc * h
++	x += v * h
++	if x.length() > MAX_ANGLE:
++		x = x.normalized() * MAX_ANGLE
++		v *= 0.5
++	return [x, v]
++
++
++static func quat(v: Vector3, frac: float = 1.0) -> Quaternion:
++	var a := v.length() * frac
++	if a < 1e-6:
++		return Quaternion.IDENTITY
++	return Quaternion(v.normalized(), a)
+diff --git a/game/presentation/anim/hit_reactor.gd.uid b/game/presentation/anim/hit_reactor.gd.uid
+new file mode 100644
+index 0000000..6cb819c
+--- /dev/null
++++ b/game/presentation/anim/hit_reactor.gd.uid
+@@ -0,0 +1 @@
++uid://3u8x5wus38jt
+diff --git a/game/presentation/anim/leg_ik.gd b/game/presentation/anim/leg_ik.gd
+new file mode 100644
+index 0000000..924f834
+--- /dev/null
++++ b/game/presentation/anim/leg_ik.gd
+@@ -0,0 +1,77 @@
++class_name LegIK
++extends RefCounted
++## Analytic two-bone IK for thigh > shin > foot in skeleton space.
++## Keeps the animated knee plane (the knee only folds/unfolds in the plane the clip authored,
++## then the whole leg swings minimally about the hip), so a target equal to the animated ankle
++## reproduces the clip exactly and fading the weight never pops. The foot's global orientation
++## is set explicitly (the caller passes the pre-additive animated one), so planted soles stay flat.
++
++
++## Rotates `bone` by q (skeleton space, about the bone's own head) by rewriting its local rotation.
++static func rotate_global(sk: Skeleton3D, bone: int, q: Quaternion) -> void:
++	if bone < 0:
++		return
++	var g := sk.get_bone_global_pose(bone).basis
++	var p := sk.get_bone_parent(bone)
++	var nb := Basis(q) * g
++	if p >= 0:
++		nb = sk.get_bone_global_pose(p).basis.inverse() * nb
++	sk.set_bone_pose_rotation(bone, nb.get_rotation_quaternion())
++
++
++## Sets the global (skeleton-space) basis of `bone`.
++static func set_global_basis(sk: Skeleton3D, bone: int, b: Basis) -> void:
++	var p := sk.get_bone_parent(bone)
++	var nb := b
++	if p >= 0:
++		nb = sk.get_bone_global_pose(p).basis.inverse() * b
++	sk.set_bone_pose_rotation(bone, nb.get_rotation_quaternion())
++
++
++## Moves the ankle (head of `foot`) to `target` (skeleton space) with weight w and gives the foot
++## the global basis `foot_basis` (blended by w). Returns the remaining distance to the target
++## (> 0 when the leg could not reach).
++static func solve(sk: Skeleton3D, thigh: int, shin: int, foot: int, target: Vector3, foot_basis: Basis, w: float) -> float:
++	if w <= 1e-4:
++		return 0.0
++	var gt := sk.get_bone_global_pose(thigh)
++	var gs := sk.get_bone_global_pose(shin)
++	var gf := sk.get_bone_global_pose(foot)
++	var a := gt.origin
++	var b := gs.origin
++	var c := gf.origin
++	var t := c.lerp(target, clampf(w, 0.0, 1.0))
++	var l1 := (b - a).length()
++	var l2 := (c - b).length()
++	if l1 < 1e-4 or l2 < 1e-4:
++		return 0.0
++	var new_t := gt.basis
++	var new_s := gs.basis
++	if (t - c).length_squared() > 1e-10:
++		var lat := clampf((t - a).length(), absf(l1 - l2) + 1e-3, l1 + l2 - 1e-3)
++		var ba := (a - b) / l1
++		var bc := (c - b) / l2
++		var theta0 := acos(clampf(ba.dot(bc), -1.0, 1.0))
++		var theta1 := acos(clampf((l1 * l1 + l2 * l2 - lat * lat) / (2.0 * l1 * l2), -1.0, 1.0))
++		var n := bc.cross(ba)
++		if n.length_squared() < 1e-10:
++			n = gt.basis.x
++		n = n.normalized()
++		# Positive rotation about n = bc x ba turns bc toward ba (closes the knee).
++		var r1 := Quaternion(n, theta0 - theta1)
++		var c1 := b + r1 * (c - b)
++		var from := c1 - a
++		var to := t - a
++		var r2 := Quaternion.IDENTITY
++		if from.length_squared() > 1e-10 and to.length_squared() > 1e-10:
++			var fn := from.normalized()
++			var tn := to.normalized()
++			if fn.dot(tn) < 0.99999999:
++				r2 = Quaternion(fn, tn)
++		new_t = Basis(r2) * gt.basis
++		new_s = Basis(r2 * r1) * gs.basis
++		set_global_basis(sk, thigh, new_t)
++		sk.set_bone_pose_rotation(shin, (new_t.inverse() * new_s).get_rotation_quaternion())
++	var fb := gf.basis.slerp(foot_basis, clampf(w, 0.0, 1.0)) if w < 0.999 else foot_basis
++	sk.set_bone_pose_rotation(foot, (new_s.inverse() * fb).get_rotation_quaternion())
++	return maxf(0.0, (t - a).length() - (l1 + l2))
+diff --git a/game/presentation/anim/leg_ik.gd.uid b/game/presentation/anim/leg_ik.gd.uid
+new file mode 100644
+index 0000000..b067ce4
+--- /dev/null
++++ b/game/presentation/anim/leg_ik.gd.uid
+@@ -0,0 +1 @@
++uid://b0mfivvmnwajr
+diff --git a/game/presentation/anim/locomotion_blender.gd b/game/presentation/anim/locomotion_blender.gd
+new file mode 100644
+index 0000000..c2e171c
+--- /dev/null
++++ b/game/presentation/anim/locomotion_blender.gd
+@@ -0,0 +1,137 @@
++class_name LocomotionBlender
++extends RefCounted
++## Synced locomotion blend space for the in-place gait clips (docs/ANIMATION.md):
++##   stance (idle/element) <- speed -> walk <- speed -> run, and by direction relative to the
++##   facing: forward / strafe_l / strafe_r / walk_back.
++## All gaits share one normalised phase (left-foot touchdown near 0 in every clip, offsets below
++## line them up exactly), so changing gait or direction never restarts a cycle. The phase advances
++## at actual_speed / blended_stride, so the planted foot travels at ground speed (no skating).
++## Weights are smoothed, so a sudden change of direction or lock-on cross-fades instead of popping.
++
++## Design ground speed (m/s), stride per cycle (m) and phase offset of the left-foot touchdown.
++const GAITS := {
++	"walk": {"speed": 1.4, "stride": 1.26, "offset": 0.0},
++	"run": {"speed": 5.5, "stride": 3.30, "offset": 0.0},
++	"strafe_l": {"speed": 1.1, "stride": 0.99, "offset": 0.0},
++	"strafe_r": {"speed": 1.1, "stride": 0.99, "offset": 0.0},
++	"walk_back": {"speed": 1.0, "stride": 0.90, "offset": 0.0},
++}
++const WEIGHT_RATE := 9.0        # 1/s, how fast clip weights follow their targets
++const MOVE_START := 0.12        # m/s: below this the stance is shown alone
++const MOVE_FULL := 0.75         # m/s: above this the gait is fully in
++const RUN_FROM := 2.2           # m/s walk -> run blend range (sim: walk <= 1.8, run >= 4.0)
++const RUN_TO := 3.8
++const DIRECTIONAL_MAX := 3.2    # m/s: faster than this only the forward run is used
++
++var phase := 0.0
++var stance_t := 0.0
++var weights := {}               # clip -> smoothed weight (stance clips included)
++var speed := 0.0
++var cycle_rate := 0.0
++
++
++## Target weights for a ground velocity expressed in the fighter's frame
++## (x = toward the character's right, y = forward).
++static func target_weights(local_vel: Vector2, stance: String) -> Dictionary:
++	var spd := local_vel.length()
++	var tw := {}
++	var moving := smoothstep(MOVE_START, MOVE_FULL, spd)
++	tw[stance] = 1.0 - moving
++	if moving <= 0.0:
++		return tw
++	var fwd := 1.0
++	var side := 0.0
++	var back := 0.0
++	var a := absf(atan2(local_vel.x, local_vel.y))   # 0 forward, PI backward
++	if a <= PI * 0.5:
++		var t := smoothstep(0.2, 0.8, a / (PI * 0.5))
++		fwd = 1.0 - t
++		side = t
++	else:
++		var t := smoothstep(0.2, 0.8, (a - PI * 0.5) / (PI * 0.5))
++		fwd = 0.0
++		side = 1.0 - t
++		back = t
++	# Running is always forward (the sim faces the run direction); fade the directional set out.
++	var dir_w := 1.0 - smoothstep(DIRECTIONAL_MAX - 0.6, DIRECTIONAL_MAX + 0.2, spd)
++	fwd = lerpf(1.0, fwd, dir_w)
++	side *= dir_w
++	back *= dir_w
++	var run_w := smoothstep(RUN_FROM, RUN_TO, spd)
++	tw["walk"] = moving * fwd * (1.0 - run_w)
++	tw["run"] = moving * fwd * run_w
++	tw["strafe_l" if local_vel.x < 0.0 else "strafe_r"] = moving * side
++	tw["walk_back"] = moving * back
++	return tw
++
++
++func update(dt: float, local_vel: Vector2, stance: String) -> void:
++	speed = local_vel.length()
++	var tw := target_weights(local_vel, stance)
++	var k := 1.0 - exp(-WEIGHT_RATE * dt)
++	for c in tw:
++		if not weights.has(c):
++			weights[c] = 0.0
++	var drop: Array = []
++	for c in weights:
++		var target := float(tw.get(c, 0.0))
++		var w := float(weights[c])
++		w += (target - w) * k
++		if target <= 0.0 and w < 0.003:
++			drop.append(c)
++		weights[c] = w
++	for c in drop:
++		weights.erase(c)
++	# Phase rate from the weighted stride of the gaits in the mix.
++	var gw := 0.0
++	var stride := 0.0
++	for c in weights:
++		if GAITS.has(c):
++			gw += float(weights[c])
++			stride += float(weights[c]) * float(GAITS[c].stride)
++	if gw > 1e-3:
++		stride /= gw
++		cycle_rate = clampf(speed / maxf(stride, 0.1), 0.6, 2.0)
++	else:
++		cycle_rate = 0.0
++	phase = fposmod(phase + cycle_rate * dt, 1.0)
++	stance_t += dt
++
++
++func clip_time(c: String, length: float) -> float:
++	if GAITS.has(c):
++		return fposmod(phase + float(GAITS[c].offset), 1.0) * length
++	return fposmod(stance_t, maxf(length, 0.01))
++
++
++## [Animation, time, weight] entries for AnimClipSampler.blend, the heaviest max_clips only.
++func entries(lib: Dictionary, max_clips: int = 6) -> Array:
++	var out: Array = []
++	for c in weights:
++		var w := float(weights[c])
++		if w < 0.003 or not lib.has(c):
++			continue
++		var anim: Animation = lib[c]
++		out.append([anim, clip_time(c, anim.length), w])
++	if out.size() > max_clips:
++		out.sort_custom(func(x: Array, y: Array) -> bool: return float(x[2]) > float(y[2]))
++		out.resize(max_clips)
++	return out
++
++
++func dominant() -> String:
++	var best := ""
++	var bw := -1.0
++	for c in weights:
++		if float(weights[c]) > bw:
++			bw = float(weights[c])
++			best = c
++	return best
++
++
++func gait_amount() -> float:
++	var s := 0.0
++	for c in weights:
++		if GAITS.has(c):
++			s += float(weights[c])
++	return s
+diff --git a/game/presentation/anim/locomotion_blender.gd.uid b/game/presentation/anim/locomotion_blender.gd.uid
+new file mode 100644
+index 0000000..8c6305d
+--- /dev/null
++++ b/game/presentation/anim/locomotion_blender.gd.uid
+@@ -0,0 +1 @@
++uid://deibpvtjjk5wi
+diff --git a/game/presentation/fighter_view.gd b/game/presentation/fighter_view.gd
+index c00d89a..0f67ad9 100644
+--- a/game/presentation/fighter_view.gd
++++ b/game/presentation/fighter_view.gd
+@@ -5,6 +5,13 @@ extends Node3D
+ ## in-place; playback speed is matched to ground speed (no skating) and attack
+ ## clips are time-scaled so their authored contact frame lands on the sim's
+ ## startup end (game/assets/characters/fighter_clips.json).
++##
++## On top of the clip the AnimationPlayer plays, a FighterAnimRig (SkeletonModifier3D, see
++## presentation/anim/) adds the physical layer: a synced locomotion blend space driven by the
++## measured ground velocity, foot IK on the ArenaMap ground with pelvis drop, lean/banking and
++## landing compression, clamped look-at / chest aim, and spring-damper hit and block reactions.
++## SpringBoneSimulator3D chains (sash tails, hair) are added when the rig has those bones.
++## Distant fighters and practice dummies run reduced layers (docs/ANIMATION.md, "Runtime layers").
+ 
+ const GLB := "res://assets/characters/fighter.glb"
+ const CLIPS_JSON := "res://assets/characters/fighter_clips.json"
+@@ -32,6 +39,27 @@ var _lean := 0.0
+ var colors := {}
+ var _fallback_parts := {}
+ 
++# ---- runtime animation layers (presentation/anim/)
++const LOD_NEAR := 22.0                # m to the camera: beyond this, reduced layers
++const LOD_FAR := 40.0                 # beyond this, plain clips only (rig off)
++var rig: FighterAnimRig = null
++var secondary: SpringBoneSimulator3D = null
++var is_dummy := false
++var lod := 0
++var _vel_meas := Vector3.ZERO         # horizontal ground velocity measured from sim positions (m/s)
++var _have_meas := false
++var _vel_s := Vector3.ZERO
++var _acc_s := Vector3.ZERO
++var _yaw_rate := 0.0
++var _prev_grounded := true
++var _prev_vy := 0.0
++var _prev_health := -1.0
++var _prev_balance := 0.0
++var _last_hit_tick := -1
++var _vis_y := 0.0
++var _vis_init := false
++var _debug_draw: AnimDebugDraw = null
++
+ 
+ func setup(id: int, palette: Dictionary) -> void:
+ 	actor_id = id
+@@ -48,8 +76,19 @@ func setup(id: int, palette: Dictionary) -> void:
+ 			_hand_l = skel.find_bone("hand.L")
+ 		if ap:
+ 			ap.playback_default_blend_time = 0.12
++		if skel and ap:
++			rig = FighterAnimRig.new()
++			rig.name = "AnimRig"
++			skel.add_child(rig)
++			rig.setup_rig(skel, ap)
++			if not rig.is_rig_ready():
++				rig.queue_free()
++				rig = null
++			secondary = FighterSecondaryMotion.attach(skel)
+ 	else:
+ 		_build_fallback()
++	if "--animdebug" in OS.get_cmdline_user_args():
++		AnimDebugHotkeys.install(self)
+ 	if FileAccess.file_exists(CLIPS_JSON):
+ 		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(CLIPS_JSON))
+ 		if j is Dictionary:
+@@ -99,10 +138,19 @@ func set_accent(c: Color) -> void:
+ 
+ func push_state(a: ActorState) -> void:
+ 	## Called once per simulation tick.
++	var d := a.pos - _curr_pos
+ 	_prev_pos = _curr_pos
+ 	_prev_yaw = _curr_yaw
+ 	_curr_pos = a.pos
+ 	_curr_yaw = a.facing
++	# Measured ground velocity (what the eye sees, so feet never skate against a wall push-out);
++	# a jump of more than 12 m/s is a teleport/reset, use the sim velocity then.
++	_vel_meas = Vector3(d.x, 0.0, d.z) / Sim.DT
++	if _vel_meas.length() > 12.0:
++		_vel_meas = Vector3(a.vel.x, 0.0, a.vel.z)
++	_have_meas = true
++	_yaw_rate = wrapf(_curr_yaw - _prev_yaw, -PI, PI) / Sim.DT
++	_react_to_sim(a)
+ 
+ 
+ func snap(a: ActorState) -> void:
+@@ -112,6 +160,18 @@ func snap(a: ActorState) -> void:
+ 	_curr_yaw = a.facing
+ 	global_position = a.pos
+ 	rotation.y = a.facing
++	is_dummy = a.is_dummy
++	_vel_meas = Vector3.ZERO
++	_vel_s = Vector3.ZERO
++	_acc_s = Vector3.ZERO
++	_yaw_rate = 0.0
++	_vis_init = false
++	_prev_health = -1.0
++	_prev_grounded = a.grounded
++	if rig:
++		rig.hits.reset()
++		rig.land_y = 0.0
++		rig.land_v = 0.0
+ 
+ 
+ func render(a: ActorState, alpha: float, dt: float) -> void:
+@@ -120,6 +180,10 @@ func render(a: ActorState, alpha: float, dt: float) -> void:
+ 	_animate(a, dt)
+ 	if not model:
+ 		_fallback_pose(a, dt)
++		return
++	_smooth_visual_height(a, dt)
++	if rig:
++		_drive_rig(a, dt)
+ 
+ 
+ func play_one_shot(clip: String, dur: float = 0.35) -> void:
+@@ -129,6 +193,9 @@ func play_one_shot(clip: String, dur: float = 0.35) -> void:
+ 
+ 
+ func hand_position(right: bool = true) -> Vector3:
++	# The rig caches the final (layered) hand positions each frame it runs.
++	if rig and rig.active and rig.hand_frame >= Engine.get_process_frames() - 1:
++		return rig.hand_world[0 if right else 1]
+ 	var idx := _hand_r if right else _hand_l
+ 	if skel and idx >= 0:
+ 		return skel.global_transform * skel.get_bone_global_pose(idx).origin
+@@ -330,6 +397,197 @@ func _animate_action(a: ActorState, inst: ActionInst) -> void:
+ 				_play("glide" if a.gliding else "fall", "at%s" % str(a.gliding), 1.0, 0.18)
+ 
+ 
++# ------------------------------------------------------------------ runtime layers
++
++## Sim-driven reactions, once per tick: hits/blocks kick the springs, landings kick the pelvis.
++func _react_to_sim(a: ActorState) -> void:
++	if rig == null:
++		return
++	if not _prev_grounded and a.grounded:
++		rig.kick_pelvis(absf(minf(_prev_vy, 0.0)) * 0.34)
++	_prev_grounded = a.grounded
++	_prev_vy = a.vel.y
++	if _prev_health < 0.0:
++		_prev_health = a.health
++		_prev_balance = a.balance
++		_last_hit_tick = _newest_hit_tick(a)
++		return
++	var newest := _newest_hit_tick(a)
++	var dmg := _prev_health - a.health
++	var bal := maxf(_prev_balance - a.balance, 0.0)
++	if newest > _last_hit_tick or dmg > 0.5:
++		var to_local := Basis(Vector3.UP, a.facing).inverse()
++		var res := a.last_result
++		if res == "hit" or res == "knockdown":
++			var dir := to_local * a.last_hit_dir
++			var s := clampf(0.35 + dmg / 22.0 + bal / 70.0, 0.3, 1.25)
++			if res == "knockdown":
++				s *= 0.45          # the authored fall carries it; just add the directional jolt
++			rig.hits.hit(dir, s)
++			if a.stun_kind == "heavy":
++				rig.kick_pelvis(0.9)
++		elif res == "block" or res == "guard_break":
++			rig.hits.block(Vector3(0, 0, -1), 1.0 if res == "guard_break" else 0.55)
++		elif res == "perfect":
++			rig.hits.block(Vector3(0, 0, -1), 0.22)
++		elif dmg > 0.5:
++			rig.hits.hit(to_local * -a.forward(), 0.3)   # contact burn and similar
++	_last_hit_tick = newest
++	_prev_health = a.health
++	_prev_balance = a.balance
++
++
++static func _newest_hit_tick(a: ActorState) -> int:
++	var m := -1
++	for k in a.hits_taken:
++		m = maxi(m, int(a.hits_taken[k]))
++	return m
++
++
++## The sim snaps the feet onto a step in one tick; the body follows over ~0.1 s instead
++## (feet are then grounded by the IK), and the offset is bounded so it can never drift.
++func _smooth_visual_height(a: ActorState, dt: float) -> void:
++	var y := global_position.y
++	if not _vis_init or absf(y - _vis_y) > 0.7:
++		_vis_y = y
++		_vis_init = true
++	_vis_y = lerpf(_vis_y, y, 1.0 - exp(-(14.0 if a.grounded else 40.0) * dt))
++	_vis_y = clampf(_vis_y, y - 0.45, y + 0.45)
++	model.position.y = _vis_y - y
++
++
++func _game() -> Node:
++	var p := get_parent()
++	return p if p != null and p.get("world") is CombatWorld else null
++
++
++func _compute_lod(a: ActorState) -> int:
++	if AnimRigSettings.force_lod >= 0:
++		return AnimRigSettings.force_lod
++	var l := 0
++	var vp := get_viewport() if is_inside_tree() else null
++	var cam := vp.get_camera_3d() if vp else null
++	if cam:
++		var d := cam.global_position.distance_to(global_position)
++		l = 2 if d > LOD_FAR else (1 if d > LOD_NEAR else 0)
++	if a.is_dummy or is_dummy:
++		l = maxi(l, 1)
++	var g := _game()
++	if g and int(g.get("quality")) == 0:
++		l = maxi(l, 1)
++	return l
++
++
++func _drive_rig(a: ActorState, dt: float) -> void:
++	lod = _compute_lod(a)
++	if secondary:
++		secondary.active = AnimRigSettings.secondary and lod == 0
++	if lod >= 2:
++		rig.active = false
++		return
++	rig.active = true
++	rig.lod = lod
++	var g := _game()
++	var world: CombatWorld = g.get("world") if g else null
++	rig.arena = world.arena if world else null
++	# Ground velocity in the fighter's own frame, smoothed (sim ticks are 60 Hz, frames vary).
++	var raw := _vel_meas if _have_meas else Vector3(a.vel.x, 0.0, a.vel.z)
++	var prev := _vel_s
++	_vel_s = _vel_s.lerp(raw, 1.0 - exp(-14.0 * dt))
++	if dt > 1e-5:
++		_acc_s = _acc_s.lerp((_vel_s - prev) / dt, 1.0 - exp(-8.0 * dt))
++	var f := Vector3(sin(rotation.y), 0.0, cos(rotation.y))
++	var r := f.cross(Vector3.UP)                     # the character's right
++	rig.local_vel = Vector2(_vel_s.dot(r), _vel_s.dot(f))
++	rig.stance = ["stance_earth", "stance_water", "stance_fire", "stance_air"][clampi(a.element, 0, 3)]
++	var inst := a.action
++	var free := a.grounded and inst == null and a.stun <= 0.0
++	rig.loco_target = 1.0 if free else 0.0
++	var spd := _vel_s.length()
++	var legs := 0.0
++	if a.grounded and inst != null and a.stun <= 0.0:
++		var ph := inst.phase
++		if inst.id == "guard" and a.wall_body < 0:
++			legs = smoothstep(0.15, 0.6, spd)
++		elif ph == ActionInst.P.CHARGE or ph == ActionInst.P.CHANNEL:
++			legs = smoothstep(0.2, 0.7, spd)
++	rig.legs_target = legs
++	# Lean into acceleration and into turns (centripetal: speed x yaw rate), only on the ground.
++	var lean := Vector2.ZERO
++	if free:
++		var acc_f := _acc_s.dot(f)
++		var acc_r := _acc_s.dot(r)
++		var fwd_spd := _vel_s.dot(f)
++		lean.x = clampf(acc_f * 0.010, -0.09, 0.11)
++		lean.y = clampf(-fwd_spd * _yaw_rate * 0.016 + acc_r * 0.008, -0.17, 0.17)
++	rig.lean_target = lean
++	# Foot IK only while standing on the ground in poses that keep the feet down.
++	var lifts := inst != null and (inst.id == "evade" or inst.id == "air_dash" or inst.id == "air_tech")
++	var down := a.stun > 0.0 and (a.stun_kind == "knockdown" or a.stun_kind == "getup")
++	rig.ik_target_w = 1.0 if (a.grounded and not lifts and not down) else 0.0
++	# Look at the incoming threat first, else the lock target; chest aims along the attack.
++	var look_w := 0.0
++	if lod == 0 and world and not down and not lifts:
++		var tgt := _look_target(a, world)
++		if tgt != Vector3.INF:
++			rig.look_world = tgt
++			if a.stun > 0.0:
++				look_w = 0.25
++			elif inst == null:
++				look_w = 0.85
++			elif inst.id == "guard":
++				look_w = 0.7
++			else:
++				look_w = 0.4
++	rig.look_target_w = look_w
++	var aim_w := 0.0
++	if inst != null and inst.data.has("face") and inst.id != "evade" and inst.id != "air_dash":
++		var ph2 := inst.phase
++		if ph2 == ActionInst.P.STARTUP or ph2 == ActionInst.P.CHARGE or ph2 == ActionInst.P.CHANNEL or ph2 == ActionInst.P.ACTIVE:
++			var fd: Vector3 = inst.data.face
++			if Vector2(fd.x, fd.z).length() > 0.01:
++				rig.aim_yaw = clampf(wrapf(atan2(fd.x, fd.z) - rotation.y, -PI, PI), -0.6, 0.6)
++				aim_w = 1.0
++	rig.aim_target_w = aim_w
++	rig.tick(dt)
++	if AnimRigSettings.debug_draw:
++		if _debug_draw == null:
++			_debug_draw = AnimDebugDraw.new()
++			add_child(_debug_draw)
++		_debug_draw.draw(rig)
++	elif _debug_draw:
++		_debug_draw.queue_free()
++		_debug_draw = null
++
++
++## World point to look at: the nearest incoming attack body (by time to impact), else the
++## locked target's head. Vector3.INF when there is nothing to look at.
++func _look_target(a: ActorState, world: CombatWorld) -> Vector3:
++	var me := a.pos + Vector3(0, 1.5, 0)
++	var best := Vector3.INF
++	var best_t := 1.1
++	for b in world.bodies:
++		if not b.alive or b.attack_id <= 0 or b.attack_owner == a.id or b.controller == a.id:
++			continue
++		var rel := me - b.pos
++		var dist := rel.length()
++		if dist > 14.0 or dist < 0.4:
++			continue
++		var closing := b.vel.dot(rel / dist)
++		if closing < 2.0:
++			continue
++		var tti := dist / closing
++		if tti < best_t:
++			best_t = tti
++			best = b.pos
++	if best != Vector3.INF:
++		return best
++	var t := world.get_actor(a.lock_target)
++	if t != null and t.pos.distance_to(a.pos) < 24.0:
++		return t.pos + Vector3(0, 1.5, 0)
++	return Vector3.INF
++
++
+ # ------------------------------------------------------------------ fallback mannequin
+ 
+ func _build_fallback() -> void:
+diff --git a/tools/blender/fighter_body.py b/tools/blender/fighter_body.py
+new file mode 100644
+index 0000000..328c7f5
+--- /dev/null
++++ b/tools/blender/fighter_body.py
+@@ -0,0 +1,291 @@
++"""Head (with modelled face), ears, neck, hair (cap + locks + topknot) and torso skin for the fighter."""
++import math
++import random
++
++from mathutils import Vector
++
++from fighter_mesh import (Curve, HAIR, SKIN, ACC, MAIN, WRAPS, axial_weights, clamp01, frame_from_tangent, lerp,
++                          ring_pts, sgnpow, sstep, to_a, torso_weights)
++from fighter_skeleton import A
++
++DEG = math.pi / 180.0
++
++
++def G(x, z, cx, cz, sx, sz):
++    return math.exp(-((x - cx) / sx) ** 2 - ((z - cz) / sz) ** 2)
++
++
++# ---------------------------------------------------------------------------------------------------------------------
++# head silhouette (superellipse rings, A frame)
++# ---------------------------------------------------------------------------------------------------------------------
++HEAD_Z = [1.514, 1.521, 1.528, 1.535, 1.541, 1.547, 1.552, 1.5565, 1.5605, 1.564, 1.5685, 1.573, 1.578, 1.584, 1.590, 1.597,
++          1.604, 1.611, 1.619, 1.627, 1.634, 1.641, 1.648, 1.655, 1.663, 1.672, 1.683, 1.695, 1.708, 1.721, 1.733, 1.743]
++_hk = [1.514, 1.524, 1.540, 1.560, 1.580, 1.600, 1.625, 1.650, 1.675, 1.700, 1.720, 1.735, 1.745]
++HEAD_W = Curve(list(zip(_hk, [0.022, 0.034, 0.048, 0.058, 0.064, 0.068, 0.072, 0.075, 0.0765, 0.075, 0.068, 0.053, 0.034])))
++_front = [0.080, 0.084, 0.091, 0.096, 0.099, 0.099, 0.099, 0.102, 0.103, 0.100, 0.090, 0.071, 0.042]
++_back = [-0.008, 0.020, 0.046, 0.066, 0.080, 0.090, 0.096, 0.098, 0.097, 0.090, 0.078, 0.060, 0.035]
++HEAD_D = Curve(list(zip(_hk, [(f + b) / 2 for f, b in zip(_front, _back)])))
++HEAD_C = Curve(list(zip(_hk, [(f - b) / 2 for f, b in zip(_front, _back)])))
++HEAD_P = 2.15
++_P = [6, 12, 18, 24, 30, 38, 48, 60, 74, 90, 110, 135, 160]
++THETAS = [180.0] + [-p for p in reversed(_P)] + [0.0] + [float(p) for p in _P]      # degrees from the front, + = left
++
++
++def head_surface(z, theta_deg, off=0.0):
++    """Skull point (Blender coords) at height z and angle from the front, pushed outward by `off` (metres), plus the
++    outward unit normal (Blender xy)."""
++    th = theta_deg * DEG
++    w, d, c = HEAD_W(z), HEAD_D(z), HEAD_C(z)
++    e = 2.0 / HEAD_P
++    s, co = math.sin(th), math.cos(th)
++    x = w * sgnpow(s, e)
++    y = -c - d * sgnpow(co, e)
++    gx = HEAD_P * abs(x / w) ** (HEAD_P - 1) * (1 if x >= 0 else -1) / w
++    gy = HEAD_P * abs((y + c) / d) ** (HEAD_P - 1) * (1 if (y + c) >= 0 else -1) / d
++    gl = math.hypot(gx, gy) or 1.0
++    nx, ny = gx / gl, gy / gl
++    return Vector((x + nx * off, y + ny * off, z)), Vector((nx, ny, 0.0))
++
++
++def face_disp(x, z):
++    """Outward displacement (m) of the face surface at (x = left+, z) in metres."""
++    ax = abs(x)
++    d = 0.0
++    # brow ridge, glabella and forehead
++    zb = 1.6555 - 0.004 * (ax / 0.06)
++    d += 0.0085 * sstep(0.066, 0.040, ax) * math.exp(-((z - zb) / 0.0078) ** 2)
++    d += 0.0035 * G(ax, z, 0.0, 1.690, 0.050, 0.022)
++    d += -0.0030 * G(ax, z, 0.070, 1.650, 0.012, 0.022)                          # temples
++    # eye sockets, lids
++    ze = 1.6355
++    d += -0.0070 * G(ax, z, 0.0325, ze, 0.0165, 0.0105)
++    d += 0.0035 * G(ax, z, 0.0325, ze + 0.012, 0.0175, 0.0038)
++    d += 0.0016 * G(ax, z, 0.0325, ze - 0.011, 0.015, 0.004)
++    d += -0.0030 * G(ax, z, 0.011, ze, 0.007, 0.012)                             # inner corner / nasion dip
++    # nose
++    tip = 1.5915
++    hb = 0.0040 + 0.0170 * sstep(1.642, tip, z)
++    hb *= sstep(tip - 0.016, tip - 0.001, z) * sstep(1.658, 1.636, z)
++    sxn = 0.0065 + 0.0105 * sstep(1.628, tip, z)
++    d += hb * math.exp(-(x / sxn) ** 2)
++    d += 0.0055 * G(ax, z, 0.0165, tip - 0.002, 0.0085, 0.0075)                   # alar wings
++    d += 0.0030 * G(ax, z, 0.0, tip - 0.001, 0.0085, 0.0055)                      # tip
++    d += -0.0050 * G(ax, z, 0.0095, tip - 0.012, 0.0050, 0.0036)                  # nostrils
++    # cheeks, nasolabial, philtrum
++    d += 0.0050 * G(ax, z, 0.050, 1.610, 0.024, 0.017)
++    d += -0.0035 * G(ax, z, 0.052, 1.577, 0.022, 0.020)
++    d += -0.0025 * G(ax, z, 0.030, 1.572, 0.005, 0.014)
++    d += -0.0020 * G(ax, z, 0.0, 1.5745, 0.0045, 0.0050)
++    # mouth
++    d += 0.0043 * G(ax, z, 0.0, 1.5685, 0.0300, 0.0050)
++    d += 0.0050 * G(ax, z, 0.0, 1.5535, 0.0270, 0.0060)
++    d += -0.0048 * G(ax, z, 0.0, 1.5612, 0.0340, 0.0017)
++    d += -0.0030 * G(ax, z, 0.0285, 1.5613, 0.0055, 0.0050)
++    d += -0.0035 * G(ax, z, 0.0, 1.5425, 0.0230, 0.0040)
++    d += 0.0075 * G(ax, z, 0.0, 1.5240, 0.0210, 0.0120)                           # chin
++    d += 0.0030 * G(ax, z, 0.040, 1.530, 0.016, 0.014)                            # jaw muscle
++    return d
++
++
++def head_weights(z):
++    nk = 1.0 - sstep(1.525, 1.575, z)
++    return {"head": 1.0 - 0.55 * nk, "neck": 0.55 * nk} if nk > 0 else {"head": 1.0}
++
++
++def build_head(mb):
++    mb.begin("head", SKIN, density=1.7)
++    rings = []
++    for z in HEAD_Z:
++        r = []
++        for th in THETAS:
++            p, nrm = head_surface(z, th)
++            m = sstep(82, 48, abs(th))
++            if m > 0:
++                dn = face_disp(p.x, z) * m
++                p = p + nrm * dn
++            r.append(p)
++        rings.append(r)
++    C = 2 * math.pi * 0.085
++    ucoord = lambda jj: (0.0 if jj == 0 else (THETAS[jj % len(THETAS)] + 180.0) / 360.0 * C) if jj < len(THETAS) else C
++    vc = lambda i: HEAD_Z[i]
++    mb.loft(rings, lambda i, j, p: head_weights(p.z), SKIN,
++            cap_start=(Vector((0, -0.040, 1.508)), {"head": 0.55, "neck": 0.45}),
++            cap_end=(Vector((0, 0.0, 1.748)), {"head": 1.0}), ucoord=ucoord, vcoord=vc)
++    # ears
++    for sx in (-1, 1):
++        mb.begin(f"ear{sx}", SKIN, density=1.7)
++        rr = []
++        ax_c = Vector((sx * 0.0715, 0.004, 1.627))                           # blender coords (y back)
++        tilt = Vector((0.0, 0.25, 0.97)).normalized()                         # major axis leans backward (top is back)
++        sideways = Vector((0.0, -0.97, 0.25)).normalized()
++        for dx, rs, sh in ((-0.002, 0.80, 0.0), (0.005, 1.0, 0.002), (0.011, 0.97, 0.004), (0.015, 0.78, 0.006)):
++            c = ax_c + Vector((sx * dx, 0.0, 0.0)) + Vector((0, 0.002, 0)) * (dx / 0.015)
++            pts = []
++            for k in range(10):
++                a = 2 * math.pi * k / 10
++                r_up, r_fw = 0.0305 * rs, 0.0185 * rs * (1.0 + 0.18 * math.cos(a))
++                pts.append(c + tilt * (r_up * math.sin(a)) + sideways * (r_fw * math.cos(a)) + Vector((sx * sh, 0, 0)))
++            rr.append(pts)
++        mb.loft(rr, lambda i, j, p: {"head": 1.0}, SKIN,
++                cap_start=(ax_c + Vector((sx * -0.008, 0, 0)), {"head": 1.0}),
++                cap_end=(ax_c + Vector((sx * 0.0085, 0.0015, 0.0)), {"head": 1.0}))
++
++
++def build_neck(mb):
++    mb.begin("neck", SKIN, density=1.2)
++    nz = [1.415, 1.440, 1.470, 1.500, 1.530, 1.552]
++    nr = Curve(list(zip(nz, [0.066, 0.058, 0.0525, 0.0500, 0.0495, 0.0495])))
++    rings = []
++    for z in nz:
++        # slightly wider than deep, a touch forward at the throat
++        rings.append(ring_pts(A(0, 0.006 - 0.0005 * (z - 1.43) * 10, z), Vector((1, 0, 0)), Vector((0, 1, 0)), nr(z) * 1.05,
++                              nr(z) * 0.93, 12, 2.2, phase=math.pi * 0.5))
++    mb.loft(rings, lambda i, j, p: axial_weights(p.z), SKIN)
++
++
++# ---------------------------------------------------------------------------------------------------------------------
++# hair
++# ---------------------------------------------------------------------------------------------------------------------
++_HL = Curve([(0, 1.706), (30, 1.702), (50, 1.690), (70, 1.676), (90, 1.668), (112, 1.652), (140, 1.628), (180, 1.605)])
++HAIR_TOP = 1.746
++
++
++def hairline(theta):
++    return _HL(abs(theta))
++
++
++def build_hair(mb, seed=11):
++    rnd = random.Random(seed)
++    # --- cap: rings from the hairline to the crown; per-meridian clump offsets give the volume -----------------------
++    mb.begin("hair_cap", HAIR, density=1.0)
++    n = 36
++    ths = [(-180.0 + 360.0 * k / n) for k in range(n)]
++    clump = [rnd.uniform(-0.0035, 0.0055) for _ in range(n)]
++    clump = [0.25 * clump[(k - 1) % n] + 0.5 * clump[k] + 0.25 * clump[(k + 1) % n] for k in range(n)]
++    S = [0.0, 0.12, 0.26, 0.42, 0.58, 0.72, 0.84, 0.93, 1.0]
++    rings = []
++    for si, s in enumerate(S):
++        r = []
++        for j, th in enumerate(ths):
++            zb = hairline(th) - 0.002
++            z = lerp(zb, HAIR_TOP - 0.004 * (1 - s), s ** 0.85)
++            a = abs(th)
++            vol = 1.0 - 0.5 * sstep(70, 120, a)                                       # fuller on top/front than at the nape
++            off = 0.0055 + vol * 0.010 * math.sin(math.pi * min(1.0, s * 1.06)) + clump[j] * math.sin(math.pi * min(1.0, s * 1.1)) ** 0.8
++            if si == 0:
++                off = 0.0045 + 0.2 * clump[j]
++            p, _ = head_surface(z, th, off=off)
++            r.append(p)
++        rings.append(r)
++    C = 2 * math.pi * 0.09
++    mb.loft(rings, lambda i, j, p: {"head": 1.0}, HAIR, cap_end=(Vector((0, 0.003, HAIR_TOP + 0.004)), {"head": 1.0}),
++            ucoord=lambda jj: (jj / n) * C, vcoord=lambda i: (len(S) - 1 - i) * 0.02)
++
++    # --- tufts: short flat shingles along the hairline give the jagged edge; a fringe falls over the forehead ---------
++    def tuft(th0, z0, z1, width, lift, flare, steps=3, sweep=0.0, thick=0.0055, tip_taper=0.35, base_off=0.0075):
++        mb.begin("tuft", HAIR, density=1.0, group="locks")
++        pts = []
++        for k in range(steps):
++            t = k / (steps - 1)
++            e = t * t * (3 - 2 * t) * 0.3 + t * 0.7
++            th = th0 + sweep * e
++            z = lerp(z0, z1, e)
++            off = base_off + lift * math.sin(math.pi * min(1.0, 0.15 + 0.8 * t)) + flare * t ** 2
++            p, nrm = head_surface(z, th, off=off)
++            pts.append((p, nrm, width * 0.5 * (1.0 - (1.0 - tip_taper) * t ** 1.5)))
++        rr = []
++        for k, (p, nrm, hw) in enumerate(pts):
++            tg = pts[min(k + 1, len(pts) - 1)][0] - pts[max(k - 1, 0)][0]
++            u, v, t_ = frame_from_tangent(tg, nrm)
++            rr.append(ring_pts(p, u, v, thick * 0.5, hw, 4, 2.0))
++        tg = pts[-1][0] - pts[-2][0]
++        tip = pts[-1][0] + tg.normalized() * 0.008 + pts[-1][1] * flare * 0.25
++        mb.loft(rr, lambda i, j, p: {"head": 1.0}, HAIR, cap_end=(tip, {"head": 1.0}),
++                ucoord=lambda jj: jj * 0.01, vcoord=lambda i: i * 0.03)
++
++    n1 = 24
++    for k in range(n1):
++        th = -180 + 360 * (k + rnd.uniform(-0.25, 0.25)) / n1
++        a = abs(th)
++        front = 1.0 - sstep(25, 55, a)
++        zh = hairline(th)
++        tuft(th, zh + 0.040 + 0.01 * rnd.random(), zh - 0.016 - 0.012 * rnd.random() - 0.010 * sstep(110, 170, a), 0.040,
++             0.003, 0.006 + 0.004 * front, steps=3, sweep=rnd.uniform(-5, 5), base_off=0.0065)
++    for k in range(8):
++        th = -34 + 68 * k / 7 + rnd.uniform(-2, 2)
++        tuft(th, 1.722, hairline(th) - 0.024 - 0.006 * rnd.random(), 0.034, 0.014, 0.012, steps=4, sweep=-th * 0.08, base_off=0.009)
++    for sgn in (-1, 1):
++        tuft(sgn * 90, 1.668, 1.640, 0.016, 0.002, 0.003, steps=3, tip_taper=0.4, thick=0.005, base_off=0.0055)
++
++    # --- topknot (bun + tail) on hair_top.001/.002 + tie band ---------------------------------------------------------
++    mb.begin("topknot", HAIR, density=1.0)
++    c = Vector((0.0, 0.036, 1.762))                     # blender coords (y back)
++
++    def kw(z, y):
++        t = clamp01((z - 1.742) / 0.03)
++        w2 = clamp01((y - 0.04) / 0.045)
++        return {"hair_top.001": (1 - w2) * t, "head": (1 - t) * 0.9, "hair_top.002": w2 * t}
++
++    brings = []
++    prof = [(0.0, 0.25), (0.35, 0.8), (0.7, 1.0), (1.0, 0.85), (1.35, 0.4)]
++    for (zz, rs) in prof:
++        cc = c + Vector((0, 0, (zz - 0.7) * 0.026))
++        brings.append(ring_pts(cc, Vector((1, 0, 0)), Vector((0, 1, 0)), 0.0285 * rs, 0.0265 * rs, 10, 2.1))
++    mb.loft(brings, lambda i, j, p: kw(p.z, p.y), HAIR,
++            cap_start=(c + Vector((0, 0, -0.020)), kw(1.742, 0.04)), cap_end=(c + Vector((0, 0.002, 0.030)), kw(1.79, 0.04)))
++    for k, (dx, dz) in enumerate(((-0.011, 0.0), (0.0, 0.004), (0.011, 0.0))):
++        mb.begin("knot_tail", HAIR, density=1.0, group="locks")
++        pts = [Vector((dx * 0.5, 0.062, 1.768 + dz)), Vector((dx * 0.9, 0.080, 1.779 + dz)), Vector((dx * 1.2, 0.096, 1.783 + dz)),
++               Vector((dx * 1.5, 0.108, 1.768 + dz))]
++        rr = []
++        for q in range(len(pts)):
++            t = q / (len(pts) - 1)
++            nxt = pts[min(q + 1, len(pts) - 1)] - pts[max(q - 1, 0)]
++            u, v, t_ = frame_from_tangent(nxt, Vector((1, 0, 0)))
++            rr.append(ring_pts(pts[q], u, v, 0.0085 * (1 - 0.7 * t), 0.0075 * (1 - 0.7 * t), 4, 2.0))
++        mb.loft(rr, lambda i, j, p: {"hair_top.002": 0.75, "hair_top.001": 0.25} if i < 2 else {"hair_top.002": 1.0}, HAIR,
++                cap_end=(pts[-1] + Vector((0, 0.006, -0.004)), {"hair_top.002": 1.0}),
++                ucoord=lambda jj: jj * 0.01, vcoord=lambda i: i * 0.03)
++    mb.begin("hair_tie", ACC, density=1.0)
++    tr = [ring_pts(c + Vector((0, 0, -0.012 + dz)), Vector((1, 0, 0)), Vector((0, 1, 0)), 0.0245 + dr, 0.0225 + dr, 10, 2.1)
++          for dz, dr in ((0.0, 0.0), (0.004, 0.0035), (0.008, 0.0))]
++    mb.loft(tr, lambda i, j, p: {"head": 0.4, "hair_top.001": 0.6}, ACC)
++
++
++# ---------------------------------------------------------------------------------------------------------------------
++# torso
++# ---------------------------------------------------------------------------------------------------------------------
++_TORSO_Z = [0.90, 0.97, 1.04, 1.12, 1.20, 1.27, 1.335, 1.385, 1.420, 1.447, 1.470]
++TORSO_W = Curve(list(zip(_TORSO_Z, [0.165, 0.158, 0.148, 0.146, 0.154, 0.172, 0.180, 0.170, 0.128, 0.078, 0.058])))
++TORSO_D = Curve(list(zip(_TORSO_Z, [0.108, 0.102, 0.094, 0.096, 0.104, 0.114, 0.116, 0.104, 0.086, 0.068, 0.058])))
++TORSO_C = Curve(list(zip(_TORSO_Z, [-0.004, -0.004, -0.008, -0.004, 0.0, 0.004, 0.004, 0.0, -0.002, -0.004, -0.006])))
++TORSO_P = 2.5
++
++
++def torso_point(z, ang, off=0.0, sc=1.0, chest=True):
++    """Point on the torso surface at height z and ring angle ang (rad; 0 = left side, 90 = back, 270 = front)."""
++    w = TORSO_W(z) * sc + off
++    d = TORSO_D(z) * sc + off
++    c = TORSO_C(z)
++    e = 2.0 / TORSO_P
++    x = w * sgnpow(math.cos(ang), e)
++    ybl = d * sgnpow(math.sin(ang), e)          # Blender +Y = backward
++    if chest and math.sin(ang) < 0:
++        # pectorals and the sternum groove; shallow, so cloth/skin stay smooth
++        xa = abs(x)
++        pec = 0.0085 * math.exp(-((xa - 0.075) / 0.045) ** 2 - ((z - 1.325) / 0.045) ** 2)
++        groove = -0.0030 * math.exp(-(x / 0.012) ** 2 - ((z - 1.31) / 0.06) ** 2)
++        ybl -= (pec + groove) * (-math.sin(ang)) ** 0.7
++    return Vector((x, ybl - c, z))
++
++
++def build_torso_skin(mb):
++    mb.begin("torso", SKIN, density=0.9)
++    NT = 24
++    z_t = [0.955, 1.00, 1.06, 1.12, 1.18, 1.24, 1.30, 1.355, 1.40, 1.43, 1.452, 1.47]
++    rings = []
++    for z in z_t:
++        rings.append([torso_point(z, 2 * math.pi * j / NT + math.pi * 0.5, off=-0.004) for j in range(NT)])
++    mb.loft(rings, lambda i, j, p: torso_weights(to_a(p)), SKIN,
++            cap_start=(Vector((0, 0.0, 0.93)), {"hips": 1.0}),
++            cap_end=(Vector((0, 0.0, 1.478)), {"neck": 0.5, "chest": 0.5}))
+diff --git a/tools/blender/fighter_character.py b/tools/blender/fighter_character.py
+new file mode 100644
+index 0000000..8179789
+--- /dev/null
++++ b/tools/blender/fighter_character.py
+@@ -0,0 +1,24 @@
++"""Assemble the fighter mesh from the body / garment / hand modules."""
++from fighter_mesh import MeshBuilder
++
++import fighter_body as body
++
++
++def build_character():
++    mb = MeshBuilder()
++    body.build_head(mb)
++    body.build_neck(mb)
++    body.build_hair(mb)
++    body.build_torso_skin(mb)
++    try:
++        import fighter_garments as garm
++        garm.build_garments(mb)
++    except ImportError:
++        pass
++    try:
++        import fighter_hands as hands
++        hands.build_arms_and_hands(mb)
++    except ImportError:
++        pass
++    mb.pack_uvs(log=print)
++    return mb
+diff --git a/tools/blender/fighter_garments.py b/tools/blender/fighter_garments.py
+new file mode 100644
+index 0000000..a5f6844
+--- /dev/null
++++ b/tools/blender/fighter_garments.py
+@@ -0,0 +1,346 @@
++"""Garments: wrap top with V collar and lapel seam, sash with back knot and tails, loose trousers, shin wraps, shoes.
++Vertex colour (r, g): r = surface variant (1 = rubber sole), g = wear / dirt mask (see fighter_textures.py)."""
++import math
++
++from mathutils import Vector
++
++from fighter_body import TORSO_C, torso_point
++from fighter_mesh import (ACC, Curve, MAIN, WRAPS, clamp01, frame_from_tangent, lerp, ring_pts, sgnpow, sstep, to_a,
++                          torso_weights)
++from fighter_skeleton import A, LEFT_REST, SASH_L, SASH_R, SIDES
++
++FLIP = Vector((1, -1, 1))
++
++
++def _fold(z, ang, amp=1.0):
++    """Cloth drape: low-frequency creases that follow the body, strongest just above the sash and near the hem."""
++    e1 = sstep(1.04, 1.12, z) * (1 - sstep(1.24, 1.36, z))
++    e2 = sstep(0.93, 1.0, 1.0 - z * 0 if False else z) * (1 - sstep(1.10, 1.2, z))
++    return amp * (0.0030 * math.sin(4 * ang + 9 * z) * e1 + 0.0022 * math.sin(7 * ang - 14 * z + 1.3) * (e1 + 0.3 * e2)
++                  + 0.0035 * math.sin(6 * ang + 3.0) * (1 - sstep(0.94, 1.03, z)))
++
++
++def top_edge_z(ang):
++    """Neckline height at ring angle ang: V at the front, neck base elsewhere."""
++    d = abs(((ang - 3 * math.pi / 2) + math.pi) % (2 * math.pi) - math.pi)
++    v = max(0.0, 1.0 - d / math.radians(54))
++    return 1.458 - 0.175 * v ** 1.15
++
++
++def hem_z(ang):
++    return 0.940 + 0.048 * abs(math.cos(ang)) ** 2.5
++
++
++def build_top(mb):
++    NT = 32
++    ang0 = math.pi * 0.5                   # ring start = centre back (seam)
++    angs = [ang0 + 2 * math.pi * j / NT for j in range(NT)]
++    mb.begin("top", MAIN, density=1.0)
++    NS = 11
++    rings = []
++    for i in range(NS):
++        s = i / (NS - 1)
++        r = []
++        for ang in angs:
++            zb = hem_z(ang)
++            zt = top_edge_z(ang)
++            z = lerp(zb, zt, s)
++            # loose at the waist, hugging the chest; flares at the hem
++            off = 0.011 + 0.006 * (1 - sstep(0.0, 0.5, s)) + 0.020 * (1 - sstep(0.0, 0.16, s)) ** 1.5
++            off += _fold(z, ang) * (0.4 + 0.6 * (1 - s))
++            if s > 0.9:
++                off *= 1 - 0.5 * sstep(0.9, 1.0, s)
++            r.append(torso_point(z, ang, off=off, chest=True))
++        rings.append(r)
++    wear = lambda i, j, p: (0.0, 0.55 * (1 - sstep(0.0, 0.18, i / (NS - 1))) + 0.15, 0.0)
++    ids = mb.loft(rings, lambda i, j, p: torso_weights(to_a(p)), MAIN, colfn=wear)
++    # hem roll
++    hr = []
++    for k, (ds, doff) in enumerate(((0.0, 0.0), (0.0, 0.0035), (0.012, 0.0035), (0.012, 0.0))):
++        r = []
++        for ang in angs:
++            zb = hem_z(ang)
++            zt = top_edge_z(ang)
++            z = lerp(zb, zt, 0.0) + ds * 0.0
++            off = 0.011 + 0.006 + 0.020 + _fold(z, ang) * 0.4 + doff
++            r.append(torso_point(z + (0.012 if k >= 2 else 0.0) * 0.0, ang, off=off, chest=True))
++        hr.append(r)
++    # collar: rolled band along the V neckline (accent colour)
++    mb.begin("collar", ACC, density=1.0)
++    prof = [(0.80, 0.0030), (0.88, 0.0058), (0.96, 0.0068), (1.0, 0.0050), (1.012, 0.0020)]
++    cr = []
++    for s, doff in prof:
++        r = []
++        for ang in angs:
++            zb = hem_z(ang)
++            zt = top_edge_z(ang)
++            z = lerp(zb, zt, s)
++            off = 0.011 + 0.006 * (1 - sstep(0.0, 0.5, s)) + _fold(z, ang) * 0.1 + doff
++            if s >= 1.0:
++                off = 0.011 * (1 - 0.5 * sstep(0.9, 1.0, s)) + doff - 0.001
++            r.append(torso_point(z, ang, off=off, chest=True))
++        cr.append(r)
++    mb.loft(cr, lambda i, j, p: torso_weights(to_a(p)), ACC, colfn=lambda i, j, p: (0.0, 0.2, 0.0))
++    # lapel crossing: raised piping from the V apex diagonally over the chest to the left of the sash
++    mb.begin("lapel", ACC, density=1.0)
++    rr = []
++    NSEG = 9
++    for k in range(NSEG):
++        t = k / (NSEG - 1)
++        a_c = math.radians(270 + 10 + 62 * t)             # towards the character's left
++        z_c = lerp(1.292, 1.050, t) - 0.012 * math.sin(math.pi * t)
++        row = []
++        for dz, doff in ((0.011, 0.0), (0.0035, 0.0032), (-0.0035, 0.0032), (-0.011, 0.0)):
++            zz = z_c + dz
++            off = 0.011 + 0.006 * (1 - sstep(0.0, 0.5, (zz - 1.0) / 0.45)) + doff + _fold(zz, a_c) * 0.4
++            row.append(torso_point(zz, a_c, off=off, chest=True))
++        rr.append(row)
++    mb.loft(rr, lambda i, j, p: torso_weights(to_a(p)), ACC, close=False)
++
++
++def build_sash(mb):
++    NT = 32
++    angs = [math.pi * 0.5 + 2 * math.pi * j / NT for j in range(NT)]
++    mb.begin("sash", ACC, density=1.0)
++    levels = [(1.000, 0.010), (1.014, 0.026), (1.05, 0.032), (1.095, 0.030), (1.118, 0.020), (1.128, 0.009)]
++    rings = []
++    for k, (z, off) in enumerate(levels):
++        r = []
++        for ang in angs:
++            tilt = 0.012 * math.cos(ang - math.radians(340))
++            ripple = 0.0025 * math.sin(5 * ang + 2.0 * k) * (1 if 0 < k < 5 else 0.3)
++            r.append(torso_point(z + tilt, ang, off=off + ripple, chest=False))
++        rings.append(r)
++    mb.loft(rings, lambda i, j, p: torso_weights(to_a(p)), ACC, colfn=lambda i, j, p: (0.0, 0.1, 0.0))
++    # second wrap, slightly diagonal, partial (front half)
++    mb.begin("sash2", ACC, density=1.0)
++    rr = []
++    for k, (zo, off) in enumerate(((-0.020, 0.012), (-0.010, 0.0345), (0.010, 0.0365), (0.020, 0.0125))):
++        r = []
++        for q in range(15):
++            ang = math.radians(150 + 240 * q / 14)
++            tilt = 0.022 * math.sin(ang - math.radians(200)) * 0.8
++            r.append(torso_point(1.06 + zo + tilt, ang, off=off + 0.0018 * math.sin(7 * ang + k), chest=False))
++        rr.append(r)
++    mb.loft(rr, lambda i, j, p: torso_weights(to_a(p)), ACC, close=False, colfn=lambda i, j, p: (0.0, 0.1, 0.0))
++    # knot on the lower back
++    mb.begin("knot", ACC, density=1.2)
++    kz = 1.058
++    ky = 0.1255 + 0.016
++    krings = []
++    for dy, rs in ((-0.012, 0.55), (0.0, 1.0), (0.013, 0.95), (0.025, 0.45)):
++        pts = []
++        for q in range(10):
++            a = 2 * math.pi * q / 10
++            pts.append(Vector((0.034 * rs * math.cos(a) * (1.0 + 0.2 * abs(math.sin(a))), ky + dy, kz + 0.030 * rs * math.sin(a))))
++        krings.append(pts)
++    wk = lambda i, j, p: {"hips": 0.5, "spine": 0.5}
++    mb.loft(krings, wk, ACC, cap_start=(Vector((0, ky - 0.020, kz)), {"hips": 0.5, "spine": 0.5}),
++            cap_end=(Vector((0, ky + 0.034, kz)), {"hips": 0.5, "spine": 0.5}))
++    # tails (flat ribbons hanging from the knot, weighted along the tail bones)
++    for side, chain, width in (("L", SASH_L, 0.050), ("R", SASH_R, 0.046)):
++        mb.begin(f"sash_tail_{side}", ACC, density=1.2)
++        b = [Vector(A(*p)) for p in chain]
++        zs = [p.z for p in b]
++        rows = 9
++        rings = []
++        names = [f"sash_tail.{side}.{k:03d}" for k in (1, 2, 3)]
++
++        def wfn(i, j, p, zs=zs, names=names):
++            z = p.z
++            t1 = sstep(zs[1] + 0.035, zs[1] - 0.035, z)         # 1 above joint 1
++            t2 = sstep(zs[2] + 0.035, zs[2] - 0.035, z)
++            w = {}
++            top = sstep(zs[0] - 0.02, zs[0] + 0.015, z)       # attached to the knot / hips
++            w["hips"] = top
++            w[names[0]] = (1 - top) * t1
++            w[names[1]] = (1 - top) * (1 - t1) * t2
++            w[names[2]] = (1 - top) * (1 - t1) * (1 - t2)
++            return w
++        for r_ in range(rows):
++            s_ = r_ / (rows - 1)
++            z = lerp(b[0].z - 0.002, b[3].z, s_)
++            # centre line along the chain
++            if z >= b[1].z:
++                t = (b[0].z - z) / (b[0].z - b[1].z)
++                c = b[0].lerp(b[1], clamp01(t))
++            elif z >= b[2].z:
++                c = b[1].lerp(b[2], (b[1].z - z) / (b[1].z - b[2].z))
++            else:
++                c = b[2].lerp(b[3], (b[2].z - z) / (b[2].z - b[3].z))
++            wv = width * (0.8 + 0.28 * s_) * 0.5
++            rip = 0.006 * s_ * math.sin(9 * s_ + (1 if side == "L" else 2))
++            drop = 0.016 * s_ ** 4
++            th = 0.0022
++            rings.append([Vector((c.x - wv + rip, c.y - th, z - drop * 0)), Vector((c.x + wv + rip, c.y - th, z - drop)),
++                          Vector((c.x + wv + rip, c.y + th, z - drop)), Vector((c.x - wv + rip, c.y + th, z - drop * 0))])
++        mb.loft(rings, wfn, ACC, cap_end=(Vector(((b[3].x + rings[-1][0].x) * 0.5 + 0.0, b[3].y, b[3].z + 0.020)), wfn(0, 0, Vector((0, 0, b[3].z)))),
++                colfn=lambda i, j, p: (0.0, 0.1 + 0.4 * (1 - sstep(0.75, 1.05, p.z)), 0.0))
++
++
++# ---------------------------------------------------------------------------------------------------------------------
++# legs
++# ---------------------------------------------------------------------------------------------------------------------
++def leg_geometry(side):
++    sx = 1 if side == "L" else -1
++    L = LEFT_REST
++    hip, knee, ank = Vector(L["hip"]), Vector(L["knee"]), Vector(L["ankle"])
++
++    def leg_pt(z):
++        if z >= knee.z:
++            t = (z - hip.z) / (knee.z - hip.z)
++            p = hip + (knee - hip) * t
++        else:
++            t = (z - knee.z) / (ank.z - knee.z)
++            p = knee + (ank - knee) * t
++        return Vector((p.x * sx, p.y, p.z))
++    return sx, knee, leg_pt
++
++
++def build_legs(mb):
++    NT = 28
++    # --- pelvis / trouser top (one piece spanning both thighs) ------------------------------------------------------
++    mb.begin("pelvis", MAIN, density=1.0)
++    levels = [(1.068, 0.158, 0.103), (1.02, 0.164, 0.106), (0.97, 0.176, 0.111), (0.92, 0.187, 0.117), (0.865, 0.189, 0.118),
++              (0.82, 0.175, 0.111)]
++    rings = []
++    for z, hw_, hd_ in levels:
++        r = []
++        for j in range(NT):
++            ang = math.pi * 0.5 + 2 * math.pi * j / NT
++            e = 2.0 / 2.5
++            fl = 0.0025 * math.sin(5 * ang + 6 * z) * (1 if z < 1.0 else 0.3)
++            r.append(Vector(((hw_ + fl) * sgnpow(math.cos(ang), e), (hd_ + fl) * sgnpow(math.sin(ang), e) - TORSO_C(min(z, 1.0)), z)))
++        rings.append(r)
++
++    def band_w(i, j, p):
++        z = p.z
++        t_leg = sstep(0.945, 0.805, z)
++        sf = sstep(-0.035, 0.035, p.x)
++        w = {"hips": 1.0 - t_leg}
++        w["thigh.L"] = t_leg * sf
++        w["thigh.R"] = t_leg * (1 - sf)
++        return w
++    mb.loft(rings, band_w, MAIN, cap_end=(Vector((0, 0.0, 0.80)), {"thigh.L": 0.5, "thigh.R": 0.5}))
++
++    for side in SIDES:
++        sx, knee, leg_pt = leg_geometry(side)
++        thigh_b, shin_b, foot_b = f"thigh.{side}", f"shin.{side}", f"foot.{side}"
++        # ---- trousers ----
++        mb.begin(f"trouser_{side}", MAIN, density=1.0)
++        tz = [0.985, 0.95, 0.90, 0.84, 0.78, 0.72, 0.66, 0.60, 0.555, 0.52, 0.49, 0.455, 0.42, 0.39, 0.366, 0.345]
++        tr = Curve([(0.985, 0.088), (0.93, 0.094), (0.85, 0.094), (0.75, 0.089), (0.65, 0.082), (0.565, 0.0765), (0.515, 0.075),
++                    (0.475, 0.0765), (0.425, 0.0785), (0.385, 0.0775), (0.358, 0.0715), (0.345, 0.0665)])
++        n_l = 14
++        rings = []
++        pts = [leg_pt(z) for z in tz]
++        for k, z in enumerate(tz):
++            t_ = (pts[min(k + 1, len(tz) - 1)] - pts[max(k - 1, 0)]) * FLIP
++            u, v, t = frame_from_tangent(-t_, Vector((0, -1, 0)))
++            c = pts[k] * FLIP
++            r = []
++            for j in range(n_l):
++                a = math.pi + 2 * math.pi * j / n_l                     # j = 0 at the back
++                front = max(0.0, -math.cos(a - math.pi)) if False else max(0.0, math.cos(a))
++                # drape: thigh pleats, knee crease at the front, bunching at the cuff
++                f = 0.0032 * math.sin(3 * a + 22 * z + (0 if sx > 0 else 1.7)) * sstep(0.45, 0.62, z) * (1 - sstep(0.93, 0.99, z))
++                f += 0.0045 * math.exp(-((z - 0.505) / 0.032) ** 2) * (0.4 + 0.6 * math.cos(a)) * (1 if math.cos(a) > -0.2 else 0.3)
++                f += 0.0035 * math.sin(4 * a + 2.0 * (1 if sx > 0 else -1)) * sstep(0.40, 0.355, z)
++                f += 0.0030 * math.sin(2 * a + 12 * z) * sstep(0.50, 0.40, z) * 0.0
++                rr = (tr(z) + f)
++                r.append(c + u * (rr * sgnpow(math.cos(a), 0.95)) + v * (rr * 0.97 * sgnpow(math.sin(a), 0.95)))
++            rings.append(r)
++
++        def trw(i, j, p, thigh_b=thigh_b, shin_b=shin_b, knee=knee):
++            z = p.z
++            hipw = sstep(0.84, 0.96, z)
++            kneet = sstep(knee.z - 0.06, knee.z + 0.06, z)
++            return {"hips": hipw, thigh_b: (1 - hipw) * kneet, shin_b: (1 - hipw) * (1 - kneet)}
++        wear = lambda i, j, p: (0.0, clamp01(0.7 * math.exp(-((p.z - 0.5) / 0.05) ** 2) + 0.5 * (1 - sstep(0.36, 0.5, p.z)) * 0.8
++                                              + 0.3 * (1 - sstep(0.93, 0.8, p.z)) * 0), 0.0)
++        mb.loft(rings, trw, MAIN, cap_end=(Vector((rings[-1][0].x * 0 + sum((q.x for q in rings[-1])) / n_l,
++                                                  sum((q.y for q in rings[-1])) / n_l, tz[-1] - 0.014)), {shin_b: 1.0}), colfn=wear)
++
++        # ---- shin wraps: overlapping bands, each ring pair tilted so the seams run diagonally ----
++        mb.begin(f"shinwrap_{side}", WRAPS, density=1.0)
++        nb = 10
++        z_lo, z_hi = 0.090, 0.372
++        pitch = (z_hi - z_lo) / nb
++        wr = Curve([(0.09, 0.0405), (0.13, 0.0440), (0.19, 0.0505), (0.25, 0.0575), (0.30, 0.0615), (0.372, 0.0660)])
++        rings = []
++        n_w = 14
++        for b in range(nb):
++            for (zf, rid) in ((0.0, 1.0), (0.92, 0.0)):
++                z0 = z_lo + (b + zf) * pitch
++                r = []
++                for j in range(n_w):
++                    a = math.pi + 2 * math.pi * j / n_w
++                    zz = z0 + 0.0075 * math.cos(a - 0.6) * (1 if sx > 0 else -1) * 0 + 0.0075 * math.cos(a - (0.6 if sx > 0 else 2.5))
++                    zz = min(max(zz, z_lo - 0.002), z_hi + 0.004)
++                    R = wr(zz) * (1.0 + 0.06 * rid) + 0.0012 * math.sin(3 * a + b)
++                    t_ = (leg_pt(zz + 0.02) - leg_pt(zz - 0.02)) * FLIP
++                    u, v, t = frame_from_tangent(t_, Vector((0, -1, 0)))
++                    c = leg_pt(zz) * FLIP
++                    r.append(c + u * (R * math.cos(a)) + v * (R * 0.97 * math.sin(a)))
++                rings.append(r)
++
++        def ww(i, j, p, shin_b=shin_b, foot_b=foot_b):
++            f = 0.55 * sstep(0.135, 0.085, p.z)
++            return {shin_b: 1 - f, foot_b: f}
++        wcol = lambda i, j, p: (0.0, 0.25 + 0.5 * (1 - sstep(0.09, 0.30, p.z)), 0.0)
++        mb.loft(rings, ww, WRAPS, cap_start=(Vector((sx * 0.09, 0.005, 0.085)), {foot_b: 1.0}), colfn=wcol)
++        build_shoe(mb, side, sx)
++
++
++def build_shoe(mb, side, sx):
++    foot_b, toe_b = f"foot.{side}", f"toe.{side}"
++    ys = [-0.090, -0.082, -0.062, -0.032, 0.0, 0.032, 0.064, 0.096, 0.126, 0.156, 0.184, 0.208, 0.228]
++    top_h = Curve([(-0.090, 0.050), (-0.082, 0.082), (-0.062, 0.108), (-0.032, 0.122), (0.0, 0.124), (0.032, 0.100), (0.064, 0.080),
++                   (0.096, 0.064), (0.126, 0.056), (0.156, 0.050), (0.184, 0.044), (0.208, 0.036), (0.228, 0.026)])
++    wid = Curve([(-0.090, 0.026), (-0.082, 0.036), (-0.062, 0.043), (-0.032, 0.0455), (0.0, 0.0465), (0.032, 0.048), (0.064, 0.0505),
++                 (0.096, 0.0525), (0.126, 0.0525), (0.156, 0.0505), (0.184, 0.046), (0.208, 0.039), (0.228, 0.026)])
++    soleh = 0.013
++    shw = lambda i, j, p, foot_b=foot_b, toe_b=toe_b: ({foot_b: 1 - sstep(0.105, 0.155, -p.y), toe_b: sstep(0.105, 0.155, -p.y)})
++    # upper
++    mb.begin(f"shoe_{side}", ACC, density=1.0)
++    rings = []
++    for k, y in enumerate(ys):
++        h = top_h(y)
++        r = []
++        n = 14
++        for q in range(n):
++            a = 2 * math.pi * q / n
++            # toe-box bump and heel counter seam
++            x = wid(y) * sgnpow(math.cos(a), 0.78)
++            zc = soleh + (h - soleh) * 0.5
++            hz = (h - soleh) * 0.5
++            zz = zc + hz * sgnpow(math.sin(a), 0.78)
++            if math.sin(a) > 0.2 and 0.09 < y < 0.17:
++                zz += 0.003 * math.sin(math.pi * (y - 0.09) / 0.08)         # toe box
++            r.append(Vector((sx * 0.09 + x * (1 if True else 1), -y, zz)))
++        rings.append(r)
++    heel_c = Vector((sx * 0.09, 0.094, 0.034))
++    tip_c = Vector((sx * 0.09, -0.238, 0.022))
++    wcol = lambda i, j, p: (0.0, 0.2 + 0.7 * (sstep(0.18, 0.23, -p.y) + sstep(-0.07, -0.09, -p.y)) * 0.6, 0.0)
++    mb.loft(rings, shw, ACC, cap_start=(heel_c, {foot_b: 1.0}), cap_end=(tip_c, {toe_b: 1.0}), colfn=wcol)
++    # sole: rubber slab, slightly proud of the upper, with a toe spring
++    mb.begin(f"sole_{side}", WRAPS, density=0.8)
++    rings = []
++    for k, y in enumerate(ys):
++        n = 14
++        r = []
++        spring = 0.011 * sstep(0.15, 0.232, y) ** 1.5
++        for q in range(n):
++            a = 2 * math.pi * q / n
++            x = (wid(y) + 0.0035) * sgnpow(math.cos(a), 0.62)
++            zz = soleh * 0.5 + spring + (soleh * 0.5 + 0.0005) * sgnpow(math.sin(a), 0.62)
++            r.append(Vector((sx * 0.09 + x, -y, max(zz, 0.0))))
++        rings.append(r)
++    mb.loft(rings, shw, WRAPS, cap_start=(Vector((sx * 0.09, 0.095, soleh * 0.5)), {foot_b: 1.0}),
++            cap_end=(Vector((sx * 0.09, -0.2395, soleh * 0.5 + 0.011)), {toe_b: 1.0}), colfn=lambda i, j, p: (1.0, 0.5, 0.0))
++
++
++def build_garments(mb):
++    build_top(mb)
++    build_sash(mb)
++    build_legs(mb)
+diff --git a/tools/blender/fighter_mesh.py b/tools/blender/fighter_mesh.py
+index 3562d06..85c5169 100644
+--- a/tools/blender/fighter_mesh.py
++++ b/tools/blender/fighter_mesh.py
+@@ -1,8 +1,9 @@
+-"""Procedural low-poly mesh for the Fourfold training fighter (lofted rings, explicit skin weights).
++"""Mesh infrastructure for the Fourfold training fighter: math helpers, MeshBuilder (lofts with explicit skin weights,
++per-corner UVs, vertex-colour masks) and the atlas packer.  The character itself is assembled in fighter_character.py
++from fighter_body.py (head/hair/hands/torso skin), fighter_garments.py (clothes, wraps, shoes).
+ 
+-Everything is authored in the authoring frame A (x left, y forward, z up) and converted to Blender
+-coordinates on the way in.  Parts are built as lofts of cross-section rings; each vertex receives an
+-explicit bone-weight dict.  No modifiers are used (geometry is final).
++Everything is authored in the authoring frame A (x left, y forward, z up) and converted to Blender coordinates on the
++way in.  Parts are lofts of cross-section rings; each vertex receives an explicit bone-weight dict.  No modifiers.
+ """
+ import math
+ from mathutils import Vector
+@@ -112,31 +113,75 @@ def side_name(base, side):
+ # mesh container
+ # ---------------------------------------------------------------------------------------
+ class MeshBuilder:
++    """Vertices (with weights + vertex colour), faces (with per-corner UVs in metres, packed into atlases at the end).
++
++    Vertex colour channels (used by the texture bake only): R = surface variant (0 default, 1 = special, see
++    fighter_textures.py), G = wear / dirt mask, B = spare.  Parts: each begin() starts a UV island group; `density`
++    scales its texel density, `group` makes several parts share one UV rectangle (hair locks)."""
++
+     def __init__(self):
+         self.verts = []
+         self.weights = []
++        self.cols = []
+         self.faces = []
+         self.fmat = []
+-
+-    def vert(self, p, w):
++        self.fuv = []
++        self.fpart = []
++        self.parts = []
++        self._part = None
++
++    # -- parts -------------------------------------------------------------------------
++    def begin(self, name, mat, density=1.0, group=None):
++        self._part = dict(name=name, mat=mat, density=density, group=group, faces=[])
++        self.parts.append(self._part)
++        return self._part
++
++    def vert(self, p, w, col=(0.0, 0.0, 0.0)):
+         self.verts.append(Vector(p))
+         self.weights.append(norm_weights(w))
++        self.cols.append(tuple(col))
+         return len(self.verts) - 1
+ 
+-    def face(self, idx, mat):
++    def face(self, idx, mat=None, uv=None):
++        part = self._part
++        m = part["mat"] if mat is None else mat
++        if uv is None:
++            uv = planar_uv([self.verts[k] for k in idx])
+         self.faces.append(tuple(idx))
+-        self.fmat.append(mat)
++        self.fmat.append(m)
++        self.fuv.append([tuple(c) for c in uv])
++        part["faces"].append(len(self.faces) - 1)
++        return len(self.faces) - 1
+ 
+     # -- loft ------------------------------------------------------------------------
+-    def loft(self, rings, wfn, mat, cap_start=None, cap_end=None, mat_seg=None, close=True,
+-             check_center=None):
+-        """rings: list of equal-length lists of Vectors.  wfn(i, j, p) -> weight dict.
++    def loft(self, rings, wfn, mat=None, cap_start=None, cap_end=None, mat_seg=None, close=True,
++             colfn=None, ucoord=None, vcoord=None, flip=False):
++        """rings: list of equal-length lists of Vectors.  wfn(i, j, p) -> weight dict.  colfn(i, j, p) -> (r, g, b).
+         cap_start / cap_end: None, or (apex_point, weight_dict) -> triangle fan to a pole.
+-        Winding is auto-corrected so faces point away from ring centroids."""
++        Winding is auto-corrected so faces point away from the loft axis.  UVs: u = fraction around the ring times the
++        mean ring circumference (or ucoord(j)), v = distance along the loft (or vcoord(i))."""
+         n = len(rings[0])
+-        ids = [[self.vert(p, wfn(i, j, p)) for j, p in enumerate(r)] for i, r in enumerate(rings)]
++        nr = len(rings)
++        mat = self._part["mat"] if mat is None else mat
++        ids = [[self.vert(p, wfn(i, j, p), colfn(i, j, p) if colfn else (0.0, 0.0, 0.0)) for j, p in enumerate(r)]
++               for i, r in enumerate(rings)]
++        # ring metrics
++        cent = [sum(r, Vector()) / n for r in rings]
++        circ = [sum((r[(j + 1) % n] - r[j]).length for j in range(n if close else n - 1)) for r in rings]
++        cavg = sum(circ) / nr
++        if ucoord is None:
++            cum = [0.0]
++            for j in range(1, n + (1 if close else 0)):
++                cum.append(cum[-1] + sum((r[j % n] - r[j - 1]).length for r in rings) / nr)
++            tot = cum[-1] or 1.0
++            ucoord = (lambda jj: cum[jj] * (cavg / tot)) if close else (lambda jj: cum[jj])
++        if vcoord is None:
++            vs = [0.0]
++            for i in range(1, nr):
++                vs.append(vs[-1] + (cent[i] - cent[i - 1]).length)
++            vcoord = lambda i: vs[i]
+         new_faces = []
+-        for i in range(len(rings) - 1):
++        for i in range(nr - 1):
+             m = mat if mat_seg is None else mat_seg(i)
+             if m is None:
+                 continue
+@@ -144,32 +189,39 @@ class MeshBuilder:
+                 j2 = (j + 1) % n
+                 if not close and j2 == 0:
+                     continue
+-                new_faces.append(([ids[i][j], ids[i][j2], ids[i + 1][j2], ids[i + 1][j]], m))
++                uv = [(ucoord(j), vcoord(i)), (ucoord(j + 1), vcoord(i)), (ucoord(j + 1), vcoord(i + 1)), (ucoord(j), vcoord(i + 1))]
++                new_faces.append(([ids[i][j], ids[i][j2], ids[i + 1][j2], ids[i + 1][j]], m, uv))
+         if cap_start is not None:
+             ap, wd = cap_start
+             a = self.vert(ap, wd)
++            capv = (Vector(ap) - cent[0]).length
+             for j in range(n):
+-                new_faces.append(([ids[0][(j + 1) % n], ids[0][j], a], mat if mat_seg is None else mat_seg(0)))
++                j2 = (j + 1) % n
++                um = 0.5 * (ucoord(j) + ucoord(j + 1))
++                new_faces.append(([ids[0][j2], ids[0][j], a], mat if mat_seg is None else mat_seg(0),
++                                  [(ucoord(j + 1), vcoord(0)), (ucoord(j), vcoord(0)), (um, vcoord(0) - capv)]))
+         if cap_end is not None:
+             ap, wd = cap_end
+             a = self.vert(ap, wd)
+-            last = len(rings) - 1
++            last = nr - 1
++            capv = (Vector(ap) - cent[last]).length
+             for j in range(n):
+-                new_faces.append(([ids[last][j], ids[last][(j + 1) % n], a],
+-                                  mat if mat_seg is None else mat_seg(last - 1)))
+-        # winding check on the first quad
++                j2 = (j + 1) % n
++                um = 0.5 * (ucoord(j) + ucoord(j + 1))
++                new_faces.append(([ids[last][j], ids[last][j2], a], mat if mat_seg is None else mat_seg(last - 1),
++                                  [(ucoord(j), vcoord(last)), (ucoord(j + 1), vcoord(last)), (um, vcoord(last) + capv)]))
++        # winding check on the first quad (faces must point away from the loft axis; `flip` forces the opposite)
+         if new_faces:
+-            fi, _ = new_faces[0]
++            fi = new_faces[0][0]
+             pts = [self.verts[k] for k in fi]
+             nrm = (pts[1] - pts[0]).cross(pts[2] - pts[1])
+-            cen = check_center if check_center is not None else sum(rings[0], Vector()) / n
+-            if len(rings) > 1 and check_center is None:
+-                cen = sum(rings[0], Vector()) / n * 0.5 + sum(rings[1], Vector()) / n * 0.5
++            cen = cent[0] * 0.5 + cent[min(1, nr - 1)] * 0.5
+             fc = sum(pts, Vector()) / len(pts)
+-            if nrm.dot(fc - cen) < 0:
+-                new_faces = [(list(reversed(f)), m) for f, m in new_faces]
+-        for f, m in new_faces:
+-            self.face(f, m)
++            bad = nrm.dot(fc - cen) < 0
++            if bad != flip:
++                new_faces = [(list(reversed(f)), m, list(reversed(uv))) for f, m, uv in new_faces]
++        for f, m, uv in new_faces:
++            self.face(f, m, uv)
+         return ids
+ 
+     def tri_fan_ring(self, ring_ids, apex_id, mat, flip=False):
+@@ -178,6 +230,86 @@ class MeshBuilder:
+             a, b = ring_ids[j], ring_ids[(j + 1) % n]
+             self.face([b, a, apex_id] if flip else [a, b, apex_id], mat)
+ 
++    # -- atlas packing ----------------------------------------------------------------------------
++    def pack_uvs(self, size=1024, margin_px=7, base_scale=None, log=None):
++        """Shelf-pack the UV islands of every material into the unit square.  Returns {mat: texel density px/m}."""
++        out = {}
++        for m in range(len(MAT_NAMES)):
++            rects = []                           # (key, w, h, density)
++            groups = {}
++            for pi, part in enumerate(self.parts):
++                if part["mat"] != m and not any(self.fmat[f] == m for f in part["faces"]):
++                    continue
++                fl = [f for f in part["faces"] if self.fmat[f] == m]
++                if not fl:
++                    continue
++                us = [c[0] for f in fl for c in self.fuv[f]]
++                vs = [c[1] for f in fl for c in self.fuv[f]]
++                u0, v0, u1, v1 = min(us), min(vs), max(us), max(vs)
++                key = (part["group"], m) if part["group"] else (pi, m)
++                g = groups.setdefault(key, dict(w=0.0, h=0.0, d=part["density"], items=[]))
++                g["w"] = max(g["w"], u1 - u0)
++                g["h"] = max(g["h"], v1 - v0)
++                g["items"].append((fl, u0, v0))
++            if not groups:
++                continue
++            keys = sorted(groups, key=lambda k: -groups[k]["h"] * groups[k]["d"])
++            lo, hi = 50.0, 6000.0
++
++            def attempt(s):
++                x = y = shelf_h = 0
++                pos = {}
++                for k in keys:
++                    g = groups[k]
++                    pw = int(math.ceil(g["w"] * g["d"] * s)) + 2 * margin_px
++                    ph = int(math.ceil(g["h"] * g["d"] * s)) + 2 * margin_px
++                    if pw > size or ph > size:
++                        return None
++                    if x + pw > size:
++                        x, y, shelf_h = 0, y + shelf_h, 0
++                    if y + ph > size:
++                        return None
++                    pos[k] = (x, y)
++                    x += pw
++                    shelf_h = max(shelf_h, ph)
++                return pos
++            for _ in range(22):
++                mid = 0.5 * (lo + hi)
++                if attempt(mid) is not None:
++                    lo = mid
++                else:
++                    hi = mid
++            s = lo if base_scale is None else min(lo, base_scale)
++            pos = attempt(s)
++            used = 0
++            for k, g in groups.items():
++                x0, y0 = pos[k]
++                for fl, u0, v0 in g["items"]:
++                    for f in fl:
++                        self.fuv[f] = [((x0 + margin_px + (u - u0) * g["d"] * s) / size,
++                                        (y0 + margin_px + (v - v0) * g["d"] * s) / size) for (u, v) in self.fuv[f]]
++                used += (g["w"] * g["d"] * s) * (g["h"] * g["d"] * s)
++            out[m] = s
++            if log:
++                log(f"[uv] {MAT_NAMES[m]}: {len(groups)} islands, {s:.0f} px/m, fill {used / size / size * 100:.0f}%")
++        return out
++
++
++def planar_uv(pts):
++    """Fallback UVs for a face: project onto its own plane (metres)."""
++    if len(pts) < 3:
++        return [(0.0, 0.0)] * len(pts)
++    n = (pts[1] - pts[0]).cross(pts[2] - pts[0])
++    if n.length < 1e-12:
++        return [(p.x, p.z) for p in pts]
++    n.normalize()
++    ex = (pts[1] - pts[0])
++    if ex.length < 1e-9:
++        ex = Vector((1, 0, 0))
++    ex = (ex - n * ex.dot(n)).normalized()
++    ey = n.cross(ex)
++    return [((p - pts[0]).dot(ex), (p - pts[0]).dot(ey)) for p in pts]
++
+ 
+ # ---------------------------------------------------------------------------------------
+ # weights helpers
+@@ -222,373 +354,3 @@ def to_a(p_blender):
+     return (p_blender.x, -p_blender.y, p_blender.z)
+ 
+ 
+-# ---------------------------------------------------------------------------------------
+-# the character
+-# ---------------------------------------------------------------------------------------
+-_TORSO_Z = [0.90, 0.97, 1.04, 1.12, 1.20, 1.27, 1.335, 1.385, 1.420, 1.447, 1.470]
+-_TORSO_W = Curve(list(zip(_TORSO_Z, [0.165, 0.158, 0.148, 0.146, 0.154, 0.172, 0.180, 0.170, 0.128, 0.078, 0.058])))
+-_TORSO_D = Curve(list(zip(_TORSO_Z, [0.108, 0.102, 0.094, 0.096, 0.104, 0.114, 0.116, 0.104, 0.086, 0.068, 0.058])))
+-_TORSO_C = Curve(list(zip(_TORSO_Z, [-0.004, -0.004, -0.008, -0.004, 0.0, 0.004, 0.004, 0.0, -0.002, -0.004, -0.006])))
+-TORSO_P = 2.5
+-
+-
+-def torso_point(z, ang, off=0.0, sc=1.0):
+-    """Point on the torso surface at height z and ring angle ang (0 = left side, 90 = back, 270 = front)."""
+-    w = _TORSO_W(z) * sc + off
+-    d = _TORSO_D(z) * sc + off
+-    c = _TORSO_C(z)
+-    e = 2.0 / TORSO_P
+-    x = w * sgnpow(math.cos(ang), e)
+-    ybl = d * sgnpow(math.sin(ang), e)          # Blender +Y = backward
+-    return Vector((x, ybl - c, z))
+-
+-
+-def build_character(n_limb=12):
+-    mb = MeshBuilder()
+-    Z = Vector((0, 0, 1))
+-    fwdB = Vector((0, -1, 0))
+-
+-    # ===================================================================================
+-    # HEAD, NECK, HAIR
+-    # ===================================================================================
+-    head_z = [1.517, 1.540, 1.585, 1.635, 1.685, 1.716, 1.735]
+-    head_w = Curve(list(zip(head_z, [0.032, 0.058, 0.072, 0.076, 0.073, 0.063, 0.046])))
+-    head_d = Curve(list(zip(head_z, [0.050, 0.082, 0.098, 0.104, 0.100, 0.087, 0.064])))
+-    head_c = Curve(list(zip(head_z, [0.050, 0.022, 0.012, 0.008, 0.006, 0.000, -0.004])))   # forward offset (A)
+-    NH = 14
+-    ux, vy = Vector((1, 0, 0)), Vector((0, 1, 0))
+-    rings = []
+-    for z in head_z:
+-        c = Vector((0, -head_c(z), z))
+-        rings.append(ring_pts(c, ux, vy, head_w(z), head_d(z), NH, 2.2))
+-    mb.loft(rings, lambda i, j, p: {"head": 1.0}, SKIN,
+-            cap_start=(Vector((0, -0.045, 1.508)), {"head": 0.7, "neck": 0.3}),
+-            cap_end=(Vector((0, 0.004, 1.744)), {"head": 1.0}))
+-
+-    # nose (tetra wedge), brow bar, ears
+-    def tet(pts_a, mat, wd):
+-        ids = [mb.vert(A(*p), wd) for p in pts_a]
+-        top, bl, br, tip = ids
+-        for f in ([top, tip, bl], [top, br, tip], [bl, tip, br], [top, bl, br]):
+-            mb.face(f, mat)
+-    tet([(0, 0.108, 1.642), (0.016, 0.106, 1.588), (-0.016, 0.106, 1.588), (0, 0.140, 1.598)], SKIN, {"head": 1.0})
+-    # make sure nose faces outward: top,tip,bl order checked visually; fix by recomputation below
+-    brow_rings = []
+-    for xk in (-0.058, -0.03, 0.0, 0.03, 0.058):
+-        zc = 1.664
+-        yc = 0.0 + 0.1 - 0.006 * (abs(xk) / 0.058) ** 2 * 3
+-        brow_rings.append(ring_pts(A(xk, yc, zc), Vector((0, 0, 1)), Vector((0, -1, 0)), 0.0085, 0.011, 6, 2.0))
+-    # ring axis is along x: make rings with u=Z, v=-Y... (u x v = Z x (-Y) = X) -> t = +X ok
+-    mb.loft(brow_rings, lambda i, j, p: {"head": 1.0}, SKIN,
+-            cap_start=(A(-0.066, 0.092, 1.664), {"head": 1.0}), cap_end=(A(0.066, 0.092, 1.664), {"head": 1.0}))
+-    for sx in (-1, 1):
+-        ear_rings = []
+-        for k, (dx, rs) in enumerate(((0.0, 0.55), (0.007, 1.0), (0.014, 0.55))):
+-            xk = sx * (0.072 + dx)
+-            ear_rings.append(ring_pts(A(xk, -0.002, 1.622), Vector((0, 0, 1)), Vector((0, -1, 0)),
+-                                      0.026 * rs, 0.017 * rs, 6, 2.0))
+-        mb.loft(ear_rings, lambda i, j, p: {"head": 1.0}, SKIN,
+-                cap_start=(A(sx * 0.068, -0.002, 1.622), {"head": 1.0}),
+-                cap_end=(A(sx * 0.092, -0.002, 1.622), {"head": 1.0}))
+-
+-    # neck
+-    neck_z = [1.425, 1.470, 1.510, 1.545]
+-    neck_r = Curve(list(zip(neck_z, [0.058, 0.054, 0.050, 0.050])))
+-    rings = [ring_pts(A(0, 0.004, z), ux, vy, neck_r(z), neck_r(z) * 0.95, 10, 2.0) for z in neck_z]
+-    mb.loft(rings, lambda i, j, p: axial_weights(p.z), SKIN)
+-
+-    # hair cap (shell over the skull; lower edge follows a hairline: high at the forehead, low at the nape)
+-    NHR = 14
+-    hair_rings = []
+-    for k, s_ in enumerate([0.0, 0.30, 0.58, 0.80, 0.93, 1.0]):
+-        r = []
+-        for j in range(NHR):
+-            ang = 2 * math.pi * j / NHR
+-            zb = 1.645 + 0.058 * (-math.sin(ang))          # front (270 deg) high, back (90 deg) low
+-            ztop = 1.737
+-            z = lerp(zb, ztop, s_)
+-            wv = head_w(z) + 0.011 * (1.0 - 0.3 * s_)
+-            dv = head_d(z) + 0.013 * (1.0 - 0.3 * s_)
+-            e = 2.0 / 2.2
+-            x = wv * sgnpow(math.cos(ang), e)
+-            yb = dv * sgnpow(math.sin(ang), e)
+-            r.append(Vector((x, yb - head_c(z), z)))
+-        hair_rings.append(r)
+-    mb.loft(hair_rings, lambda i, j, p: {"head": 1.0}, HAIR, cap_end=(Vector((0, 0.004, 1.758)), {"head": 1.0}))
+-
+-    # ===================================================================================
+-    # TORSO skin, wrap top, collar trim, sash
+-    # ===================================================================================
+-    NT = 20                                      # ring points, front centre = index 15 (270 deg)
+-    z_t = [0.955, 1.00, 1.06, 1.12, 1.18, 1.24, 1.30, 1.355, 1.40, 1.43, 1.452, 1.47]
+-    rings = []
+-    for z in z_t:
+-        rings.append([torso_point(z, 2 * math.pi * j / NT, off=-0.004) for j in range(NT)])
+-    mb.loft(rings, lambda i, j, p: torso_weights(to_a(p)), SKIN,
+-            cap_start=(Vector((0, 0.0, 0.93)), {"hips": 1.0}),
+-            cap_end=(Vector((0, 0.0, 1.478)), {"neck": 0.5, "chest": 0.5}))
+-
+-    # wrap top: lower edge z=1.03, upper edge follows a V-neckline at the front
+-    NS = 7
+-    top_rings = []
+-    top_bottom = 1.025
+-    def top_edge_z(ang):
+-        # front centre ang=270deg -> deep V; sides/back -> neck base
+-        d = abs(((ang - 3 * math.pi / 2) + math.pi) % (2 * math.pi) - math.pi)   # angular distance to front
+-        v = max(0.0, 1.0 - d / math.radians(52))
+-        return 1.458 - 0.17 * v ** 1.15
+-    for i in range(NS):
+-        s = i / (NS - 1)
+-        r = []
+-        for j in range(NT):
+-            ang = 2 * math.pi * j / NT
+-            zt_ = top_edge_z(ang)
+-            z = lerp(top_bottom, zt_, s)
+-            r.append(torso_point(z, ang, off=0.011 * (1 - 0.75 * sstep(0.7, 1.0, s))))
+-        top_rings.append(r)
+-    mb.loft(top_rings, lambda i, j, p: torso_weights(to_a(p)), MAIN)
+-    # collar trim: strip along the upper edge following the V
+-    trim_rings = []
+-    for s in (1.0, 0.90):
+-        r = []
+-        for j in range(NT):
+-            ang = 2 * math.pi * j / NT
+-            zt_ = top_edge_z(ang)
+-            z = lerp(top_bottom, zt_, s)
+-            r.append(torso_point(z, ang, off=0.011 * (1 - 0.75 * sstep(0.7, 1.0, s)) + 0.0035))
+-        trim_rings.append(r)
+-    mb.loft(trim_rings, lambda i, j, p: torso_weights(to_a(p)), ACC)
+-
+-    # sash
+-    sash_levels = [(1.000, 0.012), (1.016, 0.024), (1.06, 0.029), (1.104, 0.024), (1.12, 0.013)]
+-    rings = []
+-    for z, off in sash_levels:
+-        rings.append([torso_point(z, 2 * math.pi * j / NT, off=off) for j in range(NT)])
+-    mb.loft(rings, lambda i, j, p: torso_weights(to_a(p)), ACC)
+-    # knot + tails on the left front hip
+-    kn_ang = math.radians(305)
+-    kp = torso_point(1.06, kn_ang, off=0.040)
+-    knot_rings = []
+-    kt = Vector((0.45, -0.9, 0.0)).normalized()          # outward-ish tangent
+-    ku, kv, kt_ = frame_from_tangent(kt, Vector((0, 0, 1)))
+-    for k, rs in enumerate((0.6, 1.0, 0.6)):
+-        knot_rings.append(ring_pts(kp + kt_ * (k - 1) * 0.022, ku, kv, 0.040 * rs, 0.026 * rs, 8, 2.0))
+-    mb.loft(knot_rings, lambda i, j, p: torso_weights(to_a(p)), ACC,
+-            cap_start=(kp - kt_ * 0.04, torso_weights(to_a(kp))), cap_end=(kp + kt_ * 0.04, torso_weights(to_a(kp))))
+-    # tails: thin double-sheet strips hanging down the left thigh front
+-    for (dx, length, wdt, drift) in ((0.014, 0.30, 0.034, 0.015), (-0.020, 0.21, 0.030, -0.01)):
+-        rows = 5
+-        top = kp + Vector((dx, -0.012, -0.014))
+-        sheets = []
+-        for sheet_off in (-0.0022, 0.0022):
+-            ids = []
+-            for r_ in range(rows):
+-                s_ = r_ / (rows - 1)
+-                cx = top.x + drift * s_ + 0.02 * s_
+-                cyb = top.y - 0.012 * s_ - 0.004 * s_ ** 2 + sheet_off
+-                cz = top.z - length * s_
+-                half = wdt / 2 * (1 + 0.15 * s_)
+-                wd = {"hips": 1.0 - 0.6 * s_, "thigh.L": 0.6 * s_}
+-                ids.append((mb.vert(Vector((cx - half, cyb, cz)), wd), mb.vert(Vector((cx + half, cyb, cz)), wd)))
+-            sheets.append(ids)
+-        # front sheet faces -Y (forward), back sheet faces +Y
+-        for r_ in range(rows - 1):
+-            a_, b_ = sheets[0][r_]
+-            c_, d_ = sheets[0][r_ + 1]
+-            mb.face([a_, c_, d_, b_], ACC)
+-            a_, b_ = sheets[1][r_]
+-            c_, d_ = sheets[1][r_ + 1]
+-            mb.face([a_, b_, d_, c_], ACC)
+-
+-    # ===================================================================================
+-    # PELVIS BAND + TROUSER LEGS
+-    # ===================================================================================
+-    band_levels = [(1.065, 0.158, 0.103), (1.02, 0.162, 0.104), (0.97, 0.174, 0.110), (0.92, 0.185, 0.115),
+-                   (0.865, 0.186, 0.115), (0.82, 0.170, 0.108)]
+-    rings = []
+-    for z, hw_, hd_ in band_levels:
+-        r = []
+-        for j in range(NT):
+-            ang = 2 * math.pi * j / NT
+-            e = 2.0 / TORSO_P
+-            r.append(Vector((hw_ * sgnpow(math.cos(ang), e), hd_ * sgnpow(math.sin(ang), e) - _TORSO_C(min(z, 1.0)), z)))
+-        rings.append(r)
+-
+-    def band_w(i, j, p):
+-        z = p.z
+-        t_leg = sstep(0.945, 0.805, z)
+-        sf = sstep(-0.035, 0.035, p.x)
+-        w = {"hips": 1.0 - t_leg}
+-        w["thigh.L"] = t_leg * sf
+-        w["thigh.R"] = t_leg * (1 - sf)
+-        return w
+-    # winding: rings go top -> bottom, auto-correct handles it
+-    mb.loft(rings, band_w, MAIN, cap_end=(Vector((0, 0.0, 0.80)), {"thigh.L": 0.5, "thigh.R": 0.5}))
+-
+-    for side in SIDES:
+-        sx = 1 if side == "L" else -1
+-        L = LEFT_REST
+-        hip = Vector(L["hip"]); knee = Vector(L["knee"]); ank = Vector(L["ankle"])
+-        def leg_pt(z):
+-            if z >= knee.z:
+-                t = (z - hip.z) / (knee.z - hip.z)
+-                p = hip + (knee - hip) * t
+-            else:
+-                t = (z - knee.z) / (ank.z - knee.z)
+-                p = knee + (ank - knee) * t
+-            return Vector((p.x * sx, p.y, p.z))
+-        # ---- trousers
+-        tz = [0.985, 0.93, 0.85, 0.75, 0.65, 0.565, 0.515, 0.475, 0.425, 0.385, 0.35, 0.335]
+-        tr = Curve([(0.985, 0.088), (0.93, 0.092), (0.85, 0.092), (0.75, 0.088), (0.65, 0.082),
+-                    (0.565, 0.075), (0.515, 0.073), (0.475, 0.074), (0.425, 0.077), (0.385, 0.079),
+-                    (0.35, 0.073), (0.335, 0.066)])
+-        rings = []
+-        pts = [leg_pt(z) for z in tz]
+-        for k, z in enumerate(tz):
+-            t_ = (pts[min(k + 1, len(tz) - 1)] - pts[max(k - 1, 0)]) * Vector((1, -1, 1))
+-            u, v, t = frame_from_tangent(-t_, Vector((0, -1, 0)))
+-            c = pts[k] * Vector((1, -1, 1))        # A -> blender (y flip)
+-            rings.append(ring_pts(c, u, v, tr(z), tr(z) * 0.98, n_limb, 2.0))
+-        thigh_b, shin_b = f"thigh.{side}", f"shin.{side}"
+-        def trw(i, j, p, thigh_b=thigh_b, shin_b=shin_b):
+-            z = p.z
+-            w = {}
+-            hipw = sstep(0.84, 0.96, z)              # hips share (1 at top)
+-            kneet = sstep(knee.z - 0.06, knee.z + 0.06, z)   # 1 above knee
+-            w["hips"] = hipw
+-            w[thigh_b] = (1 - hipw) * kneet
+-            w[shin_b] = (1 - hipw) * (1 - kneet)
+-            return w
+-        mb.loft(rings, trw, MAIN, cap_end=(Vector((c.x, c.y, tz[-1] - 0.012)), {shin_b: 1.0}))
+-        # fix: loft start at top is open (hidden inside the band)
+-
+-        # ---- shin wraps
+-        wz = [0.092, 0.118, 0.148, 0.18, 0.212, 0.244, 0.276, 0.308, 0.34, 0.362]
+-        wr = Curve([(0.092, 0.040), (0.13, 0.043), (0.19, 0.050), (0.25, 0.057), (0.30, 0.061), (0.362, 0.063)])
+-        rings = []
+-        for k, z in enumerate(wz):
+-            c = leg_pt(z) * Vector((1, -1, 1))
+-            ridge = 1.0 + (0.08 if k % 2 else 0.0)
+-            t_ = (leg_pt(z + 0.02) - leg_pt(z - 0.02)) * Vector((1, -1, 1))
+-            u, v, t = frame_from_tangent(t_, Vector((0, -1, 0)))
+-            rings.append(ring_pts(c, u, v, wr(z) * ridge, wr(z) * ridge * 0.97, 10, 2.0))
+-        def ww(i, j, p, shin_b=shin_b, foot_b=f"foot.{side}"):
+-            f = 0.55 * sstep(0.135, 0.085, p.z)
+-            return {shin_b: 1 - f, foot_b: f}
+-        mb.loft(rings, ww, WRAPS, cap_start=(Vector((sx * 0.09, 0.005, 0.085)), {f"foot.{side}": 1.0}))
+-
+-        # ---- shoe
+-        shoe_y = [-0.085, -0.075, -0.035, 0.010, 0.060, 0.110, 0.150, 0.195, 0.228]
+-        top_h = Curve([(-0.085, 0.060), (-0.075, 0.080), (-0.035, 0.112), (0.010, 0.118), (0.060, 0.082),
+-                       (0.110, 0.060), (0.150, 0.052), (0.195, 0.044), (0.228, 0.030)])
+-        wid = Curve([(-0.085, 0.026), (-0.075, 0.036), (-0.035, 0.043), (0.010, 0.046), (0.060, 0.048),
+-                     (0.110, 0.052), (0.150, 0.051), (0.195, 0.044), (0.228, 0.026)])
+-        shu = Vector((1, 0, 0)); shv = Vector((0, 0, 1))
+-        rings = []
+-        for y in shoe_y:
+-            h = top_h(y)
+-            c = Vector((sx * 0.09, -y, h / 2))
+-            rings.append(ring_pts(c, shu, shv, wid(y), h / 2, 10, 2.6))
+-        foot_b, toe_b = f"foot.{side}", f"toe.{side}"
+-        def shw(i, j, p, foot_b=foot_b, toe_b=toe_b):
+-            ya = -p.y
+-            t = sstep(0.105, 0.155, ya)
+-            return {foot_b: 1 - t, toe_b: t}
+-        tip_c = Vector((sx * 0.09, -0.238, 0.014))
+-        heel_c = Vector((sx * 0.09, 0.090, 0.034))
+-        # loft goes along -Y (forward): ring axis t = -Y; (u=X, v=Z): u x v = -Y ok
+-        mb.loft(rings, shw, ACC, cap_start=(heel_c, {foot_b: 1.0}), cap_end=(tip_c, {toe_b: 1.0}))
+-
+-    # ===================================================================================
+-    # ARMS: skin tube, sleeve, forearm wrap, hand
+-    # ===================================================================================
+-    for side in SIDES:
+-        sx = 1 if side == "L" else -1
+-        L = LEFT_REST
+-
+-        def M(p):
+-            return Vector((p[0] * sx, p[1], p[2]))
+-        sho = M(L["shoulder_tail"]); elb = M(L["elbow"]); wri = M(L["wrist"]); tip = M(L["fingertip"])
+-        l1 = (elb - sho).length
+-        l2 = (wri - elb).length
+-        d1 = (elb - sho).normalized()
+-        d2 = (wri - elb).normalized()
+-
+-        def arm_pt(s):
+-            if s <= l1:
+-                return sho + d1 * s
+-            return elb + d2 * (s - l1)
+-
+-        def arm_tan(s, eps=0.012):
+-            a = arm_pt(max(s - eps, -0.1))
+-            b = arm_pt(s + eps)
+-            return (b - a)
+-
+-        ub, fb, shb, hb = f"upper_arm.{side}", f"forearm.{side}", f"shoulder.{side}", f"hand.{side}"
+-
+-        def arm_w(s):
+-            """weights for a point at arc position s along the arm path."""
+-            w = {}
+-            sh_t = sstep(-0.01, 0.075, s)            # 0 = shoulder/chest influence, 1 = upper arm
+-            el_t = sstep(l1 - 0.055, l1 + 0.055, s)  # 0 = upper arm, 1 = forearm
+-            wr_t = sstep(l1 + l2 - 0.03, l1 + l2 + 0.02, s)
+-            w[shb] = (1 - sh_t) * 0.55
+-            w["chest"] = (1 - sh_t) * 0.45
+-            w[ub] = sh_t * (1 - el_t)
+-            w[fb] = sh_t * el_t * (1 - wr_t)
+-            w[hb] = wr_t * el_t
+-            return w
+-
+-        FLIP = Vector((1, -1, 1))
+-
+-        def arm_ring(s, r, aspect=0.94, ridge=1.0, n=n_limb, shift=Vector()):
+-            tn = arm_tan(max(s, 0.0) if s < 0 else s) * FLIP
+-            u, v, t = frame_from_tangent(tn, Vector((0, -1, 0)))
+-            c = arm_pt(s) * FLIP + shift
+-            return ring_pts(c, u, v, r * ridge, r * ridge * aspect, n, 2.0), c, t
+-
+-        arm_s = [-0.03, 0.0, 0.045, 0.10, 0.17, 0.235, l1, l1 + 0.045, l1 + 0.10, l1 + 0.16, l1 + 0.21, l1 + l2 + 0.004]
+-        arm_r = Curve([(-0.03, 0.050), (0.0, 0.057), (0.05, 0.058), (0.12, 0.051), (0.2, 0.046), (l1, 0.039),
+-                       (l1 + 0.05, 0.043), (l1 + 0.12, 0.040), (l1 + 0.2, 0.033), (l1 + l2 + 0.004, 0.029)])
+-        rr = [arm_ring(s_, arm_r(s_)) for s_ in arm_s]
+-        mb.loft([r_[0] for r_ in rr], lambda i, j, p, arm_s=arm_s: arm_w(arm_s[i]), SKIN,
+-                cap_start=(rr[0][1] - rr[0][2] * 0.03, arm_w(-0.03)))
+-
+-        # sleeve over the shoulder
+-        sl_s = [-0.035, 0.0, 0.05, 0.10, 0.135]
+-        sl_r = Curve([(-0.035, 0.060), (0.0, 0.071), (0.05, 0.074), (0.10, 0.071), (0.135, 0.073)])
+-        rr = [arm_ring(s_, sl_r(s_), 0.95, shift=Vector((sx * 0.004 * sstep(0.04, 0.13, s_), 0, 0))) for s_ in sl_s]
+-        mb.loft([r_[0] for r_ in rr], lambda i, j, p, sl_s=sl_s: arm_w(sl_s[i]), MAIN,
+-                cap_start=(rr[0][1] - rr[0][2] * 0.045, arm_w(-0.035)))
+-
+-        # forearm wrap
+-        fw_s = [l1 + 0.10, l1 + 0.13, l1 + 0.16, l1 + 0.19, l1 + 0.22, l1 + 0.25, l1 + l2 + 0.006]
+-        rr = [arm_ring(s_, arm_r(s_) + 0.0055, 0.94, ridge=1.0 + (0.08 if k % 2 else 0.0)) for k, s_ in enumerate(fw_s)]
+-        mb.loft([r_[0] for r_ in rr], lambda i, j, p, fw_s=fw_s: arm_w(fw_s[i]), WRAPS)
+-
+-        # hand: mitten (wraps) + fingers (skin) + thumb
+-        ht = (tip - wri)
+-        hl = ht.length
+-        ht_b = ht * Vector((1, -1, 1))
+-        hu, hv, hT = frame_from_tangent(ht_b, Vector((0, -1, 0)))      # u: thumb side (forward)
+-        hand_s = [(-0.005, 0.030, 0.021), (0.35, 0.040, 0.022), (0.62, 0.043, 0.022), (0.80, 0.041, 0.019), (1.0, 0.034, 0.015)]
+-        rings = []
+-        for s_, wv, tv in hand_s:
+-            c = (wri * Vector((1, -1, 1))) + hT * (s_ * hl)
+-            rings.append((ring_pts(c, hu, hv, wv, tv, 10, 2.6), s_))
+-        def hw(i, j, p, hb=hb, fb=fb):
+-            s_ = rings[i][1]
+-            f = 0.5 * (1 - sstep(0.0, 0.2, s_))
+-            return {hb: 1 - f, fb: f}
+-        mb.loft([r_[0] for r_ in rings], hw, WRAPS, mat_seg=lambda i: (WRAPS if i < 2 else SKIN),
+-                cap_end=((wri * Vector((1, -1, 1))) + hT * (hl * 1.06) , {hb: 1.0}))
+-        # thumb
+-        th_base = (wri * Vector((1, -1, 1))) + hT * (0.22 * hl) + hu * 0.030 + hv * 0.0
+-        th_dir = (hT * 0.78 + hu * 0.45).normalized()
+-        thu, thv, tht = frame_from_tangent(th_dir, hv)
+-        rings2 = []
+-        for k, rs in enumerate((1.0, 0.9, 0.7)):
+-            rings2.append(ring_pts(th_base + tht * (0.026 * k), thu, thv, 0.016 * rs, 0.014 * rs, 6, 2.0))
+-        mb.loft(rings2, lambda i, j, p, hb=hb: {hb: 1.0}, SKIN, mat_seg=lambda i: (WRAPS if i == 0 else SKIN),
+-                cap_end=(th_base + tht * 0.062, {hb: 1.0}))
+-    return mb
+diff --git a/tools/blender/fighter_scene.py b/tools/blender/fighter_scene.py
+index 40164bf..f3c4bdb 100644
+--- a/tools/blender/fighter_scene.py
++++ b/tools/blender/fighter_scene.py
+@@ -3,8 +3,9 @@ import bmesh
+ import bpy
+ from mathutils import Vector
+ 
+-from fighter_skeleton import BONE_ORDER, bone_table
+-from fighter_mesh import MAT_NAMES, MAT_COLORS, DOUBLE_SIDED, build_character
++from fighter_skeleton import ALL_BONES, bone_table
++from fighter_mesh import MAT_NAMES, MAT_COLORS, DOUBLE_SIDED
++from fighter_character import build_character
+ 
+ ARM_NAME = "FighterArmature"
+ MESH_NAME = "FighterMesh"
+@@ -28,14 +29,14 @@ def make_armature():
+     ob.select_set(True)
+     bpy.ops.object.mode_set(mode="EDIT")
+     ebs = {}
+-    for name in BONE_ORDER:
++    for name in ALL_BONES:
+         d = table[name]
+         eb = arm.edit_bones.new(name)
+         eb.head = d["head"]
+         eb.tail = d["tail"]
+         eb.align_roll(d["roll"])
+         ebs[name] = eb
+-    for name in BONE_ORDER:
++    for name in ALL_BONES:
+         d = table[name]
+         if d["parent"]:
+             ebs[name].parent = ebs[d["parent"]]
+@@ -72,6 +73,15 @@ def make_mesh_object(arm_ob, mb):
+     for m in make_materials():
+         mesh.materials.append(m)
+     mesh.polygons.foreach_set("material_index", mb.fmat)
++    # per-corner UVs (packed atlas, one image per material) and the vertex-colour masks used by the texture bake
++    uvl = mesh.uv_layers.new(name="UVMap")
++    k = 0
++    for poly, uvs in zip(mesh.polygons, mb.fuv):
++        for li, (u, v) in zip(poly.loop_indices, uvs):
++            uvl.data[li].uv = (u, v)
++    col = mesh.color_attributes.new(name="Col", type="FLOAT_COLOR", domain="POINT")
++    for vi, c in enumerate(mb.cols):
++        col.data[vi].color = (c[0], c[1], c[2], 1.0)
+     # smooth shading with hard edges where the dihedral angle is large
+     bm = bmesh.new()
+     bm.from_mesh(mesh)
+@@ -89,7 +99,7 @@ def make_mesh_object(arm_ob, mb):
+     bpy.context.scene.collection.objects.link(ob)
+     # vertex groups (one per bone, spec order)
+     groups = {}
+-    for name in BONE_ORDER:
++    for name in ALL_BONES:
+         groups[name] = ob.vertex_groups.new(name=name)
+     for vi, w in enumerate(mb.weights):
+         for bn, val in w.items():
+diff --git a/tools/blender/fighter_skeleton.py b/tools/blender/fighter_skeleton.py
+index 1432936..2f4fde9 100644
+--- a/tools/blender/fighter_skeleton.py
++++ b/tools/blender/fighter_skeleton.py
+@@ -61,6 +61,56 @@ BONE_ORDER = [
+     "thigh.R", "shin.R", "foot.R", "toe.R",
+ ]
+ 
++# --- added bones (v2): articulated hands, sash tails, topknot ------------------------------------------------------
++# Hand bones are children of hand.X; they continue inside the (unchanged) hand bone, which still ends at the fingertip.
++# Naming: thumb_1/2 = thumb (base, tip phalanx); finger_im_* = index+middle fingers (grouped); finger_rp_* = ring+pinky.
++FINGER_BONES = [f"{n}.{s}" for s in SIDES for n in ("thumb_1", "thumb_2", "finger_im_1", "finger_im_2", "finger_rp_1", "finger_rp_2")]
++SASH_BONES = [f"sash_tail.{s}.{k:03d}" for s in SIDES for k in (1, 2, 3)]
++HAIR_BONES = ["hair_top.001", "hair_top.002"]
++SECONDARY_BONES = SASH_BONES + HAIR_BONES          # simulated by the runtime (SpringBoneSimulator3D); never animated in clips
++ALL_BONES = BONE_ORDER + FINGER_BONES + SASH_BONES + HAIR_BONES
++ANIM_BONES = BONE_ORDER + FINGER_BONES              # bones that clips animate (rotation tracks)
++
++# sash tail chains (A frame, left side; right is a mirror image except the length): knot on the lower back
++SASH_L = [(0.030, -0.135, 1.040), (0.040, -0.140, 0.925), (0.047, -0.143, 0.810), (0.051, -0.143, 0.700)]
++SASH_R = [(-0.030, -0.135, 1.040), (-0.036, -0.139, 0.950), (-0.041, -0.141, 0.865), (-0.044, -0.141, 0.785)]
++HAIR_CHAIN = [(0.0, -0.032, 1.736), (0.0, -0.040, 1.778), (0.0, -0.072, 1.797)]
++
++
++def hand_frame():
++    """Left hand frame in the A frame: wrist W, unit direction hd (wrist -> fingertip), u (thumb side, forward),
++    n (palm normal, medial), and hand length L."""
++    W = Vector(_L["wrist"])
++    T = Vector(_L["fingertip"])
++    L = (T - W).length
++    hd = (T - W).normalized()
++    u = Vector((0, 1, 0))
++    u = (u - hd * u.dot(hd)).normalized()
++    n = -(hd.cross(u)).normalized()           # left hand: palm faces +x*-1 (medial)
++    return W, hd, u, n, L
++
++
++def hand_pts(side):
++    """Finger bone joints (A frame) -> dict name -> (head, tail)."""
++    W, hd, u, n, L = hand_frame()
++
++    def P(s, uo=0.0, no=0.0):
++        return W + hd * s + u * uo + n * no
++    t1 = (hd * 0.65 + u * 0.5 + n * 0.25).normalized()
++    t2 = (hd * 0.70 + u * 0.38 + n * 0.32).normalized()
++    th = P(0.032, 0.030, 0.006)
++    th2 = th + t1 * 0.040
++    th3 = th2 + t2 * 0.036
++    pts = {
++        "thumb_1": (th, th2), "thumb_2": (th2, th3),
++        "finger_im_1": (P(0.0915, 0.0175), P(0.1275, 0.0175)), "finger_im_2": (P(0.1275, 0.0175), P(0.1705, 0.0175)),
++        "finger_rp_1": (P(0.0895, -0.0175), P(0.1235, -0.0175)), "finger_rp_2": (P(0.1235, -0.0175), P(0.1595, -0.0175)),
++    }
++    if side == "R":
++        pts = {k: (Vector(mirror_x(a)), Vector(mirror_x(b))) for k, (a, b) in pts.items()}
++    return pts
++
++
+ # which world direction the Z axis of the bone should face (Blender coordinates)
+ _FWD = Vector((0, -1, 0))
+ _UP = Vector((0, 0, 1))
+@@ -100,6 +150,21 @@ def bone_table():
+                               tail=A(*_lr(s, "ball")), roll=_UP, connect=True)
+         t[f"toe.{s}"] = dict(parent=f"foot.{s}", head=A(*_lr(s, "ball")),
+                              tail=A(*_lr(s, "toe_tip")), roll=_UP, connect=True)
++    # --- added bones
++    for s in SIDES:
++        for k, (h, tl) in hand_pts(s).items():
++            nm = f"{k}.{s}"
++            par = f"hand.{s}" if k.endswith("_1") else f"{k[:-1]}1.{s}"
++            t[nm] = dict(parent=par, head=A(*h), tail=A(*tl), roll=_FWD, connect=k.endswith("_2"))
++        chain = SASH_L if s == "L" else SASH_R
++        for i in range(3):
++            nm = f"sash_tail.{s}.{i + 1:03d}"
++            t[nm] = dict(parent="hips" if i == 0 else f"sash_tail.{s}.{i:03d}", head=A(*chain[i]), tail=A(*chain[i + 1]),
++                         roll=_FWD, connect=i > 0)
++    for i in range(2):
++        nm = f"hair_top.{i + 1:03d}"
++        t[nm] = dict(parent="head" if i == 0 else "hair_top.001", head=A(*HAIR_CHAIN[i]), tail=A(*HAIR_CHAIN[i + 1]),
++                     roll=_FWD, connect=i > 0)
+     return t
+ 
+ 
+diff --git a/tools/blender/godot_preview_closeup.gd b/tools/blender/godot_preview_closeup.gd
+new file mode 100644
+index 0000000..596434f
+--- /dev/null
++++ b/tools/blender/godot_preview_closeup.gd
+@@ -0,0 +1,108 @@
++extends SceneTree
++## Engine close-up renders of the imported fighter with the game's player palette.
++##   tools/scripts/godot.sh --render --resolution 1000x700 -s tools/blender/godot_preview_closeup.gd -- OUT_PREFIX [clip@time,...]
++## Writes OUT_PREFIX_<view>.png for views: full (3/4), face, hands, back.  `clip@time` (seconds, or `c` = contact), default idle@0.
++## Palette = game.gd PLAYER_COLORS (albedo_color is *set* by the game, so textures must be tint-relative).
++
++const GLB := "res://assets/characters/fighter.glb"
++const PAL := {"cloth_main": Color(0.19, 0.23, 0.31), "cloth_accent": Color(0.62, 0.5, 0.32),
++	"wraps": Color(0.86, 0.83, 0.77), "skin": Color(0.78, 0.6, 0.48), "hair": Color(0.12, 0.1, 0.09)}
++# view: [camera position, look-at, fov, yaw of fighter degrees]
++const VIEWS := {
++	"full": [Vector3(1.1, 1.25, 2.9), Vector3(0, 0.9, 0), 32.0],
++	"front": [Vector3(0.0, 1.2, 3.2), Vector3(0, 0.9, 0), 32.0],
++	"back": [Vector3(-0.9, 1.3, -2.9), Vector3(0, 0.95, 0), 32.0],
++	"face": [Vector3(0.45, 1.66, 0.85), Vector3(0, 1.62, 0), 28.0],
++	"hands": [Vector3(0.0, 1.15, 1.25), Vector3(0, 1.1, 0), 40.0],
++	"legs": [Vector3(0.9, 0.55, 1.5), Vector3(0, 0.45, 0), 34.0],
++}
++
++
++func _find(node: Node, cls: String) -> Node:
++	if node.is_class(cls):
++		return node
++	for c in node.get_children():
++		var r := _find(c, cls)
++		if r:
++			return r
++	return null
++
++
++func _initialize() -> void:
++	_run()
++
++
++func _run() -> void:
++	await process_frame
++	var args := OS.get_cmdline_user_args()
++	var prefix: String = args[0] if args.size() > 0 else "/tmp/fighter_cu"
++	var spec: String = args[1] if args.size() > 1 else "idle@0"
++	var views: Array = (args[2] if args.size() > 2 else "full,face,hands,back").split(",")
++	var clips: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/fighter_clips.json"))
++	var scene: PackedScene = load(GLB)
++
++	var env := WorldEnvironment.new()
++	var e := Environment.new()
++	e.background_mode = Environment.BG_COLOR
++	e.background_color = Color(0.55, 0.62, 0.72)
++	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
++	e.sky = Sky.new()
++	var psm := ProceduralSkyMaterial.new()
++	psm.sky_top_color = Color(0.45, 0.6, 0.85)
++	psm.sky_horizon_color = Color(0.85, 0.8, 0.75)
++	psm.ground_bottom_color = Color(0.3, 0.28, 0.26)
++	psm.ground_horizon_color = Color(0.6, 0.55, 0.5)
++	e.sky.sky_material = psm
++	e.ambient_light_energy = 0.8
++	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
++	env.environment = e
++	root.add_child(env)
++	var sun := DirectionalLight3D.new()
++	sun.rotation_degrees = Vector3(-42, 35, 0)
++	sun.light_energy = 1.3
++	sun.shadow_enabled = true
++	root.add_child(sun)
++	var floor_mi := MeshInstance3D.new()
++	var plane := PlaneMesh.new()
++	plane.size = Vector2(12, 12)
++	floor_mi.mesh = plane
++	var fm := StandardMaterial3D.new()
++	fm.albedo_color = Color(0.42, 0.38, 0.34)
++	floor_mi.material_override = fm
++	root.add_child(floor_mi)
++	var inst: Node3D = scene.instantiate()
++	root.add_child(inst)
++	var player: AnimationPlayer = _find(inst, "AnimationPlayer")
++	var parts := spec.split("@")
++	var clip: String = parts[0]
++	var t := 0.0
++	if parts.size() > 1:
++		t = float(clips[clip]["contact"]) if parts[1] == "c" else float(parts[1])
++	player.play(clip)
++	player.seek(t, true)
++	player.advance(0.0)
++	player.pause()
++	var mi: MeshInstance3D = _find(inst, "MeshInstance3D")
++	for s in mi.mesh.get_surface_count():
++		var m := mi.mesh.surface_get_material(s)
++		if m is BaseMaterial3D:
++			var d: BaseMaterial3D = m.duplicate()
++			var key: String = m.resource_name
++			if PAL.has(key):
++				d.albedo_color = PAL[key]
++				d.roughness = 0.82 if key != "skin" else 0.6
++			mi.set_surface_override_material(s, d)
++	print("tris ~", mi.mesh.get_faces().size() / 3, " surfaces ", mi.mesh.get_surface_count())
++	var cam := Camera3D.new()
++	root.add_child(cam)
++	for v in views:
++		var vd: Array = VIEWS[v]
++		cam.fov = vd[2]
++		cam.look_at_from_position(vd[0], vd[1])
++		for i in 3:
++			await process_frame
++		await RenderingServer.frame_post_draw
++		var img := root.get_texture().get_image()
++		img.save_png("%s_%s.png" % [prefix, v])
++	print("saved ", prefix)
++	quit()
+diff --git a/tools/blender/preview_cli.py b/tools/blender/preview_cli.py
+new file mode 100644
+index 0000000..a12e0fc
+--- /dev/null
++++ b/tools/blender/preview_cli.py
+@@ -0,0 +1,52 @@
++#!/usr/bin/env python
++"""Quick Cycles previews of the built fighter (geometry iteration).
++   bpy-python tools/blender/preview_cli.py OUTDIR [--views front,side,back,face,hands,q] [--clip NAME --frame F]
++Builds the scene from scratch (no export) and renders each view as OUTDIR/<view>.png."""
++import argparse, math, os, sys
++HERE = os.path.dirname(os.path.abspath(__file__))
++sys.path.insert(0, HERE)
++import bpy
++import fighter_scene as fsc
++import fighter_pose as fp
++import fighter_preview as pv
++
++ap = argparse.ArgumentParser()
++ap.add_argument("out")
++ap.add_argument("--views", default="front,side,back,face")
++ap.add_argument("--hide", default="")
++ap.add_argument("--samples", type=int, default=24)
++ap.add_argument("--size", type=int, default=640)
++a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
++os.makedirs(a.out, exist_ok=True)
++arm, mesh_ob, mb = fsc.build_scene()
++tris = sum(len(f) - 2 for f in mb.faces)
++print(f"mesh: {len(mb.verts)} verts, {tris} tris, {len(arm.data.bones)} bones")
++VIEWS = {  # name: (azimuth, center_x, center_y, center_z, ortho)
++    "front": (0, 0, 0, 0.88, 1.9), "side": (90, 0, 0, 0.88, 1.9), "back": (180, 0, 0, 0.88, 1.9), "q": (38, 0, 0, 0.88, 1.9),
++    "face": (20, 0, 0, 1.62, 0.34), "face_side": (90, 0, 0, 1.62, 0.34), "faceq": (50, 0, 0, 1.62, 0.34), "head_back": (150, 0, 0, 1.64, 0.4),
++    "hands": (0, 0, 0, 1.0, 0.9), "hand_l": (-30, 0.335, 0.1, 0.80, 0.30), "hand_r": (30, -0.335, 0.1, 0.80, 0.30),
++    "torso": (20, 0, 0, 1.2, 0.9), "legs": (30, 0, 0, 0.45, 0.95), "feet": (50, 0, 0, 0.1, 0.5), "waist_back": (160, 0, 0, 1.0, 0.7),
++}
++for m in a.hide.split(","):
++    if m:
++        idx = [i for i, ms in enumerate(mesh_ob.data.materials) if ms.name == m][0]
++        import bmesh
++        bm = bmesh.new(); bm.from_mesh(mesh_ob.data)
++        bm.faces.ensure_lookup_table()
++        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index == idx], context="FACES")
++        bm.to_mesh(mesh_ob.data); bm.free()
++pv.setup_preview_scene(tile_w=a.size, tile_h=a.size, ortho=1.9, samples=a.samples)
++pv.emulate_backface_culling()
++cam, lbl = pv._STATE["cam"], pv._STATE["lbl"]
++lbl.data.body = ""
++for v in a.views.split(","):
++    az, cx, cy, cz, orth = VIEWS[v]
++    cam.data.ortho_scale = orth
++    lbl.hide_render = True
++    ang = math.radians(az)
++    from mathutils import Euler
++    cam.location = (cx - 8 * math.sin(ang), cy - 8 * math.cos(ang), cz)
++    cam.rotation_euler = Euler((math.radians(90), 0, -ang))
++    bpy.context.scene.render.filepath = os.path.join(a.out, v + ".png")
++    bpy.ops.render.render(write_still=True)
++print("done")
