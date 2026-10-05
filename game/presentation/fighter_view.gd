@@ -5,6 +5,13 @@ extends Node3D
 ## in-place; playback speed is matched to ground speed (no skating) and attack
 ## clips are time-scaled so their authored contact frame lands on the sim's
 ## startup end (game/assets/characters/fighter_clips.json).
+##
+## On top of the clip the AnimationPlayer plays, a FighterAnimRig (SkeletonModifier3D, see
+## presentation/anim/) adds the physical layer: a synced locomotion blend space driven by the
+## measured ground velocity, foot IK on the ArenaMap ground with pelvis drop, lean/banking and
+## landing compression, clamped look-at / chest aim, and spring-damper hit and block reactions.
+## SpringBoneSimulator3D chains (sash tails, hair) are added when the rig has those bones.
+## Distant fighters and practice dummies run reduced layers (docs/ANIMATION.md, "Runtime layers").
 
 const GLB := "res://assets/characters/fighter.glb"
 const CLIPS_JSON := "res://assets/characters/fighter_clips.json"
@@ -32,6 +39,27 @@ var _lean := 0.0
 var colors := {}
 var _fallback_parts := {}
 
+# ---- runtime animation layers (presentation/anim/)
+const LOD_NEAR := 22.0                # m to the camera: beyond this, reduced layers
+const LOD_FAR := 40.0                 # beyond this, plain clips only (rig off)
+var rig: FighterAnimRig = null
+var secondary: SpringBoneSimulator3D = null
+var is_dummy := false
+var lod := 0
+var _vel_meas := Vector3.ZERO         # horizontal ground velocity measured from sim positions (m/s)
+var _have_meas := false
+var _vel_s := Vector3.ZERO
+var _acc_s := Vector3.ZERO
+var _yaw_rate := 0.0
+var _prev_grounded := true
+var _prev_vy := 0.0
+var _prev_health := -1.0
+var _prev_balance := 0.0
+var _last_hit_tick := -1
+var _vis_y := 0.0
+var _vis_init := false
+var _debug_draw: AnimDebugDraw = null
+
 
 func setup(id: int, palette: Dictionary) -> void:
 	actor_id = id
@@ -48,8 +76,19 @@ func setup(id: int, palette: Dictionary) -> void:
 			_hand_l = skel.find_bone("hand.L")
 		if ap:
 			ap.playback_default_blend_time = 0.12
+		if skel and ap:
+			rig = FighterAnimRig.new()
+			rig.name = "AnimRig"
+			skel.add_child(rig)
+			rig.setup_rig(skel, ap)
+			if not rig.is_rig_ready():
+				rig.queue_free()
+				rig = null
+			secondary = FighterSecondaryMotion.attach(skel)
 	else:
 		_build_fallback()
+	if "--animdebug" in OS.get_cmdline_user_args():
+		AnimDebugHotkeys.install(self)
 	if FileAccess.file_exists(CLIPS_JSON):
 		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(CLIPS_JSON))
 		if j is Dictionary:
@@ -99,10 +138,19 @@ func set_accent(c: Color) -> void:
 
 func push_state(a: ActorState) -> void:
 	## Called once per simulation tick.
+	var d := a.pos - _curr_pos
 	_prev_pos = _curr_pos
 	_prev_yaw = _curr_yaw
 	_curr_pos = a.pos
 	_curr_yaw = a.facing
+	# Measured ground velocity (what the eye sees, so feet never skate against a wall push-out);
+	# a jump of more than 12 m/s is a teleport/reset, use the sim velocity then.
+	_vel_meas = Vector3(d.x, 0.0, d.z) / Sim.DT
+	if _vel_meas.length() > 12.0:
+		_vel_meas = Vector3(a.vel.x, 0.0, a.vel.z)
+	_have_meas = true
+	_yaw_rate = wrapf(_curr_yaw - _prev_yaw, -PI, PI) / Sim.DT
+	_react_to_sim(a)
 
 
 func snap(a: ActorState) -> void:
@@ -112,6 +160,18 @@ func snap(a: ActorState) -> void:
 	_curr_yaw = a.facing
 	global_position = a.pos
 	rotation.y = a.facing
+	is_dummy = a.is_dummy
+	_vel_meas = Vector3.ZERO
+	_vel_s = Vector3.ZERO
+	_acc_s = Vector3.ZERO
+	_yaw_rate = 0.0
+	_vis_init = false
+	_prev_health = -1.0
+	_prev_grounded = a.grounded
+	if rig:
+		rig.hits.reset()
+		rig.land_y = 0.0
+		rig.land_v = 0.0
 
 
 func render(a: ActorState, alpha: float, dt: float) -> void:
@@ -120,6 +180,10 @@ func render(a: ActorState, alpha: float, dt: float) -> void:
 	_animate(a, dt)
 	if not model:
 		_fallback_pose(a, dt)
+		return
+	_smooth_visual_height(a, dt)
+	if rig:
+		_drive_rig(a, dt)
 
 
 func play_one_shot(clip: String, dur: float = 0.35) -> void:
@@ -129,6 +193,9 @@ func play_one_shot(clip: String, dur: float = 0.35) -> void:
 
 
 func hand_position(right: bool = true) -> Vector3:
+	# The rig caches the final (layered) hand positions each frame it runs.
+	if rig and rig.active and rig.hand_frame >= Engine.get_process_frames() - 1:
+		return rig.hand_world[0 if right else 1]
 	var idx := _hand_r if right else _hand_l
 	if skel and idx >= 0:
 		return skel.global_transform * skel.get_bone_global_pose(idx).origin
@@ -328,6 +395,197 @@ func _animate_action(a: ActorState, inst: ActionInst) -> void:
 				_play("jump", key, 1.0, 0.05)
 			else:
 				_play("glide" if a.gliding else "fall", "at%s" % str(a.gliding), 1.0, 0.18)
+
+
+# ------------------------------------------------------------------ runtime layers
+
+## Sim-driven reactions, once per tick: hits/blocks kick the springs, landings kick the pelvis.
+func _react_to_sim(a: ActorState) -> void:
+	if rig == null:
+		return
+	if not _prev_grounded and a.grounded:
+		rig.kick_pelvis(absf(minf(_prev_vy, 0.0)) * 0.34)
+	_prev_grounded = a.grounded
+	_prev_vy = a.vel.y
+	if _prev_health < 0.0:
+		_prev_health = a.health
+		_prev_balance = a.balance
+		_last_hit_tick = _newest_hit_tick(a)
+		return
+	var newest := _newest_hit_tick(a)
+	var dmg := _prev_health - a.health
+	var bal := maxf(_prev_balance - a.balance, 0.0)
+	if newest > _last_hit_tick or dmg > 0.5:
+		var to_local := Basis(Vector3.UP, a.facing).inverse()
+		var res := a.last_result
+		if res == "hit" or res == "knockdown":
+			var dir := to_local * a.last_hit_dir
+			var s := clampf(0.35 + dmg / 22.0 + bal / 70.0, 0.3, 1.25)
+			if res == "knockdown":
+				s *= 0.45          # the authored fall carries it; just add the directional jolt
+			rig.hits.hit(dir, s)
+			if a.stun_kind == "heavy":
+				rig.kick_pelvis(0.9)
+		elif res == "block" or res == "guard_break":
+			rig.hits.block(Vector3(0, 0, -1), 1.0 if res == "guard_break" else 0.55)
+		elif res == "perfect":
+			rig.hits.block(Vector3(0, 0, -1), 0.22)
+		elif dmg > 0.5:
+			rig.hits.hit(to_local * -a.forward(), 0.3)   # contact burn and similar
+	_last_hit_tick = newest
+	_prev_health = a.health
+	_prev_balance = a.balance
+
+
+static func _newest_hit_tick(a: ActorState) -> int:
+	var m := -1
+	for k in a.hits_taken:
+		m = maxi(m, int(a.hits_taken[k]))
+	return m
+
+
+## The sim snaps the feet onto a step in one tick; the body follows over ~0.1 s instead
+## (feet are then grounded by the IK), and the offset is bounded so it can never drift.
+func _smooth_visual_height(a: ActorState, dt: float) -> void:
+	var y := global_position.y
+	if not _vis_init or absf(y - _vis_y) > 0.7:
+		_vis_y = y
+		_vis_init = true
+	_vis_y = lerpf(_vis_y, y, 1.0 - exp(-(14.0 if a.grounded else 40.0) * dt))
+	_vis_y = clampf(_vis_y, y - 0.45, y + 0.45)
+	model.position.y = _vis_y - y
+
+
+func _game() -> Node:
+	var p := get_parent()
+	return p if p != null and p.get("world") is CombatWorld else null
+
+
+func _compute_lod(a: ActorState) -> int:
+	if AnimRigSettings.force_lod >= 0:
+		return AnimRigSettings.force_lod
+	var l := 0
+	var vp := get_viewport() if is_inside_tree() else null
+	var cam := vp.get_camera_3d() if vp else null
+	if cam:
+		var d := cam.global_position.distance_to(global_position)
+		l = 2 if d > LOD_FAR else (1 if d > LOD_NEAR else 0)
+	if a.is_dummy or is_dummy:
+		l = maxi(l, 1)
+	var g := _game()
+	if g and int(g.get("quality")) == 0:
+		l = maxi(l, 1)
+	return l
+
+
+func _drive_rig(a: ActorState, dt: float) -> void:
+	lod = _compute_lod(a)
+	if secondary:
+		secondary.active = AnimRigSettings.secondary and lod == 0
+	if lod >= 2:
+		rig.active = false
+		return
+	rig.active = true
+	rig.lod = lod
+	var g := _game()
+	var world: CombatWorld = g.get("world") if g else null
+	rig.arena = world.arena if world else null
+	# Ground velocity in the fighter's own frame, smoothed (sim ticks are 60 Hz, frames vary).
+	var raw := _vel_meas if _have_meas else Vector3(a.vel.x, 0.0, a.vel.z)
+	var prev := _vel_s
+	_vel_s = _vel_s.lerp(raw, 1.0 - exp(-14.0 * dt))
+	if dt > 1e-5:
+		_acc_s = _acc_s.lerp((_vel_s - prev) / dt, 1.0 - exp(-8.0 * dt))
+	var f := Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+	var r := f.cross(Vector3.UP)                     # the character's right
+	rig.local_vel = Vector2(_vel_s.dot(r), _vel_s.dot(f))
+	rig.stance = ["stance_earth", "stance_water", "stance_fire", "stance_air"][clampi(a.element, 0, 3)]
+	var inst := a.action
+	var free := a.grounded and inst == null and a.stun <= 0.0
+	rig.loco_target = 1.0 if free else 0.0
+	var spd := _vel_s.length()
+	var legs := 0.0
+	if a.grounded and inst != null and a.stun <= 0.0:
+		var ph := inst.phase
+		if inst.id == "guard" and a.wall_body < 0:
+			legs = smoothstep(0.15, 0.6, spd)
+		elif ph == ActionInst.P.CHARGE or ph == ActionInst.P.CHANNEL:
+			legs = smoothstep(0.2, 0.7, spd)
+	rig.legs_target = legs
+	# Lean into acceleration and into turns (centripetal: speed x yaw rate), only on the ground.
+	var lean := Vector2.ZERO
+	if free:
+		var acc_f := _acc_s.dot(f)
+		var acc_r := _acc_s.dot(r)
+		var fwd_spd := _vel_s.dot(f)
+		lean.x = clampf(acc_f * 0.010, -0.09, 0.11)
+		lean.y = clampf(-fwd_spd * _yaw_rate * 0.016 + acc_r * 0.008, -0.17, 0.17)
+	rig.lean_target = lean
+	# Foot IK only while standing on the ground in poses that keep the feet down.
+	var lifts := inst != null and (inst.id == "evade" or inst.id == "air_dash" or inst.id == "air_tech")
+	var down := a.stun > 0.0 and (a.stun_kind == "knockdown" or a.stun_kind == "getup")
+	rig.ik_target_w = 1.0 if (a.grounded and not lifts and not down) else 0.0
+	# Look at the incoming threat first, else the lock target; chest aims along the attack.
+	var look_w := 0.0
+	if lod == 0 and world and not down and not lifts:
+		var tgt := _look_target(a, world)
+		if tgt != Vector3.INF:
+			rig.look_world = tgt
+			if a.stun > 0.0:
+				look_w = 0.25
+			elif inst == null:
+				look_w = 0.85
+			elif inst.id == "guard":
+				look_w = 0.7
+			else:
+				look_w = 0.4
+	rig.look_target_w = look_w
+	var aim_w := 0.0
+	if inst != null and inst.data.has("face") and inst.id != "evade" and inst.id != "air_dash":
+		var ph2 := inst.phase
+		if ph2 == ActionInst.P.STARTUP or ph2 == ActionInst.P.CHARGE or ph2 == ActionInst.P.CHANNEL or ph2 == ActionInst.P.ACTIVE:
+			var fd: Vector3 = inst.data.face
+			if Vector2(fd.x, fd.z).length() > 0.01:
+				rig.aim_yaw = clampf(wrapf(atan2(fd.x, fd.z) - rotation.y, -PI, PI), -0.6, 0.6)
+				aim_w = 1.0
+	rig.aim_target_w = aim_w
+	rig.tick(dt)
+	if AnimRigSettings.debug_draw:
+		if _debug_draw == null:
+			_debug_draw = AnimDebugDraw.new()
+			add_child(_debug_draw)
+		_debug_draw.draw(rig)
+	elif _debug_draw:
+		_debug_draw.queue_free()
+		_debug_draw = null
+
+
+## World point to look at: the nearest incoming attack body (by time to impact), else the
+## locked target's head. Vector3.INF when there is nothing to look at.
+func _look_target(a: ActorState, world: CombatWorld) -> Vector3:
+	var me := a.pos + Vector3(0, 1.5, 0)
+	var best := Vector3.INF
+	var best_t := 1.1
+	for b in world.bodies:
+		if not b.alive or b.attack_id <= 0 or b.attack_owner == a.id or b.controller == a.id:
+			continue
+		var rel := me - b.pos
+		var dist := rel.length()
+		if dist > 14.0 or dist < 0.4:
+			continue
+		var closing := b.vel.dot(rel / dist)
+		if closing < 2.0:
+			continue
+		var tti := dist / closing
+		if tti < best_t:
+			best_t = tti
+			best = b.pos
+	if best != Vector3.INF:
+		return best
+	var t := world.get_actor(a.lock_target)
+	if t != null and t.pos.distance_to(a.pos) < 24.0:
+		return t.pos + Vector3(0, 1.5, 0)
+	return Vector3.INF
 
 
 # ------------------------------------------------------------------ fallback mannequin

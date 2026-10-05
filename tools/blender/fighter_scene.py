@@ -3,8 +3,9 @@ import bmesh
 import bpy
 from mathutils import Vector
 
-from fighter_skeleton import BONE_ORDER, bone_table
-from fighter_mesh import MAT_NAMES, MAT_COLORS, DOUBLE_SIDED, build_character
+from fighter_skeleton import ALL_BONES, bone_table
+from fighter_mesh import MAT_NAMES, MAT_COLORS, DOUBLE_SIDED
+from fighter_character import build_character
 
 ARM_NAME = "FighterArmature"
 MESH_NAME = "FighterMesh"
@@ -28,14 +29,14 @@ def make_armature():
     ob.select_set(True)
     bpy.ops.object.mode_set(mode="EDIT")
     ebs = {}
-    for name in BONE_ORDER:
+    for name in ALL_BONES:
         d = table[name]
         eb = arm.edit_bones.new(name)
         eb.head = d["head"]
         eb.tail = d["tail"]
         eb.align_roll(d["roll"])
         ebs[name] = eb
-    for name in BONE_ORDER:
+    for name in ALL_BONES:
         d = table[name]
         if d["parent"]:
             ebs[name].parent = ebs[d["parent"]]
@@ -72,6 +73,15 @@ def make_mesh_object(arm_ob, mb):
     for m in make_materials():
         mesh.materials.append(m)
     mesh.polygons.foreach_set("material_index", mb.fmat)
+    # per-corner UVs (packed atlas, one image per material) and the vertex-colour masks used by the texture bake
+    uvl = mesh.uv_layers.new(name="UVMap")
+    k = 0
+    for poly, uvs in zip(mesh.polygons, mb.fuv):
+        for li, (u, v) in zip(poly.loop_indices, uvs):
+            uvl.data[li].uv = (u, v)
+    col = mesh.color_attributes.new(name="Col", type="FLOAT_COLOR", domain="POINT")
+    for vi, c in enumerate(mb.cols):
+        col.data[vi].color = (c[0], c[1], c[2], 1.0)
     # smooth shading with hard edges where the dihedral angle is large
     bm = bmesh.new()
     bm.from_mesh(mesh)
@@ -89,7 +99,7 @@ def make_mesh_object(arm_ob, mb):
     bpy.context.scene.collection.objects.link(ob)
     # vertex groups (one per bone, spec order)
     groups = {}
-    for name in BONE_ORDER:
+    for name in ALL_BONES:
         groups[name] = ob.vertex_groups.new(name=name)
     for vi, w in enumerate(mb.weights):
         for bn, val in w.items():
