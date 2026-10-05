@@ -81,12 +81,13 @@ static func of_volume(w: CombatWorld, a: ActorState, inst: ActionInst, cls: Stri
 	g.tier = inst.tier() if inst != null else 0
 	var best := 0.0
 	for k in channels:
+		if k == "heat_hu":
+			continue
 		g.ch[k] = float(channels[k])
 		best = maxf(best, float(channels[k]))
 	g.power = best
 	if channels.has("heat_hu"):
 		g.heat = float(channels.heat_hu)
-		g.ch.erase("heat_hu")
 	g.mat = -1
 	g.hostile = true
 	if w != null and inst != null:

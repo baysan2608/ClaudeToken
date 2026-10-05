@@ -227,6 +227,8 @@ static func counter_class(b: MatBody, w: CombatWorld = null) -> StringName:
 		Sim.Form.ZONE, Sim.Form.CLOUD:
 			if ZONE_COUNTER.has(String(b.tag)):
 				return ZONE_COUNTER[String(b.tag)]
+			if b.form == Sim.Form.ZONE and b.tag != &"" and b.mat == Sim.Mat.AIR:
+				return b.tag   # a kit zone: its tag is its counter class
 		Sim.Form.WAVE:
 			match b.mat:
 				Sim.Mat.WATER:

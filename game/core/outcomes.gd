@@ -477,6 +477,13 @@ static func transform(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Di
 			return false
 	res.stopped = bool(r.get("stops", false))
 	res.pass_scale = 0.0 if res.stopped else 1.0
+	if c.kind == "guard" and r.has("guard_kind"):
+		# A guard whose barrier transformed the threat (water shield steams a flame): a clean block.
+		var info: Dictionary = ctx.get("info", {})
+		w.emit("block", {"actor": c.actor.id, "attacker": info.get("attacker", _id(t)), "kind": String(r.guard_kind)})
+		res.result = "block"
+		res.stopped = true
+		res.pass_scale = 0.0
 	# Heat flows (steam, water, rock, lava) announce themselves through phase changes; discrete
 	# conversions get a transform event here.
 	if b.alive and ["ice", "snow", "mist", "mud", "obsidian", "sandstone", "glass", "ash"].has(to):
@@ -590,15 +597,14 @@ static func weaken(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dicti
 		return true
 	if t.body != null and t.body.alive:
 		var b := t.body
-		var tp := maxf(float(res.tp), 1e-6)
-		var k_share := float(t.ch.K) / tp
-		var h_share := float(t.ch.H) / tp
-		if k_share > 0.0:
-			b.vel *= lerpf(1.0, f, k_share)
+		# Every channel keeps the fraction f, so TP' = TP - CP_eff (K is linear in speed).
+		var w_r: Dictionary = r.get("w", {})
+		if float(t.ch.K) > 0.0 and float(w_r.get("K", 1.0)) > 0.0:
+			b.vel *= f
 			if b.form == Sim.Form.WAVE:
-				b.wave_budget *= lerpf(1.0, f, k_share)
-		if h_share > 0.0 and b.thermal_energy() > 0.0:
-			var take := minf(float(res.cp_eff) * h_share * Interactions.HU_PER_PU * float(r.get("heat_mult", 1.0)), b.thermal_energy())
+				b.wave_budget *= lerpf(1.0, f, 0.5)
+		if float(t.ch.H) > 0.0 and float(w_r.get("H", 1.0)) > 0.0 and b.thermal_energy() > 0.0:
+			var take := minf((1.0 - f) * float(t.ch.H) * Interactions.HU_PER_PU * float(r.get("heat_mult", 1.0)), b.thermal_energy())
 			if c.body != null and c.body.is_water() and c.body.mass > 0.0:
 				var got := -Thermal.heat(b, -take)
 				w.boil_water(c.body, got, b.pos)

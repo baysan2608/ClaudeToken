@@ -117,6 +117,7 @@ static func ensure() -> void:
 			BINDINGS[_key(e, 0, slot)] = LEGACY_BINDINGS[e][slot]
 	Interactions.ensure()
 	Status.ensure()
+	Verbs.ensure()
 	KitEarth.register()
 	KitWater.register()
 	KitFire.register()

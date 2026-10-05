@@ -3,6 +3,10 @@ extends RefCounted
 ## Water: lash (tap) / ice lance (hold: freeze a limited shape), draw-shape-release
 ## technique. Water must come from somewhere: the pool, a puddle or the 6 kg
 ## waterskin (refilled by standing in the pool). Quantities are tracked exactly.
+## Water kit additions (docs/kits/water.md): held to T2 the strike fires Torrent (a 10 kg water slug), at T3 the
+## Maelstrom Lash (360 degrees); the technique also condenses vapour (steam, mist, fog) and seizes enemy streams
+## and waves in flight, and an attack tap while it holds water freezes it into an ice block (T+A). The legacy
+## T0/T1 behaviour is unchanged.
 
 
 static func _water_filter(b: MatBody) -> bool:
@@ -34,7 +38,13 @@ static func after_startup(w: CombatWorld, a: ActorState, inst: ActionInst, it: A
 static func on_phase(w: CombatWorld, a: ActorState, inst: ActionInst, p: int) -> void:
 	if inst.id == "water_attack" and p == ActionInst.P.ACTIVE:
 		if inst.heavy:
-			_ice_lance(w, a, inst)
+			match inst.tier():
+				3:
+					_maelstrom(w, a, inst)
+				2:
+					_torrent(w, a, inst)
+				_:
+					_ice_lance(w, a, inst)
 		else:
 			_lash(w, a, inst)
 
@@ -47,6 +57,7 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 			inst.data["face"] = w.aim_dir(a, it)
 			if inst.phase == ActionInst.P.CHARGE and inst.data.get("released", false) and inst.total >= float(inst.def.heavy_min):
 				if w.spend_focus(a, float(inst.def.heavy_cost) - float(inst.def.cost)):
+					inst.data["tier"] = maxi(1, inst.tier())
 					w.set_phase(a, inst, ActionInst.P.ACTIVE)
 				else:
 					w.emit("insufficient", {"actor": a.id, "what": "focus", "move": "ice_lance"})

@@ -426,7 +426,7 @@ func _guard_gesture(a: ActorState, it: ActorIntent) -> void:
 	var id := Moves.resolve(inst.element, inst.sub, slot)
 	if id == "" or not Moves.DEFS.has(id):
 		return
-	var pre := {"slot": slot, "from_guard": true, "guard_t": inst.total, "tier": inst.tier(), "spec": inst.data.get("spec", ""),
+	var pre := {"slot": slot, "from_guard": true, "guard_t": inst.total, "tier": inst.tier(), "guard_spec": inst.data.get("spec", ""),
 		"wall": a.wall_body, "keep_wall": a.wall_body, "held": a.held_body, "element": inst.element, "sub": inst.sub,
 		"charge_t": float(inst.data.get("charge_t", inst.total)), "charge_frozen": true}
 	inst.interrupted = true
@@ -588,7 +588,7 @@ func start_action(a: ActorState, id: String, it: ActorIntent, pre: Dictionary = 
 	if not inst.data.has("focus0"):
 		inst.data["focus0"] = a.focus
 		inst.data["reserve0"] = a.heat_reserve
-	if pre.has("spec"):
+	if pre.has("spec") and id == "guard":
 		var sp := String(pre.spec)
 		inst.data["spec_def"] = Moves.DEFS.get(sp, {}) if sp != "" else {}
 		inst.data["spec_module"] = String(inst.data.spec_def.get("module", "common")) if sp != id else "common"
@@ -1620,8 +1620,8 @@ func _material_tick(b: MatBody, dt: float) -> void:
 
 func _on_phase_changed(b: MatBody, old_phase: int) -> void:
 	if Materials.is_fusible(b.mat):
-		var solid_name := "rock" if b.is_stone() else Sim.MAT_NAMES[b.mat]
-		var molten_name := "molten" if b.is_stone() else "molten_" + Sim.MAT_NAMES[b.mat]
+		var solid_name: String = "rock" if b.is_stone() else String(Sim.MAT_NAMES[b.mat])
+		var molten_name: String = "molten" if b.is_stone() else "molten_" + String(Sim.MAT_NAMES[b.mat])
 		if b.phase == Sim.Phase.SOLID and b.form == Sim.Form.WAVE:
 			b.form = Sim.Form.CHUNK
 			b.vel = Vector3.ZERO
@@ -1928,6 +1928,10 @@ func _update_wave(b: MatBody, dt: float) -> void:
 			b.wave_path.remove_at(0)
 		if b.props.has("trail_zone") and b.wave_path.size() % 4 == 0:
 			Verbs.leave_trail(self, b)
+	if b.tag != &"":
+		_wave_sweep(b)
+		if not b.alive or b.form != Sim.Form.WAVE:
+			return
 	if arena.in_pool(np.x, np.z):
 		Interactions.resolve(self, Agent.of_body(self, b), Agent.of_env(self, "pool", np), {"continuous": true}, Interactions.PASS_RULE)
 		if not b.alive or b.form != Sim.Form.WAVE:
@@ -1937,6 +1941,27 @@ func _update_wave(b: MatBody, dt: float) -> void:
 		var env := Agent.of_env(self, "puddle", np)
 		env.body = pd
 		Interactions.resolve(self, Agent.of_body(self, b), env, {"continuous": true}, Interactions.PASS_RULE)
+
+
+## A tagged wave meets the loose bodies and shots on its front (rules: e.g. a water wave captures a
+## stone and carries it back, a sand surge buries puddles). Rate-limited per pair.
+func _wave_sweep(wv: MatBody) -> void:
+	for o in bodies:
+		if o == wv or not o.alive or o.static_body or o.controller >= 0 or o.captured_by >= 0:
+			continue
+		if o.form == Sim.Form.WAVE or o.form == Sim.Form.ZONE or o.form == Sim.Form.WALL or o.form == Sim.Form.POOL:
+			continue
+		if Vector2(o.pos.x - wv.pos.x, o.pos.z - wv.pos.z).length() > wv.wave_width * 0.5 + o.radius or o.pos.y > wv.pos.y + 2.0:
+			continue
+		var key := "%d|%d" % [wv.id, o.id]
+		if tick - int(_zone_pairs.get(key, -100000)) < 6:
+			continue
+		_zone_pairs[key] = tick
+		var counter := Agent.of_body(self, wv)
+		counter.actor = get_actor(wv.attack_owner)
+		Interactions.resolve(self, Agent.of_body(self, o, counter.actor), counter, {"continuous": true, "site": "wave"}, Interactions.PASS_RULE)
+		if not wv.alive or wv.form != Sim.Form.WAVE:
+			return
 
 
 func _settle_wave(b: MatBody, why: String) -> void:
@@ -2100,6 +2125,29 @@ func convert_mat(b: MatBody, new_mat: int, ledger_key: String = "") -> void:
 	if ledger_key != "":
 		mass_ledger[ledger_key] = float(mass_ledger.get(ledger_key, 0.0)) + b.mass
 	emit("convert", {"body": b.id, "to": Sim.MAT_NAMES[new_mat], "mass": b.mass})
+
+
+## Booked conversion water -> plant (1 kg -> 1 kg, ledger water_to_plant): takes kg from a water body
+## (or the actor's waterskin when src is null) and grows a PLANT body at p. Returns it (null if no water).
+func grow_plant(src: MatBody, kg: float, p: Vector3, a: ActorState = null) -> MatBody:
+	var take := kg
+	if src != null:
+		take = minf(kg, src.mass)
+		var e := src.thermal_energy() * take / maxf(src.mass, 1e-9)
+		ledger.removed += e   # the water's own heat leaves with it (the vine grows at ambient)
+		src.mass -= take
+		if src.form == Sim.Form.PUDDLE:
+			src.update_radius_puddle()
+		if src.mass <= 0.01:
+			decay_body(src, "grown")
+	elif a != null:
+		take = minf(kg, a.water_carried)
+		a.water_carried -= take
+	if take <= 0.0:
+		return null
+	mass_ledger.water_to_plant += take
+	var v := spawn_body(Sim.Mat.PLANT, Sim.Form.CHUNK, take, p, "grow")
+	return v
 
 
 ## Burns `kg` of a plant body away (ledger burned; its heat share leaves as removed).
@@ -2465,6 +2513,8 @@ func system_energy() -> float:
 			e += b.thermal_energy()
 	for a in actors:
 		e += a.heat_reserve
+		if a.action != null:
+			e += float(a.action.data.get("heat_paid", 0.0))   # heat a move paid and still carries (verbs)
 	return e
 
 

@@ -44,6 +44,10 @@ static func _plain_guard() -> Dictionary:
 static func _guards() -> void:
 	for g in LEGACY_GUARDS:
 		for t in LEGACY_THREATS + ["*"]:
+			if g == "shield_water" and t == "flame":
+				continue   # the shield steams the flame away (CoreRules._flare)
+			if g == "guard_wind" and ["stone", "stone_heavy", "boulder", "hot_rock", "ice", "water"].has(t):
+				continue   # Wind Guard power rule below
 			var r := _plain_guard()
 			r["id"] = "legacy_guard"
 			if g == "guard_earth":
@@ -119,7 +123,7 @@ static func _lash() -> void:
 ## take 50 % of what is left.
 static func _flare() -> void:
 	var steam := {"bands": [[0.0, "transform"]], "full_at": 0.0, "to": "steam", "share": 0.6, "event": "steam_block",
-		"id": "legacy_flare_water"}
+		"guard_kind": "fire_water", "id": "legacy_flare_water"}
 	for c in ["shield_water", "puddle", "water", "ice"]:
 		_add("flame", c, steam.duplicate(true))        # barrier bodies counter the flame
 	for t in ["water", "ice"]:
@@ -162,6 +166,7 @@ static func _techniques() -> void:
 	for t in ["stone", "stone_heavy", "boulder", "hot_rock", "magma", "lava_wave", "water", "ice", "puddle", "water_wave"]:
 		_add(t, "heat_grip", {"outcome": "transform", "bands": [[0.0, "transform"]], "full_at": 0.0, "to": "lava", "id": "legacy_heat"})
 	_add("*", "heat_grip", {"outcome": "pass", "bands": [[0.0, "pass"]], "id": "legacy_heat_other"})
+	_add("*", "heat_ranged", {"outcome": "heat", "bands": [[0.0, "heat"]], "full_at": 0.0, "legacy": false, "id": "ranged_heat_any"})
 	_add("puddle", "grip_water", {"outcome": "reclaim", "bands": [[0.0, "reclaim"]], "full_at": 0.0, "id": "legacy_draw_water"})
 	_add("*", "grip_water", {"outcome": "pass", "bands": [[0.0, "pass"]], "id": "legacy_draw_water_other"})
 
