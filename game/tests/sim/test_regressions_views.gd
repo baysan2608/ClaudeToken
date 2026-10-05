@@ -298,6 +298,9 @@ func test_moveset_bodies_map_to_their_views() -> void:
 	add.call(Sim.Mat.FIRE, Sim.Form.WAVE, "fire_line", "FlameFieldView")
 	add.call(Sim.Mat.AIR, Sim.Form.CHUNK, "crescent", "WindBladeView")
 	add.call(Sim.Mat.AIR, Sim.Form.CHUNK, "twister", "VortexView", {"spin": 12.0})
+	add.call(Sim.Mat.METAL, Sim.Form.WAVE, "spike_line", "SpikesView")
+	add.call(Sim.Mat.AIR, Sim.Form.WAVE, "wind_wall", "WindBladeView")
+	add.call(Sim.Mat.AIR, Sim.Form.WAVE, "dust_line", "CloudView")
 	_check_views(bv, cases)
 	cases.clear()
 	# zones in a second world (MAX_BODIES = 32 counts zones too)
@@ -308,7 +311,8 @@ func test_moveset_bodies_map_to_their_views() -> void:
 		["fire_field", "FlameFieldView"], ["tornado", "VortexView"], ["null_bubble", "ShellView"],
 		["vacuum_well", "ShellView"], ["caltrops", "MetalView"], ["briar", "VineView"], ["corona", "ShellView"],
 		["static_field", "ShellView"], ["lava_pool", "LavaWaveView"], ["ice_floor", "GroundDecalView"], ["geyser", "CloudView"],
-		["sound_barrier", "ShellView"], ["eddy", "VortexView"], ["steam_screen", "CloudView"], ["mine", "ShellView"]]
+		["sound_barrier", "ShellView"], ["eddy", "VortexView"], ["steam_screen", "CloudView"], ["mine", "ShellView"],
+		["rod", "MetalView"], ["snare", "VineView"], ["inrush", "ShellView"]]
 	for z in zones:
 		var zb := w.spawn_zone(StringName(z[0]), Vector3(cases.size() * 1.5 - 12.0, 0.0, -3.0), 1.5, -1, 10.0)
 		cases.append([zb, z[1]])
@@ -334,6 +338,97 @@ func test_moveset_bodies_map_to_their_views() -> void:
 	for k in bv.pool.get_stats():
 		total += int(bv.pool.get_stats()[k][0])
 	check(total == 0, "clear() returns every view (active %d)" % total)
+	_free_tree_views(bv)
+
+
+## Body tags a kit leaves without a view on purpose (a slick zone lies over its own puddle view).
+const VIEWLESS_OK := ["slick", "zone"]
+
+
+## Every bound move (16 sub-elements x 10 slots, tap and T3) played through the real input path: each body it makes
+## maps to a view, the director digests every event it emits, and the one-shot pools stay within their caps.
+func test_every_move_maps_its_bodies_and_events() -> void:
+	Moves.ensure()
+	var unmapped := {}
+	var bv: BodyViews = null
+	var fx: FxDirector = null
+	var runs := 0
+	for e in 4:
+		for sb in 4:
+			for slot in Sim.SLOTS:
+				for tier in [0, 3]:
+					var h := SimHarness.new(3)
+					var p := h.actor("p", Vector3(0, 0, 4.0), 0, {"heat_draw": true, "magma": true, "redirect_current": true}, e)
+					h.actor("o", Vector3(0, 0, -3.0), 1, {}, Sim.Element.EARTH)
+					if bv == null:
+						bv = _tree_views(h)
+						fx = _director(h, bv)
+						fx.player_id = p.id
+					else:
+						bv.bind(h.w)
+						fx.world = h.w
+						fx.bind(h.w)
+					var sc := LabScript.for_move(e, sb, String(slot), tier)
+					var seen := 0
+					for t in sc.length() + 120:
+						var ip := h.it(p)
+						ip.attack_held = false
+						ip.guard_held = false
+						ip.tech_held = false
+						ip.evade_held = false
+						LabScript.apply_dict(ip, sc.next())
+						ip.aim_dir = Vector3(0, 0, -1)
+						h.step(1)
+						var evs: Array[Dictionary] = []
+						for k in range(seen, h.log.size()):
+							evs.append(h.log[k])
+						seen = h.log.size()
+						bv.push_state()
+						fx.handle(evs)
+						if t % 3 == 0:
+							bv.render(1.0)
+							fx.update_continuous(0.05)
+						for b in h.w.bodies:
+							if b.alive and b.form != Sim.Form.POOL and bv._kind_for(b) == "none" and not VIEWLESS_OK.has(String(b.tag)):
+								unmapped["%s %s [%s] (%s)" % [Sim.MAT_NAMES[b.mat], Sim.FORM_NAMES[b.form], b.tag, Moves.resolve(e, sb, String(slot))]] = true
+					runs += 1
+	check(runs == 4 * 4 * Sim.SLOTS.size() * 2, "every slot played (%d)" % runs)
+	check(unmapped.is_empty(), "every move body has a view: %s" % ", ".join(PackedStringArray(unmapped.keys())))
+	var st := bv.pool.get_stats()
+	for k in ["ring", "burst", "shards", "blast", "beam"]:
+		check(int(st[k][0]) <= int(st[k][2]), "%s stays within its pool cap (%s)" % [k, st[k]])
+	check((fx.sfx_log as Array).size() > 100, "the moves play their cues (%d sounds)" % (fx.sfx_log as Array).size())
+	_drop(fx, bv)
+
+
+## Viewless fronts (a tremor, a sound flight field) have no kept node but must still pulse their rings.
+func test_viewless_fronts_pulse_rings() -> void:
+	var h := SimHarness.new(1)
+	var bv := _tree_views(h)
+	var tr := h.w.spawn_body(Sim.Mat.AIR, Sim.Form.WAVE, 1.0, Vector3(0, 0, 3), "test")
+	tr.tag = &"tremor"
+	var ff := h.w.spawn_zone(&"flight_field", Vector3(3, 0, 3), 0.5, -1, 0.0)
+	bv.push_state()
+	check(bv.view_of(tr.id) == null and bv.view_of(ff.id) == null, "fronts keep no node")
+	for i in 6:
+		bv.render(1.0)
+	check(int(bv.pool.get_stats().ring[0]) >= 2, "tremor + flight field emit rings (%d)" % int(bv.pool.get_stats().ring[0]))
+	_free_tree_views(bv)
+
+
+## A planted lightning rod stands upright on the ground and crackles at its tip, not over its 6 m reach.
+func test_planted_rod_stands_and_crackles_at_the_tip() -> void:
+	var h := SimHarness.new(1)
+	var bv := _tree_views(h)
+	var z := h.w.spawn_zone(&"rod", Vector3(1, 0, 2), 6.0, -1, 60.0, Sim.Mat.METAL, 3.0, -1.0)
+	z.charge = 20.0
+	bv.push_state()
+	bv.render(1.0)
+	var n := bv.view_of(z.id)
+	check(n is MetalView and (n as MetalView).shape == "rod", "a planted rod is a metal rod view")
+	if n:
+		check(n.position.y > 0.5 and absf(n.basis.y.normalized().dot(Vector3.UP)) > 0.99, "it stands upright above the ground")
+	check(int(bv.pool.get_stats().crackle[0]) == 1, "a charged rod crackles")
 	_free_tree_views(bv)
 
 

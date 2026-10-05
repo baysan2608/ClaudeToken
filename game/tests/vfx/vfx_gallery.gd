@@ -987,7 +987,9 @@ func _station_mv_earth(o: Vector3) -> Dictionary:
 	_mv_body(w, Sim.Mat.METAL, Sim.Form.CHUNK, 3.0, o + Vector3(-4.5, 0.7, 2.6), "rod", {"vel": Vector3(12, 0, -3), "radius": 0.2, "temp": 950.0})
 	_mv_wall(w, Sim.Mat.METAL, o + Vector3(-6.2, 0, -1.0), "plate", Vector3(0.7, 0.8, 0.1))
 	_mv_zone(w, "caltrops", o + Vector3(-4.0, 0, -1.2), 1.0, Sim.Mat.METAL)
-	_label("metal: disc / lance / hot rod / plate / caltrops", o + Vector3(-5.0, 2.4, 0.0))
+	_mv_zone(w, "rod", o + Vector3(-7.4, 0, 0.4), 6.0, Sim.Mat.METAL, {"charge": 20.0})
+	_mv_wave(w, Sim.Mat.METAL, o + Vector3(-2.6, 0, 0.3), "spike_line", 1.8)
+	_label("metal: disc / lance / hot rod / plate / caltrops / planted rod / spike line", o + Vector3(-5.0, 2.4, 0.0))
 	# sand: slug, cloud, surge, quicksand, sand wall
 	_mv_body(w, Sim.Mat.SAND, Sim.Form.CHUNK, 3.0, o + Vector3(-1.6, 1.1, 2.2), "slug", {"vel": Vector3(9, 0, 1), "radius": 0.22})
 	_mv_zone(w, "sand_cloud", o + Vector3(-1.5, 0, -1.6), 1.6, Sim.Mat.SAND)
@@ -1030,7 +1032,8 @@ func _station_mv_water(o: Vector3) -> Dictionary:
 	_mv_wall(w, Sim.Mat.PLANT, o + Vector3(6.0, 0, -2.4), "vine", Vector3(1.0, 0.8, 0.2))
 	_mv_wave(w, Sim.Mat.PLANT, o + Vector3(6.6, 0, 1.6), "roots", 2.2)
 	_mv_zone(w, "briar", o + Vector3(5.2, 0, 0.0), 0.9, Sim.Mat.PLANT)
-	_label("vine lattice / roots / briar", o + Vector3(6.0, 2.4, 0.0))
+	_mv_zone(w, "snare", o + Vector3(4.2, 0, 2.8), 0.7, Sim.Mat.PLANT)
+	_label("vine lattice / roots / briar / burr snare", o + Vector3(6.0, 2.4, 0.0))
 	_mv_settle(bv)
 	return {"shots": [
 		{"pos": o + Vector3(0, 5.6, 9.5), "look": o + Vector3(0, 0.5, -0.4), "frames": 6, "dt": 0.05, "fov": 52.0},
@@ -1071,9 +1074,11 @@ func _station_mv_air(o: Vector3) -> Dictionary:
 	var w: CombatWorld = wb[0]
 	var bv: BodyViews = wb[1]
 	_mv_body(w, Sim.Mat.AIR, Sim.Form.CHUNK, 0.1, o + Vector3(-6.0, 1.2, 1.6), "crescent", {"vel": Vector3(14, 0, 0), "radius": 0.6})
+	# Wall of Wind is a slow WAVE front (air_gust.gd), drawn as a standing curved sheet.
 	var ww := _mv_wall(w, Sim.Mat.AIR, o + Vector3(-6.0, 0, -2.0), "wind_wall", Vector3(1.2, 1.0, 0.2))
-	ww.form = Sim.Form.ZONE
-	ww.tag = &"wind_wall"
+	ww.form = Sim.Form.WAVE
+	ww.vel = Vector3(0, 0, 3.0)
+	_mv_zone(w, "inrush", o + Vector3(-6.6, 0, 4.0), 1.2, Sim.Mat.AIR, {"max_life": 0.6, "age": 0.15})
 	_mv_zone(w, "tornado", o + Vector3(-3.4, 0, -1.0), 1.4, Sim.Mat.AIR, {"spin": 6.0})
 	_mv_zone(w, "tornado", o + Vector3(-0.6, 0, -1.4), 1.3, Sim.Mat.AIR, {"spin": 6.0, "props": {"infused": "sand"}})
 	_mv_zone(w, "tornado", o + Vector3(2.2, 0, -1.4), 1.3, Sim.Mat.AIR, {"spin": 6.0, "props": {"infused": "fire"}})
@@ -1085,7 +1090,7 @@ func _station_mv_air(o: Vector3) -> Dictionary:
 	_mv_zone(w, "vacuum_well", o + Vector3(3.6, 0, 2.6), 1.4, Sim.Mat.AIR)
 	_mv_zone(w, "sound_barrier", o + Vector3(6.4, 0.0, 2.2), 1.1, Sim.Mat.AIR)
 	_mv_wave(w, Sim.Mat.AIR, o + Vector3(7.6, 0, -0.2), "dust_line", 2.0)
-	_label("twister / eddy / null bubble / vacuum well / sound barrier", o + Vector3(1.6, 2.6, 2.4))
+	_label("twister / eddy / null bubble / vacuum well / sound barrier / inrush", o + Vector3(1.6, 2.6, 2.4))
 	_mv_settle(bv)
 	return {"shots": [
 		{"pos": o + Vector3(0, 5.6, 10.5), "look": o + Vector3(0, 0.9, 0.0), "frames": 6, "dt": 0.05, "fov": 54.0},

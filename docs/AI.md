@@ -113,7 +113,8 @@ finite state, no stuck actions or endless holds, ≥ 20 distinct moves), plus th
 
 ## Known gaps
 
-* Only a water-only kit walks to the pool to refill an empty waterskin; mixed kits fall back to moves that need no water.
+* A water-only kit walks to the pool to refill an empty waterskin from anywhere; a mixed kit only detours when it is
+  fighting as Water and the pool is within 5 m, otherwise it falls back to moves that need no water.
 * Counters are predicted with `Interactions.predict` at decision time: a kit whose real resolution differs from its
   rule (contest strength, grip reach at contact time) can still fail in play — that is honest, not a planner error.
 * Bank shots use the four arena boundary walls only (not pillars or the cover wall).

@@ -26,15 +26,17 @@ void fragment() {
 	float ndv = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
 	vec2 uv = UV * vec2(3.0, 2.0) + vec2(seed, -age * 0.6);
 	float n = texture(noise_tex, uv).r * 0.6 + texture(noise_tex, uv * 2.3 + 0.2).g * 0.4;
-	float flash = 1.0 - smoothstep(0.0, 0.14, age);
+	float flash = 1.0 - smoothstep(0.0, 0.09, age);
 	float fire = smoothstep(0.02, 0.1, age) * (1.0 - smoothstep(0.35, 0.65, age + (n - 0.5) * 0.3));
 	float sm = smoothstep(0.3, 0.6, age) * (1.0 - smoothstep(0.75, 1.0, age));
 	float erode = smoothstep(age * 0.9 - 0.05, age * 0.9 + 0.2, n * 0.8 + pow(ndv, 0.6) * 0.5);
-	float T = clamp(0.45 + 0.55 * pow(ndv, 1.5) + (n - 0.5) * 0.5 - age * 0.8, 0.0, 1.0);
-	vec3 fc = vfx_blackbody(T) * hot_tint * 3.0;
-	vec3 c = vec3(1.0, 0.97, 0.9) * 6.0 * flash + fc * fire;
+	// Yellow core, orange body, red rim (x3 / a 6x flash read as a white dome at 1 s sampling on device-like
+	// tonemapping); the flash is a 2-frame pop.
+	float T = clamp(0.3 + 0.55 * pow(ndv, 1.5) + (n - 0.5) * 0.6 - age * 0.9, 0.0, 1.0);
+	vec3 fc = vfx_blackbody(T) * hot_tint * 1.9;
+	vec3 c = vec3(1.0, 0.9, 0.7) * 3.0 * flash + fc * fire;
 	float k_fire = clamp(flash + fire, 0.0, 1.0) * erode;
 	float k_smoke = sm * erode * 0.75 * (1.0 - fire);
 	ALBEDO = (c * k_fire + smoke * k_smoke) * intensity;
-	ALPHA = clamp(k_fire * 0.6 + k_smoke, 0.0, 1.0) * intensity;
+	ALPHA = clamp(k_fire * 0.75 + k_smoke, 0.0, 1.0) * intensity;
 }

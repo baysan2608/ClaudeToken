@@ -185,7 +185,13 @@ func _moveset(pool: VfxPool) -> void:
 			vx.set_shape(1.2, 2.5)
 			vx.set_spin(-8.0)
 			vx.advance(0.05)
+	var vtris := 0
+	for c in [vx._outer, vx._inner]:
+		vtris += (c as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size() / 3
+	vtris += VortexView.DEBRIS * vx._debris.multimesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size() / 3
+	_check(vtris <= 2000, "tornado (2 funnels + debris) <= 2000 tris (%d)" % vtris)
 	var sv: ShellView = pool.get_fx("shell")
+	_check(ShellView.STYLES.has("inrush"), "shell has the vacuum inrush style")
 	for st3 in ShellView.STYLES:
 		sv.configure(st3)
 		sv.set_shape(1.0, 0.6)

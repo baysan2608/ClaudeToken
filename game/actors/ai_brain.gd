@@ -624,8 +624,17 @@ func _needs_water() -> bool:
 		return false
 	for e in kit:
 		if int(e) != Sim.Element.WATER:
-			return false   # another element to fight with: no detour
+			# Another element to fight with: only a short detour, while fighting as Water
+			# and the pool is close (mixed kits used to never refill).
+			return me.element == Sim.Element.WATER and _pool_distance() < 5.0
 	return true
+
+
+func _pool_distance() -> float:
+	var a := w.arena
+	var dx := maxf(maxf(a.pool_min.x - me.pos.x, me.pos.x - a.pool_max.x), 0.0)
+	var dz := maxf(maxf(a.pool_min.y - me.pos.z, me.pos.z - a.pool_max.y), 0.0)
+	return Vector2(dx, dz).length()
 
 
 func _around_pool(want: Vector3) -> Vector3:

@@ -146,22 +146,26 @@ no screen reads (vacuum shells drop the refraction), fewer cloud puffs / flames 
 | stone CHUNK (spear rubble crag block glob bomb ember) | StoneView (spear stretched point-first, others tumble from velocity: axis up x v, rate v / r) | heat, liquid (melt), crust |
 | stone WALL `obsidian` / sand WALL / `mud` | EarthWallView + `set_material_style` (obsidian black glass, sandstone, mud) | rise, damage |
 | stone / ice / glass `spikes`, WAVE `spike_line` | SpikesView (row / ring / path, 1 MultiMesh) | rise, heat |
-| stone WAVE `tremor`, air `tremor` | travelling ground rings (RingFX one-shots) + dust | position |
-| metal (disc lance rod plate orb), WALL plate, ZONE `caltrops` | MetalView (disc spin + blur ring, red-hot heat, caltrop MultiMesh) | spin, heat, velocity |
+| stone WAVE `tremor`, air `tremor`, ZONE `flight_field` | travelling ground rings (RingFX one-shots; no kept node) + dust; the sound flight field pulses small rings under the hovering fighter every 0.3 s | position |
+| metal (disc lance rod plate orb), WALL plate, ZONE `caltrops`, ZONE `rod` (planted mast) | MetalView (disc spin + blur ring, red-hot heat, caltrop MultiMesh; a planted rod stands 2.2 m and crackles at its tip when charged) | spin, heat, velocity, charge |
+| metal `spikes` / `spike_line` | SpikesView `metal` | rise, path |
 | sand CHUNK `slug` | CloudView `slug` (dense ochre puffs, trailing) | radius, velocity |
 | sand WAVE `sand_surge`, water WAVE `water_wave` / `rime`, mud | GroundStripView (lava strip geometry; water translucent with foam lip, sand granular, rime frosted) | path, liquid, crust (water wave freezes in place) |
 | ZONE fog mist steam sand_cloud sandstorm steam_screen geyser, steam CLOUD, `dust_line` | CloudView (2 camera-facing puff layers, vertex-animated) | zone_radius, age / max_life fade, mass |
 | ZONE quicksand ice_floor mud melt_pit | GroundDecalView (swirl, glossy ice, wet mud, glowing pit) | fade, power |
 | ZONE lava_pool | LavaWaveView (short wide strip, same lava material) | liquid / life |
 | glass / ice WALL (`glass`, `ice`, `ridge`), `needle` shards | CrystalView (faceted, edge-lit, transparent) | heat (molten glass), damage (cracks), rise |
-| plant WALL `vine` / WAVE `roots` / ZONE `briar` / lash | VineView (all tubes one mesh; growth by uniform; burns, freezes) | rise / life, temp, phase |
+| plant WALL `vine` / WAVE `roots` / ZONE `briar` `snare` / lash, seed | VineView (all tubes one mesh; growth by uniform; burns, freezes) | rise / life, temp, phase |
 | fire CHUNK fireball / comet / ember | FireballView (hot core + trailing tongues, blue for comets) | velocity, tier, heat_payload |
 | fire WAVE `fire_line`, ZONE `fire_field` (+ `blue`) | FlameFieldView (flame tongues MultiMesh) | path, life, power |
-| fire `mine` / `bomb`, ZONE mine fuse corona static_field null_bubble vacuum_well wind_guard sound_barrier | ShellView (fresnel shell; vacuum styles refract the opaque screen unless lite; well adds a spiral inflow; static field adds arcs) | zone_radius, tier, life |
+| fire `mine` / `bomb`, ZONE mine fuse corona static_field null_bubble vacuum_well inrush wind_guard sound_barrier | ShellView (fresnel shell; vacuum styles refract the opaque screen unless lite; well adds a spiral inflow; static field adds arcs) | zone_radius, tier, life |
 | WAVE `ground_current` | CrackleView (arcs crawl back from the front) | path, power |
 | any body with charge > 4 | + CrackleView overlay | charge |
 | air `crescent`, `wind_wall` | WindBladeView (arc blade / curved sheet with speed streaks) | velocity, tier |
 | air `twister funnel spiral`, ZONE `tornado eddy vortex_wall` | VortexView (2 funnel layers + orbiting debris; sand / fire / water / steam infusion tints from `props.infused`) | spin, zone_radius, life |
+
+Only `slick` zones (they lie over their own puddle view) have no view; `test_regressions_views.test_every_move_maps_its_bodies_and_events`
+plays all 160 slots (tap and T3) through the input path and fails on any other unmapped body.
 
 Continuities: stone -> lava -> rock (one rock material), water -> ice (strip / blob / ribbon `frozen`) -> steam (cloud),
 sand -> glass (sandstone wall -> crystal wall, slug -> shard; `convert` / `transform` cue with zoom), magma -> obsidian.
@@ -178,8 +182,11 @@ sand -> glass (sandstone wall -> crystal wall, slug -> shard; `convert` / `trans
 * `charge`: ChargeFX (T1 hand ring, T2 + ground ripple, T3 + aura shell, light pulse, 2-frame glint) + `charge_t1..3`.
 * `status`: burning (flames on the body), wet (drips), chilled / frozen (frost shell), shocked / charged (crackle), blinded
   (grit), rooted (vines), concealed (mist veil), anchored (dust ring), armored (aura), muddy, levitating, deafened.
+  Kit statuses: overcharged (crackle), icegrip (frost at the feet + ice crack), windborne / flight (lift rings), scalded (steam
+  puffs), fogbound (mist puffs), lava_wade (embers at the feet).
 * `zone` open / close puffs and rings; zone and body loops (`sandstorm_loop`, `tornado_loop`, `disc_whirr_loop` ...).
-* `clash`, `morph`, `chain`, `weave`, `counter_cancel`, `slump`, `convert`, `capture`, `ricochet`, `stance`, `mode`.
+* `clash`, `morph`, `chain`, `weave`, `counter_cancel`, `slump`, `convert`, `capture`, `ricochet`, `stance`, `mode`,
+  `inrush` (rings closing in + inward puff), `extinguish` (smoke + quench hiss), `current_grounded` / `fork` (static sparks), `stick`.
 
 ### Game feel (§10.2)
 `FxDirector.feel(kind, pos, dir, haptic_actor)`: hit-stop frames (T0 3 / T1 5 / T2 7 / T3 & knockdown 9 / block 2-4 /
@@ -198,7 +205,29 @@ from the clip position every frame), `anim_hold` looped with 0.12 s refreshed on
 Stops when the action ends (last one-shot runs out <= 0.12 s) or on stun.
 
 ### Moveset budgets (gallery `mv_cost`, visible pass, one effect alone)
-MV_COST_TABLE
+| view / one-shot (gallery `mv_cost`) | draws | tris | transparent layers | particles | light |
+|---|---|---|---|---|---|
+| CloudView (sand cloud, 2 puff layers) | 2 | 42 | 2 | - | - |
+| CrystalView (ice / glass wall) | 1 | 468 | 1 | - | - |
+| MetalView disc (spinning, + blur ring) | 2 | 290 | 1 | - | - |
+| MetalView caltrops (r 1.2, MultiMesh) / planted rod | 1 | 128 / ~80 | 0 | - | - |
+| GroundStripView water (8 points) | 1 | 192 | 1 | - | - |
+| VortexView tornado (2 funnels + 10 chips) | 3 | 1520 | 2 | - | - |
+| ShellView null bubble / vacuum well (+ spiral) / inrush | 1 / 2 / 2 | 320 / 322 / 322 | 1 / 2 / 2 | - | - |
+| VineView lattice | 1 | 864 | 0 | - | - |
+| FlameFieldView field r 1.5 (MultiMesh) | 1 | 2912 | 1 | - | 1 |
+| FireballView (core + tongues) | 2 | 444 | 2 | - | 1 |
+| WindBladeView crescent | 1 | 120 | 1 | - | - |
+| GroundDecalView (any style) | 1 | 2 | 1 | - | - |
+| SpikesView row (stone / ice / glass / metal) | 1 | 392 | 0-1 | - | - |
+| ChargeFX T3 (ring + ripple + aura) | 3 | 324 | 2 | - | 1 pulse |
+| RingFX (2 rings) | 2 | 4 | 1 | - | - |
+| BurstFX | 2 | 64 | 1 | 16 + 16 | - |
+| ShardsFX ice | 1 | 240 | 1 | <= 12 shards | - |
+| BlastFX | 2 | 322 | 2 | - | 0.1 s |
+| BeamFX blue | 1 | 32 | 1 | - | 1 |
+
+The tornado's debris chips are 20-triangle icosahedra (the 300-triangle rocks were 3000 of its 4520 triangles).
 
 Per effect: <= 2 transparent layers, <= 32 particles per one-shot (BurstFX 16 + 16), shadowless omni lights only
 (FireballView, FlameFieldView, BlastFX 0.1 s, BeamFX blue, ChargeFX T3 pulse: 1 each; crackles never light).

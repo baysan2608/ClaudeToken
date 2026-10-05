@@ -17,6 +17,9 @@ uniform float pulse = 0.0;
 uniform float phase = 0.0;
 uniform float glow = 1.0;
 uniform float seed = 0.0;
+// Extra coverage of the glowing parts: > 0 darkens what is behind them so a saturated tint (blue corona, violet
+// static) survives over bright ground instead of adding up to white.
+uniform float absorb = 0.0;
 #ifdef SHELL_REFRACT
 uniform sampler2D screen_tex : hint_screen_texture, repeat_disable, filter_linear_mipmap;
 uniform float refract = 0.03;
@@ -52,6 +55,6 @@ void fragment() {
 	ALPHA = 1.0;
 #else
 	ALBEDO = color * glow * k + color_core * glow * fill;
-	ALPHA = clamp(k * 0.35 + fill, 0.0, 1.0);
+	ALPHA = clamp(k * (0.35 + absorb) + fill, 0.0, 1.0);
 #endif
 }

@@ -106,6 +106,9 @@ func render(alpha: float) -> void:
 		var p: Vector3 = (v.prev as Vector3).lerp(v.curr, alpha)
 		var n: Node3D = v.node
 		if n == null:
+			# Viewless fronts (tremor, sound flight field) still pulse their one-shot rings.
+			if String(v.kind) == "rings":
+				_emit_rings(b, v, dt)
 			continue
 		match String(v.kind):
 			"stone":
@@ -209,6 +212,8 @@ func _kind_for(b: MatBody) -> String:
 		Sim.Mat.STEAM:
 			return "cloud"
 		Sim.Mat.METAL:
+			if tag == "spikes" or tag == "spike_line":
+				return "spikes"
 			return "metal"
 		Sim.Mat.SAND:
 			match b.form:
@@ -263,10 +268,14 @@ func _zone_kind(b: MatBody, tag: String) -> String:
 			return "vortex"
 		"vacuum_well", "null_bubble", "mine", "corona", "wind_guard", "sound_barrier", "fuse", "static_field":
 			return "shell"
-		"caltrops":
+		"caltrops", "rod":
 			return "metal"
-		"briar":
+		"briar", "snare":
 			return "vine"
+		"flight_field":
+			return "rings"
+		"inrush":
+			return "shell"
 		"lava_pool":
 			return "lava_pool"
 	if b.mat == Sim.Mat.WATER or b.mat == Sim.Mat.STEAM:
@@ -300,7 +309,7 @@ func _style_of(b: MatBody, kind: String) -> String:
 			return tag
 		"metal":
 			if b.form == Sim.Form.ZONE:
-				return "caltrops"
+				return "planted" if tag == "rod" else "caltrops"
 			if b.form == Sim.Form.WALL or tag == "plate":
 				return "plate"
 			if tag in ["disc", "lance", "rod"]:
@@ -317,6 +326,8 @@ func _style_of(b: MatBody, kind: String) -> String:
 		"crystal", "crystal_wall":
 			return "glass" if b.mat == Sim.Mat.GLASS else "ice"
 		"spikes":
+			if b.mat == Sim.Mat.METAL:
+				return "metal"
 			return "glass" if b.mat == Sim.Mat.GLASS else ("ice" if b.is_water() else "stone")
 		"flames":
 			return "field" if b.form == Sim.Form.ZONE else "line"
@@ -514,12 +525,15 @@ func _make_moveset(b: MatBody, kind: String, style: String, v: Dictionary) -> vo
 						sz = Vector3.ONE * clampf(b.radius * 1.1, 0.14, 0.45)
 					"lance", "rod":
 						sz = Vector3(clampf(b.radius * 0.18, 0.025, 0.07), clampf(b.radius * 6.0, 0.9, 2.2), 0.0)
+					"planted":
+						# A planted lightning rod: a 2.2 m mast standing in the ground (the zone is its catch radius).
+						sz = Vector3(0.06, 2.2, 0.0)
 					"plate":
 						if b.form == Sim.Form.WALL:
 							sz = Vector3(b.wall_half.x * 2.0, b.wall_half.y * 2.0, maxf(b.wall_half.z * 0.5, 0.05))
 						else:
 							sz = Vector3(b.radius * 2.2, b.radius * 0.18, b.radius * 2.2)
-				n.call("setup", style, sd, sz, b.zone_radius)
+				n.call("setup", "rod" if style == "planted" else style, sd, sz, b.zone_radius)
 		"cloud":
 			n = acquire("cloud")
 			if n:
@@ -638,7 +652,10 @@ func _render_moveset(b: MatBody, n: Node3D, p: Vector3, v: Dictionary, dt: float
 			n.position = p
 			var heat := Thermal.heat01(b)
 			n.call("set_state", maxf(heat, b.liquid), b.spin)
-			if style == "caltrops" or b.form == Sim.Form.WALL:
+			if style == "planted":
+				n.position = Vector3(b.pos.x, _ground_y(b.pos) + 1.0, b.pos.z)
+				n.basis = Basis(Vector3(0, 0, 1), 0.04)
+			elif style == "caltrops" or b.form == Sim.Form.WALL:
 				if b.form == Sim.Form.WALL:
 					n.position = b.pos + Vector3(0, b.wall_half.y * (2.0 * b.wall_rise - 1.0), 0)
 					n.rotation.y = b.wall_yaw
@@ -757,6 +774,12 @@ func _render_moveset(b: MatBody, n: Node3D, p: Vector3, v: Dictionary, dt: float
 				"static_field":
 					hs = 0.55
 					at = Vector3(p.x, _ground_y(p), p.z)
+				"inrush":
+					# Air rushing back into a collapsed well: a low dome that closes in over its short life.
+					hs = 0.5
+					at = Vector3(p.x, _ground_y(p), p.z)
+					if b.max_life > 0.0:
+						r2 *= lerpf(1.0, 0.35, clampf(b.age / b.max_life, 0.0, 1.0))
 				"corona", "wind_guard", "sound_barrier":
 					hs = 1.15
 					at = p + Vector3(0, 0.9, 0) if b.form == Sim.Form.ZONE else p
@@ -826,12 +849,16 @@ func _emit_rings(b: MatBody, v: Dictionary, dt: float) -> void:
 	v.ring_t = float(v.get("ring_t", 0.0)) - dt
 	if float(v.ring_t) > 0.0:
 		return
-	v.ring_t = 0.12
+	# A sound flight field (under a hovering fighter) pulses slower and smaller than a travelling front.
+	var flight := b.tag == &"flight_field"
+	v.ring_t = 0.3 if flight else 0.12
 	var r := pool.get_fx("ring")
 	if r:
 		var col := VfxPalette.color("sound" if b.mat == Sim.Mat.AIR else "stone")
-		r.call("play", Vector3(b.pos.x, _ground_y(b.pos) + 0.04, b.pos.z), Vector3.UP, 0.2, 1.4 + 0.3 * b.tier, 0.45, col,
-			{"width": 0.1, "cover": 0.65, "glow": 1.0})
+		var gy := _ground_y(b.pos)
+		r.call("play", Vector3(b.pos.x, gy + 0.04, b.pos.z), Vector3.UP, 0.15 if flight else 0.2,
+			0.9 if flight else 1.4 + 0.3 * b.tier, 0.4 if flight else 0.45, col,
+			{"width": 0.08 if flight else 0.1, "cover": 0.5 if flight else 0.65, "glow": 1.2 if flight else 1.0})
 	if b.mat == Sim.Mat.STONE and float(v.get("dust_t", 0.0)) <= 0.0:
 		var bu := pool.get_fx("burst")
 		if bu:
@@ -851,7 +878,8 @@ func _render_aux(b: MatBody, v: Dictionary, p: Vector3, _dt: float) -> void:
 	if want and aux == null:
 		aux = acquire("crackle")
 		if aux:
-			aux.call("setup", "body", maxf(b.radius, 0.2), _seed_of(b))
+			# A zone's radius is its reach (a planted rod catches bolts over 6 m): crackle the mast's tip instead.
+			aux.call("setup", "body", 0.3 if _is_mast(b) else maxf(b.radius, 0.2), _seed_of(b))
 			aux.visible = true
 		v.aux = aux
 	elif not want and aux != null:
@@ -859,8 +887,12 @@ func _render_aux(b: MatBody, v: Dictionary, p: Vector3, _dt: float) -> void:
 		v.aux = null
 		aux = null
 	if aux != null:
-		aux.call("set_target", p)
+		aux.call("set_target", Vector3(p.x, _ground_y(p) + 2.1, p.z) if _is_mast(b) else p)
 		aux.call("set_intensity", clampf(b.charge / 30.0, 0.3, 1.3))
+
+
+func _is_mast(b: MatBody) -> bool:
+	return b.form == Sim.Form.ZONE and b.tag == &"rod"
 
 
 ## Projectiles face their travel: lances / needles point along it, discs fly flat and bank, plates

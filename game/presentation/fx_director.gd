@@ -420,7 +420,8 @@ func _event(e: Dictionary) -> void:
 			cues.zone(e)
 		"clash":
 			cues.clash(e)
-		"morph", "chain", "weave", "counter_cancel", "slump", "convert", "capture", "ricochet", "stance", "mode":
+		"morph", "chain", "weave", "counter_cancel", "slump", "convert", "capture", "ricochet", "stance", "mode", \
+				"inrush", "extinguish", "current_grounded", "fork", "stick":
 			cues.misc(e)
 
 

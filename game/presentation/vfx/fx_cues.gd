@@ -55,12 +55,16 @@ const LOOPS := {
 	"vacuum_well": "vacuum_loop", "null_bubble": "vacuum_loop", "fog": "mist_loop", "mist": "mist_loop",
 	"static_field": "static_crackle_loop", "corona": "blue_roar_loop", "disc": "disc_whirr_loop",
 	"water_wave": "wave_rush_loop", "sand_surge": "sand_surge_loop", "rod": "rod_hum_loop", "geyser": "steam_jet",
+	"flight_field": "flight_loop", "fuse": "fuse_tick",
 }
 ## status -> {style, every}
 const STATUS_FX := {
 	"burning": "flames", "wet": "drip", "chilled": "frost", "frozen": "frost", "shocked": "crackle", "charged": "crackle",
 	"blinded": "grit", "rooted": "vines", "concealed": "veil", "anchored": "dust", "armored": "aura", "muddy": "mud",
 	"slowed": "mud", "levitating": "lift", "deafened": "ring",
+	# kit statuses (docs/kits/*.md): reuse the families above or a periodic puff
+	"overcharged": "crackle", "icegrip": "frostfeet", "windborne": "lift", "flight": "lift", "scalded": "steam",
+	"fogbound": "fogpuff", "lava_wade": "embers",
 }
 
 var d: FxDirector
@@ -674,6 +678,13 @@ func status(e: Dictionary) -> void:
 			_ring(ac.pos + Vector3(0, 0.04, 0), Vector3.UP, 0.3, 1.2, 0.4, "stone", {"cover": 0.6, "glow": 0.8})
 		"ring":
 			_ring(ac.chest() + Vector3(0, 0.6, 0), Vector3.BACK, 0.1, 0.6, 0.3, "sound", {"billboard": true, "count": 2})
+		"frostfeet":
+			_ring(ac.pos + Vector3(0, 0.03, 0), Vector3.UP, 0.15, 0.7, 0.35, "ice", {"cover": 0.7, "glow": 1.0})
+			_burst(ac.pos, Vector3.UP, 0.5, "frost")
+			_sfx("ice_crack", ac.pos, -4.0)
+		"steam":
+			_burst(ac.chest(), Vector3.UP, 0.4, "steam")
+			_sfx("steam_hiss", ac.chest(), -6.0)
 	_status[key] = {"node": n, "t": 0.0, "style": style, "actor": a}
 
 
@@ -766,6 +777,27 @@ func misc(e: Dictionary) -> void:
 			var at := _vec(e, "at")
 			_burst(at, _vec(e, "dir", Vector3.UP), 0.6, "metal")
 			_sfx("metal_clang", at)
+		"inrush":
+			# Air slams back into a collapsed vacuum: rings closing in + an inward puff.
+			var ip := _vec(e, "pos")
+			var g := Vector3(ip.x, _ground(ip), ip.z)
+			var rr := maxf(float(e.get("radius", 1.5)), 0.6)
+			_ring(g + Vector3(0, 0.05, 0), Vector3.UP, rr * 1.2, 0.15, 0.32, "vacuum", {"ease": "in", "cover": 0.55, "glow": 1.4, "count": 2})
+			_burst(g + Vector3(0, 0.6, 0), Vector3.UP, clampf(rr / 2.0, 0.5, 1.2), "inflow")
+			_sfx("vacuum_implode", g, -3.0)
+		"extinguish":
+			var xp := d._bpos(int(e.get("body", -1)))
+			_burst(xp, Vector3.UP, 0.7, "smoke")
+			_sfx("lava_hiss_quench" if String(e.get("by", "")) != "time" else "steam_hiss", xp, -6.0)
+		"current_grounded":
+			var cg := _vec(e, "at")
+			_burst(cg, Vector3.UP, 0.6, "static")
+			_ring(Vector3(cg.x, _ground(cg) + 0.04, cg.z), Vector3.UP, 0.1, 0.9, 0.25, "lightning", {"cover": 0.3, "glow": 2.5})
+		"fork":
+			_burst(_vec(e, "at"), Vector3.UP, 0.5, "static")
+		"stick":
+			var sp := d._bpos(int(e.get("body", -1)))
+			_burst(sp, Vector3.UP, 0.35, MAT_BURST.get(_body_mat(int(e.get("body", -1)), "stone"), "dust"))
 		"stance", "mode":
 			var on := bool(e.get("on", true))
 			_aura(a, _actor_mat(a), on and String(e.get("stance", e.get("kind", ""))) != "")
@@ -820,6 +852,14 @@ func update(dt: float) -> void:
 					_burst(a2.pos, Vector3.UP, 0.2, "dust")
 				"lift":
 					_ring(a2.pos + Vector3(0, 0.05, 0), Vector3.UP, 0.2, 0.8, 0.35, "wind", {"cover": 0.4})
+				"frostfeet":
+					_burst(a2.pos, Vector3.UP, 0.2, "frost")
+				"steam":
+					_burst(a2.chest(), Vector3.UP, 0.22, "steam")
+				"fogpuff":
+					_burst(a2.chest(), Vector3.UP, 0.25, "mist")
+				"embers":
+					_burst(a2.pos, Vector3.UP, 0.3, "ember")
 	# stance / guard auras follow their fighter
 	for a_id in _auras.keys():
 		var au: Dictionary = _auras[a_id]

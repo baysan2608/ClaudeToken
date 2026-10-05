@@ -2,7 +2,7 @@ class_name ShellView
 extends VfxEffect
 ## Spherical fields and auras: null bubble, vacuum well (+ spiral inflow on the ground), corona,
 ## static field (+ crawling arcs), wind guard, sound barrier, stance / T3 aura, mine / fuse ember,
-## frost shell. One fresnel shell (shell.gdshader; the vacuum styles read the shared opaque screen
+## vacuum inrush (air rushing back where a well collapsed), frost shell. One fresnel shell (shell.gdshader; the vacuum styles read the shared opaque screen
 ## copy through shell_refract.gdshader unless VfxMaterials.lite()) + optional ground spiral / arcs.
 ##
 ##   configure(style, color = default)   see STYLES
@@ -12,12 +12,13 @@ extends VfxEffect
 const STYLES := {
 	"null_bubble": {"mat": "vacuum", "rim": 2.2, "streak": 0.55, "op": 0.75, "refract": 0.045},
 	"vacuum_well": {"mat": "vacuum", "rim": 1.8, "streak": 0.9, "op": 0.55, "refract": 0.03, "spiral": true},
-	"corona": {"mat": "blue", "rim": 3.2, "crackle": 0.3, "op": 0.5, "glow": 1.8, "pulse": 0.2},
-	"static_field": {"mat": "lightning", "rim": 3.0, "crackle": 0.45, "op": 0.25, "arcs": true, "glow": 1.4},
+	"corona": {"mat": "blue", "col": Color(0.22, 0.46, 1.0), "rim": 2.4, "crackle": 0.4, "op": 0.6, "glow": 1.5, "pulse": 0.2, "absorb": 0.55},
+	"static_field": {"mat": "lightning", "col": Color(0.5, 0.56, 1.0), "rim": 3.0, "crackle": 0.55, "op": 0.3, "arcs": true, "glow": 1.3, "absorb": 0.35},
 	"wind_guard": {"mat": "wind", "rim": 2.4, "streak": -0.35, "op": 0.32},
 	"sound_barrier": {"mat": "sound", "rim": 1.6, "streak": -1.2, "op": 0.42},
 	"aura": {"mat": "", "rim": 3.0, "op": 0.22, "pulse": 0.15, "glow": 1.1},
 	"mine": {"mat": "blast", "rim": 1.4, "core": 0.85, "op": 0.6, "pulse": 0.55, "glow": 1.6, "core_col": Color(1.0, 0.36, 0.08)},
+	"inrush": {"mat": "vacuum", "rim": 1.3, "streak": 1.5, "op": 0.34, "spiral": true},
 	"frost": {"mat": "ice", "rim": 1.5, "core": 0.12, "op": 0.6, "core_col": Color(0.7, 0.85, 0.95)},
 }
 
@@ -61,7 +62,7 @@ func _init() -> void:
 func configure(style_name: String, col: Color = Color(0, 0, 0, 0), seed_value: int = 0) -> void:
 	style = style_name if STYLES.has(style_name) else "aura"
 	var st: Dictionary = STYLES[style]
-	var c: Color = col if col.a > 0.0 else VfxPalette.color(String(st.get("mat", "wind")))
+	var c: Color = col if col.a > 0.0 else st.get("col", VfxPalette.color(String(st.get("mat", "wind"))))
 	var want_refr := st.has("refract") and not VfxMaterials.lite()
 	if want_refr:
 		if _mat_refr == null:
@@ -80,6 +81,7 @@ func configure(style_name: String, col: Color = Color(0, 0, 0, 0), seed_value: i
 	_mat.set_shader_parameter("pulse", float(st.get("pulse", 0.0)))
 	_mat.set_shader_parameter("opacity", float(st.get("op", 0.5)))
 	_mat.set_shader_parameter("glow", float(st.get("glow", 1.0)))
+	_mat.set_shader_parameter("absorb", float(st.get("absorb", 0.0)))
 	_mat.set_shader_parameter("seed", float(absi(seed_value) % 37) * 0.31)
 	_spiral.visible = bool(st.get("spiral", false))
 	if _spiral.visible:

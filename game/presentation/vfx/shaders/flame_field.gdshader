@@ -54,7 +54,8 @@ void fragment() {
 	float rimfade = smoothstep(0.02, 0.55, ndv + (n - 0.5) * 0.45);
 	float base = smoothstep(0.0, 0.08, y);
 	float a = taper * tongues * rimfade * base * intensity * v_life;
-	float heat = clamp((1.0 - y) * 0.72 + n * 0.30, 0.0, 1.0);
+	// Orange body with a yellow heart low in each tongue (0.72 / 0.30 left most of the tongue yellow-white).
+	float heat = clamp((1.0 - y) * 0.62 + n * 0.30, 0.0, 1.0);
 	vec3 c = mix(col_deep, col_mid, smoothstep(0.12, 0.48, heat));
 	c = mix(c, col_hot, smoothstep(0.48, 0.80, heat));
 	c = mix(c, col_white, smoothstep(0.93, 1.0, heat) * 0.6);

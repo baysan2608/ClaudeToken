@@ -13,9 +13,9 @@ extends VfxEffect
 const DEBRIS := 10
 const INFUSION := {
 	"": {"a": Color(0.74, 0.70, 0.62), "b": Color(0.96, 0.97, 1.0), "op": 0.42, "cover": 0.5, "glow": 1.0},
-	"sand": {"a": Color(0.66, 0.52, 0.33), "b": Color(0.90, 0.77, 0.54), "op": 0.7, "cover": 0.78, "glow": 1.0},
+	"sand": {"a": Color(0.55, 0.38, 0.19), "b": Color(0.86, 0.66, 0.38), "op": 0.78, "cover": 0.82, "glow": 1.0},
 	"fire": {"a": Color(0.9, 0.22, 0.02), "b": Color(1.0, 0.62, 0.18), "op": 0.85, "cover": 0.62, "glow": 2.0},
-	"water": {"a": Color(0.22, 0.52, 0.66), "b": Color(0.76, 0.92, 0.98), "op": 0.62, "cover": 0.6, "glow": 1.0},
+	"water": {"a": Color(0.10, 0.40, 0.62), "b": Color(0.60, 0.86, 0.98), "op": 0.7, "cover": 0.66, "glow": 1.1},
 	"steam": {"a": Color(0.84, 0.86, 0.89), "b": Color(1.0, 1.0, 1.0), "op": 0.5, "cover": 0.55, "glow": 1.1},
 }
 
@@ -41,7 +41,9 @@ func _init() -> void:
 	_inner = _layer("Inner", _mi_mat)
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = VfxMesh.rock_mesh(5)
+	# 4-11 cm chips: a 20-triangle icosahedron reads the same as a 300-triangle rock at that size
+	# (10 rocks were 3000 of the tornado's 4500 triangles).
+	mm.mesh = FxMesh.sphere_mesh(0)
 	mm.instance_count = DEBRIS
 	_debris = MultiMeshInstance3D.new()
 	_debris.name = "Debris"
@@ -170,5 +172,5 @@ func advance(dt: float) -> void:
 		var ang := s0 * TAU + _spin_phase * TAU * (1.4 / (0.4 + s2))
 		var p := Vector3(cos(ang) * rr, hf * _height * 0.85 + 0.1, sin(ang) * rr)
 		var sz := lerpf(0.04, 0.11, s3) * (1.0 - smoothstep(0.75, 1.0, hf))
-		var b := Basis(Vector3(s1, s2, s3).normalized(), ang * 2.0 + s0 * 6.0).scaled(Vector3.ONE * sz)
+		var b := Basis(Vector3(s1, s2, s3).normalized(), ang * 2.0 + s0 * 6.0).scaled(Vector3(sz, sz * 0.7, sz * 0.85))
 		mm.set_instance_transform(i, Transform3D(b, p))

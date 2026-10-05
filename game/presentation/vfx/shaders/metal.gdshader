@@ -28,5 +28,7 @@ void fragment() {
 	METALLIC = mix(0.95, 0.4, hk);
 	ROUGHNESS = mix(0.24 + 0.16 * s, 0.6, hk);
 	SPECULAR = 0.6;
-	EMISSION = vfx_heat(heat, s2) * 1.2 + vec3(0.8, 0.9, 1.0) * rim * glint * (1.0 - hk);
+	// Kept under ~1.2 so cherry / orange heat survives tonemapping (2x washed a red-hot rod out to cream);
+	// the brushed streaks modulate it so the glowing body keeps its shape.
+	EMISSION = vfx_heat(heat, s2) * (0.5 + 0.25 * s) + vec3(0.8, 0.9, 1.0) * rim * glint * (1.0 - hk);
 }

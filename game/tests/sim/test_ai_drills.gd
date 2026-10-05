@@ -90,3 +90,26 @@ func test_legacy_drills_through_configure() -> void:
 		if e.move == "earth_attack":
 			throws += 1
 	check(throws >= 5, "stone rain still throws stones on its rhythm (%d)" % throws)
+
+
+func test_mixed_kit_refills_at_a_nearby_pool() -> void:
+	# Water + Fire kit fighting as Water with an empty waterskin, 3 m from the pool: short detour to refill.
+	var h := SimHarness.new(6)
+	var p := h.actor("player", Vector3(-5, 0, -1), 0, {}, Sim.Element.EARTH)
+	var o := h.actor("opponent", Vector3(4, 0, -1), 1, {}, Sim.Element.WATER)
+	var ai := AiBrain.new(h.w, o, {}, 6)
+	ai.configure({"preset": "adept", "elements": [Sim.Element.WATER, Sim.Element.FIRE], "aggression": 0.0})
+	o.element = Sim.Element.WATER
+	o.water_carried = 0.0
+	var d0 := ai._pool_distance()
+	var refilled := false
+	for k in 240:
+		h.intents[o.id] = ai.think(Sim.DT)
+		h.step()
+		p.health = 100.0
+		o.health = 100.0
+		if o.in_water or o.water_carried >= 1.5:
+			refilled = true
+			break
+	note("pool distance %.2f -> %.2f, water %.1f kg, in_water %s" % [d0, ai._pool_distance(), o.water_carried, str(o.in_water)])
+	check(refilled, "the mixed kit walked into the nearby pool to refill")
