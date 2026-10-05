@@ -167,8 +167,12 @@ func _build_halls(h: float) -> void:
 	cone.height = 1.0
 	cone.radial_segments = 4
 	cone.rings = 1
-	_mm("halls", box, _std(Color(0.7, 0.6, 0.47), 0.95), walls)
-	_mm("hall_roofs", cone, _std(Color(0.3, 0.18, 0.13), 0.8), roofs)
+	var wall_mat: Material = _shader_mat("scenery_hall")
+	var roof_mat: Material = _shader_mat("scenery_hall")
+	if wall_mat:
+		(roof_mat as ShaderMaterial).set_shader_parameter("kind", 1)
+	_mm("halls", box, wall_mat if wall_mat else _std(Color(0.7, 0.6, 0.47), 0.95), walls)
+	_mm("hall_roofs", cone, roof_mat if roof_mat else _std(Color(0.3, 0.18, 0.13), 0.8), roofs)
 	var glow := _shader_mat("lantern_glow")
 	if glow:
 		glow.set_shader_parameter("glow_energy", 1.5)

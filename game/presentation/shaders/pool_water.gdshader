@@ -2,7 +2,8 @@
 // negligible and the tiled basin (pool_basin.gdshader) shows through with its own caustics.
 //  - depth tint: opacity and colour deepen away from the rim (rounded-rectangle SDF as a depth proxy),
 //    plus a view-angle term so the surface turns more opaque / reflective at grazing angles;
-//  - ripples: two scrolling sinusoid-warped noise layers perturb the normal (calm, slow);
+//  - ripples: a sum of travelling sine swells (analytic slope, so the normal is smooth: no contour lines in the
+//    sky reflection), phase-warped by slow noise so they never read as a regular grid; detail adds fine chop;
 //  - rim foam + shore line: a soft animated foam band along every wall, a few drifting bubbles;
 //  - sky reflection comes from the PBR path (very low roughness, Fresnel via SPECULAR) and, where
 //    present, the arena reflection probe; a cheap fake Fresnel emission keeps the sheen on Low.
@@ -50,6 +51,11 @@ void vertex() {
 	v_local = VERTEX;
 }
 
+// One travelling swell: returns its slope (d height / d p) for direction d, wave number k, speed s.
+vec2 swell(vec2 p, vec2 d, float k, float s, float t, float ph, float amp) {
+	return d * (cos(dot(p, d) * k - t * s + ph) * k * amp);
+}
+
 void fragment() {
 	vec2 p = v_local.xz;
 	float sd = sd_round_box(p, half_extent, corner_radius);   // < 0 inside the pool
@@ -59,32 +65,38 @@ void fragment() {
 	float inside = -sd;                                        // distance from the rim, metres
 	float depth01 = smoothstep(0.0, depth_range, inside);
 
-	float t = TIME * flow_speed;
-	// ripples: domain-warped noise gives a calm, non-repeating swell
-	vec2 w = vec2(vnoise(p * 1.1 + vec2(t, -t * 0.6)), vnoise(p * 1.1 + vec2(-t * 0.7, t) + 9.0)) - 0.5;
-	float n1 = vnoise(p * 2.6 + w * 1.6 + vec2(t, t * 0.7));
-	float n2 = vnoise(p * 5.5 - w * 1.2 - vec2(t * 1.3, t * 0.4) + 7.0);
-	vec2 slope = vec2(n1 - 0.5, n2 - 0.5);
+	float t = TIME * flow_speed * 8.0;
+	// slow phase warp breaks the regularity of the swells
+	vec2 w = vec2(vnoise(p * 0.7 + vec2(t * 0.05, -t * 0.03)), vnoise(p * 0.7 + 9.0 + vec2(-t * 0.04, t * 0.05))) - 0.5;
+	vec2 q = p + w * 0.5;
+	vec2 slope = swell(q, normalize(vec2(0.8, 0.6)), 3.1, 1.1, t, 0.0, 0.0075);
+	slope += swell(q, normalize(vec2(-0.5, 0.9)), 4.7, 1.5, t, 1.7, 0.0058);
+	slope += swell(q, normalize(vec2(0.2, -1.0)), 7.3, 1.9, t, 4.1, 0.0036);
 	if (detail) {
-		float n3 = vnoise(p * 11.0 + vec2(t * 2.1, -t * 1.7) + 31.0);
-		slope += (vec2(n3, vnoise(p * 11.0 + 5.0 - vec2(t * 1.5)) ) - 0.5) * 0.45;
+		slope += swell(q, normalize(vec2(-0.9, -0.35)), 12.5, 2.6, t, 2.2, 0.0022);
+		slope += swell(q * 1.07, normalize(vec2(0.55, -0.8)), 19.0, 3.4, t, 5.3, 0.0013);
 	}
-	slope *= ripple_strength * (0.45 + 0.55 * smoothstep(0.0, 0.5, inside));
-	vec3 wn = normalize(vec3(slope.x, 1.0, slope.y));
+	slope *= (ripple_strength / 0.22) * (0.35 + 0.65 * smoothstep(0.0, 0.5, inside));
+	vec3 wn = normalize(vec3(-slope.x, 1.0, -slope.y));
 	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
 
+	float ndv = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float fres = pow(1.0 - ndv, 4.0);
+	// depth tint: shallow turquoise at the rim, deep teal toward the middle; slightly lighter where a swell
+	// tilts toward the viewer (the light comes through the crest)
+	float crest = clamp(dot(slope, vec2(0.0, 1.0)) * 6.0, -0.5, 0.5);
 	vec3 col = mix(shallow_color, deep_color, pow(depth01, 0.8));
-	float fres = pow(1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), 4.0);
+	col *= 1.0 + crest * 0.18;
 	float alpha = mix(shallow_alpha, deep_alpha, depth01);
 
-	// foam: ragged band hugging the rim, thicker where the noise says so; faint bubbles further in
-	float edge_n = vnoise(p * 9.0 + vec2(t * 3.0, -t * 2.0));
-	float edge_n2 = vnoise(p * 21.0 - vec2(t * 2.0, t * 1.0) + 13.0);
+	// foam: ragged band hugging the rim (wobbled by two noise octaves), faint drifting bubbles further in
+	float edge_n = vnoise(p * 9.0 + vec2(t * 0.35, -t * 0.25));
+	float edge_n2 = vnoise(p * 21.0 - vec2(t * 0.25, t * 0.12) + 13.0);
 	float band = shore_width * (0.55 + 0.9 * edge_n);
 	float foam = (1.0 - smoothstep(band * 0.55, band, inside)) * smoothstep(0.25, 0.6, edge_n2 + 0.25 * edge_n);
 	foam += (1.0 - smoothstep(0.0, shore_width * 0.35, inside)) * 0.6;
 	if (detail) {
-		float bub = smoothstep(0.78, 0.86, vnoise(p * 7.0 + vec2(t * 1.5, 3.0 * t) + 40.0)) * smoothstep(0.1, 0.45, inside) * (1.0 - smoothstep(0.45, 1.2, inside));
+		float bub = smoothstep(0.78, 0.86, vnoise(p * 7.0 + vec2(t * 0.2, 0.4 * t) + 40.0)) * smoothstep(0.1, 0.45, inside) * (1.0 - smoothstep(0.45, 1.2, inside));
 		foam += bub * 0.3;
 	}
 	foam = clamp(foam * foam_amount, 0.0, 1.0);

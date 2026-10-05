@@ -7,6 +7,9 @@ extends RefCounted
 ## let go (the water flows back into the waterskin) -> counter with two lashes -> ice lance
 ## (freezes, shatters) -> draw + stream again while the ice shards melt into a puddle.
 ## The rival is kept passive (ai cfg) except during the shield beat.
+## Act two (the moveset kit, docs/kits/water.md): Torrent (hold 1.1 s) -> Water Bullet (flick up) and the Pressure Jet (hold)
+## -> Tidal Rush carries a thrown stone back at the rival (flick down) -> Spray Fan (flick side) -> Surge Orb (guard flick up)
+## and Slick (guard flick down) -> Riptide Step (evade) -> Maelstrom Lash (hold 1.9 s, rival close).
 
 const PLAYER_START := Vector3(5.4, 0.0, 0.8)
 const RIVAL_START := Vector3(3.6, 0.0, -4.2)
@@ -19,6 +22,7 @@ var _flare_id := 0
 var _flares := 0
 var _cam_off := -0.55    # camera yaw offset from the player->rival line (rad): a 3/4 view
 var _cam_pitch := 0.30
+var _stone_thrown := false
 
 
 func scenario() -> String:
@@ -57,6 +61,8 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 	var p := g.player
 	var o := g.opponent
 	var bt := t - _bt
+	if _beat in ["torrent", "bullet", "jet", "tidal", "spray", "orb", "slick", "riptide", "maelstrom", "end"]:
+		_prime(g, bt)
 	f.move = Vector2.ZERO
 	if OS.has_environment("SHOW_TRACE") and g.world.tick % 6 == 0:
 		_trace(g, t)
@@ -162,6 +168,78 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 			if bt > 0.4 and d2.length() > 2.6 and bt < 1.6:
 				f.move = _stick(g, d2.normalized() * 0.4)
 			if not _any_ice(g) and bt > 0.4:
+				_go("torrent", t)
+		"torrent":
+			# Hold the strike past 1.0 s: T2 Torrent, a 10 kg water slug.
+			_prime(g, bt)
+			_attack(f, bt, 1.12)
+			if bt > 0.9 and bt < 1.0:
+				_shot = "torrent"
+			if bt >= 2.4:
+				_go("bullet", t)
+		"bullet":
+			_attack(f, bt, 0.05, Sim.Gesture.UP)
+			if bt >= 1.2:
+				_go("jet", t)
+		"jet":
+			# Hold the thrust to T2: the Pressure Jet stays connected to the caster.
+			_attack(f, bt, 1.12, Sim.Gesture.UP)
+			if bt > 1.3 and bt < 1.4:
+				_shot = "jet"
+			if bt >= 3.0:
+				_go("tidal", t)
+		"tidal":
+			# The rival throws a stone; Tidal Rush captures it and carries it back.
+			_attack(f, bt, 0.05, Sim.Gesture.DOWN)
+			if bt > 0.45 and not _stone_thrown:
+				_stone_thrown = true
+				_throw_stone(g)
+			if bt > 1.3 and bt < 1.4:
+				_shot = "tidal"
+			if bt >= 4.2:
+				_stone_thrown = false
+				_go("spray", t)
+		"spray":
+			_attack(f, bt, 0.05, Sim.Gesture.SIDE)
+			if bt > 0.3 and bt < 0.4:
+				_shot = "spray"
+			if bt >= 1.6:
+				_go("orb", t)
+		"orb":
+			# Guard, then flick the guard up: the shield is hurled as an orb.
+			f.guard_held = bt < 1.4
+			f.guard_pressed = bt < Sim.DT * 1.5
+			if bt > 0.7 and bt < 0.7 + Sim.DT * 1.5:
+				f.guard_gesture = Sim.Gesture.UP
+				f.guard_held = true
+			if bt >= 2.2:
+				_go("slick", t)
+		"slick":
+			f.guard_held = bt < 1.2
+			f.guard_pressed = bt < Sim.DT * 1.5
+			if bt > 0.5 and bt < 0.5 + Sim.DT * 1.5:
+				f.guard_gesture = Sim.Gesture.DOWN
+				f.guard_held = true
+			if bt > 1.6 and bt < 1.7:
+				_shot = "slick"
+			if bt >= 2.4:
+				_go("riptide", t)
+		"riptide":
+			f.evade_pressed = bt < Sim.DT * 1.5
+			f.move = _stick(g, Vector3(1, 0, 0.4).normalized()) if bt < 0.2 else Vector2.ZERO
+			if bt >= 1.4:
+				_go("maelstrom", t)
+		"maelstrom":
+			# Close in and whip all around.
+			var d3 := o.pos - p.pos
+			d3.y = 0.0
+			if bt < 0.8 and d3.length() > 3.0:
+				f.move = _stick(g, d3.normalized() * 0.6)
+			else:
+				_attack(f, bt - 0.8, 1.9)
+			if bt > 2.8 and bt < 2.9:
+				_shot = "maelstrom"
+			if bt >= 4.2:
 				_go("end", t)
 		"end":
 			if bt > 0.3 and bt < 0.4:
@@ -182,6 +260,45 @@ func _shape(f: InputFrame, bt: float, from: float, to: float) -> void:
 	if bt > from and bt < to:
 		f.tech_aim_active = true
 		f.tech_aim = Vector2(sin((bt - from) * 2.0 * PI / (to - from)) * 0.7, 0.7)
+
+
+## Attack press at the start of the beat, held `hold` s, with an optional flick gesture on the press.
+func _attack(f: InputFrame, bt: float, hold: float, gesture: int = 0) -> void:
+	if bt < 0.0:
+		return
+	if bt < Sim.DT * 1.5:
+		f.attack_pressed = true
+		f.attack_gesture = gesture
+	f.attack_held = bt < hold
+	f.attack_released = bt >= hold and bt < hold + Sim.DT * 1.5
+
+
+## Keeps the waterskin topped up and the rival in range for act two (the showcase is about the moves, not the economy).
+func _prime(g: Game, bt: float) -> void:
+	if bt < Sim.DT * 2.0:
+		g.player.water_carried = 6.0
+		g.player.focus = 100.0
+	g.opponent.health = maxf(g.opponent.health, 55.0)      # no knockout: the scenario would reset mid-show
+
+
+## The rival throws a stone at the player (booked from the ground like any stone).
+func _throw_stone(g: Game) -> void:
+	var w := g.world
+	var p := g.player
+	var o := g.opponent
+	var dir := o.pos - p.pos
+	dir.y = 0.0
+	dir = dir.normalized()
+	var from := p.chest() + dir * 8.0
+	var b := w.spawn_body(Sim.Mat.STONE, Sim.Form.CHUNK, 20.0, from, "showcase")
+	w.mass_ledger.ground_taken += 20.0
+	b.vel = (p.chest() - from).normalized() * 17.0
+	b.gravity_scale = 0.0
+	b.attack_id = w.new_attack_id()
+	b.attack_owner = o.id
+	b.hit_set[o.id] = true
+	b.damage = 10.0
+	b.balance_damage = 20.0
 
 
 func _tap_attack(f: InputFrame, bt: float) -> void:

@@ -31,3 +31,15 @@ Shaders: `game/presentation/shaders/{arena_ground,ledge_stone,metal_plate,pool_b
 `env_preview.gd` renders fixed-camera stills for before/after comparisons:
 `tools/scripts/godot.sh --render --resolution 1280x592 -s ../tools/textures/env_preview.gd -- /abs/outdir prefix [quality] [shot=<name>] [nowater] [noprops]`.
 Set `TEX_PREVIEW=<dir>` when running the generator to also dump 2x2 tiled lit previews (seam / scale check).
+
+## Environment pass 2 (water, sky, scenery)
+* `pool_water.gdshader`: travelling-sine swells with analytic slope (smooth normal, no contour lines in the reflection),
+  depth tint, crest brightening, rim foam + bubbles.  `pool_basin.gdshader`: web-like caustic filaments under the water line.
+* `arena_sky.gdshader` (shader sky: gradient, low sun glow from LIGHT0, cloud deck evaluated only in the visible pass);
+  `ArenaView.set_quality(0)` swaps back to ProceduralSkyMaterial.
+* `scenery_hall.gdshader`: procedural plaster / clay-tile surfaces for the distant halls (2 draws, no texture reads).
+* `ledge_stone.gdshader`: sub-5 cm vertical lips (pool coping) sample the slab set instead of a masonry course (no black seam).
+* `arena_ground.gdshader`: ragged wall-edge grime band (`arena_half`, `edge_grime`).
+* LightmapGI was evaluated and not used: it cannot be baked from a running/exported project (editor-only bake), the arena
+  boxes carry no UV2, and the arena is built at runtime from `ArenaMap`.  The analytic contact-AO map + one-shot
+  ReflectionProbe (quality 2) remain the baked-lighting substitute.

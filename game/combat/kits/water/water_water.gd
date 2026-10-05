@@ -136,7 +136,7 @@ static func _ground() -> void:
 		"startup": _s(16), "active": _s(6), "recovery": _s(22), "cancel": 0.6, "chain": 0.25,
 		"cost": 8.0, "source": "none", "mat": "water", "mass": 8.0, "tag": "water_wave", "speed": 9.0, "budget": 10.0,
 		"width": 2.0, "power": 18.0, "channel": "K", "damage": 12.0, "balance": 40.0, "knock": 6.0, "lift": 3.0,
-		"take_reach": 3.0, "kind": "water", "steer": 0.0,
+		"take_reach": 3.0, "kind": "water", "steer": 18.0,
 		"tiers": {
 			"t1": {"mass": 10.0, "budget": 12.0, "power": 24.0, "width": 2.4, "cost_add": 3.0, "damage": 14.0, "balance": 44.0},
 			"t2": {"mass": 14.0, "budget": 12.0, "power": 32.0, "width": 3.2, "knock": 7.0, "cost_add": 5.0, "damage": 16.0, "balance": 48.0, "tall": true},
@@ -158,7 +158,9 @@ static func tidal_execute(w: CombatWorld, a: ActorState, inst: ActionInst) -> bo
 		WaterUtil.give_back(w, a, got, a.pos)
 		w.emit("insufficient", {"actor": a.id, "what": "water", "move": inst.id})
 		return true
-	VerbGroundLine.launch(w, a, inst, {"source": "none", "mass": got, "mat": "water"})
+	# The wave's counter power follows the water that is really in it (less water than the tier asks for: weaker).
+	var pw := float(Charge.param(inst, "power", 18.0)) * clampf(got / maxf(want, 0.1), 0.35, 1.0)
+	VerbGroundLine.launch(w, a, inst, {"source": "none", "mass": got, "mat": "water", "power": pw})
 	return true
 
 
@@ -168,6 +170,43 @@ static func tidal_execute(w: CombatWorld, a: ActorState, inst: ActionInst) -> bo
 static func wave_tick(w: CombatWorld, b: MatBody, _dt: float) -> bool:
 	if b.form != Sim.Form.WAVE or b.attack_id == 0:
 		return false
+	_carry_check(w, b)
+	return wave_contacts(w, b)
+
+
+## A wave that carries solids throws them at the first rival it reaches (or at the end of its run).
+static func _carry_check(w: CombatWorld, b: MatBody) -> void:
+	if b.captured.is_empty():
+		return
+	var owner := w.get_actor(b.attack_owner)
+	if owner == null:
+		return
+	var tgt: ActorState = null
+	for t in w.actors:
+		if t.team != owner.team and t.health > 0.0 and Vector2(t.pos.x - b.pos.x, t.pos.z - b.pos.z).length() < b.wave_width * 0.5 + 2.2:
+			tgt = t
+			break
+	if tgt == null:
+		return          # no rival reached yet: the core releases the load where the wave ends
+	# The core release (ownership, damage, momentum along the wave) then aimed at the rival it reached.
+	var ids: Array = b.captured.duplicate()
+	w.release_captured(b)
+	if tgt == null:
+		return
+	for id in ids:
+		var c := w.get_body(int(id))
+		if c == null or not c.alive or c.attack_id == 0 or c.attack_owner != owner.id:
+			continue
+		c.vel = Verbs.launch_vel(c.pos, tgt.chest(), maxf(float(c.props.get("release_speed", 14.0)), 12.0), 1.0)
+		c.gravity_scale = 1.0
+		c.damage = maxf(c.damage, float(c.props.get("release_damage", 12.0)))
+		c.props["no_carry_until"] = w.tick + 90        # a thrown load is not caught again by the wave that threw it
+		w._zone_pairs["%d|%d" % [b.id, c.id]] = w.tick + 90   # (the core's wave sweep rate limiter: whatever the rule says)
+
+
+## Wave against waves: a wave meeting an enemy wave of another material resolves it through the rules (lava
+## quenched, ice ridge ...) whichever wave the core's clash pass lists first, and drowns tornado zones it meets.
+static func wave_contacts(w: CombatWorld, b: MatBody) -> bool:
 	for o in w.bodies:
 		if o == b or not o.alive or o.attack_id == 0 or o.attack_owner == b.attack_owner:
 			continue
@@ -175,7 +214,10 @@ static func wave_tick(w: CombatWorld, b: MatBody, _dt: float) -> bool:
 		if o.form == Sim.Form.WAVE:
 			if o.mat == b.mat and o.tag == b.tag:
 				continue   # water vs water: the core clash merges them
-			close = Vector2(o.pos.x - b.pos.x, o.pos.z - b.pos.z).length() <= (o.wave_width + b.wave_width) * 0.5
+			if o.tag == &"rime" and b.tag != &"rime":
+				continue   # the rime wave resolves its own contacts (it is the counter)
+			# A little look-ahead: our rule must see the pair before the core clash pass does (same tick, after the move).
+			close = Vector2(o.pos.x - b.pos.x, o.pos.z - b.pos.z).length() <= (o.wave_width + b.wave_width) * 0.5 + 0.7
 		if not close:
 			continue
 		var ctr := Agent.of_body(w, b)
@@ -339,7 +381,7 @@ static func slick_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: Act
 			return
 		WaterUtil.make_puddle(w, kg, p)
 	var z := WaterUtil.zone(w, "slick", p + Vector3(0, 0.05, 0), float(inst.def.zone_radius), a.id, float(inst.def.zone_life),
-		{"slip": float(inst.def.slip), "height": 0.8, "w_kind": "slick"})
+		{"slip": float(inst.def.slip), "height": 1.4, "w_kind": "slick"})
 	z.tier = inst.tier()
 	z.sub = inst.sub
 	Verbs.fx(w, a, inst, "cast", {"pos": p, "radius": 1.25, "body": z.id})
@@ -386,7 +428,7 @@ static func _mobility() -> void:
 		"startup": 0.0, "active": 0.0, "recovery": _s(8), "cost": 0.0, "kind": "surf", "speed_mult": 1.45, "status": "surfing",
 		"ride_kg": 2.0, "upkeep": 0.0,
 		"hook_tick": Callable(WaterWater, "ride_tick"),
-		"anim": "glide", "fx": {"mat": "water", "shape": ""},
+		"anim": "glide", "fx": {"mat": "water", "shape": ""}, "threat": {"cls": "water_wave"},
 		"ai": {"role": "mobility", "range": [0.0, 12.0], "tags": ["surf", "approach"]},
 	})
 
@@ -403,7 +445,7 @@ static func riptide_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: A
 		Verbs.fx(w, a, inst, "splash", {"pos": a.pos, "radius": 1.0})
 	else:
 		# The water film: a thin slippery patch behind the step (spares the owner).
-		var z := WaterUtil.zone(w, "slick", a.pos - Vector3.ZERO, 0.8, a.id, 1.4, {"slip": 10.0, "height": 0.6, "w_kind": "slick"})
+		var z := WaterUtil.zone(w, "slick", a.pos - Vector3.ZERO, 0.8, a.id, 1.4, {"slip": 10.0, "height": 1.4, "w_kind": "slick"})
 		z.tier = 0
 		Verbs.fx(w, a, inst, "trail", {"dir": inst.data.dir, "length": float(spec.dist)})
 

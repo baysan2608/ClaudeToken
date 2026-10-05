@@ -2,6 +2,9 @@ class_name ActEarth
 extends RefCounted
 ## Earth: stone shot (tap) / heavy heave (hold), seize-aim-throw technique.
 ## Verbs: acquire (rip or seize), shape (hold), accelerate (throw), redirect (guard).
+## Moveset extensions (docs/kits/earth.md; T0/T1 unchanged): holding the heave on grows the stone to
+## T2 Boulder (65 kg) and T3 Crag Breaker (80 kg, bursts into 3 rubble on impact) - tier data in the
+## live def (EarthStone._extend_legacy); T+A during the technique Splits the held stone into 3 spikes.
 
 const LOOSE_RADIUS := 2.6
 
@@ -24,6 +27,7 @@ static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, _it: Actor
 		else:
 			_rip(w, a, Sim.STONE_SHOT_MASS)
 		w.emit("telegraph", {"actor": a.id, "move": "earth_attack", "body": a.held_body, "time": inst.def.startup})
+		Verbs.fx(w, a, inst, "cast", {"body": a.held_body})
 
 
 static func after_startup(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIntent) -> int:
@@ -55,6 +59,9 @@ static func on_phase(w: CombatWorld, a: ActorState, inst: ActionInst, p: int) ->
 		if inst.heavy:
 			w.emit("telegraph", {"actor": a.id, "move": "earth_heavy", "body": a.held_body, "time": inst.def.heavy_min})
 	elif p == ActionInst.P.ACTIVE:
+		if inst.id == "earth_tech" and inst.data.has("split"):
+			_throw_split(w, a, inst)
+			return
 		var b := w.held(a)
 		if b == null:
 			return
@@ -63,10 +70,24 @@ static func on_phase(w: CombatWorld, a: ActorState, inst: ActionInst, p: int) ->
 		var dmg := float(inst.def.get("heavy_damage", inst.def.damage)) if heavy else float(inst.def.damage)
 		var bal := float(inst.def.get("heavy_balance", inst.def.balance)) if heavy else float(inst.def.balance)
 		var mass_scale := sqrt(b.mass / Sim.STONE_SHOT_MASS) if not heavy else 1.0
+		var tier := inst.tier() if heavy else 0
+		if tier >= 2:
+			spd = float(Charge.param(inst, "speed", spd))
+			dmg = float(Charge.param(inst, "damage", dmg))
+			bal = float(Charge.param(inst, "balance", bal))
 		var target := _throw_target(w, a, inst)
 		var v := launch_vel(b.pos, target, spd)
 		w.release_body(a, v, true, dmg * mass_scale, bal * mass_scale)
-		w.emit("launch", {"actor": a.id, "body": b.id, "speed": spd, "heavy": heavy})
+		if tier >= 2:
+			b.tier = tier
+			b.residual_authority = Interactions.cohesion(tier)
+		if tier >= 3:
+			b.tag = StringName(String(Charge.param(inst, "tag", "crag")))
+			b.props["on_impact"] = "shatter"
+			b.props["impact_pieces"] = int(Charge.param(inst, "pieces", 3))
+			b.props["move"] = inst.id
+		w.emit("launch", {"actor": a.id, "body": b.id, "speed": spd, "heavy": heavy, "tier": tier})
+		Verbs.fx(w, a, inst, "release", {"body": b.id, "pos": b.pos, "dir": v.normalized(), "power": b.mass * spd / 20.0})
 
 
 static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIntent) -> void:
@@ -83,6 +104,8 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 				if b == null:
 					w.finish_action(a, inst)
 					return
+				if inst.heavy and inst.tier() >= 2:
+					_ladder(w, a, inst, b)
 				if inst.data.get("released", false) and inst.total >= float(inst.def.heavy_min):
 					w.set_phase(a, inst, ActionInst.P.ACTIVE)
 		"earth_tech":
@@ -106,6 +129,8 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 			var dir: Vector3 = inst.data.aim
 			# Held at chest height between the hands (earth_hold), nudged toward the aim.
 			b.hold_point = a.pos + Vector3(0, 1.2, 0) + a.forward() * (0.3 + b.radius) + dir * 0.15
+			if it.attack_pressed and not inst.data.get("shaped", false) and inst.def.get("shape", "") == "split":
+				_split(w, a, inst, b)
 			if not it.tech_held:
 				w.set_phase(a, inst, ActionInst.P.ACTIVE)
 				_throw_held(w, a, inst)
@@ -156,6 +181,66 @@ static func _throw_held(w: CombatWorld, a: ActorState, inst: ActionInst) -> void
 	var v := launch_vel(b.pos, target, spd)
 	w.release_body(a, v, true, float(inst.def.damage) * mass_scale, float(inst.def.balance) * mass_scale)
 	w.emit("launch", {"actor": a.id, "body": b.id, "speed": spd})
+
+
+## Charge ladder past the legacy heave (T2 Boulder, T3 Crag Breaker): the held stone grows from the
+## ground on each tier-up (booked), paying the tier's cost_add; an unpaid tier stalls the charge there.
+static func _ladder(w: CombatWorld, a: ActorState, inst: ActionInst, b: MatBody) -> void:
+	var t := inst.tier()
+	if t <= int(inst.data.get("grown", 1)):
+		return
+	var want := float(Charge.param(inst, "mass", b.mass))
+	if not w.spend_focus(a, float(Charge.param(inst, "cost_add", 0.0))):
+		inst.data["tier"] = t - 1
+		inst.data["charge_frozen"] = true
+		w.emit("insufficient", {"actor": a.id, "what": "focus", "move": inst.id, "reason": "tier", "tier": t})
+		return
+	inst.data["grown"] = t
+	if want > b.mass:
+		var extra := want - b.mass
+		var e := b.thermal_energy()
+		b.mass += extra
+		w._set_energy(b, e)
+		b.update_radius()
+		w.mass_ledger.ground_taken += extra
+		w.emit("acquire", {"actor": a.id, "body": b.id, "mass": extra})
+	w.emit("telegraph", {"actor": a.id, "move": "earth_boulder" if t == 2 else "earth_crag", "body": b.id, "time": 0.0})
+
+
+## T+A while the technique holds a stone: it will leave the hands as `pieces` spikes (Split).
+static func _split(w: CombatWorld, a: ActorState, inst: ActionInst, b: MatBody) -> void:
+	if not w.spend_focus(a, float(inst.def.get("shape_cost", 3.0))):
+		w.emit("insufficient", {"actor": a.id, "what": "focus", "move": inst.id, "reason": "shape"})
+		return
+	inst.data["shaped"] = true
+	inst.data["split"] = int(inst.def.get("pieces", 3))
+	w.emit("shape", {"actor": a.id, "body": b.id, "shape": "split"})
+	Verbs.fx(w, a, inst, "cast", {"body": b.id, "shape": "spear"})
+
+
+## Split release: the held stone becomes `split` spikes (a third of the mass each) fanned at the target.
+static func _throw_split(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
+	var b := w.held(a)
+	if b == null:
+		return
+	var n := int(inst.data.get("split", 3))
+	var mass := b.mass / float(n)
+	var target := _throw_target(w, a, inst)
+	var spread := deg_to_rad(float(inst.def.get("spread", 30.0)))
+	var speed := float(inst.def.get("split_speed", 20.0))
+	a.held_body = -1
+	b.controller = -1
+	for k in n:
+		var p := b if k == n - 1 else w.split_body(b, mass, b.pos)
+		var ang := lerpf(-spread * 0.5, spread * 0.5, float(k) / float(maxi(1, n - 1)))
+		var to := a.chest() + (target - a.chest()).rotated(Vector3.UP, ang)
+		p.vel = launch_vel(p.pos, to, speed)
+		p.tag = &"spear"
+		p.on_ground = false
+		var sc := sqrt(p.mass / Sim.STONE_SHOT_MASS)
+		Verbs.arm(w, a, inst, p, float(inst.def.damage) * sc, float(inst.def.balance) * sc)
+		w.emit("launch", {"actor": a.id, "body": p.id, "speed": speed, "kind": "split"})
+		Verbs.fx(w, a, inst, "release", {"body": p.id, "dir": p.vel.normalized(), "shape": "spear"})
 
 
 static func _throw_target(w: CombatWorld, a: ActorState, inst: ActionInst) -> Vector3:

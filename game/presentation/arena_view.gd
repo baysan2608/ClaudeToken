@@ -20,6 +20,8 @@ var arena: ArenaMap
 var sun: DirectionalLight3D
 var env: WorldEnvironment
 var probe: ReflectionProbe
+var _sky_proc: Sky                # ProceduralSkyMaterial (quality 0) / shader sky with clouds (>= 1)
+var _sky_cloud: Sky
 var props: ArenaProps
 var scenery: ArenaScenery
 var _quality := 1
@@ -55,6 +57,10 @@ func set_quality(q: int) -> void:
 	var water: ShaderMaterial = _mats.get("pool_water")
 	if water:
 		water.set_shader_parameter("detail", q >= 2)
+	if env and env.environment:
+		var want: Sky = _sky_cloud if (_sky_cloud and q >= 1) else _sky_proc
+		if env.environment.sky != want:
+			env.environment.sky = want
 	if probe:
 		probe.visible = q >= 2
 	if props:
@@ -96,6 +102,7 @@ func _mat(shader_name: String, fallback: Color, rough: float = 0.85, metal: floa
 	match shader_name:
 		"arena_ground":
 			_set_set(sm, "albedo_tex", "normal_tex", "orm_tex", "flagstone")
+			sm.set_shader_parameter("arena_half", arena.half_size)
 			sm.set_shader_parameter("ao_map", _bake_ao())
 			sm.set_shader_parameter("ao_rect", Vector4(AO_RECT.position.x, AO_RECT.position.y, AO_RECT.size.x, AO_RECT.size.y))
 			_tiered.append(sm)
@@ -173,6 +180,7 @@ func _build_lighting() -> void:
 	env.name = "Env"
 	var e := Environment.new()
 	var sky := Sky.new()
+	_sky_proc = sky
 	var ps := ProceduralSkyMaterial.new()
 	ps.sky_top_color = Color(0.24, 0.38, 0.6)
 	ps.sky_horizon_color = Color(0.9, 0.72, 0.56)
@@ -182,8 +190,9 @@ func _build_lighting() -> void:
 	ps.sun_angle_max = 22.0
 	ps.sun_curve = 0.1
 	sky.sky_material = ps
+	_build_cloud_sky()
 	e.background_mode = Environment.BG_SKY
-	e.sky = sky
+	e.sky = _sky_cloud if (_sky_cloud and _quality >= 1) else sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	e.ambient_light_energy = 0.62
 	e.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
@@ -216,6 +225,18 @@ func _build_lighting() -> void:
 	probe.max_distance = 0.0
 	probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED   # reflections only; ambient stays the sky's
 	add_child(probe)
+
+
+## Shader sky (same gradient as the procedural one + low sun + thin cloud deck); null if the shader is absent.
+func _build_cloud_sky() -> void:
+	var path := SHADER_DIR + "arena_sky.gdshader"
+	if not ResourceLoader.exists(path):
+		return
+	var sm := ShaderMaterial.new()
+	sm.shader = load(path)
+	_sky_cloud = Sky.new()
+	_sky_cloud.sky_material = sm
+	_sky_cloud.radiance_size = Sky.RADIANCE_SIZE_64     # smooth gradient only: small cubemap, cheap to (re)build
 
 
 func _box(mn: Vector3, mx: Vector3, mat: Material, nm: String, shadows := true) -> MeshInstance3D:

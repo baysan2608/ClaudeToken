@@ -6,6 +6,9 @@ extends RefCounted
 ##   stone shot (tap) -> heavy heave (hold) -> a 200 kg boulder is too heavy to seize ->
 ##   seize a loose stone instead, drag-aim, throw -> (side camera) guard wall blocks a
 ##   stone -> perfectly timed guards redirect the rival's stones back at them.
+## Moveset part (from 19 s, --autoplay=show_earth:40): Spear Stone (twin) -> Rubble Fan -> Rising Fangs
+##   stop a rival lava wave -> Swallow sinks a rival stone -> Seize + Split spikes a stone back ->
+##   Ram Wall shoves a lava wave back -> Boulder (T2) -> Stone Skin -> Burrow Step.
 
 const RIVAL_POS := Vector3(0.0, 0.0, 1.0)
 const LOOSE_POS := Vector3(-1.9, 0.25, 3.9)
@@ -102,7 +105,7 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 	if _cue("seize", t >= 6.1):
 		_press(f, "tech", t, 3.0)
 		_seize_t = t
-	if _seize_t >= 0.0 and (f.tech_held or f.tech_released):
+	if _seize_t >= 0.0 and t < 19.0 and (f.tech_held or f.tech_released):
 		var loose := w.get_body(_loose_id)
 		if w.held(p) == null and _held_t < 0.0:
 			if loose != null:
@@ -138,10 +141,136 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 	if _cue("shot2", t >= 17.2):
 		_press(f, "attack", t, 0.05)
 
+	_moveset(g, f, t)
 	_guards(g, f, t)
 	_rival_range(g)
 	if _trace:
 		_trace_tick(g, t)
+
+
+# ------------------------------------------------------------------ moveset part (19 s+)
+
+var _swallow_armed := false
+var _split_t := -1.0
+var _ram_wave := -1
+
+
+func _moveset(g: Game, f: InputFrame, t: float) -> void:
+	var p := g.player
+	var o := g.opponent
+	if t < 19.0:
+		return
+	if g.opponent.health < 25.0:
+		g.opponent.health = 45.0   # capture only: no round reset mid-showcase
+	# Spear Stone (thrust) held to T1: twin spears
+	if _cue("spear", t >= 19.4):
+		_press(f, "attack", t, 0.5)
+		f.attack_gesture = Sim.Gesture.UP
+		_shot = "spear"
+	# Rubble Fan (sweep) T1
+	if _cue("fan", t >= 21.0):
+		_press(f, "attack", t, 0.5)
+		f.attack_gesture = Sim.Gesture.SIDE
+	# Rising Fangs stop a rival lava wave
+	if _cue("fangs_wave", t >= 22.6):
+		_cam_yaw = SIDE_YAW
+		_ram_wave = _lava_wave(g)
+	if _cue("fangs", t >= 22.75):
+		_press(f, "attack", t, 0.05)
+		f.attack_gesture = Sim.Gesture.DOWN
+		_shot = "fangs"
+	# Swallow: guard, then flick down as the rival's stone arrives
+	if _cue("cue_swallow", t >= 25.0):
+		_throw_cue(g)
+		_swallow_armed = true
+	if _swallow_armed and o.action != null and o.action.id == "earth_attack" and not _ends.has("guard"):
+		_press(f, "guard", t, 2.0)
+	if _swallow_armed and _ends.has("guard"):
+		var inc := _incoming(g)
+		if inc != null and inc.pos.distance_to(p.chest()) < 5.0:
+			f.guard_gesture = Sim.Gesture.DOWN
+			f.guard_held = true
+			_ends["guard"] = t + 0.1
+			_swallow_armed = false
+			_shot = "swallow"
+	# Seize the rival's next stone, T+A Split, release: three spikes back
+	if _cue("cue_split", t >= 27.8):
+		var bb := g.world.get_body(_boulder_id)
+		if bb != null and bb.alive:
+			g.world.decay_body(bb, "scenario")   # the opening's 200 kg boulder sinks away (it would be the seize target)
+		_throw_cue(g)
+	var sinc := _incoming(g) if t >= 27.8 and _split_t < 0.0 else null
+	if sinc != null and sinc.pos.distance_to(p.chest()) < 7.5:
+		_press(f, "tech", t, 1.5)
+		_split_t = t
+	if _split_t >= 0.0 and _ends.has("tech"):
+		var held := g.world.held(p)
+		if held != null and not _done.has("split_shape"):
+			_done["split_shape"] = true
+			f.attack_pressed = true
+			_shot = "split"
+		if held == null:
+			var tb := _incoming(g)
+			if tb != null:
+				_aim_at(g, f, tb.pos - p.pos)
+		else:
+			_aim_at(g, f, o.pos - p.pos)
+	# Ram Wall: guard, a rival lava wave comes, flick up - the wall shoves it back
+	if _cue("ram_guard", t >= 31.0):
+		_press(f, "guard", t, 1.2)
+	if _cue("ram_wave", t >= 31.1):
+		_ram_wave = _lava_wave(g)
+	if _cue("ram", t >= 31.6):
+		f.guard_gesture = Sim.Gesture.UP
+		f.guard_held = true
+		_ends["guard"] = t + 0.1
+		_shot = "ram"
+	# Boulder: the stone shot held to T2 (65 kg)
+	if _cue("boulder_t2", t >= 33.8):
+		_cam_yaw = OPEN_YAW
+		_press(f, "attack", t, 1.25)
+	# Stone Skin while a stone comes in, then Burrow Step sideways
+	if _cue("cue_skin", t >= 36.2):
+		_throw_cue(g)
+	if _cue("skin", t >= 36.3):
+		_press(f, "evade", t, 1.4)
+		f.evade_pressed = true
+		f.evade_held = true
+	if _ends.has("evade") and t >= float(_ends.evade):
+		f.evade_held = false
+		_ends.erase("evade")
+	if _cue("burrow", t >= 38.4):
+		_press(f, "evade", t, 0.5)
+		f.evade_pressed = true
+		f.evade_held = true
+		f.move = Vector2(1.0, 0.0)
+	if _done.has("burrow") and t >= 39.2:
+		f.move = Vector2.ZERO
+
+
+## A rival lava wave poured at the player (the flagship pour, spawned for the capture).
+func _lava_wave(g: Game) -> int:
+	var w := g.world
+	var o := g.opponent
+	var p := g.player
+	var dir := Vector3(p.pos.x - o.pos.x, 0, p.pos.z - o.pos.z).normalized()
+	var start := o.pos + dir * 1.3
+	start.y = w.arena.ground_height(start.x, start.z, o.pos.y)
+	var b := w.spawn_body(Sim.Mat.STONE, Sim.Form.WAVE, 20.0, start, "pour:%d" % o.id)
+	w.mass_ledger.ground_taken += 20.0
+	w.ledger.generated += Thermal.heat(b, 20.0 * (Sim.STONE_C * (Sim.STONE_MELT_C - Sim.AMBIENT_C) + Sim.STONE_LATENT))
+	Thermal.update_phase(b)
+	b.wave_dir = dir
+	b.wave_budget = 12.0
+	b.wave_width = 1.6
+	b.wave_path = PackedVector3Array([start])
+	b.attack_id = w.new_attack_id()
+	b.attack_owner = o.id
+	b.hit_set[o.id] = true
+	b.damage = 18.0
+	b.balance_damage = 55.0
+	b.touch(o.id, "pour", w.tick)
+	return b.id
 
 
 func _throw_cue(g: Game) -> void:
@@ -246,6 +375,9 @@ func _press(f: InputFrame, what: String, t: float, hold: float) -> void:
 		"tech":
 			f.tech_pressed = true
 			f.tech_held = true
+		"evade":
+			f.evade_pressed = true
+			f.evade_held = true
 	_ends[what] = t + hold
 
 
@@ -264,6 +396,9 @@ func _release_now(f: InputFrame, what: String) -> void:
 
 
 func _release_due(f: InputFrame, t: float) -> void:
+	if _ends.has("evade") and t >= float(_ends.evade):
+		f.evade_held = false
+		_ends.erase("evade")
 	for what in ["attack", "guard", "tech"]:
 		if _ends.has(what) and t >= float(_ends[what]):
 			_release_now(f, what)

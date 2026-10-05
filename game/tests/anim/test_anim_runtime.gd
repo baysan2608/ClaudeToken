@@ -249,6 +249,41 @@ func test_foot_locking_is_what_removes_the_skating() -> void:
 	await tree.process_frame
 
 
+func test_turning_on_the_spot_pivots_on_planted_feet() -> void:
+	# The strafe shot starts with a 90 deg lock-on turn in place (about 14 rad/s): the planted feet
+	# pivot and then step round instead of being swept along with the body.
+	var lab := _lab("strafe")
+	await _run_until(lab, 0.95)
+	var m: Dictionary = lab.call("metric_table")
+	lab.queue_free()
+	if check(m.has("idle"), "measured the turn"):
+		check(float(m.idle.skate_cms) < 8.0, "turn in place: planted feet slide %.1f cm/s (< 8)" % m.idle.skate_cms)
+	await tree.process_frame
+
+
+func test_a_planted_foot_stays_on_the_rim_when_the_body_drops_into_the_pool() -> void:
+	# Wading in: the sim drops the body 0.3 m in one tick while a locked foot is still on the rim.
+	# Ground is sampled where the locked foot stands and smoothed in world space, so that foot
+	# neither sinks into the rim nor rides down with the visual height smoothing.
+	var lab := _lab("ledge")
+	await _run_until(lab, 17.9)
+	var fv := _view(lab)
+	var subj: ActorState = lab.get("subject")
+	var worst := 0.0
+	var arena: ArenaMap = (lab.get("world") as CombatWorld).arena
+	while float(lab.get("t")) < 18.6:
+		lab.call("step_manual")
+		await tree.process_frame
+		for i in 2:
+			var f: Vector3 = fv.rig.foot_world[i]
+			var g := arena.ground_height(f.x, f.z, subj.pos.y + Sim.STEP_HEIGHT + 0.02, 0.0)
+			worst = minf(worst, f.y - g - 0.05)
+	check(subj.pos.y < -0.25, "setup: the subject is in the pool (y %.2f)" % subj.pos.y)
+	check(worst > -0.06, "no ankle sinks below the ground it stands over (worst %.1f cm)" % (worst * 100.0))
+	lab.queue_free()
+	await tree.process_frame
+
+
 func test_feet_follow_steps_and_ledges_with_the_pelvis_lowered() -> void:
 	var lab := _lab("ledge")
 	# On the step block (0.35 m) facing +X at its z = 9 edge: the left foot is over the floor.

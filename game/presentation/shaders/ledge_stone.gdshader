@@ -38,8 +38,11 @@ void fragment() {
 	vec2 uv; vec3 T; vec3 B; vec3 N;
 	env_face_frame(wn0, v_world, uv, T, B, N);
 	bool top = N.y > 0.5;
+	// the pool coping / floor-flush lips are only a few cm tall: a 30 cm masonry course would read as one dark
+	// mortar line there, so such slivers sample the cut-slab set instead
+	bool lip = !top && v_world.y < 0.045;
 	vec3 alb; float hgt; vec3 nrm; vec3 orm; float mask;
-	if (top) {
+	if (top || lip) {
 		env_sample(cap_albedo, cap_normal, cap_orm, uv / cap_tile_m, v_world.xz / cap_tile_m, anti_tile, alb, hgt, nrm, orm, mask);
 	} else {
 		// vertical: anti-tile mask keyed on the horizontal run + height so courses vary along the wall
@@ -55,7 +58,7 @@ void fragment() {
 	vec2 p = top ? v_world.xz : vec2(v_world.x + v_world.z, v_world.y * 2.0);
 	vec3 albedo = env_grade(alb, saturation) * tint * env_macro_tint(p * 0.6, 0.5);
 
-	float low = top ? 0.0 : 1.0 - smoothstep(0.0, 0.9, v_world.y);
+	float low = (top || lip) ? 0.0 : 1.0 - smoothstep(0.0, 0.9, v_world.y);
 	float damp_n = env_vnoise(vec2(v_world.x + v_world.z, v_world.y) * 1.3 + 7.0);
 	float rise = low * smoothstep(0.25, 0.8, damp_n + low * 0.35);
 	// ground grime / rising damp darken, a little moss in the damp band (lower in the joints, hgt < 0.45)

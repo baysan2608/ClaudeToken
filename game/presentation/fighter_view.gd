@@ -587,6 +587,7 @@ func _drive_rig(a: ActorState, dt: float) -> void:
 	if turn_k > 0.0:
 		local.x += clampf(-_yaw_rate_s * 0.22, -1.0, 1.0) * turn_k
 	rig.local_vel = local
+	rig.ground_speed = spd
 	rig.stance = ["stance_earth", "stance_water", "stance_fire", "stance_air"][clampi(a.element, 0, 3)]
 	var inst := a.action
 	var shot := _one_shot_t > 0.0 and a.stun <= 0.0

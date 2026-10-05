@@ -5,8 +5,9 @@ extends RefCounted
 ## the legacy cells (wall_stone x legacy threats, grip_stone, ...) and the environment.
 ##
 ## Counter classes encoded here: wall_stone (non-legacy rows only), wall_obsidian, wall_glass, wall_sand,
-## wall_mud, plate_metal, spikes, rod, caltrops, swallow, quicksand, melt_pit, grip_metal, grip_sand,
-## grip_magma, wave_sand, wave_lava, sand_cloud.
+## wall_mud, plate_metal, spikes, rod, caltrops, swallow, quicksand, melt_pit, grip_stone (non-legacy rows),
+## grip_metal, grip_sand, grip_magma, wave_sand, wave_lava, sand_cloud, plus the kit's own active classes
+## ram (Ram Wall: K = wall mass x 9 / 20) and chain (Chain Arc), and the spike line as a threat (spikes).
 ## Every heat / mass change goes through the CombatWorld ledger helpers (heat_body, split_body,
 ## merge_bodies, decay_body, convert_mat) or books its own exact transfer.
 
@@ -40,6 +41,8 @@ static func register() -> void:
 	_grips()
 	_waves()
 	_sand_cloud()
+	_ram()
+	_chain()
 
 
 # ================================================================ cells
@@ -116,9 +119,10 @@ static func _sand_family(c: String, _mud: float) -> void:
 	for t in ["stone", "hot_rock", "metal", "ice", "glass"]:
 		_add(t, c, {"outcome": "capture", "perfect": "reflect", "partial": "weaken", "fail": "overwhelm", "eff": 1.2,
 			"max_captured": 6, "fallback": "block"})
-	# Railspike (tier 3 lance) partly pierces: its K 25 is above the capture budget.
-	_add("stone_heavy", c, {"outcome": "capture", "partial": "weaken", "fail": "overwhelm", "eff": 1.2, "fallback": "block"})
-	_add("boulder", c, {"outcome": "capture", "partial": "weaken", "fail": "overwhelm", "eff": 1.2, "fallback": "block"})
+	# Railspike (tier 3 lance, K 25) partly pierces a plain dune: metal is captured at eff 1.0 only.
+	_add("metal", c, {"outcome": "capture", "partial": "weaken", "fail": "overwhelm", "eff": 1.0, "max_captured": 6, "fallback": "block"})
+	_add("stone_heavy", c, {"outcome": "capture", "partial": "weaken", "fail": "overwhelm", "eff": 1.0, "fallback": "block"})
+	_add("boulder", c, {"outcome": "capture", "partial": "weaken", "fail": "overwhelm", "eff": 1.0, "fallback": "block"})
 	_add("magma", c, {"outcome": "earth_crust", "partial": "earth_crust", "fail": "overwhelm", "eff": 1.5, "crust": 1.0, "stops": true,
 		"fallback": "block"})
 	_add("lava_wave", c, {"outcome": "earth_crust", "partial": "earth_crust", "fail": "overwhelm", "eff": 1.5, "crust": 1.0,
@@ -145,8 +149,10 @@ static func _sand_family(c: String, _mud: float) -> void:
 ## Fused sand (WALL tag glass, CP 30): solids and bolts (insulator); brittle to sound (x2.5) and blasts (x2).
 static func _wall_glass() -> void:
 	var c := "wall_glass"
-	for t in ["stone", "hot_rock", "ice", "glass", "sand"]:
+	for t in ["stone", "hot_rock", "ice", "glass"]:
 		_add(t, c, {"outcome": "block", "partial": "weaken", "fail": "overwhelm"})
+	# Sand (slug or Sandblast volume) abrades glass x2.
+	_add("sand", c, {"outcome": "block", "partial": "weaken", "fail": "overwhelm", "eff": 0.5})
 	_add("metal", c, {"outcome": "earth_embed", "when": {"tags": ["lance"]}, "else": "block", "partial": "weaken", "fail": "overwhelm",
 		"fallback": "block"})
 	_add("stone_heavy", c, {"outcome": "block", "partial": "weaken", "fail": "overwhelm"})
@@ -209,7 +215,10 @@ static func _plate() -> void:
 ## conductor node that lets everything through (statuses come from the zone effect).
 static func _spikes_and_rods() -> void:
 	for t in ["lava_wave", "water_wave", "sand_surge", "fire_field", "puddle"]:
-		_add(t, "spikes", {"bands": [[0.0, "block"]], "full_at": 0.0})
+		_add(t, "spikes", {"bands": [[0.0, "earth_spike_stop"]], "full_at": 0.0, "fallback": "block"})
+	# The spike line itself meeting an enemy ground line (clash site, either order).
+	for c2 in ["wave_lava", "wave_sand"]:
+		_add("spikes", c2, {"bands": [[0.0, "earth_spike_stop"]], "full_at": 0.0, "fallback": "clash", "id": "spike_line_stop"})
 	_add("*", "spikes", {"outcome": "block", "partial": "weaken", "fail": "overwhelm", "by_form": {"wave": "block"}, "id": "spikes_any"})
 	_add("lightning", "rod", {"bands": [[0.0, "earth_rod_melt"], [1.0, "earth_rod_ground"]], "absorb_on_fail": 0.5, "fallback": "pass"})
 	# Fields that only answer bolts: everything else passes (explicit cells, so no family rule shadows them).
@@ -230,7 +239,7 @@ static func _sinks() -> void:
 	# Quicksand: landing solids sink (heavy ones bog), lava crusts to glass and stalls, water makes a bog.
 	for t in ["stone", "hot_rock", "metal", "ice", "glass", "stone_heavy"]:
 		_add(t, "quicksand", {"outcome": "sink", "partial": "slow", "fail": "slow", "factor": 0.4})
-	_add("boulder", "quicksand", {"outcome": "sink", "partial": "slow", "fail": "pass", "factor": 0.3})
+	_add("boulder", "quicksand", {"bands": [[0.0, "slow"], [1.0, "sink"]], "factor": 0.3})
 	_add("sand", "quicksand", {"bands": [[0.0, "absorb"]], "full_at": 0.0})
 	_add("magma", "quicksand", {"outcome": "earth_crust", "partial": "earth_crust", "fail": "pass", "eff": 1.5, "stops": true, "crust": 1.0})
 	_add("lava_wave", "quicksand", {"outcome": "earth_crust", "partial": "earth_crust", "fail": "pass", "eff": 1.5, "stops": true,
@@ -239,7 +248,8 @@ static func _sinks() -> void:
 		_add(t, "quicksand", {"bands": [[0.0, "earth_mud"]], "full_at": 0.0, "eff": 1.5, "fallback": "pass"})
 	_add("*", "quicksand", {"outcome": "pass", "partial": "pass", "fail": "pass", "id": "quicksand_any"})
 	# Melt Pit: solids melt into it while its heat budget lasts; ice and water boil; sand surges glaze.
-	for t in ["stone", "stone_heavy", "hot_rock", "metal", "glass", "sand", "ice", "water", "sand_surge", "water_wave", "vine"]:
+	_add("sand_surge", "melt_pit", {"outcome": "earth_glaze", "partial": "earth_glaze", "fail": "slow", "factor": 0.5})
+	for t in ["stone", "stone_heavy", "hot_rock", "metal", "glass", "sand", "ice", "water", "water_wave", "vine"]:
 		_add(t, "melt_pit", {"outcome": "earth_melt_in", "partial": "slow", "fail": "pass", "factor": 0.5, "rate_hu": 120.0})
 	_add("boulder", "melt_pit", {"outcome": "earth_melt_in", "partial": "slow", "fail": "pass", "factor": 0.5, "rate_hu": 120.0})
 	_add("*", "melt_pit", {"outcome": "pass", "partial": "pass", "fail": "pass", "id": "melt_pit_any"})
@@ -247,6 +257,7 @@ static func _sinks() -> void:
 
 ## Technique legality (Interactions.allows): what Lodestone Grip, Sandform and Magma Hold may seize.
 static func _grips() -> void:
+	_add("glass", "grip_stone", {"bands": [[0.0, "reclaim"]], "full_at": 0.0, "id": "seize_glass"})
 	_add("metal", "grip_metal", {"bands": [[0.0, "reclaim"]], "full_at": 0.0})
 	_add("*", "grip_metal", {"bands": [[0.0, "pass"]], "id": "grip_metal_any"})
 	for t in ["sand", "sand_surge", "sand_cloud"]:
@@ -281,14 +292,37 @@ static func _waves() -> void:
 ## mist and steam, halves bolts that cross it and fuses a glass bead.
 static func _sand_cloud() -> void:
 	var c := "sand_cloud"
-	for t in ["stone", "stone_heavy", "hot_rock", "metal", "ice", "glass", "sand"]:
-		_add(t, c, {"bands": [[0.0, "slow"]], "full_at": 0.0, "factor": 0.7, "when": {"hostile": true}, "else": "pass"})
+	for t in ["stone", "stone_heavy", "hot_rock", "metal", "ice", "glass", "sand", "magma"]:
+		_add(t, c, {"bands": [[0.0, "earth_drag"]], "full_at": 0.0, "factor": 0.7, "when": {"hostile": true}, "else": "pass"})
+	_add("sound", c, {"outcome": "absorb", "partial": "weaken", "fail": "pass", "eff": 1.5})
 	for t in ["flame", "fire_field", "ember", "blue_fire"]:
 		_add(t, c, {"outcome": "earth_smother", "partial": "weaken", "fail": "pass", "eff": 2.0})
 	for t in ["mist", "steam"]:
 		_add(t, c, {"outcome": "absorb", "partial": "weaken", "fail": "pass", "eff": 1.5})
 	_add("lightning", c, {"bands": [[0.0, "earth_bolt_grit"]], "full_at": 0.0, "fallback": "pass"})
 	_add("*", c, {"bands": [[0.0, "pass"]], "full_at": 0.0, "id": "sand_cloud_any"})
+
+
+## Ram Wall (counter class "ram", power = K of the sliding wall): bodies and waves on its face are
+## shoved back along it (and become the rammer's); too strong a threat breaks the ram. A wall it touches
+## is a push contest: the rammer's K is the threat, the other wall's CP the counter.
+static func _ram() -> void:
+	_add("*", "ram", {"outcome": "earth_ram_push", "partial": "weaken", "fail": "overwhelm", "id": "ram_push"})
+	for c in ["wall_stone", "wall_obsidian", "wall_glass", "wall_sand", "wall_mud", "plate_metal", "spikes"]:
+		_add("wall_stone", c, {"outcome": "earth_ram_blocked", "partial": "earth_ram_both", "fail": "overwhelm", "dmg_div": 900.0,
+			"id": "ram_contest"})
+
+
+## Chain Arc (counter class "chain"): light solids <= 20 kg are wrapped and yanked to the swinger's
+## feet; heavier ones bent; ice deflected; vines cut.
+static func _chain() -> void:
+	for t in ["stone", "metal", "glass", "hot_rock", "sand"]:
+		_add(t, "chain", {"outcome": "earth_wrap", "partial": "bend", "fail": "pass", "when": {"mass_max": 20.0}, "else": "bend",
+			"inert": "pass", "eff": 1.2, "id": "chain_wrap"})
+	_add("stone_heavy", "chain", {"outcome": "bend", "partial": "bend", "fail": "pass", "inert": "pass"})
+	_add("ice", "chain", {"outcome": "deflect", "partial": "bend", "fail": "pass", "inert": "pass", "verb": "chain", "kind": "ice"})
+	_add("vine", "chain", {"outcome": "shatter", "partial": "weaken", "fail": "pass", "eff": 2.0, "pieces": 2})
+	_add("*", "chain", {"bands": [[0.0, "pass"]], "full_at": 0.0, "id": "chain_any"})
 
 
 # ================================================================ outcomes
@@ -314,6 +348,13 @@ static func _outcomes() -> void:
 	Interactions.register_outcome("earth_bolt_grit", Callable(EarthRules, "_o_bolt_grit"))
 	Interactions.register_outcome("earth_quench", Callable(EarthRules, "_o_quench"))
 	Interactions.register_outcome("earth_smother", Callable(EarthRules, "_o_smother"))
+	Interactions.register_outcome("earth_ram_push", Callable(EarthRules, "_o_ram_push"))
+	Interactions.register_outcome("earth_ram_blocked", Callable(EarthRules, "_o_ram_blocked"))
+	Interactions.register_outcome("earth_ram_both", Callable(EarthRules, "_o_ram_both"))
+	Interactions.register_outcome("earth_wrap", Callable(EarthRules, "_o_wrap"))
+	Interactions.register_outcome("earth_spike_stop", Callable(EarthRules, "_o_spike_stop"))
+	Interactions.register_outcome("earth_glaze", Callable(EarthRules, "_o_glaze"))
+	Interactions.register_outcome("earth_drag", Callable(EarthRules, "_o_drag"))
 
 
 static func _aid(x: Agent) -> int:
@@ -530,7 +571,7 @@ static func _o_mud(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dict
 	if not sand.props.get("mud", false):
 		sand.props["mud"] = true
 		sand.props["wet"] = true
-		sand.props["mud_t"] = sand.age
+		sand.props["mud_tick"] = w.tick
 		match sand.form:
 			Sim.Form.WALL:
 				sand.tag = &"mud"
@@ -665,24 +706,22 @@ static func _o_magnet_catch(w: CombatWorld, t: Agent, c: Agent, res: Dictionary,
 static func _o_rod_ground(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
 	res.stopped = true
 	res.pass_scale = 0.0
-	var field := c.body
-	var rod := w.get_body(int(field.props.get("rod", -1))) if field != null else null
+	var rod := c.body
 	w.emit("grounded", {"actor": _aid(c), "via": "rod", "body": rod.id if rod != null else -1})
 	if rod != null and rod.alive:
 		rod.props["struck"] = float(rod.props.get("struck", 0.0)) + float(t.ch.E)
+		FxEvents.fx(w, "burst", "lightning", {"actor": _aid(c), "body": rod.id, "pos": rod.pos + Vector3(0, 1.2, 0), "radius": 0.8,
+			"power": float(t.ch.E), "shape": "ground"})
 		EarthMetal.rod_spread(w, t, rod, float(t.ch.E) * 0.5)
 	return true
 
 
 ## Above the rod's capacity the rod melts (scrap leaves the field, booked) and the bolt continues.
 static func _o_rod_melt(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictionary, _ctx: Dictionary) -> bool:
-	var field := c.body
-	if field != null and field.alive:
-		var rod := w.get_body(int(field.props.get("rod", -1)))
-		if rod != null and rod.alive:
-			w.emit("shatter", {"body": rod.id, "mass": rod.mass, "by": "lightning"})
-			w.decay_body(rod, "melted")
-		w.close_zone(field, "overloaded")
+	var rod := c.body
+	if rod != null and rod.alive:
+		w.emit("shatter", {"body": rod.id, "mass": rod.mass, "by": "lightning"})
+		w.close_zone(rod, "melted")   # the rod melts away (metal_returned)
 	res.counter_broken = true
 	var tp := float(res.tp)
 	res.pass_scale = clampf((tp - float(r.get("absorb_on_fail", 0.5)) * float(res.cp_eff)) / maxf(tp, 1e-6), 0.0, 1.0)
@@ -703,6 +742,14 @@ static func _o_melt_in(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: D
 		var used := w.heat_body(b, hu)
 		pit.heat_payload += hu - used
 		res.heat_used = float(res.heat_used) + used
+	elif pit.is_stone() and pit.liquid > 0.0:
+		# A lava pool melts what lands in it with its own heat (exact transfer).
+		var take := minf(float(r.get("rate_hu", 120.0)), maxf(0.0, pit.thermal_energy() - pit.mass * Sim.STONE_C * (Sim.STONE_MELT_C - Sim.AMBIENT_C) * 0.5))
+		if take > 0.0:
+			var got := -Thermal.heat(pit, -take)
+			var used2 := w.heat_body(b, got)
+			w.ledger.ambient -= got - used2
+			res.heat_used = float(res.heat_used) + used2
 	if b.alive and b.form != Sim.Form.WAVE:
 		b.vel *= 0.2
 		b.attack_id = 0
@@ -710,7 +757,7 @@ static func _o_melt_in(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: D
 		b.wave_budget = minf(b.wave_budget, 0.5)
 	res.stopped = true
 	res.pass_scale = 0.0
-	if pit.heat_payload <= 0.5:
+	if pit.mat == Sim.Mat.AIR and pit.heat_payload <= 0.5:
 		w.close_zone(pit, "spent")
 	return true
 
@@ -759,4 +806,149 @@ static func _o_smother(w: CombatWorld, t: Agent, _c: Agent, res: Dictionary, _r:
 			w.close_zone(t.body, "smothered")
 		else:
 			w.decay_body(t.body, "smothered")
+	return true
+
+
+## Ram Wall face: a body is shoved along the ram (a hostile shot becomes the rammer's attack); a wave
+## turns around along it and is now the rammer's.
+static func _o_ram_push(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
+	var b := t.body
+	if b == null or not b.alive or c.actor == null:
+		return false
+	var a := c.actor
+	var dir := c.dir
+	if b.form == Sim.Form.WAVE:
+		b.wave_dir = dir
+		b.wave_budget = maxf(b.wave_budget, 5.0)
+		b.pos += dir * 0.4
+	else:
+		b.vel = dir * maxf(10.0, b.vel.length() * 0.6) + Vector3(0, 2.0, 0)
+		b.on_ground = false
+	if b.attack_id != 0 or b.form == Sim.Form.WAVE:
+		b.attack_id = w.new_attack_id()
+		b.attack_owner = a.id
+		b.hit_set.clear()
+		b.hit_set[a.id] = true
+		b.damage = maxf(b.damage, 10.0)
+		b.balance_damage = maxf(b.balance_damage, 25.0)
+	b.touch(a.id, "ram", w.tick)
+	w.emit("deflect", {"actor": a.id, "body": b.id, "verb": "ram", "kind": FxEvents.mat_of(b)})
+	res.stopped = true
+	res.pass_scale = 0.0
+	res.result = "deflect"
+	return true
+
+
+## Ram contest lost: the other wall holds (it takes the momentum as damage); the ram stops.
+static func _o_ram_blocked(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictionary, _ctx: Dictionary) -> bool:
+	if c.body != null and c.body.alive and t.body != null:
+		# The wall that held takes damage in proportion to how close the contest was.
+		c.body.wall_damage_add(0.5 * float(res.tp) / maxf(float(res.cp_eff), 1e-3))
+		w.emit("block", {"actor": _aid(c), "body": t.body.id, "kind": "ram", "wall": c.body.id, "power": res.tp, "mat": FxEvents.mat_of(t.body),
+			"tier": t.tier, "dir": t.dir})
+		if c.body.wall_damage >= 1.0:
+			w._crumble_wall(c.body)
+	res.stopped = true
+	res.pass_scale = 0.0
+	return true
+
+
+## Ram contest even: both walls break.
+static func _o_ram_both(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
+	if c.body != null and c.body.alive and c.body.form == Sim.Form.WALL:
+		w._crumble_wall(c.body)
+	res.counter_broken = true
+	res.stopped = true
+	res.pass_scale = 0.0
+	if t.body != null:
+		w.emit("clash", {"a": t.body.id, "b": c.body.id if c.body != null else -1, "winner": -1, "pos": t.body.pos, "power": res.tp,
+			"mat": FxEvents.mat_of(t.body)})
+	return true
+
+
+## Chain Arc wraps a light solid and yanks it to the swinger's feet (no longer an attack; the swinger
+## keeps the residual authority, so it is theirs to seize or reuse).
+static func _o_wrap(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
+	var b := t.body
+	var a := c.actor
+	if b == null or not b.alive or a == null:
+		return false
+	var land := a.pos + a.forward() * 0.9
+	land.y = w.arena.ground_height(land.x, land.z, a.pos.y + 0.4) + b.radius
+	b.gravity_scale = 1.0
+	b.vel = Verbs.launch_vel(b.pos, land, maxf(2.0, KitEarth.flat_dist(b.pos, land) / 0.45), 1.0)
+	b.attack_id = 0
+	b.on_ground = false
+	b.residual_owner = a.id
+	b.residual_authority = 0.9
+	b.touch(a.id, "wrap", w.tick)
+	w.emit("capture", {"body": b.id, "by": -1, "actor": a.id, "verb": "chain"})
+	res.stopped = true
+	res.pass_scale = 0.0
+	return true
+
+
+## Spikes meet a ground line: the line is stopped where it is; a travelling spike line erupts there.
+## Iron filings (metal spike line) don't stop anything.
+static func _o_spike_stop(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
+	var spike: MatBody = null
+	var other: MatBody = null
+	for x in [t.body, c.body]:
+		if x == null or not x.alive:
+			continue
+		if spike == null and (x.tag == &"spike_line" or x.tag == &"spikes"):
+			spike = x
+		else:
+			other = x
+	if spike == null or other == null:
+		return false
+	if spike.mat == Sim.Mat.METAL:
+		res.pass_scale = 1.0
+		return true
+	if other.form == Sim.Form.WAVE:
+		w.emit("block", {"actor": spike.attack_owner if spike.attack_owner >= 0 else spike.last_actor, "body": other.id, "kind": "spikes",
+			"wall": spike.id, "power": res.tp, "mat": FxEvents.mat_of(other), "tier": other.tier, "dir": other.wave_dir})
+		w.emit("wave_blocked", {"body": other.id, "at": other.pos})
+		w._settle_wave(other, "blocked")
+	elif other.form == Sim.Form.ZONE and other.mat == Sim.Mat.FIRE:
+		w.close_zone(other, "blocked")
+	if spike.form == Sim.Form.WAVE:
+		EarthStone._erupt(w, spike)
+	res.stopped = true
+	res.pass_scale = 0.0
+	return true
+
+
+## A Melt Pit glazes the front of a sand surge: the surge stalls in it and fuses to glass (the pit's
+## heat goes into it; sand -> glass booked).
+static func _o_glaze(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictionary, ctx: Dictionary) -> bool:
+	var b := t.body
+	if b == null or not b.alive or b.mat != Sim.Mat.SAND:
+		return false
+	_o_melt_in(w, t, c, res, r, ctx)
+	if b.alive and b.form == Sim.Form.WAVE:
+		w._settle_wave(b, "glazed")
+	if b.alive and b.mat == Sim.Mat.SAND:
+		w.convert_mat(b, Sim.Mat.GLASS, "sand_to_glass")
+		b.props.erase("settle")
+		w.emit("transform", {"body": b.id, "at": b.pos, "from": "sand", "to": "glass", "why": "melt_pit"})
+	res.stopped = true
+	res.pass_scale = 0.0
+	return true
+
+
+## A hostile projectile crossing a sand cloud is dragged once (K x factor: speed x factor).
+static func _o_drag(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictionary, _ctx: Dictionary) -> bool:
+	var b := t.body
+	if b == null or not b.alive or c.body == null:
+		return false
+	var key := "dragged_%d" % c.body.id
+	res.pass_scale = 1.0
+	if b.props.has(key):
+		return true
+	b.props[key] = true
+	var f := float(r.get("factor", 0.7))
+	b.vel *= f
+	res.pass_scale = f
+	w.emit("bend", {"actor": _aid(c), "body": b.id, "verb": "grit"})
 	return true

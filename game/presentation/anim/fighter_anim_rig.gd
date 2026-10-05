@@ -17,6 +17,8 @@ const PLANT_FROM := 0.115            # animated ankle height where a foot stops 
 const PLANT_TO := 0.19
 const MAX_DROP := 0.38               # never reach further down than a step (deeper = ledge edge)
 const MAX_LIFT := 0.45
+const PELVIS_SHARE := 0.5            # share of a one-foot step-down taken by the pelvis (rest: leg reach)
+const REACH_FRAC := 0.96             # leg length used for reach (a planted leg never locks fully straight)
 const LOOK_YAW_MAX := 1.05           # rad (about 60 deg) beyond the animated head direction
 const LOOK_PITCH_MAX := 0.45
 const PROBES := ["head", "hand.L", "hand.R", "shin.L", "shin.R", "foot.L", "foot.R", "toe.L", "toe.R", "hips"]
@@ -29,6 +31,7 @@ const LOCK_RELEASE := 0.22           # s to ease a released foot back onto the a
 var loco_target := 0.0               # 1 = locomotion owns the whole body
 var legs_target := 0.0               # >0 = gait legs under an upper-body action (guard walk)
 var local_vel := Vector2.ZERO        # x = toward the character's right, y = forward (m/s)
+var ground_speed := 0.0              # actual horizontal speed of the body (m/s, no turn-step input)
 var stance := "idle"
 var lean_target := Vector2.ZERO      # x = pitch (+ forward), y = roll (+ toward the character's right)
 var look_world := Vector3.ZERO
@@ -54,6 +57,7 @@ var land_y := 0.0
 var land_v := 0.0
 var pelvis_shift := 0.0
 var foot_off := [0.0, 0.0]
+var ground_w := [NAN, NAN]           # smoothed world height of the ground under each foot
 var hip_tilt := 0.0
 var lock_target_w := 0.0             # input: 1 = planted feet may lock to the ground
 var locked := [false, false]
@@ -172,17 +176,23 @@ func _process_modification_with_delta(_delta: float) -> void:
 	var goal: Array[Vector3] = [ank[0], ank[1]]
 	var gbas: Array[Basis] = [fbas[0], fbas[1]]
 	if use_ik:
-		_ground_goals(sk, xf, ank, goal)
 		var ball: Array[Vector3] = [ank[0], ank[1]]
 		for i in 2:
 			var toe: int = _b["toe.L" if i == 0 else "toe.R"]
 			if toe >= 0:
 				ball[i] = sk.get_bone_global_pose(toe).origin
-			ball[i].y += float(foot_off[i])
+		# Lock first (horizontal), then find the ground where the foot will actually stand: a locked
+		# foot can be up to LOCK_MAX_DIST from the animated one, e.g. still on a rim the body has left.
 		_lock_feet(xf, ank, ball, goal, fbas, gbas)
-		# Pelvis: down to the lower foot's ground, and far enough that both goals stay in reach.
-		var shift_t := clampf(minf(float(foot_off[0]), float(foot_off[1])), -MAX_DROP, 0.4)
-		shift_t = minf(shift_t, -_reach_drop(sk, goal, shift_t))
+		_ground_goals(sk, xf, ank, goal)
+		# Pelvis: both feet lower (the body still settling after a drop) -> all the way down; one foot
+		# on lower ground -> part of the way (the lower leg straightens, the upper one bends, rather
+		# than the whole body squatting), then further only if that goal is out of reach.
+		var lo := minf(float(foot_off[0]), float(foot_off[1]))
+		var hi := minf(maxf(float(foot_off[0]), float(foot_off[1])), 0.0)
+		var shift_t := lo if lo >= 0.0 else hi + (lo - hi) * PELVIS_SHARE
+		shift_t = clampf(shift_t, -MAX_DROP, 0.4)
+		shift_t -= _reach_drop(sk, goal, shift_t)     # extra drop beyond shift_t
 		shift_t = maxf(shift_t, -MAX_DROP)
 		pelvis_shift = lerpf(pelvis_shift, shift_t, 1.0 - exp(-12.0 * _dt))
 		# Hip tilt toward the lower foot (the pelvis follows uneven ground), torso counter-tilts.
@@ -193,6 +203,8 @@ func _process_modification_with_delta(_delta: float) -> void:
 		hip_tilt = lerpf(hip_tilt, 0.0, 1.0 - exp(-10.0 * _dt))
 		foot_off[0] = 0.0
 		foot_off[1] = 0.0
+		ground_w[0] = NAN
+		ground_w[1] = NAN
 		_unlock(0)
 		_unlock(1)
 		lock_w[0] = 0.0
@@ -253,28 +265,36 @@ func _process_modification_with_delta(_delta: float) -> void:
 			probe_world[i] = xf * sk.get_bone_global_pose(b).origin if b >= 0 else xf.origin
 
 
-## Ground offsets of the two feet from the analytic ArenaMap (heel or ball, whichever is higher),
-## smoothed into foot_off; goal[i] = animated ankle + its offset. Surfaces higher than a step above
-## the fighter's floor are walls (never stood on); deeper than MAX_DROP is a ledge edge (the foot
+## Ground offsets of the two feet from the analytic ArenaMap (heel or ball, whichever is higher,
+## sampled where the locked or animated foot stands), smoothed in world space into foot_off and
+## added to goal[i]. Surfaces higher than a step above the fighter's floor are walls (never stood on); deeper than MAX_DROP is a ledge edge (the foot
 ## keeps the fighter's floor height rather than reaching into the void).
 func _ground_goals(sk: Skeleton3D, xf: Transform3D, ank: Array[Vector3], goal: Array[Vector3]) -> void:
 	var floor_y := xf.origin.y - model_lift
 	var k := 1.0 - exp(-22.0 * _dt)
 	for i in 2:
 		var toe: int = _b["toe.L" if i == 0 else "toe.R"]
-		var aw := xf * ank[i]
-		var bw := xf * (sk.get_bone_global_pose(toe).origin if toe >= 0 else ank[i])
+		var hshift := xf.basis * (goal[i] - ank[i])
+		hshift.y = 0.0
+		var aw := xf * ank[i] + hshift
+		var bw := xf * (sk.get_bone_global_pose(toe).origin if toe >= 0 else ank[i]) + hshift
 		var hw := aw + (aw - bw).normalized() * 0.09     # the heel, behind the ankle
 		var top := floor_y + Sim.STEP_HEIGHT + 0.02
 		var g := maxf(arena.ground_height(hw.x, hw.z, top, 0.0), arena.ground_height(bw.x, bw.z, top, 0.0))
 		var off := g - xf.origin.y
 		if g - floor_y < -MAX_DROP:
 			off = floor_y - xf.origin.y    # past a ledge edge: stay level with the edge
-		off = clampf(off, -MAX_DROP - 0.1, MAX_LIFT)
+		# Smoothed in world space: the skeleton origin itself moves (visual height smoothing after
+		# the sim snaps onto a step or into the pool), and a planted foot must not ride along with it.
+		var gy := xf.origin.y + off
+		if is_nan(float(ground_w[i])) or absf(gy - float(ground_w[i])) > 1.2:
+			ground_w[i] = gy
+		else:
+			ground_w[i] = lerpf(float(ground_w[i]), gy, k)
+		off = clampf(float(ground_w[i]) - xf.origin.y, -MAX_DROP - 0.1, MAX_LIFT)
 		var plant := 1.0 - smoothstep(PLANT_FROM, PLANT_TO, ank[i].y)
-		var tgt := off if off > 0.0 else off * plant
-		foot_off[i] = lerpf(float(foot_off[i]), tgt, k)
-		goal[i] = ank[i] + Vector3(0, float(foot_off[i]), 0)
+		foot_off[i] = off if off > 0.0 else off * plant
+		goal[i].y += float(foot_off[i])
 
 
 ## Foot locking: a planted foot keeps its world position and heading until it lifts (or the body has
@@ -294,6 +314,10 @@ func _lock_feet(xf: Transform3D, ank: Array[Vector3], ball: Array[Vector3], goal
 		var pv: Vector3 = _prev_anim_w[i]
 		var vel := Vector2(anim_w.x - pv.x, anim_w.z - pv.z).length() / maxf(_dt, 1e-4)
 		_prev_anim_w[i] = anim_w
+		# With the body not translating (turning on the spot), the world motion of a foot the clip
+		# has planted is the body's yaw (and the turn-stepping gait): it locks and pivots, then steps
+		# round when the clip lifts it or the turn exceeds LOCK_MAX_YAW, instead of sweeping along.
+		var pivot := ground_speed < 0.35
 		var can := lock_target_w > 0.5 and AnimRigSettings.foot_lock and ik_w > 0.95 and not jumped
 		if locked[i]:
 			var lp: Vector3 = lock_pos[i]
@@ -305,7 +329,7 @@ func _lock_feet(xf: Transform3D, ank: Array[Vector3], ball: Array[Vector3], goal
 				# catch-up is a quick step (the foot lifts on the way) rather than a slide.
 				relock_wait[i] = plant >= 0.4
 				catch_lift[i] = clampf(d * 0.45, 0.0, 0.09) if plant >= 0.4 else 0.0
-		elif can and plant > 0.9 and float(lock_w[i]) < 0.35 and vel < LOCK_MAX_FOOT_SPEED + 0.8 * local_vel.length() and not relock_wait[i]:
+		elif can and plant > 0.9 and float(lock_w[i]) < 0.35 and (pivot or vel < LOCK_MAX_FOOT_SPEED + 0.8 * local_vel.length()) and not relock_wait[i]:
 			# Lock where the foot is drawn now (mid-release that is not the animated spot).
 			var e0 := float(lock_w[i])
 			e0 = e0 * e0 * (3.0 - 2.0 * e0)
@@ -346,7 +370,11 @@ func reset_state() -> void:
 		lock_w[i] = 0.0
 		relock_wait[i] = false
 		foot_off[i] = 0.0
+		ground_w[i] = NAN
 	hits.reset()
+	# A (re)spawned fighter stands: IK and foot locks start engaged instead of fading in, so the
+	# first turn toward a target pivots on planted feet rather than sweeping them.
+	ik_w = 1.0 if AnimRigSettings.foot_ik else 0.0
 	land_y = 0.0
 	land_v = 0.0
 	pelvis_shift = 0.0
@@ -360,14 +388,14 @@ static func _yaw_of(b: Basis) -> float:
 	return atan2(f.x, f.z)
 
 
-## How far the pelvis must come down (m, >= 0) so both foot goals are within leg reach.
+## How much further than `shift` the pelvis must come down (m, >= 0) for both foot goals to be in reach.
 func _reach_drop(sk: Skeleton3D, goal: Array[Vector3], shift: float) -> float:
 	var need := 0.0
 	for i in 2:
 		var s := "L" if i == 0 else "R"
 		var th: int = _b["thigh." + s]
 		var hip := sk.get_bone_global_pose(th).origin + Vector3(0, shift, 0)
-		var l := float(_leg_len[i]) * 0.985
+		var l := float(_leg_len[i]) * REACH_FRAC
 		var d: Vector3 = goal[i] - hip
 		var h2 := d.x * d.x + d.z * d.z
 		if h2 >= l * l:
@@ -375,7 +403,7 @@ func _reach_drop(sk: Skeleton3D, goal: Array[Vector3], shift: float) -> float:
 		var v := -d.y                     # hip above the goal
 		var extra := v - sqrt(l * l - h2)
 		need = maxf(need, extra)
-	return clampf(need, 0.0, 0.2)
+	return clampf(need, 0.0, MAX_DROP)
 
 
 ## Head/neck/chest turn toward look_world, relative to where the clip already points the head,

@@ -9,9 +9,29 @@ extends RefCounted
 ## T0/T1 behaviour is unchanged.
 
 
+## Vapour the technique can condense: steam clouds, mist and fog (clouds or zones) with some mass.
+static func vapor_filter(b: MatBody) -> bool:
+	if not b.alive or b.controller >= 0 or b.mass < 0.05 or b.captured_by >= 0:
+		return false
+	if b.mat == Sim.Mat.STEAM:
+		return true
+	return b.is_water() and (b.form == Sim.Form.CLOUD or b.form == Sim.Form.ZONE) and b.phase != Sim.Phase.FROZEN
+
+
+## A rival's liquid water in flight (stream, slug, wave) the technique can seize (a contest).
+static func enemy_water(b: MatBody, a: ActorState) -> bool:
+	if not b.alive or not b.is_water() or b.phase != Sim.Phase.LIQUID or b.attack_id == 0 or b.controller >= 0:
+		return false
+	if b.attack_owner == a.id or b.form == Sim.Form.POOL or b.form == Sim.Form.PUDDLE or b.form == Sim.Form.ZONE \
+			or b.form == Sim.Form.CLOUD or b.form == Sim.Form.WALL:
+		return false
+	return b.mass >= 0.5
+
+
 static func _water_filter(b: MatBody) -> bool:
 	# Legality through the engine (legacy cell puddle x grip_water: reclaim).
-	return b.is_water() and b.phase == Sim.Phase.LIQUID and b.mass > 0.5 and Interactions.allows(b, &"grip_water")
+	return b.is_water() and b.form == Sim.Form.PUDDLE and b.controller < 0 and b.phase == Sim.Phase.LIQUID and b.mass > 0.5 \
+		and Interactions.allows(b, &"grip_water")
 
 
 static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIntent) -> void:
@@ -79,6 +99,8 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 			inst.data["face"] = inst.data.aim
 			_draw(w, a, inst, it)
 			var b := w.held(a)
+			if b != null and it.attack_pressed and not inst.data.get("frozen", false) and b.is_water() and b.phase == Sim.Phase.LIQUID:
+				_freeze_held(w, a, inst, b)
 			if b != null:
 				var sway := sin(inst.total * 5.0) * 0.25
 				var side := a.forward().cross(Vector3.UP)
@@ -109,6 +131,10 @@ static func _draw(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorInte
 		return
 	var rate := float(inst.def.draw_rate) * Sim.DT
 	var reach := float(inst.def.reach)
+	if b != null and b.phase == Sim.Phase.FROZEN:
+		return   # a frozen block does not draw
+	if b == null and _seize(w, a, inst, it, reach):
+		return
 	# Source priority: pool (if near), puddle in the aim cone, then the waterskin.
 	var src: MatBody = null
 	var src_point := Vector3.ZERO
@@ -147,6 +173,10 @@ static func _draw(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorInte
 		if w.tick % 8 == 0:
 			w.emit("draw_water", {"actor": a.id, "body": b.id, "from": src.id, "at": src_point})
 		return
+	var vp := w.find_body(a, w.aim_dir(a, it), reach, 70.0, Callable(ActWater, "vapor_filter"))
+	if vp != null:
+		_condense(w, a, inst, vp, b, minf(float(inst.def.draw_rate) * 0.8 * Sim.DT, maxm - (b.mass if b != null else 0.0)))
+		return
 	if b == null and a.water_carried >= 1.0:
 		b = w.spawn_body(Sim.Mat.WATER, Sim.Form.STREAM, a.water_carried, a.chest() + a.forward() * 0.6, "waterskin:%d" % a.id)
 		a.water_carried = 0.0
@@ -163,7 +193,7 @@ static func _stream(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	var target := ActEarth._throw_target(w, a, inst)
 	var v := ActEarth.launch_vel(b.pos, target, float(inst.def.speed))
 	var s := clampf(b.mass / 8.0, 0.5, 1.5)
-	b.form = Sim.Form.STREAM
+	b.form = Sim.Form.SHARD if b.phase == Sim.Phase.FROZEN else Sim.Form.STREAM
 	w.release_body(a, v, true, float(inst.def.damage) * s, float(inst.def.balance) * s)
 	w.emit("launch", {"actor": a.id, "body": b.id, "speed": v.length(), "kind": "stream"})
 
@@ -226,3 +256,132 @@ static func _ice_lance(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	shard.balance_damage = float(d.heavy_balance)
 	shard.max_life = Sim.REMNANT_LIFETIME
 	w.emit("launch", {"actor": a.id, "body": shard.id, "speed": d.shard_speed, "kind": "ice"})
+
+
+## T2 Torrent: a heavy water slug (up to 10 kg from the waterskin / pool / puddle), a hard knock.
+static func _torrent(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
+	var want := float(Charge.param(inst, "torrent_kg", 10.0))
+	var got := WaterUtil.take(w, a, want)
+	if got < 1.5:
+		WaterUtil.give_back(w, a, got, a.pos)
+		w.emit("insufficient", {"actor": a.id, "what": "water", "move": "water_attack"})
+		return
+	var b := w.spawn_body(Sim.Mat.WATER, Sim.Form.BLOB, got, a.hand_point(), "torrent:%d" % a.id)
+	b.tag = &"slug"
+	b.max_life = Sim.REMNANT_LIFETIME
+	b.gravity_scale = 0.35
+	var target := ActEarth._throw_target(w, a, inst)
+	b.vel = Verbs.launch_vel(b.pos, target, float(Charge.param(inst, "torrent_speed", 20.0)), 0.35)
+	var s := clampf(got / want, 0.4, 1.0)
+	Verbs.arm(w, a, inst, b, float(Charge.param(inst, "torrent_damage", 16.0)) * s, float(Charge.param(inst, "torrent_balance", 34.0)) * s)
+	w.emit("launch", {"actor": a.id, "body": b.id, "speed": b.vel.length(), "kind": "water", "tier": 2})
+	FxEvents.fx_for(w, a, inst, "release", "water", {"body": b.id, "pos": b.pos, "dir": b.vel.normalized(), "power": got * b.vel.length() / 20.0,
+		"shape": ""})
+
+
+## T3 Maelstrom Lash: a 360 degree whip, radius 5 m. Everything around the caster is hit and thrown outward,
+## loose bodies meet the whip as a water_jet counter (cells in WaterRules), the spent water lands as a ring of puddles.
+static func _maelstrom(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
+	var rng_m := float(Charge.param(inst, "maelstrom_range", 5.0))
+	var kg := WaterUtil.take(w, a, float(Charge.param(inst, "maelstrom_kg", 2.0)))
+	var dir: Vector3 = inst.data.get("face", a.forward())
+	var pw := float(Charge.param(inst, "maelstrom_power", 18.0))
+	w.emit("lash", {"actor": a.id, "dir": dir, "range": rng_m, "around": true})
+	var v := Agent.of_volume(w, a, inst, &"water", a.chest(), dir, {"P": pw})
+	v.ccls = &"water_jet"
+	v.data["knock"] = float(Charge.param(inst, "maelstrom_knock", 8.0))
+	FxEvents.fx_for(w, a, inst, "cone", "water", {"length": rng_m, "angle": 180.0, "power": pw, "shape": "fan"})
+	FxEvents.fx_for(w, a, inst, "ring", "water", {"radius": rng_m, "power": pw, "pos": a.pos})
+	for t in w.actors:
+		if t == a or t.team == a.team or t.health <= 0.0:
+			continue
+		var rel := t.pos - a.pos
+		rel.y = 0.0
+		if rel.length() > rng_m + Sim.ACTOR_RADIUS:
+			continue
+		var rd := rel.normalized() if rel.length() > 0.05 else dir
+		var res := w.hit_actor(t, {"attacker": a.id, "attack_id": inst.attack_id, "damage": float(Charge.param(inst, "maelstrom_damage", 18.0)),
+			"balance": float(Charge.param(inst, "maelstrom_balance", 40.0)), "knock": rd * float(v.data.knock) + Vector3(0, 1.5, 0),
+			"kind": "water", "from": a.chest(), "agent": v, "power": pw, "tier": 3, "mat": "water"})
+		if res == "hit" or res == "knockdown" or res == "block":
+			t.wetness = 1.0
+	for b in w.bodies:
+		if not b.alive or b.controller == a.id or b.static_body or b.form == Sim.Form.WALL or b.form == Sim.Form.POOL \
+				or b.form == Sim.Form.ZONE or b.form == Sim.Form.PUDDLE:
+			continue
+		var to := b.pos - a.chest()
+		if Vector3(to.x, 0, to.z).length() > rng_m + b.radius:
+			continue
+		var vv := v
+		vv.dir = Vector3(to.x, 0, to.z).normalized() if Vector3(to.x, 0, to.z).length() > 0.05 else dir
+		VerbVolume.meet_body(w, a, vv, b)
+	if kg > 0.0:
+		# The whip's spray falls around the caster.
+		var n := 3
+		for k in n:
+			var ang := TAU * float(k) / float(n) + float(w.tick % 7)
+			WaterUtil.make_puddle(w, kg / float(n), WaterUtil.ground_at(w, a.pos + Vector3(cos(ang), 0, sin(ang)) * rng_m * 0.7))
+
+
+## The technique reaches for a rival's stream / wave in flight: a grip contest (cohesion 0.6 + 0.1 tier of the thrower).
+static func _seize(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIntent, reach: float) -> bool:
+	var tb := w.find_body(a, w.aim_dir(a, it), reach, 70.0, func(x: MatBody) -> bool: return enemy_water(x, a))
+	if tb == null:
+		return false
+	if tb.mass > a.max_control_mass:
+		w.request_grip(a, tb, 0.0, "seize")   # emits control_fail (mass)
+		return true
+	if inst.data.get("seize_target", -1) != tb.id:
+		inst.data["seize_target"] = tb.id
+		w.emit("target_body", {"actor": a.id, "body": tb.id})
+	w.request_grip(a, tb, w.grip_strength(a, tb, 0.9, reach), "seize")
+	return true
+
+
+## Condenses vapour (steam, mist, fog) into the held water: the mass moves from the vapour body into a water blob
+## (water_mass() counts both; the vapour's heat already left through the vapor ledger when it boiled).
+static func _condense(w: CombatWorld, a: ActorState, inst: ActionInst, vp: MatBody, b: MatBody, take: float) -> void:
+	take = minf(take, vp.mass)
+	if take < 0.01:
+		return
+	if b == null:
+		b = w.spawn_body(Sim.Mat.WATER, Sim.Form.STREAM, take, vp.pos, "condense:%d" % vp.id)
+		b.lineage.append(vp.id)
+		w.take_control(a, b, 0.9, "draw")
+	else:
+		var e := b.thermal_energy()
+		b.liquid = (b.liquid * b.mass + take) / (b.mass + take)
+		b.mass += take
+		w._set_energy(b, e)
+		b.update_radius()
+	vp.mass -= take
+	if vp.form == Sim.Form.ZONE:
+		var m0 := float(vp.props.get("mass0", vp.mass + take))
+		vp.props["mass0"] = m0
+		vp.zone_radius = maxf(0.6, float(vp.props.get("radius0", vp.zone_radius)) * sqrt(maxf(vp.mass, 0.0) / m0))
+		vp.props["radius0"] = float(vp.props.get("radius0", vp.zone_radius))
+		vp.radius = vp.zone_radius
+	if vp.mass <= 0.05:
+		var rest := vp.mass
+		vp.mass = 0.0
+		if rest > 0.0:
+			w.mass_ledger.vapor += rest
+		if vp.form == Sim.Form.ZONE:
+			w.close_zone(vp, "condensed")
+		else:
+			w.remove_body(vp, "condensed")
+	if w.tick % 8 == 0:
+		w.emit("draw_water", {"actor": a.id, "body": b.id, "from": vp.id, "at": vp.pos, "vapor": true})
+
+
+## T+A: the held water freezes into an ice block (booked: the heat leaves through freeze_dump).
+static func _freeze_held(w: CombatWorld, a: ActorState, inst: ActionInst, b: MatBody) -> void:
+	if not w.spend_focus(a, 3.0):
+		return
+	inst.data["frozen"] = true
+	WaterUtil.freeze_body(w, b)
+	b.form = Sim.Form.SHARD
+	b.update_radius()
+	w.emit("shape", {"actor": a.id, "body": b.id, "shape": "freeze"})
+	w.emit("transform", {"body": b.id, "at": b.pos, "from": "water", "to": "ice", "why": "frozen"})
+	FxEvents.fx_for(w, a, inst, "cast", "ice", {"body": b.id, "shape": ""})

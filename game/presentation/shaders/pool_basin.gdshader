@@ -21,17 +21,17 @@ uniform float caustic_strength : hint_range(0.0, 3.0) = 1.1;
 varying vec3 v_world;
 
 float caustic(vec2 uv, float t) {
-	vec2 p = mod(uv * 6.28318, 6.28318) - 250.0;
-	vec2 i = p;
-	float c = 1.0;
-	for (int n = 0; n < 4; n++) {
-		float tt = t * (1.0 - 3.5 / float(n + 1));
-		i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
-		c += 1.0 / length(vec2(p.x / (sin(i.x + tt) * 200.0 + 1e-3), p.y / (cos(i.y + tt) * 200.0 + 1e-3)));
+	// three domain-warped layers of |sin| ridges: bright web-like filaments that slide and merge, like light
+	// focused by a rippled surface (no rings, no texture fetch)
+	vec2 a = uv * 5.0;
+	float v = 0.0;
+	for (int i = 0; i < 3; i++) {
+		float fi = float(i);
+		a += 0.55 * vec2(sin(a.y * 1.3 + t * (0.8 + 0.3 * fi)), cos(a.x * 1.1 - t * (0.7 + 0.2 * fi)));
+		v += pow(1.0 - abs(sin(a.x * 1.3 + a.y * 0.8 + fi * 1.9)), 7.0);
+		a = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * a * 1.37;
 	}
-	c /= 4.0;
-	c = 1.17 - pow(c, 1.4);
-	return min(pow(abs(c), 8.0), 3.0);
+	return clamp(v, 0.0, 2.0) * 0.9;
 }
 
 void vertex() {

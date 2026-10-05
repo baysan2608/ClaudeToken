@@ -239,3 +239,101 @@ static func ground_at(w: CombatWorld, p: Vector3) -> Vector3:
 ## Fighters hit by the last volume that were wet when it landed (frost cones freeze them).
 static func hit_result_ok(t: ActorState) -> bool:
 	return t.last_result == "hit" or t.last_result == "knockdown"
+
+
+# ------------------------------------------------------------------ ambient moisture, ice, vapour (booked)
+
+## Ambient moisture (fantasy source of Ice and Mist): `kg` of water appears; booked in mass_ledger.moisture_taken
+## (water_mass() subtracts it, so the invariant holds). Returns the kg.
+static func take_moisture(w: CombatWorld, kg: float) -> float:
+	w.mass_ledger.moisture_taken += kg
+	return kg
+
+
+## Returns moisture that could not be used (a move that fizzled).
+static func give_back_moisture(w: CombatWorld, kg: float) -> void:
+	w.mass_ledger.moisture_taken -= kg
+
+
+## Freezes any water-or-steam body in place (steam becomes ice: its vapour heat already left through the
+## vapor ledger). Returns false for non-water bodies and the pool.
+static func freeze_any(w: CombatWorld, b: MatBody) -> bool:
+	if b == null or not b.alive or b.form == Sim.Form.POOL:
+		return false
+	if b.mat == Sim.Mat.STEAM:
+		var e0 := b.thermal_energy()
+		b.mat = Sim.Mat.WATER
+		b.phase = Sim.Phase.LIQUID
+		b.liquid = 1.0
+		b.temp = Sim.AMBIENT_C
+		w.ledger.removed += e0 - b.thermal_energy()   # (steam carries no heat of its own)
+		if b.form == Sim.Form.CLOUD or b.form == Sim.Form.ZONE:
+			b.form = Sim.Form.SHARD
+			b.tag = &""
+			b.max_life = Sim.REMNANT_LIFETIME
+		b.update_radius()
+	if not b.is_water():
+		return false
+	return freeze_body(w, b)
+
+
+## Moves a water / steam body's mass into the fighter's waterskin (cap 6 kg, the rest falls as a puddle at their feet).
+## The body's own heat leaves through ledger.removed. Returns kg moved into the waterskin.
+static func absorb_into_skin(w: CombatWorld, a: ActorState, b: MatBody) -> float:
+	if b == null or not b.alive or a == null:
+		return 0.0
+	var kg := b.mass
+	var e := b.thermal_energy()
+	b.mass = 0.0
+	w.ledger.removed += e
+	var room := maxf(0.0, 6.0 - a.water_carried)
+	var into := minf(kg, room)
+	a.water_carried += into
+	if b.form == Sim.Form.ZONE:
+		w.close_zone(b, "absorbed")
+	else:
+		w.remove_body(b, "absorbed")
+	if kg - into > 0.02:
+		make_puddle(w, kg - into, a.pos)
+	elif kg - into > 0.0:
+		disperse(w, kg - into)
+	return into
+
+
+## A STEAM body's mass becomes liquid water on the ground (rain / dew); steam holds no heat of its own.
+static func rain_down(w: CombatWorld, b: MatBody, p: Vector3) -> void:
+	var kg := b.mass
+	if kg < 0.02:
+		return
+	b.mass = 0.0
+	if b.form == Sim.Form.ZONE:
+		w.close_zone(b, "rain")
+	else:
+		w.remove_body(b, "rain")
+	make_puddle(w, kg, p)
+
+
+## Any actor within `r` metres (xz) of p that is not on the owner's team.
+static func foes_near(w: CombatWorld, owner: ActorState, p: Vector3, r: float) -> Array[ActorState]:
+	var out: Array[ActorState] = []
+	for t in w.actors:
+		if t.health > 0.0 and (owner == null or (t != owner and t.team != owner.team)) \
+				and Vector2(t.pos.x - p.x, t.pos.z - p.z).length() <= r + Sim.ACTOR_RADIUS:
+			out.append(t)
+	return out
+
+
+## The actor's own zones of a tag (attached barriers etc.).
+static func zones_of(w: CombatWorld, a: ActorState, tag: StringName) -> Array[MatBody]:
+	var out: Array[MatBody] = []
+	for b in w.bodies:
+		if b.alive and b.form == Sim.Form.ZONE and b.tag == tag and b.owner == a.id:
+			out.append(b)
+	return out
+
+
+## Aim direction on the ground plane for kit handlers that run outside the verbs.
+static func aim_flat(w: CombatWorld, a: ActorState, inst: ActionInst) -> Vector3:
+	var d: Vector3 = inst.data.get("aim", inst.data.get("face", a.forward()))
+	d.y = 0.0
+	return d.normalized() if d.length() > 0.01 else a.forward()
