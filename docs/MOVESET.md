@@ -964,6 +964,10 @@ Most new moves are pure data on a verb; kits add custom code only where a move n
 
 ## 16. Priorities and open items
 
+**Status 2026-10-05:** P0, P1 and P2 are implemented and integrated (all 16 sub-elements, every slot bound, T0–T3, the §8 cells,
+combos in the Lab trainer, showcases per sub-element plus `show_owner` for §5.4). Deviations and numbers per kit: `docs/kits/*.md`;
+open items: `HANDOFF.md` "Known gaps (moveset)". The 12 `mv_*` clips of the character pass are wired into the kit defs.
+
 | Priority | Scope |
 |---|---|
 | **P0** | core engine (registry, bindings, gestures, charge, interaction engine + legacy cells + environment, verbs, hooks, events); per sub-element: strike T0–T3, thrust, ground, guard + perfect, technique; their §8 cells; VFX for P0 moves and outcome cues; AI counters via `predict`; UI: sub-element ring, gestures, charge ring with tiers, Lab dev panel (spawner, tuning, matrix viewer) |

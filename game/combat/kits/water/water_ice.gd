@@ -117,7 +117,7 @@ static func _ground() -> void:
 		},
 		"hook_execute": Callable(WaterIce, "rime_execute"),
 		"counter": {"cls": "rime", "power": [10.0, 14.0, 20.0, 30.0]}, "threat": {"cls": "frost"},
-		"anim": "water_freeze", "anim_active": "water_whip", "fx": {"mat": "ice", "shape": "ground"},
+		"anim": "mv_ground_slap", "anim_active": "water_whip", "fx": {"mat": "ice", "shape": "ground"},
 		"ai": {"role": "zone", "range": [3.0, 12.0], "tags": ["slick", "freeze_puddle", "freeze_wave", "crust_lava"]},
 	})
 
@@ -299,7 +299,7 @@ static func _push_sink() -> void:
 		"startup": _s(10), "active": _s(18), "recovery": _s(18), "cancel": 0.6, "cost": 4.0,
 		"hook_execute": Callable(WaterIce, "shove_execute"),
 		"counter": {"cls": "wall_ice", "power": 22.0}, "threat": {"cls": "ice"},
-		"anim": "earth_heavy", "fx": {"mat": "ice", "shape": "plate", "cast": "trail"},
+		"anim": "mv_front_kick", "fx": {"mat": "ice", "shape": "plate", "cast": "trail"},
 		"ai": {"role": "poke", "range": [1.5, 8.0], "tags": ["push", "knockback"]},
 	})
 	Moves.register("frost_floor", {
@@ -309,7 +309,7 @@ static func _push_sink() -> void:
 		"startup": _s(6), "active": _s(4), "recovery": _s(14), "cancel": 0.6, "cost": 5.0,
 		"tag": "ice_floor", "at": "self", "radius": 3.0, "life": 5.0, "power": 12.0, "friction": 0.12, "surface": "ice", "walk_height": 0.0,
 		"height": 1.2, "rate": 0.25,
-		"anim": "water_freeze", "fx": {"mat": "ice", "shape": "down", "cast": "ring"},
+		"anim": "mv_ground_slap", "fx": {"mat": "ice", "shape": "down", "cast": "ring"},
 		"threat": {"cls": "frost"},
 		"ai": {"role": "setup", "range": [0.0, 3.0], "tags": ["slick", "freeze_puddle"]},
 	})

@@ -52,7 +52,7 @@ static func register() -> void:
 			"t3": {"zone_r": 4.0, "zone_power": 24.0, "mass": 5.0}},
 		"counter": {"cls": "caltrops", "power": [10.0, 14.0, 18.0, 24.0]},
 		"hook_execute": Callable(EarthMetal, "line_execute"),
-		"anim": "earth_wall", "fx": {"mat": "metal", "release": "erupt"},
+		"anim": "mv_ground_slap", "fx": {"mat": "metal", "release": "erupt"},
 		"ai": {"role": "zone", "range": [2.0, 9.0], "tags": ["ground_line", "trap", "slow", "conductor"]}})
 	# ---------------------------------------------------------------- sweep: Chain Arc
 	KitEarth.reg("chain_arc", 1, "sweep", {"name": "Chain Arc", "part": "metal",
@@ -89,7 +89,7 @@ static func register() -> void:
 		"cost": 6.0, "metal": 3.0, "radius": 6.0, "life": 8.0, "power": 60.0,
 		"counter": {"cls": "rod", "power": [60.0]},
 		"hook_execute": Callable(EarthMetal, "rod_execute"),
-		"anim": "earth_wall", "fx": {"mat": "metal", "shape": "rod", "release": "erupt"},
+		"anim": "mv_overhead_slam", "fx": {"mat": "metal", "shape": "rod", "release": "erupt"},
 		"ai": {"role": "counter", "range": [0.0, 6.0], "tags": ["vs_lightning", "ground", "from_guard"]}})
 	# ---------------------------------------------------------------- tech: Lodestone Grip / Reforge / Recall
 	KitEarth.reg("lodestone_grip", 1, "tech", {"name": "Lodestone Grip", "part": "metal", "module": "kit_earth",

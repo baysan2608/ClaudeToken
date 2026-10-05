@@ -240,7 +240,7 @@ static func _ground() -> void:
 		},
 		"hook_execute": Callable(WaterPlant, "roots_execute"),
 		"counter": {"cls": "wave_vine", "power": [12.0, 16.0, 22.0, 30.0]}, "threat": {"cls": "vine"},
-		"anim": "earth_wall", "anim_active": "water_whip", "fx": {"mat": "plant", "shape": "ground", "release": "erupt"},
+		"anim": "mv_ground_slap", "anim_active": "water_whip", "fx": {"mat": "plant", "shape": "ground", "release": "erupt"},
 		"ai": {"role": "zone", "range": [3.0, 11.0], "tags": ["root", "telegraph", "ground"]},
 	})
 
@@ -366,7 +366,7 @@ static func _push_sink() -> void:
 		"startup": _s(10), "active": _s(18), "recovery": _s(16), "cancel": 0.6, "cost": 4.0,
 		"hook_execute": Callable(WaterPlant, "roll_execute"),
 		"counter": {"cls": "wall_vine", "power": 10.0}, "threat": {"cls": "vine"},
-		"anim": "earth_heavy", "fx": {"mat": "plant", "shape": "plate", "cast": "trail"},
+		"anim": "mv_push_two_hand", "fx": {"mat": "plant", "shape": "plate", "cast": "trail"},
 		"ai": {"role": "poke", "range": [1.5, 8.0], "tags": ["entangle", "push"]},
 	})
 	Moves.register("deep_roots", {
@@ -376,7 +376,7 @@ static func _push_sink() -> void:
 		"startup": _s(6), "active": 0.0, "recovery": _s(10), "cancel": 0.6, "cost": 0.0, "upkeep": 5.0, "stance": "roots", "anchored": true, "anchor_cp": 35.0,
 		"armor": 0.2, "speed_mult": 0.3,
 		"counter": {"cls": "anchor", "power": 35.0}, "threat": {"cls": "vine"},
-		"anim": "guard", "fx": {"mat": "plant", "shape": "", "cast": "aura"},
+		"anim": "mv_stomp", "fx": {"mat": "plant", "shape": "", "cast": "aura"},
 		"ai": {"role": "counter", "range": [0.0, 0.0], "tags": ["anchor", "drink", "anti_pull"]},
 	})
 

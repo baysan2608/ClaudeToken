@@ -145,7 +145,7 @@ static func _ground() -> void:
 		},
 		"hook_execute": Callable(WaterWater, "tidal_execute"),
 		"counter": {"cls": "wave_water", "power": [18.0, 24.0, 32.0, 45.0]}, "threat": {"cls": "water_wave"},
-		"anim": "water_whip", "anim_active": "water_whip", "fx": {"mat": "water", "shape": "ground"},
+		"anim": "mv_uppercut_lift", "anim_active": "water_whip", "fx": {"mat": "water", "shape": "ground"},
 		"ai": {"role": "counter", "range": [3.0, 12.0], "tags": ["carry_back", "quench", "douse", "knockdown"]},
 	})
 
@@ -297,7 +297,7 @@ static func _push_sink() -> void:
 		"on_impact": "burst", "impact_radius": 2.0, "impact_power": 5.0,
 		"hook_execute": Callable(WaterWater, "orb_execute"), "hook_impact": Callable(WaterWater, "orb_impact"),
 		"counter": {"cls": "water_jet", "power": 5.0}, "threat": {"cls": "water"},
-		"anim": "water_whip", "fx": {"mat": "water", "shape": "small"},
+		"anim": "mv_push_two_hand", "fx": {"mat": "water", "shape": "small"},
 		"ai": {"role": "poke", "range": [2.0, 10.0], "tags": ["wet", "knockback"]},
 	})
 	Moves.register("slick", {
@@ -306,7 +306,7 @@ static func _push_sink() -> void:
 		"module": "kit_water", "verb": "zone",
 		"startup": _s(6), "active": _s(4), "recovery": _s(14), "cancel": 0.6,
 		"cost": 3.0, "zone_life": 5.0, "zone_radius": 1.25, "slip": 20.0,
-		"threat": {"cls": "puddle"}, "anim": "water_draw", "fx": {"mat": "water", "shape": "down", "cast": "splash"},
+		"threat": {"cls": "puddle"}, "anim": "mv_ground_slap", "fx": {"mat": "water", "shape": "down", "cast": "splash"},
 		"ai": {"role": "setup", "range": [1.5, 4.0], "tags": ["slip", "conductor", "wet"]},
 	})
 

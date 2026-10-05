@@ -45,7 +45,7 @@ static func register() -> void:
 		"tiers": {"t1": {"mass": 40.0, "width": 2.5, "cost_add": 3.0}, "t2": {"mass": 53.0, "width": 2.5, "balance": 45.0},
 			"t3": {"mass": 75.0, "width": 4.0, "budget": 14.0, "balance": 55.0, "damage": 14.0}},
 		"counter": {"cls": "wave_sand", "power": [13.5, 18.0, 24.0, 34.0]}, "threat": {"cls": "sand_surge"},
-		"anim": "earth_wall", "fx": {"mat": "sand"},
+		"anim": "mv_ground_slap", "fx": {"mat": "sand"},
 		"ai": {"role": "zone", "range": [2.0, 12.0], "tags": ["ground_line", "knockdown", "carries_back", "vs_lava_wave", "vs_fire_field"]}})
 	# ---------------------------------------------------------------- sweep: Veil of Grit
 	KitEarth.reg("veil_of_grit", 2, "sweep", {"name": "Veil of Grit", "part": "sand",
@@ -74,7 +74,7 @@ static func register() -> void:
 		"cost": 4.0, "tag": "sand_surge", "mat": "sand", "speed": 9.0, "budget": 10.0, "width": 2.5, "damage": 12.0, "balance": 40.0,
 		"knock": 3.5, "lift": 2.5, "steer": 15.0, "kind": "sand",
 		"counter": {"cls": "wave_sand"}, "threat": {"cls": "sand_surge"},
-		"anim": "earth_heavy", "fx": {"mat": "sand"},
+		"anim": "mv_push_two_hand", "fx": {"mat": "sand"},
 		"ai": {"role": "counter", "range": [1.0, 10.0], "tags": ["needs_wall", "ground_line", "from_guard"]}})
 	# ---------------------------------------------------------------- sink: Quicksand
 	KitEarth.reg("quicksand", 2, "sink", {"name": "Quicksand", "part": "sand",
@@ -85,7 +85,7 @@ static func register() -> void:
 		"tiers": {"t1": {"power": 26.0, "radius": 1.6}, "t2": {"power": 36.0, "radius": 1.8}, "t3": {"power": 50.0, "radius": 2.0, "life": 6.0}},
 		"counter": {"cls": "quicksand", "power": [18.0, 26.0, 36.0, 50.0]},
 		"hook_execute": Callable(EarthSand, "pit_execute"),
-		"anim": "earth_wall", "fx": {"mat": "sand"},
+		"anim": "mv_stomp", "fx": {"mat": "sand"},
 		"ai": {"role": "zone", "range": [1.0, 4.0], "tags": ["trap", "root", "sink", "vs_lava_wave", "from_guard"]}})
 	# ---------------------------------------------------------------- tech: Sandform / Compress
 	KitEarth.reg("sandform", 2, "tech", {"name": "Sandform", "part": "sand", "module": "kit_earth",

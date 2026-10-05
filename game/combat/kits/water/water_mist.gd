@@ -300,7 +300,7 @@ static func _push_sink() -> void:
 		"angle": 35.0, "power": 6.0, "damage": 8.0, "balance": 20.0, "knock": 5.0, "lift": 0.8, "status": "scalded", "status_t": 1.5,
 		"hook_execute": Callable(WaterMist, "blast_execute"),
 		"counter": {"cls": "steam", "power": 9.0}, "threat": {"cls": "steam"},
-		"anim": "fire_release", "fx": {"mat": "steam", "shape": ""},
+		"anim": "mv_push_two_hand", "fx": {"mat": "steam", "shape": ""},
 		"ai": {"role": "poke", "range": [0.0, 5.0], "tags": ["scald", "knockback"]},
 	})
 	Moves.register("dew_fall", {

@@ -43,7 +43,7 @@ func test_every_move_has_a_complete_def() -> void:
 				check(FxEvents.is_known("fx", String(fxd[k])), "%s: fx.%s '%s' catalogued" % [id, k, fxd[k]])
 		for ck in ["anim", "anim_hold", "anim_active", "anim_t2", "anim_t3"]:
 			if d.has(ck):
-				check(CLIPS.has(String(d[ck])), "%s: %s '%s' is an existing clip" % [id, ck, d[ck]])
+				check(CLIPS.has(String(d[ck])) or MoveAnimBridge.clip_data().has(String(d[ck])), "%s: %s '%s' is an existing clip" % [id, ck, d[ck]])
 		check(d.has("counter") or d.has("threat"), "%s declares a counter or a threat class" % id)
 		if String(d.slot) in Sim.ATTACK_SLOTS:
 			check(d.has("tiers") and (d.tiers as Dictionary).has("t3"), "%s has tiers up to t3" % id)

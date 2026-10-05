@@ -42,7 +42,7 @@ static func register() -> void:
 			"t3": {"earthrise": true, "radius": 3.5, "mass": 60.0, "damage": 16.0}},
 		"counter": {"cls": "spikes", "power": [18.0, 24.0, 30.0, 40.0]}, "threat": {"cls": "spikes"},
 		"hook_execute": Callable(EarthStone, "fangs_execute"),
-		"anim": "earth_wall", "fx": {"mat": "stone", "release": "erupt"},
+		"anim": "mv_uppercut_lift", "fx": {"mat": "stone", "release": "erupt"},
 		"ai": {"role": "zone", "range": [2.0, 10.0], "tags": ["ground_line", "launcher", "stops_waves"]}})
 	# ---------------------------------------------------------------- sweep: Rubble Fan
 	KitEarth.reg("rubble_fan", 0, "sweep", {"name": "Rubble Fan", "part": "stone",
@@ -52,7 +52,7 @@ static func register() -> void:
 		"spread": 40.0, "damage": 5.0, "balance": 10.0, "reach": 8.0,
 		"tiers": {"t1": {"count": 5, "spread": 50.0, "cost_add": 2.0}, "t2": {"count": 7, "spread": 60.0}, "t3": {"count": 9, "spread": 70.0, "ricochet": 1}},
 		"threat": {"cls": "stone", "power": [5.4, 5.4, 5.4, 5.4]},
-		"anim": "earth_throw", "fx": {"mat": "stone", "shape": "fan"},
+		"anim": "mv_sweep_low", "fx": {"mat": "stone", "shape": "fan"},
 		"ai": {"role": "poke", "range": [1.5, 8.0], "tags": ["projectile", "multi_hit", "area"]}})
 	# ---------------------------------------------------------------- push: Ram Wall
 	KitEarth.reg("ram_wall", 0, "push", {"name": "Ram Wall", "part": "stone", "module": "kit_earth",
@@ -60,7 +60,7 @@ static func register() -> void:
 		"verb": "ram", "startup": KitEarth.f(10), "active": KitEarth.f(40), "recovery": KitEarth.f(18), "cancel": 0.6,
 		"cost": 6.0, "speed": RAM_SPEED, "damage": 12.0, "balance": 40.0, "knock": 7.0,
 		"counter": {"cls": "ram", "power": [54.0, 72.0, 90.0, 90.0]}, "threat": {"cls": "wall_stone"},
-		"anim": "earth_heavy", "fx": {"mat": "stone", "cast": "cast", "release": "trail", "impact": "burst"},
+		"anim": "mv_push_two_hand", "fx": {"mat": "stone", "cast": "cast", "release": "trail", "impact": "burst"},
 		"ai": {"role": "counter", "range": [0.0, 7.0], "tags": ["needs_wall", "pushes_waves", "wall_contest"]}})
 	# ---------------------------------------------------------------- sink: Swallow
 	KitEarth.reg("swallow", 0, "sink", {"name": "Swallow", "part": "stone", "module": "kit_earth",
@@ -69,7 +69,7 @@ static func register() -> void:
 		"cost": 8.0, "range": 6.0, "angle": 30.0,
 		"counter": {"cls": "swallow", "power": [22.0, 30.0, 40.0, 55.0]},
 		"tiers": {"t1": {}, "t2": {}, "t3": {}},
-		"anim": "earth_wall", "fx": {"mat": "stone", "shape": "open", "release": "erupt"},
+		"anim": "mv_ground_slap", "fx": {"mat": "stone", "shape": "open", "release": "erupt"},
 		"ai": {"role": "counter", "range": [0.0, 6.0], "tags": ["sink", "vs_solids", "vs_lava_wave", "from_guard"]}})
 	# ---------------------------------------------------------------- evade_hold: Stone Skin / Burrow Step
 	KitEarth.reg("stone_skin", 0, "evade_hold", {"name": "Stone Skin", "part": "stone", "module": "kit_earth",

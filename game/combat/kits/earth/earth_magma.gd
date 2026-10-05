@@ -60,7 +60,7 @@ static func register() -> void:
 			"t3": {"count": 12, "spread": 330.0, "heat_add": 70.0, "reach": 6.0}},
 		"threat": {"cls": "hot_rock", "power": [2.0, 2.0, 2.0, 2.0]},
 		"hook_execute": Callable(EarthMagma, "clot_execute"),
-		"anim": "fire_release", "fx": {"mat": "magma", "shape": "fan"},
+		"anim": "mv_roundhouse", "fx": {"mat": "magma", "shape": "fan"},
 		"ai": {"role": "poke", "range": [1.0, 7.0], "tags": ["projectile", "area", "burn"]}})
 	# ---------------------------------------------------------------- guard: Magma Curtain / Obsidian Set
 	KitEarth.reg("magma_curtain", 3, "guard", {"name": "Magma Curtain", "part": "magma", "module": "kit_earth",
@@ -86,7 +86,7 @@ static func register() -> void:
 			"t3": {"power": 50.0, "radius": 1.8, "life": 3.5, "pit_heat_add": 200.0}},
 		"counter": {"cls": "melt_pit", "power": [20.0, 28.0, 38.0, 50.0]},
 		"hook_execute": Callable(EarthMagma, "pit_execute"),
-		"anim": "earth_wall", "fx": {"mat": "magma"},
+		"anim": "mv_stomp", "fx": {"mat": "magma"},
 		"ai": {"role": "zone", "range": [1.0, 4.0], "tags": ["trap", "melt", "vs_ice", "vs_stone", "from_guard"]}})
 	# ---------------------------------------------------------------- tech: Magma Hold / Cool & Set / Reverse Tide
 	KitEarth.reg("magma_hold", 3, "tech", {"name": "Magma Hold", "part": "magma", "module": "kit_earth",
