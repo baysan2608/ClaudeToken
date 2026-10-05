@@ -6,7 +6,9 @@ extends RefCounted
 ##
 ## Kinds: "light" (UI tick / light hit), "block", "deflect" (timed guard),
 ## "perfect" (perfect deflect / perfect evade), "heavy" (taking a heavy hit),
-## "lost_control" (technique lost control), "transform" (phase / form change).
+## "lost_control" (technique lost control), "transform" (phase / form change),
+## moveset: "clash" (projectiles meet), "shatter", "charge" (tier reached), "counter" (full counter
+## outcome in your favour), "boom" (explosion near you), "zone" (your field opens).
 ##
 ## LIMITS (documented, not hidden): Godot exposes only duration + amplitude.
 ## True Core Haptics patterns (transient + continuous events, sharpness
@@ -25,6 +27,12 @@ const KINDS := {
 	"heavy": [48, 1.0],
 	"lost_control": [60, 0.80],
 	"transform": [70, 0.60],
+	"clash": [18, 0.65],
+	"shatter": [22, 0.60],
+	"charge": [10, 0.35],
+	"counter": [40, 0.90],
+	"boom": [55, 1.0],
+	"zone": [14, 0.40],
 }
 
 static var _last_ms: int = -1000000

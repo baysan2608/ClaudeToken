@@ -174,3 +174,74 @@ func hit_test(pos: Vector2) -> int:
 
 func in_cancel_zone(pos: Vector2) -> bool:
 	return pos.distance_to(centers[Id.CANCEL]) <= radii[Id.CANCEL]
+
+
+# --- sub-element ring and gesture petals ------------------------------------------------------------
+## Pill sizes (mm) of the sub-element ring: four stacked petals beside the chip arc.
+const RING_PETAL_MM := Vector2(19.0, 8.0)
+const RING_GAP_MM := 1.4
+const RING_CHIP_GAP_MM := 3.0
+
+
+## The four sub-element petals (Rect2, index = sub) of the ring opened from an element chip. They stack
+## in one column on the open side of the chip arc (away from the thumb corner), clamped to the usable
+## rect. Chips are 8.5 mm; the petals are 22 x 9 mm.
+func ring_rects() -> Array[Rect2]:
+	var size_mm := RING_PETAL_MM * ppm * control_scale
+	var gap := RING_GAP_MM * ppm * control_scale
+	var out: Array[Rect2] = []
+	var edge := INF if not left_handed else -INF
+	var cy := 0.0
+	for e in UiStyle.ELEMENT_COUNT:
+		var c := centers[Id.ELEM_0 + e]
+		cy += c.y
+		if left_handed:
+			edge = maxf(edge, c.x + radii[Id.ELEM_0 + e])
+		else:
+			edge = minf(edge, c.x - radii[Id.ELEM_0 + e])
+	cy /= UiStyle.ELEMENT_COUNT
+	var x := edge - RING_CHIP_GAP_MM * ppm - size_mm.x
+	if left_handed:
+		x = edge + RING_CHIP_GAP_MM * ppm
+	x = clampf(x, usable.position.x, maxf(usable.position.x, usable.end.x - size_mm.x))
+	var total := 4.0 * size_mm.y + 3.0 * gap
+	var top := clampf(cy - total * 0.5, usable.position.y + margin * 0.5, maxf(usable.position.y, usable.end.y - total - margin * 0.5))
+	for i in 4:
+		out.append(Rect2(Vector2(x, top + i * (size_mm.y + gap)), size_mm))
+	return out
+
+
+## Which ring petal (0..3) a point is on (with a little slack), else -1.
+func ring_hit(pos: Vector2) -> int:
+	var rects := ring_rects()
+	var slack := 0.8 * ppm
+	for i in 4:
+		if rects[i].grow(slack).has_point(pos):
+			return i
+	return -1
+
+
+## Anchor (petal centre, outward edge for SIDE) of an ATTACK gesture petal. which: Sim.Gesture UP / DOWN / SIDE.
+## Returns {pos: Vector2, align: -1 (pill grows left of pos), 0 (centred), 1 (grows right)}.
+func attack_petal_anchor(which: int) -> Dictionary:
+	var c := centers[Id.ATTACK]
+	var r := radii[Id.ATTACK]
+	var k := ppm * control_scale
+	var inward := 1.0 if left_handed else -1.0     # toward the screen interior along x
+	match which:
+		Sim.Gesture.UP:
+			return {"pos": c + Vector2(0.0, -(r + 4.4 * k)), "align": 0}
+		Sim.Gesture.DOWN:
+			return {"pos": c + Vector2(0.0, r + 4.4 * k), "align": 0}
+		_:
+			return {"pos": c + Vector2(inward * (r + 3.0 * k), -4.0 * k), "align": int(inward)}
+
+
+## Anchor of a GUARD flick label (UP push above, DOWN sink below).
+func guard_petal_anchor(which: int) -> Dictionary:
+	var c := centers[Id.GUARD]
+	var r := radii[Id.GUARD]
+	var k := ppm * control_scale
+	if which == Sim.Gesture.UP:
+		return {"pos": c + Vector2(0.0, -(r + 4.2 * k)), "align": 0}
+	return {"pos": c + Vector2(0.0, r + 3.6 * k), "align": 0}

@@ -10,11 +10,20 @@ const LIST: Array[Dictionary] = [
 		"objective": "FIRE technique on the incoming stone (hold) → release to pour lava",
 		"player": {"element": 2, "kit": {"magma": true, "heat_draw": true}},
 		"opponent": {"kit": {"heat_draw": true}, "elements": [0, 2], "ai": {"drill": "stone_rain", "interval": 3.4, "counter": 0.85, "aggression": 0.5}}},
+	{"id": "lab", "group": "Lab", "title": "Lab",
+		"subtitle": "Every element and sub-element, dummies and a rival who throws what you spawn. Dev panel: ` / F2, or Dev in the pause menu.",
+		"objective": "LAB: all 16 sub-elements. ` or F2 = dev panel (spawner, move list, combos, matrix, tuning)",
+		"player": {"element": 0, "kit": "all", "pos": Vector3(0, 0, 8)},
+		"opponent": {"kit": "all", "elements": [0, 1, 2, 3], "pos": Vector3(0, 0, -7), "ai": {"drill": "passive", "aggression": 0.5, "counter": 0.7},
+			"ai_default": false},
+		"dummies": [Vector3(-5, 0, -4), Vector3(5, 0, -4), Vector3(-2.5, 0, -10)],
+		"lab": true},
 	{"id": "spar", "group": "Spar", "title": "Free Spar",
-		"subtitle": "Full sparring partner (earth + fire). Uses your unlocked techniques.",
+		"subtitle": "Full sparring partner. Pick the rival's difficulty and kit below; your techniques are the ones you've mastered.",
 		"objective": "Spar. Your kit = techniques you've mastered.",
 		"player": {"element": 0, "kit": "progress"},
-		"opponent": {"kit": {"heat_draw": true}, "elements": [0, 2], "ai": {"aggression": 0.6, "counter": 0.7}}},
+		"opponent": {"kit": {"heat_draw": true}, "elements": [0, 2], "ai": {"aggression": 0.6, "counter": 0.7}},
+		"spar": true},
 	{"id": "stone_rain", "group": "Drills", "title": "Stone Rain",
 		"subtitle": "Stones on a rhythm: sidestep, guard, time an Earth guard to send them back.",
 		"objective": "EVADE + direction, hold GUARD, or tap GUARD just before impact (Earth) to redirect",
@@ -70,6 +79,16 @@ const LIST: Array[Dictionary] = [
 ]
 
 
+## Free Spar rival choices (docs/CONTROLS.md, docs/AI.md): AiPresets names and the kit.
+const SPAR_DIFFICULTIES: Array[String] = ["novice", "adept", "master"]
+const SPAR_DIFFICULTY_LABELS: Array[String] = ["Easy", "Normal", "Hard"]
+## "mixed" = the classic earth + fire rival; an element name = that element, every sub-element;
+## "<element>/<sub>" = one sub-element; "all" = all four.
+const SPAR_KITS: Array[String] = ["mixed", "earth", "water", "fire", "air", "all"]
+const SPAR_KIT_LABELS: Array[String] = ["Earth + Fire", "Earth", "Water", "Fire", "Air", "All four"]
+const ELEMENT_KEYS: Array[String] = ["earth", "water", "fire", "air"]
+
+
 static func get_def(id: String) -> Dictionary:
 	for s in LIST:
 		if s.id == id:
@@ -85,7 +104,13 @@ static func practice_items(progress: Progression) -> Array[Dictionary]:
 		if not ch.is_empty():
 			var done := progress.is_done(ch.id)
 			sub = ("✓ " if done else "◇ ") + ch.text + " → unlocks " + Moves.TECHNIQUES.get(ch.unlock, ch.unlock).split(":")[0] + ". " + sub
-		out.append({"id": s.id, "title": "%s · %s" % [s.group, s.title], "subtitle": sub, "locked": false})
+		var item := {"id": s.id, "title": "%s · %s" % [s.group, s.title], "subtitle": sub, "locked": false}
+		if s.get("spar", false):
+			item["options"] = [
+				{"key": "spar_difficulty", "label": "Rival", "values": SPAR_DIFFICULTIES, "labels": SPAR_DIFFICULTY_LABELS, "value": progress.spar_difficulty},
+				{"key": "spar_kit", "label": "Kit", "values": SPAR_KITS, "labels": SPAR_KIT_LABELS, "value": progress.spar_kit},
+			]
+		out.append(item)
 	out.append({"id": "__lab_mode", "title": "Testing · Lab mode %s" % ("ON" if progress.lab_mode else "OFF"),
 		"subtitle": "Toggle: every technique unlocked in Free Spar (for testing; progress is kept)", "locked": false})
 	return out
@@ -97,7 +122,9 @@ static func build(id: String, progress: Progression, seed_value: int = 1) -> Dic
 	var w := CombatWorld.new(seed_value)
 	var pd: Dictionary = d.player
 	var kit: Dictionary
-	if pd.kit is String:
+	if pd.kit is String and pd.kit == "all":
+		kit = Progression.lab_kit()
+	elif pd.kit is String:
 		kit = progress.kit()
 	else:
 		kit = (pd.kit as Dictionary).duplicate()
@@ -109,12 +136,35 @@ static func build(id: String, progress: Progression, seed_value: int = 1) -> Dic
 	var ai_cfg := {}
 	if d.has("opponent"):
 		var od: Dictionary = d.opponent
-		o = w.add_actor("Rival", w.arena.opponent_spawn, 1, od.kit, int(od.elements[0]))
+		var okit: Dictionary
+		if od.kit is String and od.kit == "all":
+			okit = {}
+			for t in Progression.ALL:
+				okit[t] = true
+		else:
+			okit = od.kit
+		var elements: Array = od.elements
+		var spar_sub := -1
+		if d.get("spar", false):
+			var sk := spar_kit(progress.spar_kit)
+			elements = sk.elements
+			spar_sub = int(sk.sub)
+		o = w.add_actor("Rival", od.get("pos", w.arena.opponent_spawn), 1, okit, int(elements[0]))
 		o.elements = [false, false, false, false]
-		for e in od.elements:
+		for e in elements:
 			o.elements[e] = true
 		ai_cfg = (od.ai as Dictionary).duplicate()
-		ai_cfg["elements"] = od.elements
+		ai_cfg["elements"] = elements
+		if d.get("spar", false):
+			# New-style rival: AiBrain.configure() reads these (guarded by has_method in Game).
+			ai_cfg["preset"] = progress.spar_difficulty
+			if spar_sub >= 0:
+				ai_cfg["subs"] = {int(elements[0]): [spar_sub]}
+			else:
+				ai_cfg["subs"] = {}
+		if d.get("lab", false):
+			ai_cfg["preset"] = "adept"
+			ai_cfg["elements"] = elements
 	var k := 0
 	for dp in d.get("dummies", []):
 		var dm := w.add_actor("Target %d" % (k + 1), dp, 1, {}, 0)
@@ -135,3 +185,20 @@ static func build(id: String, progress: Progression, seed_value: int = 1) -> Dic
 		b3.wave_path = PackedVector3Array([lp + Vector3(-0.6, 0, 0), lp + Vector3(0.6, 0, 0.2)])
 	w.take_events()
 	return {"world": w, "player": p, "opponent": o, "ai_cfg": ai_cfg, "launcher": d.get("launcher", {}), "def": d}
+
+
+## "mixed" / "earth".."air" / "all" / "fire/blue" -> {elements: Array, sub: int (-1 = every sub-element)}.
+static func spar_kit(key: String) -> Dictionary:
+	match key:
+		"mixed":
+			return {"elements": [0, 2], "sub": -1}
+		"all":
+			return {"elements": [0, 1, 2, 3], "sub": -1}
+	var parts := key.split("/")
+	var e := ELEMENT_KEYS.find(parts[0])
+	if e < 0:
+		return {"elements": [0, 2], "sub": -1}
+	var sb := -1
+	if parts.size() > 1:
+		sb = clampi(int(parts[1]), 0, 3) if parts[1].is_valid_int() else Sim.SUB_NAMES[e].find(String(parts[1]).capitalize())
+	return {"elements": [e], "sub": sb}

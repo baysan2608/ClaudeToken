@@ -46,6 +46,14 @@ var _auto_quality := true
 var _q_timer := 0.0
 var _q_eval_t := 0.0
 var _down := {}              # actor id -> seconds spent at 0 HP
+# --- Lab (docs/MOVESET.md section 14) ---
+var lab := LabSession.new()
+var lab_panel: LabPanel
+var combo_tracker := ComboTracker.new()
+var _player_script: LabScript = null     # a scripted input sequence for the player (Try, combo demo)
+var _rival_script: LabScript = null      # the rival performing a volume move (spawner "perform" entries)
+var _lab_queue: Array[Dictionary] = []  # delayed spawns {t, id, params, launch}
+var _lab_idle := ActorIntent.new()
 
 
 func _ready() -> void:
@@ -81,13 +89,25 @@ func _ready() -> void:
 	add_child(hub)
 	hub.paused_requested.connect(_on_pause)
 	hub.settings_changed.connect(_apply_settings)
+	hub.dev_requested.connect(_toggle_dev)
+	var dl := CanvasLayer.new()
+	dl.layer = 110
+	add_child(dl)
+	lab_panel = LabPanel.new()
+	lab_panel.session = lab
+	lab_panel.tracker = combo_tracker
+	dl.add_child(lab_panel)
+	lab_panel.action.connect(_on_lab_action)
+	lab_panel.opened.connect(_lab_panel_visibility)
+	lab_panel.closed.connect(_lab_panel_visibility)
 	var sp := hub.settings_panel
 	sp.resume_requested.connect(_resume)
 	sp.closed.connect(_resume)
 	sp.reset_requested.connect(func(): load_scenario(scenario_id); _resume_and_close())
 	sp.practice_selected.connect(_on_practice_selected)
 	sp.reset_progress_requested.connect(_reset_progress)
-	sp.quit_to_lab_requested.connect(func(): load_scenario("molten_exchange"); _resume_and_close())
+	sp.quit_to_lab_requested.connect(func(): load_scenario("lab"); _resume_and_close())
+	sp.practice_option_changed.connect(_on_practice_option)
 	_apply_settings()
 	audio.ambience(true)
 	var start := progress.last_scenario
@@ -127,6 +147,9 @@ func load_scenario(id: String) -> void:
 	player = r.player
 	opponent = r.opponent
 	ai = AiBrain.new(world, opponent, r.ai_cfg, _seed + 7) if opponent else null
+	if ai != null and r.ai_cfg.has("preset") and ai.has_method("configure"):
+		ai.configure(r.ai_cfg)
+	_reset_lab_for_scenario(r.def)
 	_launcher = r.launcher
 	_launch_t = 1.5
 	_launch_i = 0
@@ -228,7 +251,7 @@ func _resume() -> void:
 	_paused = false
 	get_tree().paused = false
 	hub.release_all()
-	Engine.time_scale = 1.0
+	Engine.time_scale = lab.time_scale
 
 
 func _resume_and_close() -> void:
@@ -274,18 +297,29 @@ func _physics_process(_dt: float) -> void:
 	if autoplay:
 		f = autoplay.frame(self)
 	cam.add_input(f.cam_delta)
+	if lab.frozen and not lab.consume_step():
+		return     # Lab: frozen simulation (frame step runs single ticks)
+	if _player_script != null:
+		LabScript.apply_dict(f, _player_script.next())
+		if _player_script.is_done():
+			_player_script = null
 	intents[player.id] = pc.build(f, cam.yaw)
-	if ai:
-		intents[opponent.id] = ai.think(Sim.DT)
+	if opponent:
+		intents[opponent.id] = _rival_intent()
 	_scenario_tick()
+	_lab_tick()
+	lab.pre_step(world)
 	var t0 := Time.get_ticks_usec()
 	world.step(intents)
 	perf.sim_us(Time.get_ticks_usec() - t0)
+	lab.post_step(player)
 	if _ko_tick():
 		return     # round reset: the fresh scenario runs from the next tick
 	var evs := world.take_events()
 	fx.handle(evs)
 	_challenges(evs)
+	if combo_tracker.is_running():
+		combo_tracker.update(Sim.DT, evs)
 	for e in evs:
 		if e.type == "element" and e.actor == player.id:
 			fighters[player.id].set_accent(UiStyle.element_color(player.element))
@@ -460,7 +494,8 @@ func _hud_context(tgt: ActorState) -> Dictionary:
 	var marker_pos: Variant = null
 	var marker_label := ""
 	var held := world.held(player)
-	match player.element:
+	var sub0 := player.sub() == 0
+	match player.element if sub0 else -1:
 		Sim.Element.EARTH:
 			label = "THROW" if held else "LIFT"
 		Sim.Element.WATER:
@@ -483,8 +518,21 @@ func _hud_context(tgt: ActorState) -> Dictionary:
 	for i in 4:
 		if player.elements[i]:
 			unlocked.append(i)
+	if player.sub() != 0 or label == "":
+		var tl := _tech_context(held)
+		label = tl.label
+		ok = tl.ok
+		if tl.has("marker"):
+			marker_pos = tl.marker
+			marker_label = tl.marker_label
+	var subs_unlocked: Array[int] = []
+	for i in 4:
+		if player.subs_unlocked[player.element][i]:
+			subs_unlocked.append(i)
 	var ctx := {"element": player.element, "unlocked_elements": unlocked, "tech_label": label,
-		"tech_available": ok, "holding": held != null}
+		"tech_available": ok, "holding": held != null, "sub": player.sub(), "unlocked_subs": subs_unlocked,
+		"petals": gesture_petals(player), "guard_petals": guard_petals(player),
+		"shape_label": shape_label(player), "charge_ring": charge_ring_context(player)}
 	ctx.merge(attack_ring_context(player))
 	if marker_pos != null:
 		ctx["target_screen_pos"] = marker_pos
@@ -504,9 +552,15 @@ static func attack_ring_context(a: ActorState) -> Dictionary:
 	if a.buffered == "attack":
 		return {"attack_charge": 0.0, "attack_element": -1}
 	var inst := a.action
-	if inst != null and TouchControls.ATTACK_MOVES.has(inst.id) and (inst.phase == ActionInst.P.STARTUP or inst.phase == ActionInst.P.CHARGE):
-		return {"attack_charge": inst.total, "attack_element": inst.element}
-	return {"attack_charge": -1.0, "attack_element": -1}
+	if inst != null and (inst.phase == ActionInst.P.STARTUP or inst.phase == ActionInst.P.CHARGE):
+		if TouchControls.ATTACK_MOVES.has(inst.id):
+			return {"attack_charge": inst.total, "attack_element": inst.element}
+		if Sim.ATTACK_SLOTS.has(inst.slot):
+			# Every registry attack move (strike / thrust / ground / sweep of every sub-element): the ring times
+			# the move's own tap / hold decision (CombatWorld.attack_after_startup).
+			var t := maxf(float(inst.def.get("startup", 0.0)), Moves.HOLD_THRESHOLD)
+			return {"attack_charge": inst.total, "attack_element": inst.element, "attack_decide": ceilf(t / Sim.DT - 0.001) * Sim.DT}
+	return {"attack_charge": -1.0, "attack_element": -1, "attack_decide": 0.0}
 
 
 ## The sources ActWater._draw takes from: the pool edge within reach, or a liquid puddle in the
@@ -535,3 +589,347 @@ func _debug_lines() -> PackedStringArray:
 			out.append(b.describe() + " " + b.origin + (" lin" + str(b.lineage) if b.lineage.size() > 0 else ""))
 	out.append("energy Δ %.1f ledger %.1f" % [world.system_energy(), world.ledger_balance()])
 	return out
+
+
+# ================================================================ HUD hints for the sub-element moveset
+
+static func _short_name(id: String) -> String:
+	var def: Dictionary = Moves.DEFS.get(id, {})
+	return String(def.get("name", id)).split(" / ")[0]
+
+
+## Names of the ATTACK flick moves (thrust up, ground down, sweep side) of the selected sub-element.
+static func gesture_petals(a: ActorState) -> Dictionary:
+	var out := {}
+	for pair in [["up", "thrust"], ["down", "ground"], ["side", "sweep"]]:
+		var id := Moves.resolve(a.element, a.sub(), pair[1])
+		if id != "":
+			out[pair[0]] = _short_name(id)
+	return out
+
+
+## Names of the GUARD flick moves (push up, sink down).
+static func guard_petals(a: ActorState) -> Dictionary:
+	var out := {}
+	for pair in [["up", "push"], ["down", "sink"]]:
+		var id := Moves.resolve(a.element, a.sub(), pair[1])
+		if id != "":
+			out[pair[0]] = _short_name(id)
+	return out
+
+
+## What T+A does now: the held technique's shape name ("" when no technique is running).
+static func shape_label(a: ActorState) -> String:
+	var inst := a.action
+	if inst == null or inst.slot != "tech" or not (inst.phase == ActionInst.P.CHANNEL or inst.phase == ActionInst.P.CHARGE or inst.phase == ActionInst.P.STARTUP):
+		return ""
+	var sh := String(Charge.param(inst, "shape", ""))
+	return sh.capitalize() if sh != "" else "Shape"
+
+
+## The charge tiers of the running action (Charge.progress) for the ring on its button.
+static func charge_ring_context(a: ActorState) -> Dictionary:
+	var inst := a.action
+	if inst == null or not (inst.phase == ActionInst.P.CHARGE or inst.phase == ActionInst.P.CHANNEL):
+		return {}
+	var d := Charge.pdef(inst)
+	var mx := Charge.max_tier(d)
+	if mx <= 0:
+		return {}
+	var slot := "attack"
+	match inst.slot:
+		"guard", "push", "sink":
+			slot = "guard"
+		"tech":
+			slot = "tech"
+		"evade", "evade_hold":
+			slot = "evade"
+	var pr := Charge.progress(inst)
+	return {"slot": slot, "tier": int(pr.x), "frac": snappedf(pr.y, 0.01), "max": mx}
+
+
+## Technique button label and legality for sub-elements other than the legacy sub 0 (CombatWorld.tech_preview).
+func _tech_context(held: MatBody) -> Dictionary:
+	var out := {"label": "", "ok": true}
+	var dir := world.aim_dir(player, intents.get(player.id, ActorIntent.new()))
+	var pv := world.tech_preview(player, dir)
+	var id := Moves.resolve(player.element, player.sub(), "tech")
+	var def: Dictionary = Moves.DEFS.get(id, {})
+	var mode := String(pv.get("mode", ""))
+	if mode != "":
+		out.label = mode.to_upper()
+	elif def.has("mode_label"):
+		out.label = String(def.mode_label).to_upper()
+	else:
+		var words := _short_name(id).split(" ")
+		out.label = String(words[words.size() - 1]).to_upper() if id != "" else "-"
+	if held != null and mode == "":
+		out.label = "RELEASE"
+	if not pv.is_empty():
+		out.ok = bool(pv.get("ok", true))
+		var pb := world.get_body(int(pv.get("body", -1)))
+		if pb != null and cam != null:
+			var sp: Variant = cam.world_to_screen(pb.pos)
+			if sp != null:
+				out["marker"] = sp
+				out["marker_label"] = "%s %d kg%s" % [mode, int(pb.mass), "  too heavy" if String(pv.get("reason", "")) == "mass" else ""]
+	return out
+
+
+# ================================================================ Lab (dev panel, spawner, scripts, tuning)
+
+func _toggle_dev() -> void:
+	if _paused or lab_panel == null:
+		return
+	lab_panel.toggle()
+
+
+func _lab_panel_visibility() -> void:
+	var open := lab_panel.is_open()
+	hub.input_blocked = open
+	if open:
+		lab_panel.set_player(player.element, player.sub())
+		lab_panel.scenario_id = scenario_id
+		lab_panel.device = "touch" if hub.touch_ui_active() else "keyboard"
+		hud.lab_status = _lab_status_text()
+	else:
+		hub.release_all()
+
+
+func _lab_status_text() -> String:
+	var bits: Array[String] = []
+	if lab.frozen:
+		bits.append("FROZEN")
+	if absf(lab.time_scale - 1.0) > 0.01:
+		bits.append("x%.2f" % lab.time_scale)
+	if lab.god:
+		bits.append("GOD")
+	if lab.infinite:
+		bits.append("INF")
+	return "  ".join(bits)
+
+
+## Scenario load: the Lab session adopts the scenario's AI default; time scale and cheats persist.
+func _reset_lab_for_scenario(d: Dictionary) -> void:
+	var od: Dictionary = d.get("opponent", {})
+	lab.ai_enabled = bool(od.get("ai_default", true))
+	lab.ai_kit = "mixed"
+	lab.ai_sub = -1
+	lab.ai_drill = ""
+	if d.get("spar", false):
+		lab.ai_preset = progress.spar_difficulty
+	_player_script = null
+	_rival_script = null
+	_lab_queue.clear()
+	if combo_tracker != null:
+		combo_tracker.stop()
+	if hud != null:
+		hud.lab_overlay = lab.overlay
+		hud.lab_status = _lab_status_text()
+
+
+func _rival_intent() -> ActorIntent:
+	var it: ActorIntent
+	if _rival_script != null:
+		_lab_idle.clear()
+		it = _lab_idle
+		LabScript.apply_dict(it, _rival_script.next())
+		opponent.lock_target = player.id
+		if _rival_script.is_done():
+			_rival_script = null
+	elif ai != null and lab.ai_enabled:
+		it = ai.think(Sim.DT)
+	else:
+		_lab_idle.clear()
+		it = _lab_idle
+	return it
+
+
+## Delayed spawns (combo set-ups).
+func _lab_tick() -> void:
+	if _lab_queue.is_empty():
+		return
+	var keep: Array[Dictionary] = []
+	for q in _lab_queue:
+		q.t = float(q.t) - Sim.DT
+		if float(q.t) <= 0.0:
+			lab_spawn(String(q.id), q.params, bool(q.launch))
+		else:
+			keep.append(q)
+	_lab_queue = keep
+
+
+func _on_lab_action(action: String, args: Dictionary) -> void:
+	match action:
+		"spawn":
+			var r := lab_spawn(String(args.id), args.get("params", {}), bool(args.get("launch", true)))
+			lab_panel.toast("spawned %s" % String(args.id) if r.ok else String(r.msg))
+		"stage":
+			lab_stage(args)
+		"try":
+			lab_try(int(args.element), int(args.sub), String(args.slot), int(args.get("tier", 0)))
+		"combo_start":
+			lab_start_combo(String(args.id))
+		"combo_stop":
+			combo_tracker.stop()
+			Engine.time_scale = lab.time_scale
+		"combo_demo":
+			lab_demo_combo(String(args.id))
+		"clear":
+			lab_clear()
+		"heal":
+			lab_heal()
+		"reset":
+			load_scenario(scenario_id)
+		"load":
+			load_scenario(String(args.id))
+		"ai":
+			lab_apply_ai()
+		"time":
+			Engine.time_scale = lab.time_scale
+			hud.lab_status = _lab_status_text()
+		"overlay":
+			hud.lab_overlay = lab.overlay
+	hud.lab_status = _lab_status_text()
+
+
+## The aim point of the spawner: 5 m in front of the player (or at the locked target).
+func lab_aim_point() -> Vector3:
+	var p := player.pos + player.forward() * 5.0
+	return Vector3(p.x, world.arena.ground_height(p.x, p.z, player.pos.y + 0.5), p.z)
+
+
+## Spawn a catalogue entry (SpawnCatalog) inert at the aim point or thrown at the player by the rival.
+func lab_spawn(id: String, params: Dictionary, launch: bool) -> Dictionary:
+	var owner := SpawnCatalog.owner_of(world, player)
+	var res := SpawnCatalog.spawn(world, id, params, player, owner, lab_aim_point(), launch)
+	if res.script != null:
+		_rival_script = res.script
+		if opponent != null and owner == opponent:
+			opponent.elements = [true, true, true, true]
+			SpawnCatalog.top_up(world, opponent)
+	return res
+
+
+## Matrix viewer "Stage it": the threat comes at the player, the player holds the counter's element / sub.
+func lab_stage(args: Dictionary) -> void:
+	var el := int(args.get("element", -1))
+	if el >= 0:
+		_player_script = LabScript.new()
+		_player_script.frames.append({"element_select": el, "sub_select": int(args.get("sub", 0))})
+	var r := lab_spawn(String(args.id), args.get("params", {}), true)
+	lab_panel.toast("staged %s" % String(args.id) if r.ok else String(r.msg))
+
+
+## Play a move through the real input path (Try button).
+func lab_try(element: int, sub: int, slot: String, tier: int) -> void:
+	_player_script = LabScript.for_move(element, sub, slot, tier)
+
+
+func lab_clear() -> void:
+	for b in world.bodies.duplicate():
+		if b.alive and b.form != Sim.Form.POOL and b != world.pool:
+			world.decay_body(b, "lab_clear")
+	_player_script = null
+	_rival_script = null
+
+
+func lab_heal() -> void:
+	for a in world.actors:
+		a.health = Sim.HEALTH_MAX
+		a.balance = Sim.BALANCE_MAX
+		a.stun = 0.0
+		SpawnCatalog.top_up(world, a)
+
+
+## Applies the session's AI choice (difficulty, kit, drill) to the rival.
+func lab_apply_ai() -> void:
+	if opponent == null:
+		return
+	var cfg := lab.ai_config()
+	var els: Variant = lab.ai_elements()
+	if els != null:
+		opponent.elements = [false, false, false, false]
+		for e in els:
+			opponent.elements[e] = true
+		opponent.element = int((els as Array)[0])
+		if lab.ai_sub >= 0 and (els as Array).size() == 1:
+			opponent.subs[opponent.element] = lab.ai_sub
+	if ai != null and ai.has_method("configure"):
+		ai.configure(cfg)
+	else:
+		var legacy := LabSession.legacy_cfg(lab.ai_preset)
+		legacy["elements"] = els if els != null else _element_list(opponent)
+		legacy["drill"] = lab.ai_drill
+		ai = AiBrain.new(world, opponent, legacy, _seed + 7)
+	hud.lab_status = _lab_status_text()
+
+
+static func _element_list(a: ActorState) -> Array:
+	var out := []
+	for i in 4:
+		if a.elements[i]:
+			out.append(i)
+	return out
+
+
+## Combo trainer: set the situation up, then watch the player's moves.
+func lab_start_combo(id: String) -> void:
+	var c := LabCombos.find(id)
+	if c.is_empty():
+		return
+	lab_clear()
+	lab_heal()
+	var setup: Dictionary = c.get("setup", {})
+	var t := 0.8
+	for sp in setup.get("spawn", []):
+		_lab_queue.append({"t": t, "id": String(sp.id), "params": sp.get("params", {}), "launch": bool(sp.get("launch", false))})
+		t += 0.4
+	var first: Dictionary = c.steps[0]
+	_player_script = LabScript.new()
+	_player_script.frames.append({"element_select": int(first.el), "sub_select": int(first.sub)})
+	combo_tracker.start(c, player.id)
+	if lab_panel != null:
+		lab_panel.tracker = combo_tracker
+	hud.toast("Combo: %s" % String(c.name))
+	if lab.time_scale < 1.0:
+		Engine.time_scale = lab.time_scale
+
+
+## Plays the combo's own steps (a demo of the input sequence; set-up spawns included).
+func lab_demo_combo(id: String) -> void:
+	var c := LabCombos.find(id)
+	if c.is_empty():
+		return
+	lab_start_combo(id)
+	var s := LabScript.new()
+	var tick := 40
+	for st in c.steps:
+		if String(st.get("kind", "move")) == "shape":
+			var fr := s._at(tick)
+			fr["attack_pressed"] = true
+			tick += 20
+			continue
+		var one := LabScript.for_move(int(st.el), int(st.sub), String(st.slot), int(st.get("tier", 0)))
+		var hold_extra := ceili(float(st.get("hold", 0.0)) / Sim.DT)
+		for i in one.frames.size():
+			var d: Dictionary = one.frames[i].duplicate()
+			var dst := s._at(tick + i)
+			for k in d:
+				dst[k] = d[k]
+		if hold_extra > 0 and String(st.slot) == "tech":
+			# Keep the technique held for the step's own hold time.
+			for i in range(one.frames.size(), hold_extra + LabScript.LEAD):
+				s._at(tick + i)["tech_held"] = true
+		tick += maxi(one.frames.size() + 12, hold_extra + 14)
+	_player_script = s
+
+
+func _on_practice_option(key: String, value: String) -> void:
+	if key == "spar_difficulty":
+		progress.spar_difficulty = value
+	elif key == "spar_kit":
+		progress.spar_kit = value
+	progress.save()
+	if scenario_id == "spar":
+		hub.settings_panel.set_practice_items(Scenarios.practice_items(progress))

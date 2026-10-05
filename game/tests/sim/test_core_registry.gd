@@ -17,7 +17,9 @@ func test_base_defs_are_unchanged_and_live_table_matches() -> void:
 
 
 func test_legacy_bindings_and_fallbacks() -> void:
-	Moves.ensure()
+	h = SimHarness.new(1)
+	h.begin_scope()
+	h.legacy_bindings_only()   # the kits now bind real moves; this pins the engine's fallback rules
 	var want := {0: ["earth_attack", "earth_tech", "evade"], 1: ["water_attack", "water_tech", "evade"],
 		2: ["fire_attack", "fire_tech", "evade"], 3: ["air_attack", "air_tech", "air_dash"]}
 	for e in want:
@@ -29,11 +31,20 @@ func test_legacy_bindings_and_fallbacks() -> void:
 			check(Moves.resolve(e, s, "strike") == want[e][0], "element %d sub %d falls back to the sub-0 strike" % [e, s])
 		check(Moves.resolve(e, 0, "thrust") == "", "nothing bound to thrust in the legacy kit")
 	check(Moves.list(0, 0) == ["earth_attack", "guard", "earth_tech", "evade"], "list(0,0) in slot order: %s" % [Moves.list(0, 0)])
+	h.end_scope()
+	# With the kits registered every element/sub has a move in all ten slots (docs/MOVESET.md).
+	Moves.ensure()
+	for e in 4:
+		check(Moves.resolve(e, 0, "strike") == want[e][0], "element %d sub-0 strike is still the legacy id" % e)
+		for s in 4:
+			for slot in Sim.SLOTS:
+				check(Moves.resolve(e, s, slot) != "", "element %d sub %d slot %s bound" % [e, s, slot])
 
 
 func test_register_bind_resolve_list_unregister() -> void:
 	h = SimHarness.new(1)
 	h.begin_scope()
+	h.legacy_bindings_only()
 	Moves.register("t_spear", {"element": 0, "sub": 1, "verb": "projectile", "startup": 0.2, "active": 0.05, "recovery": 0.3})
 	check(Moves.DEFS.has("t_spear"), "registered")
 	check(Moves.DEFS.t_spear.module == "verbs", "module defaults to verbs")

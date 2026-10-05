@@ -5,26 +5,36 @@ extends Node
 ## needs no input section. Edges are latched from _input (and re-scanned at
 ## poll time) so a tap shorter than one tick is never lost.
 ##
-## Keyboard: WASD move, arrow keys camera, J attack, K guard, Space evade,
-##   L technique (hold; arrow keys aim while held), 1-4 elements, Tab target,
-##   Esc / Backspace cancel the technique, otherwise pause.
+## Keyboard: WASD move, arrow keys camera, J strike, U thrust, N ground, H sweep, K guard
+##   (K+J push, K+N sink), Space evade (hold = evade_hold), L technique (hold; arrow keys aim
+##   while held; J while held = shape), 1-4 elements (the active element's key again, or Q / E,
+##   cycles the sub-element), Tab target, Esc / Backspace cancel the technique, otherwise pause,
+##   backquote / F2 the Lab dev panel.
 ## Mouse: LMB attack, RMB technique (hold, mouse movement aims), middle-drag
 ##   camera, F1 toggles captured mouse-look.
-## Gamepad: left stick move, right stick camera (aim while technique held),
-##   X attack, RB guard, B evade, RT technique, d-pad elements, Y target,
-##   Start pause, LB cancel.
+## Gamepad: left stick move, right stick camera (aim while technique held), X strike,
+##   Y thrust, LT ground, B sweep, A evade (hold), RB guard (+X push, +LT sink), RT technique
+##   (+X shape), LB + d-pad sub-element, d-pad elements, R3 target, Start pause, LB cancel.
 ##
 ## Mouse-from-touch emulation events (device == DEVICE_ID_EMULATION) are
 ## ignored so a finger tap can never act as a mouse click here.
 
 signal pause_requested
+## Backquote / F2: toggle the Lab dev panel.
+signal dev_requested
 
-enum A { ATTACK, GUARD, EVADE, TECH, CANCEL, PAUSE, ELEM_0, ELEM_1, ELEM_2, ELEM_3, TARGET }
-const COUNT := 11
+enum A { ATTACK, GUARD, EVADE, TECH, CANCEL, PAUSE, ELEM_0, ELEM_1, ELEM_2, ELEM_3, TARGET, THRUST, GROUND, SWEEP, SUB_PREV, SUB_NEXT }
+const COUNT := 16
 const ACTIONS: Array[StringName] = [
 	&"ff_attack", &"ff_guard", &"ff_evade", &"ff_tech", &"ff_cancel", &"ff_pause",
 	&"ff_elem_1", &"ff_elem_2", &"ff_elem_3", &"ff_elem_4", &"ff_target",
+	&"ff_thrust", &"ff_ground", &"ff_sweep", &"ff_sub_prev", &"ff_sub_next",
 ]
+## The attack-slot sources (strike, thrust, ground, sweep) and the gesture each one carries.
+const ATTACK_SOURCES: Array[int] = [A.ATTACK, A.THRUST, A.GROUND, A.SWEEP]
+## Scan order of one edge pass: GUARD first, so a chord (K + J) pressed in the same tick is seen.
+const SCAN_ORDER: Array[int] = [A.GUARD, A.ATTACK, A.EVADE, A.TECH, A.CANCEL, A.PAUSE, A.ELEM_0, A.ELEM_1, A.ELEM_2, A.ELEM_3,
+	A.TARGET, A.THRUST, A.GROUND, A.SWEEP, A.SUB_PREV, A.SUB_NEXT]
 const MOVE_L := &"ff_move_left"
 const MOVE_R := &"ff_move_right"
 const MOVE_U := &"ff_move_up"
@@ -53,6 +63,16 @@ var _mouse_state := PackedByteArray()
 var _mmb_drag := false
 var _p_latch := PackedByteArray()
 var _r_latch := PackedByteArray()
+## Attack-slot presses that are NOT attacks: a chord with GUARD (push / sink) or a shape tap with the
+## technique held. They deliver their edge (or gesture) once and never hold or release an attack.
+var _hold_off := PackedByteArray()
+var _l_attack_gesture := 0
+var _l_guard_gesture := 0
+var _l_sub := -1
+## The game's selected element / sub-element and the unlocked sub-elements (set_sub_context).
+var _ctx_element := -1
+var _ctx_sub := 0
+var _ctx_subs := PackedByteArray([1, 1, 1, 1])
 var _tech_down := false
 var _tech_cancelled := false
 var _tech_aim_active := false
@@ -72,6 +92,7 @@ func _init() -> void:
 	_mouse_state.resize(COUNT)
 	_p_latch.resize(COUNT)
 	_r_latch.resize(COUNT)
+	_hold_off.resize(COUNT)
 	_last_usec = Time.get_ticks_usec()
 
 
@@ -82,7 +103,7 @@ func _ready() -> void:
 
 ## Idempotent: adds the "ff_*" actions to the InputMap.
 static func register_actions() -> void:
-	if InputMap.has_action(ACTIONS[0]) and InputMap.has_action(CAM_D):
+	if InputMap.has_action(ACTIONS[COUNT - 1]) and InputMap.has_action(CAM_D):
 		return
 	_axis_action(MOVE_L, KEY_A, JOY_AXIS_LEFT_X, -1.0)
 	_axis_action(MOVE_R, KEY_D, JOY_AXIS_LEFT_X, 1.0)
@@ -93,8 +114,14 @@ static func register_actions() -> void:
 	_axis_action(CAM_U, KEY_UP, JOY_AXIS_RIGHT_Y, -1.0)
 	_axis_action(CAM_D, KEY_DOWN, JOY_AXIS_RIGHT_Y, 1.0)
 	_button_action(&"ff_attack", [KEY_J], [JOY_BUTTON_X])
+	_button_action(&"ff_thrust", [KEY_U], [JOY_BUTTON_Y])
+	_button_action(&"ff_ground", [KEY_N], [])
+	_add_event(&"ff_ground", _joy_axis(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	_button_action(&"ff_sweep", [KEY_H], [JOY_BUTTON_B])
 	_button_action(&"ff_guard", [KEY_K], [JOY_BUTTON_RIGHT_SHOULDER])
-	_button_action(&"ff_evade", [KEY_SPACE], [JOY_BUTTON_B])
+	_button_action(&"ff_evade", [KEY_SPACE], [JOY_BUTTON_A])
+	_button_action(&"ff_sub_prev", [KEY_Q], [])
+	_button_action(&"ff_sub_next", [KEY_E], [])
 	_button_action(&"ff_tech", [KEY_L], [])
 	_add_event(&"ff_tech", _joy_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0))
 	_button_action(&"ff_cancel", [], [JOY_BUTTON_LEFT_SHOULDER])
@@ -103,7 +130,7 @@ static func register_actions() -> void:
 	_button_action(&"ff_elem_2", [KEY_2], [JOY_BUTTON_DPAD_DOWN])
 	_button_action(&"ff_elem_3", [KEY_3], [JOY_BUTTON_DPAD_RIGHT])
 	_button_action(&"ff_elem_4", [KEY_4], [JOY_BUTTON_DPAD_UP])
-	_button_action(&"ff_target", [KEY_TAB], [JOY_BUTTON_Y])
+	_button_action(&"ff_target", [KEY_TAB], [JOY_BUTTON_RIGHT_STICK])
 
 
 static func _ensure(action: StringName, deadzone: float) -> void:
@@ -155,6 +182,18 @@ func set_unlocked(elements: Array) -> void:
 			_unlocked[ei] = 1
 
 
+## The game's current selection, for "the active element's key again" and Q / E sub cycling.
+## unlocked: sub-element indices (0..3) usable for `element`.
+func set_sub_context(element: int, sub: int, unlocked: Array = [0, 1, 2, 3]) -> void:
+	_ctx_element = element
+	_ctx_sub = clampi(sub, 0, 3)
+	_ctx_subs.fill(0)
+	for u in unlocked:
+		var ui := int(u)
+		if ui >= 0 and ui < 4:
+			_ctx_subs[ui] = 1
+
+
 func is_technique_active() -> bool:
 	return _tech_down and not _tech_cancelled
 
@@ -171,13 +210,21 @@ func fill_frame(f: InputFrame) -> void:
 	var stick := Input.get_vector(CAM_L, CAM_R, CAM_D, CAM_U)
 	var tech_active := _tech_down and not _tech_cancelled
 
-	f.attack_pressed = _p_latch[A.ATTACK] == 1
-	f.attack_released = _r_latch[A.ATTACK] == 1
-	f.attack_held = _prev[A.ATTACK] == 1
+	f.attack_pressed = false
+	f.attack_released = false
+	f.attack_held = false
+	for src in ATTACK_SOURCES:
+		f.attack_pressed = f.attack_pressed or _p_latch[src] == 1
+		f.attack_released = f.attack_released or _r_latch[src] == 1
+		f.attack_held = f.attack_held or (_prev[src] == 1 and _hold_off[src] == 0)
+	f.attack_gesture = _l_attack_gesture
+	f.guard_gesture = _l_guard_gesture
+	f.sub_select = _l_sub
 	f.guard_pressed = _p_latch[A.GUARD] == 1
 	f.guard_released = _r_latch[A.GUARD] == 1
 	f.guard_held = _prev[A.GUARD] == 1
 	f.evade_pressed = _p_latch[A.EVADE] == 1
+	f.evade_held = _prev[A.EVADE] == 1
 
 	f.tech_pressed = _p_latch[A.TECH] == 1
 	f.tech_released = _r_latch[A.TECH] == 1 and not _tech_cancelled_at_release
@@ -211,6 +258,9 @@ func fill_frame(f: InputFrame) -> void:
 
 	_p_latch.fill(0)
 	_r_latch.fill(0)
+	_l_attack_gesture = 0
+	_l_guard_gesture = 0
+	_l_sub = -1
 	_l_tech_cancel = false
 	_l_element = -1
 	_l_pause = false
@@ -224,6 +274,7 @@ func cancel_all() -> void:
 		_cancel_technique()
 	_mouse_state.fill(0)
 	_mmb_drag = false
+	_hold_off.fill(0)
 	for a in ACTIONS:
 		if Input.is_action_pressed(a):
 			Input.action_release(a)
@@ -244,7 +295,7 @@ func _notification(what: int) -> void:
 ## physically down now (e.g. the Esc that closed the pause menu) must not
 ## fire again as fresh presses.
 func _resync_edge_actions() -> void:
-	for i in [A.EVADE, A.CANCEL, A.PAUSE, A.ELEM_0, A.ELEM_1, A.ELEM_2, A.ELEM_3, A.TARGET]:
+	for i in [A.EVADE, A.CANCEL, A.PAUSE, A.ELEM_0, A.ELEM_1, A.ELEM_2, A.ELEM_3, A.TARGET, A.SUB_PREV, A.SUB_NEXT]:
 		_prev[i] = 1 if _pressed_now(i) else 0
 		_p_latch[i] = 0
 
@@ -281,6 +332,8 @@ func _input(event: InputEvent) -> void:
 		var k := event as InputEventKey
 		if k.pressed and not k.echo and k.physical_keycode == KEY_F1:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
+		elif k.pressed and not k.echo and (k.physical_keycode == KEY_QUOTELEFT or k.physical_keycode == KEY_F2):
+			dev_requested.emit()
 		_scan_edges()
 	elif event is InputEventJoypadButton or event is InputEventJoypadMotion:
 		_scan_edges()
@@ -292,7 +345,7 @@ func _pressed_now(i: int) -> bool:
 
 ## Compare every action with its previous state and latch the edges.
 func _scan_edges() -> void:
-	for i in COUNT:
+	for i in SCAN_ORDER:
 		var now := _pressed_now(i)
 		var was := _prev[i] == 1
 		if now == was:
@@ -306,8 +359,14 @@ func _scan_edges() -> void:
 
 func _on_pressed(i: int) -> void:
 	match i:
-		A.ATTACK, A.GUARD, A.EVADE, A.TARGET:
+		A.ATTACK, A.THRUST, A.GROUND, A.SWEEP:
+			_attack_source_pressed(i)
+		A.GUARD, A.EVADE, A.TARGET:
 			_p_latch[i] = 1
+		A.SUB_PREV:
+			_cycle_sub(-1)
+		A.SUB_NEXT:
+			_cycle_sub(1)
 		A.TECH:
 			_p_latch[i] = 1
 			_tech_down = true
@@ -325,13 +384,60 @@ func _on_pressed(i: int) -> void:
 				pause_requested.emit()
 		_:
 			var e := i - A.ELEM_0
-			if e >= 0 and e < 4 and _unlocked[e] == 1:
+			if e < 0 or e >= 4:
+				return
+			if Input.is_action_pressed(ACTIONS[A.CANCEL]):
+				# Gamepad: LB + d-pad picks the sub-element (the d-pad index is the sub).
+				if _ctx_subs[e] == 1:
+					_l_sub = e
+			elif e == _ctx_element and _unlocked[e] == 1:
+				# The active element's key again cycles its sub-elements.
+				_cycle_sub(1)
+			elif _unlocked[e] == 1:
 				_l_element = e
+
+
+## An attack-slot key / button went down. Chords and shape taps are not attacks (see _hold_off).
+func _attack_source_pressed(i: int) -> void:
+	if _prev[A.GUARD] == 1 and (i == A.ATTACK or i == A.GROUND) and i != A.SWEEP:
+		# K + J = push, K + N / RB + LT = sink: a guard flick, never an attack.
+		_hold_off[i] = 1
+		_l_guard_gesture = Sim.Gesture.UP if i == A.ATTACK else Sim.Gesture.DOWN
+		return
+	if is_technique_active():
+		# J / X / LMB while the technique is held = shape: one press edge, no attack.
+		_hold_off[i] = 1
+		_p_latch[i] = 1
+		return
+	_hold_off[i] = 0
+	_p_latch[i] = 1
+	match i:
+		A.THRUST:
+			_l_attack_gesture = Sim.Gesture.UP
+		A.GROUND:
+			_l_attack_gesture = Sim.Gesture.DOWN
+		A.SWEEP:
+			_l_attack_gesture = Sim.Gesture.SIDE
+
+
+## Next / previous unlocked sub-element of the selected element (-1 stays if none is unlocked).
+func _cycle_sub(step: int) -> void:
+	var cur := _ctx_sub
+	for k in range(1, 4):
+		var cand := posmod(cur + step * k, 4)
+		if _ctx_subs[cand] == 1:
+			_l_sub = cand
+			return
 
 
 func _on_released(i: int) -> void:
 	match i:
-		A.ATTACK, A.GUARD:
+		A.ATTACK, A.THRUST, A.GROUND, A.SWEEP:
+			if _hold_off[i] == 1:
+				_hold_off[i] = 0
+			else:
+				_r_latch[i] = 1
+		A.GUARD:
 			_r_latch[i] = 1
 		A.TECH:
 			_r_latch[i] = 1

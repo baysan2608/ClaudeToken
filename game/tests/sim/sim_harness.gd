@@ -210,3 +210,13 @@ func end_scope() -> void:
 	CombatWorld._zone_effects = _saved.zones
 	CombatWorld._tech_previews = _saved.previews
 	_saved = {}
+
+
+## Inside a scope: drop every kit binding so only the legacy sub-0 bindings remain (engine tests that
+## exercise fallbacks with test-local moves, independent of what the element kits bind).
+func legacy_bindings_only() -> void:
+	Moves.ensure()
+	Moves.BINDINGS.clear()
+	for e in Moves.LEGACY_BINDINGS:
+		for slot in Moves.LEGACY_BINDINGS[e]:
+			Moves.BINDINGS["%d/0/%s" % [e, slot]] = Moves.LEGACY_BINDINGS[e][slot]

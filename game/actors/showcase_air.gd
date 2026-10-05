@@ -6,6 +6,8 @@ extends RefCounted
 ## it back at them -> step in, cyclone push (hold) -> the rival throws again, air dash out of
 ## its path -> run to the high ledge, updraft onto it -> updraft off the ledge and glide down
 ## toward the rival -> land and finish with a cyclone push.
+## Then the Gust sub-element's new moves: a charged Gale (T2) against a poured lava wave (the wave is turned to rock),
+## a Crescent (flick up), a Dust Line (flick down) and a Crosswind (flick sideways).
 ## The rival is kept passive (ai cfg) and only throws when cued.
 
 ## The duel runs west -> east north of the cover wall, so knockbacks carry the rival into open
@@ -27,6 +29,8 @@ var _cam_yaw: Variant = null   # absolute yaw override (ledge beats)
 var _stone := -1         # the rival's stone in flight
 var _cued := false
 var _trace := OS.has_environment("SHOW_TRACE")
+var _cues := AirShowcase.new()   # the rival's cued threats (lava wave) and shared helpers
+var _lava_done := false
 
 
 func scenario() -> String:
@@ -193,10 +197,34 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 			if bt > 0.75 and bt < 0.85:
 				_shot = "finish"
 			if bt > 1.5:
+				_go("gale", t)
+		"gale":
+			# Gale (T2, hold ~1.1 s): the rival pours a lava wave; the wide gust meets it and turns it to rock
+			if not _lava_done and bt > 0.05:
+				_lava_done = true
+				_cues.pour_lava(g, 20.0, 11.0)
+			_hold_attack(f, bt, 1.15)
+			if bt > 1.5 and bt < 1.6:
+				_shot = "gale"
+			if bt >= 2.6:
+				_go("crescent", t)
+		"crescent":
+			_flick_attack(f, bt, Sim.Gesture.UP)
+			if bt > 0.5 and bt < 0.6:
+				_shot = "crescent"
+			if bt >= 1.5:
+				_go("dust_line", t)
+		"dust_line":
+			_flick_attack(f, bt, Sim.Gesture.DOWN)
+			if bt >= 1.5:
+				_go("crosswind", t)
+		"crosswind":
+			_flick_attack(f, bt, Sim.Gesture.SIDE)
+			if bt >= 1.6:
 				_go("end", t)
 		"end":
 			pass
-	if _beat in ["intro", "gust", "deflect", "approach", "cyclone", "dash", "finish", "finish2", "end"]:
+	if _beat in ["intro", "gust", "deflect", "approach", "cyclone", "dash", "finish", "finish2", "gale", "crescent", "dust_line", "crosswind", "end"]:
 		_cam_yaw = null
 	_steer_cam(g, f)
 	if mv.length() > 0.01:
@@ -241,6 +269,16 @@ func _side_of(p: ActorState, o: ActorState) -> Vector3:
 func _tap_attack(f: InputFrame, bt: float) -> void:
 	if bt < Sim.DT * 1.5:
 		f.attack_pressed = true
+		f.attack_held = true
+	elif bt < Sim.DT * 3.5:
+		f.attack_held = false
+		f.attack_released = bt < Sim.DT * 2.5
+
+
+func _flick_attack(f: InputFrame, bt: float, gesture: int) -> void:
+	if bt < Sim.DT * 1.5:
+		f.attack_pressed = true
+		f.attack_gesture = gesture
 		f.attack_held = true
 	elif bt < Sim.DT * 3.5:
 		f.attack_held = false

@@ -15,6 +15,15 @@ var _ui: Array[AudioStreamPlayer] = []
 var _amb: AudioStreamPlayer
 var _step_i := 0
 var enabled := true
+## Categories whose one-shots are interaction stingers: at most one per STINGER_GAP seconds per category.
+const STINGER_CATS := ["system"]
+const STINGER_GAP := 0.1
+## Zone/ambient loops that fade in and out slowly (dB per second) instead of the quick body-loop fades.
+const ZONE_LOOPS := ["tornado_loop", "sandstorm_loop", "quicksand_loop", "mist_loop", "fire_field_loop",
+	"static_crackle_loop", "vacuum_loop", "wave_rush_loop", "sand_surge_loop"]
+const ZONE_FADE_IN := 30.0
+const ZONE_FADE_OUT := 24.0
+var _last_stinger := {}   # category -> msec of last stinger
 
 
 func _ready() -> void:
@@ -62,12 +71,25 @@ func _vol(nm: String) -> float:
 	return float(_manifest.get(nm, {}).get("suggested_volume_db", -6.0))
 
 
-func play(nm: String, pos: Vector3, vol_db: float = 0.0, pitch_var: float = 0.04) -> void:
+## True when a stream with this name exists (a wav is shipped), so callers can pick fallbacks.
+func has(nm: String) -> bool:
+	return _stream(nm) != null
+
+
+## `pitch` is a base pitch ratio (per-element charge tones: earth 0.75, water 1.0, fire 1.26, air 1.5);
+## `pitch_var` adds a random +/- spread on top. Old 4-argument calls behave as before.
+func play(nm: String, pos: Vector3, vol_db: float = 0.0, pitch_var: float = 0.04, pitch: float = 1.0) -> void:
 	if not enabled:
 		return
 	var s := _stream(nm)
 	if s == null:
 		return
+	var cat: String = _manifest.get(nm, {}).get("category", "")
+	if cat in STINGER_CATS:
+		var now := Time.get_ticks_msec()
+		if now - int(_last_stinger.get(cat, -100000)) < int(STINGER_GAP * 1000.0):
+			return
+		_last_stinger[cat] = now
 	var pool: Array = _voices.get(nm, [])
 	var cap := int(_manifest.get(nm, {}).get("max_voices", 3))
 	var p: AudioStreamPlayer3D = null
@@ -91,7 +113,7 @@ func play(nm: String, pos: Vector3, vol_db: float = 0.0, pitch_var: float = 0.04
 			_next[nm] = i + 1
 	p.stream = s
 	p.volume_db = _vol(nm) + vol_db
-	p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
+	p.pitch_scale = maxf(pitch, 0.01) * (1.0 + randf_range(-pitch_var, pitch_var))
 	p.global_position = pos
 	p.play()
 
@@ -133,11 +155,12 @@ func loop(key: String, nm: String, on: bool, pos: Vector3, vol_db: float = 0.0) 
 			pl.stream = _stream(nm)
 			if pl.stream == null:
 				return
-			pl.volume_db = -30.0
+			pl.volume_db = -40.0 if nm in ZONE_LOOPS else -30.0
 			pl.play()
 			l.name = nm
 		l.on = true
 		l.target = _vol(nm) + vol_db
+		l.zone = nm in ZONE_LOOPS
 	else:
 		l.on = false
 
@@ -152,9 +175,10 @@ func _process(dt: float) -> void:
 				dead.append(key)   # free idle loop players so per-body keys never accumulate
 			continue
 		if l.on:
-			pl.volume_db = move_toward(pl.volume_db, float(l.get("target", -6.0)), 90.0 * dt)
+			pl.volume_db = move_toward(pl.volume_db, float(l.get("target", -6.0)),
+					(ZONE_FADE_IN if l.get("zone", false) else 90.0) * dt)
 		else:
-			pl.volume_db = move_toward(pl.volume_db, -40.0, 60.0 * dt)
+			pl.volume_db = move_toward(pl.volume_db, -40.0, (ZONE_FADE_OUT if l.get("zone", false) else 60.0) * dt)
 			if pl.volume_db <= -39.0:
 				pl.stop()
 	for key in dead:

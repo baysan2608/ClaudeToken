@@ -108,7 +108,12 @@ static func _gust() -> void:
 		"bend_impulse": 60.0, "push_mult": 12.0, "tiers": [0, 1], "id": "legacy_gust",
 		"by_form": {"cloud": "disperse", "wave": "pass", "puddle": "pass", "wall": "pass", "pool": "pass"}}
 	for t in LEGACY_THREATS + ["steam", "mist", "*"]:
-		_add(t, "gust", r.duplicate(true))
+		var rt := r.duplicate(true)
+		if t == "magma":
+			# Molten rock is lava: a palm gust only bends it (MOVESET §5.4; the owner's rule "a simple air
+			# attack cannot stop lava"). Gale / Hurricane (T2 / T3, Air kit cells) cool it to rock.
+			rt.when = {"mass_lt": 4.0}
+		_add(t, "gust", rt)
 
 
 ## Water lash (counter class "water_jet"): knocks hostile projectiles <= 25 kg aside (x0.45, +2 up).

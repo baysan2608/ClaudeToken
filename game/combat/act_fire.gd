@@ -469,7 +469,7 @@ static func _column(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	FxEvents.fx_for(w, a, inst, "cone", "flame", {"length": rng_m, "angle": cone, "power": flame.power,
 		"shape": "spear" if tier == 2 else "open"})
 	var shielded := {}
-	for b in w.bodies.duplicate():
+	for b: MatBody in w.bodies.duplicate():
 		if not b.alive or b.form == Sim.Form.POOL or b.controller == a.id or (b.static_body and b.form != Sim.Form.WALL):
 			continue
 		var to := b.pos - a.chest()

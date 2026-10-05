@@ -4,7 +4,8 @@ extends SceneTree
 ##       -s res://tests/ui/render_hud_screenshot.gd -- --device=phone --out=/tmp/shots
 ##   tools/scripts/godot.sh --render --resolution 2732x2048 \
 ##       -s res://tests/ui/render_hud_screenshot.gd -- --device=ipad --out=/tmp/shots
-## Optional: --shots=idle,active,strong,lefty,compact,light,settings,practice
+## Optional: --shots=idle,active,strong,lefty,compact,light,settings,practice,petals,guard,ring,tiers,lefty_petals
+## (the full Game + Lab dev panel are rendered by res://tests/ui/render_lab_screenshot.gd)
 ## Not part of the automated pass/fail suite (needs a renderer).
 
 const Id := TouchLayout.Id
@@ -25,7 +26,7 @@ func _run() -> void:
 	await process_frame
 	var device := _arg("device", "phone")
 	var out_dir := _arg("out", "/tmp")
-	var shots := _arg("shots", "idle,active,strong,lefty,light,settings,practice").split(",")
+	var shots := _arg("shots", "idle,active,strong,lefty,light,settings,practice,petals,guard,ring,tiers,lefty_petals").split(",")
 	DirAccess.make_dir_recursive_absolute(out_dir)
 
 	# Physical assumptions: iPhone ~460 dpi, iPad Pro 12.9 ~264 dpi.
@@ -43,7 +44,7 @@ func _render_shot(shot: String, device: String, out_dir: String, insets_px: Vect
 	GameSettings.set_current(settings)
 	if shot == "strong":
 		settings.strong_labels = true
-	if shot == "lefty":
+	if shot == "lefty" or shot == "lefty_petals":
 		settings.left_handed = true
 	if shot == "compact":
 		settings.layout_preset = "compact"
@@ -77,6 +78,21 @@ func _render_shot(shot: String, device: String, out_dir: String, insets_px: Vect
 		"element": 2, "unlocked_elements": [0, 1, 2], "tech_label": "HEAT", "tech_available": true,
 		"holding": false, "target_screen_pos": Vector2(vis.x * 0.5, vis.y * 0.42), "target_label": "Dummy"})
 
+	hub.set_context({"element": 2, "sub": 1, "unlocked_subs": [0, 1, 2, 3],
+		"petals": {"up": "Comet Flame", "down": "Blue Furrow", "side": "Corona"}, "guard_petals": {"up": "Flash Over", "down": "Kiln"}})
+	if shot == "petals" or shot == "lefty_petals":
+		var a := l.centers[Id.ATTACK]
+		hub.touch._input(_ev(1, a, true))
+		hub.touch._input(_drag(1, a + Vector2(0, -0.6 * l.ppm * 6.0)))
+	elif shot == "guard":
+		hub.touch._input(_ev(1, l.centers[Id.GUARD], true))
+		hub.touch._input(_drag(1, l.centers[Id.GUARD] + Vector2(0, -0.6 * l.ppm * 6.0)))
+	elif shot == "ring":
+		hub.touch._input(_ev(1, l.centers[Id.ELEM_2], true))
+		hub.touch._input(_ev(1, l.centers[Id.ELEM_2], false))
+	elif shot == "tiers":
+		hub.touch._input(_ev(1, l.centers[Id.ATTACK], true))
+		hub.set_context({"charge_ring": {"slot": "attack", "tier": 2, "frac": 0.45, "max": 3}})
 	if shot == "active" or shot == "strong" or shot == "lefty" or shot == "light" or shot == "compact":
 		_inject_active(hub.touch, l, vis)
 	elif shot == "settings" or shot == "practice":

@@ -16,10 +16,15 @@ extends Node
 ##     decision or charge runs, 0 while its press is buffered, -1 otherwise; the touch charge
 ##     ring follows it), "attack_element": int (that attack's element, -1 = selected),
 ##   "target_screen_pos": Vector2 or null (null hides the marker),
-##   "target_label": String
+##   "target_label": String,
+##   "sub": int (selected sub-element of "element"), "unlocked_subs": Array[int] (usable sub indices),
+##   "petals": {"up", "down", "side"} (ATTACK flick move names), "guard_petals": {"up", "down"} (push / sink names),
+##   "shape_label": String (what T+A does now), "charge_ring": {"slot", "tier", "frac", "max"} (Charge.progress)
 
 signal paused_requested
 signal settings_changed
+## Backquote / F2 (desktop) or "Dev" in the pause menu (touch): toggle the Lab dev panel.
+signal dev_requested
 
 ## Show the touch HUD even without a touchscreen (desktop layout testing).
 @export var force_touch_ui: bool = false
@@ -37,6 +42,17 @@ var controls_visible: bool = true:
 		controls_visible = v
 		_refresh_touch_visibility()
 
+## True while a modal tool (the Lab dev panel) owns the screen: poll_frame returns an idle frame and the
+## pause key / button do nothing. Held controls are released when it turns on.
+var input_blocked: bool = false:
+	set(v):
+		if v == input_blocked:
+			return
+		input_blocked = v
+		if v and touch != null:
+			release_all()
+		_refresh_touch_visibility()
+
 var settings: GameSettings
 var touch: TouchControls
 var desktop: DesktopInput
@@ -44,8 +60,12 @@ var settings_panel: SettingsPanel
 var target_marker: TargetMarker
 
 var _frame := InputFrame.new()
+var _idle := InputFrame.new()
 var _ft := InputFrame.new()
 var _fd := InputFrame.new()
+var _ctx_el := -1
+var _ctx_sub := 0
+var _ctx_subs: Array = [0, 1, 2, 3]
 var _touch_wanted := false
 var _gamepad_active := false
 var _hud_layer: CanvasLayer
@@ -85,6 +105,8 @@ func _ready() -> void:
 
 	touch.pause_requested.connect(_on_pause)
 	desktop.pause_requested.connect(_on_pause)
+	desktop.dev_requested.connect(func() -> void: dev_requested.emit())
+	settings_panel.dev_requested.connect(func() -> void: dev_requested.emit())
 	settings.changed.connect(_on_settings_changed)
 
 	_touch_wanted = force_touch_ui or DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
@@ -113,6 +135,17 @@ func poll_frame() -> InputFrame:
 	desktop.fill_frame(_fd)
 	_frame.copy_from(_ft)
 	_frame.merge_from(_fd)
+	if input_blocked:
+		# The latches were consumed above; hand out an idle frame.
+		_idle.clear_edges()
+		_idle.move = Vector2.ZERO
+		_idle.attack_held = false
+		_idle.guard_held = false
+		_idle.tech_held = false
+		_idle.evade_held = false
+		_idle.tech_aim = Vector2.ZERO
+		_idle.tech_aim_active = false
+		return _idle
 	return _frame
 
 
@@ -120,6 +153,12 @@ func set_context(ctx: Dictionary) -> void:
 	touch.set_context(ctx)
 	if ctx.has("unlocked_elements"):
 		desktop.set_unlocked(ctx["unlocked_elements"])
+	if ctx.has("element") or ctx.has("sub") or ctx.has("unlocked_subs"):
+		_ctx_el = int(ctx.get("element", _ctx_el))
+		_ctx_sub = int(ctx.get("sub", _ctx_sub))
+		if ctx.has("unlocked_subs"):
+			_ctx_subs = ctx["unlocked_subs"]
+		desktop.set_sub_context(_ctx_el, _ctx_sub, _ctx_subs)
 	if ctx.has("element"):
 		target_marker.set_tint(UiStyle.element_color(int(ctx["element"])))
 	if ctx.has("target_screen_pos"):
@@ -145,6 +184,8 @@ func open_settings() -> void:
 
 
 func _on_pause() -> void:
+	if input_blocked:
+		return
 	paused_requested.emit()
 	if auto_open_settings_panel and settings_panel != null:
 		settings_panel.open_panel()
@@ -157,7 +198,7 @@ func _on_settings_changed() -> void:
 func _refresh_touch_visibility() -> void:
 	if touch == null:
 		return
-	var show := controls_visible and _touch_wanted and not _gamepad_active
+	var show := controls_visible and _touch_wanted and not _gamepad_active and not input_blocked
 	if touch.visible != show:
 		touch.visible = show
 

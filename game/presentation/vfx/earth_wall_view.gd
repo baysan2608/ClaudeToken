@@ -47,6 +47,24 @@ func setup(seed_value: int, width: float = 2.4, height: float = 1.0, thickness: 
 	_apply()
 
 
+## Same rock model, other materials: "" stone, "obsidian" (black glassy), "sand" (packed sandstone),
+## "mud" (dark, half-glossy). Cheap: two uniforms.
+func set_material_style(style: String) -> void:
+	var tint := Vector3.ONE
+	var glass := 0.0
+	match style:
+		"obsidian":
+			tint = Vector3(0.32, 0.30, 0.36)
+			glass = 1.0
+		"sand":
+			tint = Vector3(2.7, 2.15, 1.45)
+		"mud":
+			tint = Vector3(0.95, 0.72, 0.5)
+			glass = 0.45
+	_mat.set_shader_parameter("u_tint", tint)
+	_mat.set_shader_parameter("u_glass", glass)
+
+
 func set_rise(t01: float) -> void:
 	var prev: float = _rise
 	_rise = clampf(t01, 0.0, 1.0)
@@ -84,6 +102,7 @@ func reset() -> void:
 	_rise = 0.0
 	_damage = 0.0
 	_dust_stage = 0
+	set_material_style("")
 	_apply()
 	visible = false
 

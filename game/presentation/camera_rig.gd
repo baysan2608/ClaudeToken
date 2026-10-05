@@ -3,6 +3,11 @@ extends Node3D
 ## Third-person orbit camera. Player drags rotate it; when idle it gently turns
 ## to keep the locked target in frame (camera assistance, never a hard snap).
 ## Collision uses the analytic ArenaMap so walls/pillars pull the camera in.
+##
+## Game feel (docs/MOVESET.md §10.2) runs in REAL time, so it keeps moving through a hit-stop
+## (Engine.time_scale dip): shake with distance falloff 1 / (1 + d / 8) and its own decay, a
+## directional kick along the hit, a FOV punch (T3) and the transformation zoom (3 % toward the
+## event for 0.3 s). Reduced motion: shake x0.3, no FOV punch, no zoom, no kick.
 
 var arena: ArenaMap
 var yaw := PI                 # camera looks along (sin(yaw), 0, cos(yaw))
@@ -23,6 +28,19 @@ var _shake := 0.0
 var _shake_t := 0.0
 var _focus := Vector3.ZERO
 var _lift := 0.0               # extra pitch when walls pull the camera in
+var _shake_decay := 3.5        # amount per second (set per shake)
+var _kick := Vector3.ZERO      # world offset, decays to zero
+var _kick_t := 0.0
+var _fov_punch := 0.0          # degrees (negative = narrower)
+var _fov_t := 0.0
+var _fov_dur := 0.25
+var _zoom_t := 0.0
+var _zoom_dur := 0.3
+var _zoom_amt := 0.0
+var _zoom_at := Vector3.ZERO
+var _last_us := -1
+const BASE_FOV := 62.0
+const REDUCED_SHAKE := 0.3
 
 
 func _ready() -> void:
@@ -59,12 +77,64 @@ func add_input(delta: Vector2) -> void:
 
 
 func shake(amount: float) -> void:
+	_shake = maxf(_shake, amount * shake_scale * (REDUCED_SHAKE if reduced_motion else 1.0))
+	_shake_decay = 3.5
+
+
+## Shake from an event at `pos` (falls off with the distance to the player: 1 / (1 + d / 8)) that
+## decays over `decay_s` seconds of real time.
+func shake_at(amount: float, pos: Vector3, decay_s: float = 0.2) -> void:
+	var d := pos.distance_to(_pivot - Vector3(0, height, 0)) if pos != Vector3.INF else 0.0
+	var a := amount * shake_scale * (REDUCED_SHAKE if reduced_motion else 1.0) / (1.0 + d / 8.0)
+	if a > _shake:
+		_shake = a
+		_shake_decay = a / maxf(decay_s, 0.05)
+
+
+## Directional kick: the camera is pushed `amount` metres along `dir` and springs back (0.2 s).
+func kick(dir: Vector3, amount: float = 0.1) -> void:
+	if reduced_motion or dir.length_squared() < 1e-6:
+		return
+	_kick = dir.normalized() * amount * shake_scale
+	_kick_t = 0.2
+
+
+## FOV punch (T3 hits): narrows the view by `deg` degrees, eased back over `dur` seconds.
+func fov_punch(deg: float = -3.0, dur: float = 0.25) -> void:
 	if reduced_motion:
 		return
-	_shake = maxf(_shake, amount * shake_scale)
+	_fov_punch = deg
+	_fov_t = dur
+	_fov_dur = dur
+
+
+## Transformation zoom: 3 % toward `at` for 0.3 s (stone -> lava, wall slump, glass fuse, ice ridge).
+func zoom_to(at: Vector3, amount: float = 0.03, dur: float = 0.3) -> void:
+	if reduced_motion:
+		return
+	_zoom_at = at
+	_zoom_amt = amount
+	_zoom_t = dur
+	_zoom_dur = dur
+
+
+## Real seconds since the previous rig update (independent of Engine.time_scale).
+func _real_dt(dt: float) -> float:
+	var now := Time.get_ticks_usec()
+	var r := dt
+	if _last_us >= 0:
+		r = clampf(float(now - _last_us) / 1e6, 0.0, 0.1)
+	_last_us = now
+	return r
+
+
+## Current feel offsets, for tests: [shake, kick, fov_punch, zoom].
+func feel_state() -> Array:
+	return [_shake, _kick, _fov_punch * (_fov_t / maxf(_fov_dur, 1e-3)), _zoom_t]
 
 
 func update_rig(dt: float, player_pos: Vector3, target_pos: Variant, threat_pos: Variant) -> void:
+	var rdt := _real_dt(dt)
 	_idle += dt
 	# Follow: fast but not rigid (smooths sim steps and knockbacks).
 	var want_pivot := player_pos + Vector3(0, height, 0)
@@ -104,12 +174,37 @@ func update_rig(dt: float, player_pos: Vector3, target_pos: Variant, threat_pos:
 		_cur_dist = limit  # pull in immediately
 	else:
 		_cur_dist = lerpf(_cur_dist, limit, 1.0 - exp(-3.0 * dt))
-	var shake_off := Vector3.ZERO
+	_update_transform(_feel(rdt))
+
+
+## Shake + kick + FOV punch + zoom for this frame (real time).
+func _feel(rdt: float) -> Vector3:
+	var off := Vector3.ZERO
 	if _shake > 0.001:
-		_shake_t += dt * 40.0
-		shake_off = Vector3(sin(_shake_t * 1.3), sin(_shake_t * 1.7 + 1.0), 0.0) * _shake * 0.06
-		_shake = maxf(0.0, _shake - dt * 3.5)
-	_update_transform(shake_off)
+		_shake_t += rdt * 40.0
+		off = Vector3(sin(_shake_t * 1.3), sin(_shake_t * 1.7 + 1.0), 0.0) * _shake * 0.06
+		_shake = maxf(0.0, _shake - rdt * _shake_decay)
+	if _kick_t > 0.0:
+		_kick_t = maxf(0.0, _kick_t - rdt)
+		var k := _kick_t / 0.2
+		# local camera space: the kick is applied as a world offset projected on the camera plane
+		off += (cam.global_basis.inverse() * _kick) * k * k if cam and cam.is_inside_tree() else Vector3.ZERO
+	var fov := BASE_FOV
+	if _fov_t > 0.0:
+		_fov_t = maxf(0.0, _fov_t - rdt)
+		var f := _fov_t / maxf(_fov_dur, 1e-3)
+		fov += _fov_punch * f * f
+	if _zoom_t > 0.0:
+		_zoom_t = maxf(0.0, _zoom_t - rdt)
+		var z := sin(PI * (1.0 - _zoom_t / maxf(_zoom_dur, 1e-3)))
+		fov *= 1.0 - _zoom_amt * z
+		if cam and cam.is_inside_tree():
+			# and drift toward the event, so the zoom centres on it rather than on the screen
+			var to := _zoom_at - cam.global_position
+			off += (cam.global_basis.inverse() * to) * _zoom_amt * z
+	if cam:
+		cam.fov = fov
+	return off
 
 
 func _offset_dir() -> Vector3:

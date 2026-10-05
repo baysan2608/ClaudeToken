@@ -16,6 +16,8 @@ const MAX_BRANCHES: int = 3
 
 @export var half_width: float = 0.10
 @export var intensity: float = 1.0
+## False: no flash light (crackle overlays, static fields: keeps the scene under the 3-light budget).
+@export var use_light: bool = true
 
 var _mesh: ArrayMesh
 var _mi: MeshInstance3D
@@ -94,6 +96,12 @@ func strike(points: PackedVector3Array, seed_value: int) -> void:
 	_apply(0.0)
 
 
+func set_light_enabled(on: bool) -> void:
+	use_light = on
+	if not on:
+		_light.visible = false
+
+
 func is_playing() -> bool:
 	return _playing
 
@@ -130,7 +138,7 @@ func _apply(t: float) -> void:
 	var restrike: float = 0.25 * exp(-(t - 0.09) * 30.0) if t >= 0.09 else 0.0
 	var e: float = exp(-t * 22.0) * flick + restrike
 	_light.light_energy = minf(LIGHT_CAP * intensity * e, LIGHT_CAP)
-	_light.visible = _light.light_energy > 0.03
+	_light.visible = use_light and _light.light_energy > 0.03
 
 
 # ---- geometry ---------------------------------------------------------------------------

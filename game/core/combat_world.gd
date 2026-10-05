@@ -1231,16 +1231,21 @@ func hit_actor(t: ActorState, info: Dictionary) -> String:
 		t.grounded = false
 	t.last_hit_dir = -to_src.normalized() if to_src.length() > 0.01 else -t.forward()
 	var res2 := "hit"
+	# Armor stances (Stone Skin, Iron Stance, rooted / anchored modes) take the hit without flinching:
+	# damage and balance still land, only a knockdown (balance broken) ends the stance.
+	var armored := t.stance != "" and (t.armor > 0.0 or t.anchored) and t.balance > 0.0
 	if t.balance <= 0.0:
 		_stagger(t, "knockdown", 1.1, info)
 		t.balance = 45.0
 		res2 = "knockdown"
+	elif armored:
+		pass   # the hit event carries armored = true (views play a hit-react without interrupting)
 	elif bal >= 25.0:
 		_stagger(t, "heavy", 0.5, info)
 	else:
 		_stagger(t, "light", 0.26, info)
 	var ev := {"actor": t.id, "attacker": info.get("attacker", -1), "damage": dmg, "kind": kind,
-		"result": res2, "body": info.get("body", -1)}
+		"result": res2, "body": info.get("body", -1), "armored": armored and res2 == "hit"}
 	ev.merge(_hit_meta(info, agent, t), false)
 	emit("hit", ev)
 	t.last_result = res2

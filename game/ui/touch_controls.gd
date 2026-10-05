@@ -16,6 +16,7 @@ extends Control
 
 signal pause_requested
 signal element_changed(element: int)
+signal sub_changed(sub: int)
 
 const MAX_FINGERS := 16
 const MOUSE_FINGER := 15
@@ -25,6 +26,14 @@ const ROLE_STICK := 1
 const ROLE_CAMERA := 2
 const ROLE_BUTTON := 3
 const ROLE_DEAD := 4
+
+## Long-press on an element chip opens the sub-element ring in slide mode after this long.
+const RING_LONG_PRESS_S := 0.32
+## A tap-opened ring closes by itself after this long.
+const RING_TAP_TIMEOUT_S := 4.0
+const RING_CLOSED := 0
+const RING_TAP := 1
+const RING_SLIDE := 2
 
 ## Stick dead zone as a fraction of the stick radius.
 const DEADZONE := 0.08
@@ -90,6 +99,23 @@ var _l_tech_cancel := false
 var _l_element := -1
 var _l_target := false
 var _l_pause := false
+var _l_attack_gesture := 0
+var _l_guard_gesture := 0
+var _l_sub := -1
+
+# --- flicks (ATTACK / GUARD), shape tap, sub-element ring -------------------------------------
+var _atk_flick := FlickRecognizer.new()
+var _grd_flick := FlickRecognizer.new()
+var _attack_shape := false       # this ATTACK finger landed while a technique was held (T+A shape tap)
+var _guard_t := 0.0
+var _ring_mode := RING_CLOSED
+var _ring_t := 0.0
+var _ring_hover := -1
+var _chip_finger := -1           # finger on an element chip (long-press -> slide ring)
+var _chip_el := -1
+var _chip_t := 0.0
+var _chip_was_active := false    # the chip was already the selected element at touch-down
+var _chip_moved := false
 
 # --- HUD context ----------------------------------------------------------------------------
 var _ctx_element := 0
@@ -100,7 +126,14 @@ var _ctx_holding := false
 var _ctx_has_charge := false     # the game reports the sim's attack progress (else the ring self-times)
 var _ctx_attack_charge := -1.0
 var _ctx_attack_element := -1
+var _ctx_decide := 0.0           # the running registry attack's tap / hold decision time (0 = legacy per-element time)
 var _attack_sent := false        # this hold's press has reached the sim (fill_frame)
+var _ctx_sub := 0
+var _ctx_subs_unlocked := PackedByteArray([1, 1, 1, 1])
+var _ctx_petals := {}            # {"up": String, "down": String, "side": String} ATTACK gesture names
+var _ctx_guard_petals := {}      # {"up": String, "down": String} GUARD push / sink names
+var _ctx_shape_label := ""       # what T+A would do (shown beside ATTACK while a technique is held)
+var _ctx_charge := {}            # {"slot": "attack"|"guard"|"tech"|"evade", "tier", "frac", "max"}
 
 # --- visual state ----------------------------------------------------------------------------
 var _vis_press := PackedFloat32Array()
@@ -109,6 +142,7 @@ var _cancel_alpha := 0.0
 var _cancel_near := 0.0
 var _attack_t := 0.0
 var _font: Font = null
+var _pill_sb: StyleBoxFlat = null
 
 
 func _init() -> void:
@@ -227,9 +261,70 @@ func set_context(ctx: Dictionary) -> bool:
 		_ctx_has_charge = true
 		_ctx_attack_charge = ac
 		_ctx_attack_element = ae
+		_ctx_decide = float(ctx.get("attack_decide", 0.0))
+	if ctx.has("sub"):
+		var sb := clampi(int(ctx["sub"]), 0, 3)
+		changed = changed or sb != _ctx_sub
+		_ctx_sub = sb
+	if ctx.has("unlocked_subs"):
+		var smask := 0
+		for sv in ctx["unlocked_subs"]:
+			var si := int(sv)
+			if si >= 0 and si < 4:
+				smask |= 1 << si
+		for si in 4:
+			var su := (smask >> si) & 1
+			if _ctx_subs_unlocked[si] != su:
+				_ctx_subs_unlocked[si] = su
+				changed = true
+	if ctx.has("petals"):
+		var pt: Dictionary = ctx["petals"]
+		if pt != _ctx_petals:
+			_ctx_petals = pt.duplicate()
+			changed = true
+	if ctx.has("guard_petals"):
+		var gp: Dictionary = ctx["guard_petals"]
+		if gp != _ctx_guard_petals:
+			_ctx_guard_petals = gp.duplicate()
+			changed = true
+	if ctx.has("shape_label"):
+		var sl := str(ctx["shape_label"])
+		changed = changed or sl != _ctx_shape_label
+		_ctx_shape_label = sl
+	if ctx.has("charge_ring"):
+		var cr: Dictionary = ctx["charge_ring"]
+		if cr != _ctx_charge:
+			_ctx_charge = cr.duplicate()
+			changed = true
 	if changed:
 		queue_redraw()
 	return changed
+
+
+func is_sub_unlocked(s: int) -> bool:
+	return s >= 0 and s < 4 and _ctx_subs_unlocked[s] == 1
+
+
+## True while the sub-element ring is open (tap or slide mode).
+func is_ring_open() -> bool:
+	return _ring_mode != RING_CLOSED
+
+
+func ring_mode() -> int:
+	return _ring_mode
+
+
+func ring_hover() -> int:
+	return _ring_hover
+
+
+## Gesture the ATTACK / GUARD finger is pointing at right now (Sim.Gesture, for tests and the petal highlight).
+func attack_gesture_hot() -> int:
+	return _atk_flick.hot if _btn_finger[TouchLayout.Id.ATTACK] != -1 else 0
+
+
+func guard_gesture_hot() -> int:
+	return _grd_flick.hot if _btn_finger[TouchLayout.Id.GUARD] != -1 else 0
 
 
 func is_element_unlocked(e: int) -> bool:
@@ -250,6 +345,8 @@ static func attack_charge_sec(element: int) -> float:
 func charge_time() -> float:
 	if charge_hold_sec > 0.0:
 		return charge_hold_sec
+	if _ctx_decide > 0.0 and _ctx_has_charge and _ctx_attack_charge >= 0.0:
+		return _ctx_decide
 	return attack_charge_sec(_ctx_attack_element if _ctx_attack_element >= 0 else _ctx_element)
 
 
@@ -277,11 +374,16 @@ func fill_frame(f: InputFrame) -> void:
 	if _l_attack_pressed:
 		_attack_sent = true
 	f.attack_released = _l_attack_released
-	f.attack_held = _btn_finger[TouchLayout.Id.ATTACK] != -1
+	# A shape tap (ATTACK while a technique is held) is an edge only: it never starts or holds an attack.
+	f.attack_held = _btn_finger[TouchLayout.Id.ATTACK] != -1 and not _attack_shape
 	f.guard_pressed = _l_guard_pressed
 	f.guard_released = _l_guard_released
 	f.guard_held = _btn_finger[TouchLayout.Id.GUARD] != -1
 	f.evade_pressed = _l_evade
+	f.evade_held = _btn_finger[TouchLayout.Id.EVADE] != -1
+	f.attack_gesture = _l_attack_gesture
+	f.guard_gesture = _l_guard_gesture
+	f.sub_select = _l_sub
 
 	var tech_active := _tech_finger != -1 and not _tech_cancelled
 	f.tech_pressed = _l_tech_pressed
@@ -313,6 +415,9 @@ func fill_frame(f: InputFrame) -> void:
 	_l_element = -1
 	_l_target = false
 	_l_pause = false
+	_l_attack_gesture = 0
+	_l_guard_gesture = 0
+	_l_sub = -1
 
 
 ## Release every finger safely: stick -> 0, held buttons send released,
@@ -322,6 +427,9 @@ func release_all(cancelled: bool = true) -> void:
 		if _role[i] != ROLE_NONE:
 			_release_finger(i, cancelled, _f_pos[i])
 	# Defensive: anything still marked held after the loop.
+	_close_ring()
+	_chip_finger = -1
+	_attack_shape = false
 	_stick_finger = -1
 	_stick_vec = Vector2.ZERO
 	_cam_finger = -1
@@ -446,6 +554,20 @@ func _process(delta: float) -> void:
 		dirty = true
 	else:
 		_attack_t = 0.0
+	if _btn_finger[TouchLayout.Id.GUARD] != -1:
+		_guard_t += delta
+	else:
+		_guard_t = 0.0
+	if _chip_finger != -1:
+		_chip_t += delta
+		if _ring_mode == RING_CLOSED and _chip_t >= RING_LONG_PRESS_S and not _chip_moved and not _tech_live():
+			_open_ring(RING_SLIDE)
+			dirty = true
+	if _ring_mode == RING_TAP:
+		_ring_t += delta
+		if _ring_t >= RING_TAP_TIMEOUT_S or _tech_live():
+			_close_ring()
+			dirty = true
 	if _stick_finger != -1 or _cam_finger != -1 or (settings != null and settings.show_debug):
 		dirty = true
 	if dirty:
@@ -463,9 +585,26 @@ func _touch_down(idx: int, pos: Vector2) -> void:
 	_f_pos[idx] = pos
 	# Second tap on the cancel chip while a technique is held.
 	if _tech_finger != -1 and not _tech_cancelled and _layout.in_cancel_zone(pos):
+		_close_ring()
 		_cancel_technique()
 		_role[idx] = ROLE_DEAD
 		return
+	# A tap-opened sub-element ring takes the next touch: a petal selects, anything else closes it.
+	if _ring_mode == RING_TAP:
+		var ph := _layout.ring_hit(pos)
+		if ph >= 0:
+			_select_sub(ph)
+			_close_ring()
+			_role[idx] = ROLE_DEAD
+			queue_redraw()
+			return
+		var chip_hit := _layout.hit_test(pos)
+		_close_ring()
+		if chip_hit == TouchLayout.Id.ELEM_0 + _ctx_element:
+			# Tapping the active chip again just closes the ring.
+			_role[idx] = ROLE_DEAD
+			queue_redraw()
+			return
 	var hit := _layout.hit_test(pos)
 	if hit != TouchLayout.NONE:
 		_press_button(idx, hit, pos)
@@ -494,8 +633,23 @@ func _touch_drag(idx: int, pos: Vector2) -> void:
 		ROLE_CAMERA:
 			_apply_camera_drag(pos - prev)
 		ROLE_BUTTON:
-			if _f_btn[idx] == TouchLayout.Id.TECH and idx == _tech_finger:
+			var bid := _f_btn[idx]
+			if bid == TouchLayout.Id.TECH and idx == _tech_finger:
 				_update_tech_aim(pos)
+			elif bid == TouchLayout.Id.ATTACK and idx == _btn_finger[bid] and not _attack_shape:
+				var g := _atk_flick.update(pos, _attack_t, _layout.ppm)
+				if g != Sim.Gesture.NONE:
+					_l_attack_gesture = g
+					Haptics.play("light")
+					queue_redraw()
+			elif bid == TouchLayout.Id.GUARD and idx == _btn_finger[bid]:
+				var gg := _grd_flick.update(pos, _guard_t, _layout.ppm, true)
+				if gg != Sim.Gesture.NONE:
+					_l_guard_gesture = gg
+					Haptics.play("light")
+					queue_redraw()
+			elif idx == _chip_finger:
+				_chip_drag(pos)
 
 
 func _touch_up(idx: int, pos: Vector2, cancelled: bool) -> void:
@@ -519,11 +673,22 @@ func _release_finger(idx: int, cancelled: bool, pos: Vector2) -> void:
 		ROLE_BUTTON:
 			var id := _f_btn[idx]
 			_btn_finger[id] = -1
+			if idx == _chip_finger:
+				_chip_release(cancelled, pos)
 			match id:
 				TouchLayout.Id.ATTACK:
-					_l_attack_released = true
+					if _attack_shape:
+						_attack_shape = false     # a shape tap only ever sends its press edge
+					else:
+						_l_attack_released = true
+						if not cancelled:
+							var rg := _atk_flick.release(pos, _layout.ppm)
+							if rg != Sim.Gesture.NONE:
+								_l_attack_gesture = rg
+					_atk_flick.hot = 0
 				TouchLayout.Id.GUARD:
 					_l_guard_released = true
+					_grd_flick.hot = 0
 				TouchLayout.Id.TECH:
 					if idx == _tech_finger:
 						if not _tech_cancelled:
@@ -551,9 +716,16 @@ func _press_button(idx: int, id: int, pos: Vector2) -> void:
 			_l_attack_pressed = true
 			_attack_t = 0.0
 			_attack_sent = false
+			# T+A: ATTACK tapped by a second finger while the technique is held = shape.
+			_attack_shape = tech_live
+			_atk_flick.begin(pos)
+			if tech_live:
+				Haptics.play("light")
 		TouchLayout.Id.GUARD:
 			_own_button(idx, id)
 			_l_guard_pressed = true
+			_guard_t = 0.0
+			_grd_flick.begin(pos)
 		TouchLayout.Id.EVADE:
 			_own_button(idx, id)
 			_l_evade = true
@@ -580,11 +752,76 @@ func _press_button(idx: int, id: int, pos: Vector2) -> void:
 				_role[idx] = ROLE_DEAD
 				return
 			_own_button(idx, id)
+			_chip_finger = idx
+			_chip_el = e
+			_chip_t = 0.0
+			_chip_moved = false
+			_chip_was_active = e == _ctx_element
 			_l_element = e
 			_ctx_element = e
 			_chip_flash[e] = 1.0
 			Haptics.play("light")
 			element_changed.emit(e)
+
+
+# --- sub-element ring -----------------------------------------------------------------------------
+
+func _open_ring(mode: int) -> void:
+	_ring_mode = mode
+	_ring_t = 0.0
+	_ring_hover = -1
+	queue_redraw()
+
+
+func _close_ring() -> void:
+	if _ring_mode == RING_CLOSED:
+		return
+	_ring_mode = RING_CLOSED
+	_ring_hover = -1
+	queue_redraw()
+
+
+func _select_sub(s: int) -> void:
+	if not is_sub_unlocked(s):
+		Haptics.play("light")
+		return
+	_l_sub = s
+	_ctx_sub = s
+	Haptics.play("light")
+	sub_changed.emit(s)
+
+
+## Drag of the finger that opened a slide ring from a chip.
+func _chip_drag(pos: Vector2) -> void:
+	if _ring_mode == RING_SLIDE:
+		var h := _layout.ring_hit(pos)
+		if h != _ring_hover:
+			_ring_hover = h
+			queue_redraw()
+	elif pos.distance_to(_layout.centers[_chip_finger_button()]) > _layout.radii[_chip_finger_button()] * 1.6:
+		_chip_moved = true
+
+
+func _chip_finger_button() -> int:
+	return TouchLayout.Id.ELEM_0 + maxi(_chip_el, 0)
+
+
+func _chip_release(cancelled: bool, _pos: Vector2) -> void:
+	var was_slide := _ring_mode == RING_SLIDE
+	var hover := _ring_hover
+	_chip_finger = -1
+	if was_slide:
+		_close_ring()
+		if not cancelled and hover >= 0:
+			_select_sub(hover)
+		return
+	# A quick tap on the already-selected chip opens the ring for a second tap.
+	if not cancelled and _chip_was_active and not _chip_moved and _chip_t < RING_LONG_PRESS_S and not _tech_live():
+		_open_ring(RING_TAP)
+
+
+func _tech_live() -> bool:
+	return _tech_finger != -1 and not _tech_cancelled
 
 
 func _own_button(idx: int, id: int) -> void:
@@ -682,6 +919,10 @@ func _draw() -> void:
 	_draw_round_button(TouchLayout.Id.EVADE, UiStyle.Glyph.EVADE, "EVADE", Color.WHITE, op, rw, strong, reduced, 1.0)
 	_draw_attack(op, rw, strong, reduced)
 	_draw_technique(op, rw, strong, reduced)
+	_draw_charge_ring(rw)
+	_draw_petals(rw, strong)
+	_draw_sub_label()
+	_draw_sub_ring(rw)
 	_draw_round_button(TouchLayout.Id.TARGET, UiStyle.Glyph.TARGET, "", Color.WHITE, op * 0.9, rw, false, reduced, 1.0)
 	_draw_round_button(TouchLayout.Id.PAUSE, UiStyle.Glyph.PAUSE, "", Color.WHITE, op * 0.9, rw, false, reduced, 1.0)
 
@@ -742,7 +983,12 @@ func _draw_round_button(id: int, glyph: int, label: String, tint: Color, op: flo
 func _draw_attack(op: float, rw: float, strong: bool, reduced: bool) -> void:
 	var id := TouchLayout.Id.ATTACK
 	_draw_round_button(id, UiStyle.Glyph.ATTACK, "ATTACK", Color.WHITE, op, rw, strong, reduced, 1.0)
-	if _btn_finger[id] != -1:
+	if _tech_live() and _ctx_shape_label != "":
+		# T+A: a second-finger tap on ATTACK shapes what the technique holds.
+		var sc := UiStyle.element_color(_ctx_element)
+		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
+		draw_arc(_layout.centers[id], _layout.radii[id] * 1.14, 0.0, TAU, 56, Color(sc.r, sc.g, sc.b, 0.45 + 0.4 * pulse), rw * 1.4, true)
+	if _btn_finger[id] != -1 and not _attack_shape:
 		var c := _layout.centers[id]
 		var r := _layout.radii[id]
 		var f := attack_ring_fill()
@@ -815,6 +1061,230 @@ func _draw_label(text: String, base: Vector2, size_px: float, col: Color, width:
 	var outline := Color(0, 0, 0, col.a * 0.55)
 	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_CENTER, width, fs, maxi(2, fs / 5), outline)
 	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_CENTER, width, fs, col)
+
+
+## The button a charge ring belongs to.
+func _charge_button(slot: String) -> int:
+	match slot:
+		"attack":
+			return TouchLayout.Id.ATTACK
+		"guard":
+			return TouchLayout.Id.GUARD
+		"tech":
+			return TouchLayout.Id.TECH
+		"evade":
+			return TouchLayout.Id.EVADE
+	return -1
+
+
+## Charge tiers from the sim (Charge.progress): three arc segments around the button that is charging,
+## one per tier (T1 T2 T3), a notch gap between them. Reached tiers are lit, the next one fills.
+func _draw_charge_ring(rw: float) -> void:
+	if _ctx_charge.is_empty():
+		return
+	var id := _charge_button(str(_ctx_charge.get("slot", "")))
+	var mx := clampi(int(_ctx_charge.get("max", 0)), 0, 3)
+	if id < 0 or mx <= 0:
+		return
+	var tier := clampi(int(_ctx_charge.get("tier", 0)), 0, 3)
+	var frac := clampf(float(_ctx_charge.get("frac", 0.0)), 0.0, 1.0)
+	var c := _layout.centers[id]
+	var r := _layout.radii[id] * 1.36
+	var col := UiStyle.element_color(_ctx_element)
+	var gap := deg_to_rad(16.0)
+	var seg := (TAU - gap * 3.0) / 3.0
+	var w := rw * 2.2
+	for k in 3:
+		var a0 := -PI * 0.5 + gap * 0.5 + k * (seg + gap)
+		var a1 := a0 + seg
+		var usable := k < mx
+		# Track.
+		draw_arc(c, r, a0, a1, 24, Color(0, 0, 0, 0.30 if usable else 0.12), w + rw, true)
+		draw_arc(c, r, a0, a1, 24, Color(1, 1, 1, 0.20 if usable else 0.07), w * 0.6, true)
+		if not usable:
+			continue
+		var lit := 0.0
+		if k < tier:
+			lit = 1.0
+		elif k == tier:
+			lit = frac
+		if lit > 0.0:
+			var bright := Color(col.r, col.g, col.b, 0.95).lerp(Color(1, 1, 1, 1.0), 0.35 if (k < tier and tier >= mx) else 0.0)
+			draw_arc(c, r, a0, a0 + seg * lit, 24, bright, w, true)
+		# Notch tick at the end of the segment (where the tier is reached).
+		var tip := c + Vector2(cos(a1), sin(a1)) * r
+		var dir := Vector2(cos(a1), sin(a1))
+		draw_line(tip - dir * w * 0.9, tip + dir * w * 0.9, Color(1, 1, 1, 0.85 if k < tier else 0.4), maxf(1.5, rw * 0.9), true)
+	# Tier number in the middle of the ring's top gap, small.
+	if tier > 0:
+		_draw_label("T%d" % tier, c + Vector2(-r * 0.78, r * 0.95 + _layout.ppm * 0.6), maxf(9.0, _layout.ppm * 2.4), Color(1, 1, 1, 0.95), _layout.ppm * 6.0)
+
+
+func _petal_font_px() -> int:
+	return maxi(12, int(round(2.3 * _layout.ppm * minf(_layout_scale(), 1.2))))
+
+
+func _layout_scale() -> float:
+	return settings.control_scale if settings != null else 1.0
+
+
+## A rounded label pill. align: -1 grows left of pos, 0 centred on pos, 1 grows right. Returns its rect.
+func _draw_pill(pos: Vector2, align: int, text: String, accent: Color, hot: bool, alpha: float, arrow: int = 0, dim: bool = false) -> Rect2:
+	if _font == null:
+		_font = ThemeDB.fallback_font
+	var fs := _petal_font_px()
+	var ppm := _layout.ppm
+	var tw := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var pad := 1.6 * ppm
+	var arrow_w := (2.6 * ppm) if arrow != 0 else 0.0
+	var w := minf(tw + pad * 2.0 + arrow_w, 27.0 * ppm)
+	var h := fs + 1.5 * ppm
+	var x := pos.x - w * 0.5
+	if align < 0:
+		x = pos.x - w
+	elif align > 0:
+		x = pos.x
+	var rect := Rect2(Vector2(x, pos.y - h * 0.5), Vector2(w, h))
+	# Keep it on screen (the usable rect, plus a hair).
+	var u := _layout.usable
+	rect.position.x = clampf(rect.position.x, u.position.x, maxf(u.position.x, u.end.x - rect.size.x))
+	rect.position.y = clampf(rect.position.y, u.position.y, maxf(u.position.y, u.end.y - rect.size.y))
+	if _pill_sb == null:
+		_pill_sb = StyleBoxFlat.new()
+		_pill_sb.anti_aliasing = true
+	_pill_sb.set_corner_radius_all(int(h * 0.5))
+	_pill_sb.bg_color = Color(accent.r, accent.g, accent.b, 0.62 * alpha) if hot else Color(0.04, 0.05, 0.07, 0.62 * alpha)
+	_pill_sb.border_color = Color(accent.r, accent.g, accent.b, (1.0 if hot else 0.6) * alpha)
+	_pill_sb.set_border_width_all(maxi(2, int(round(0.2 * ppm))) if hot else maxi(1, int(round(0.14 * ppm))))
+	draw_style_box(_pill_sb, rect)
+	var txt_col := Color(1, 1, 1, (1.0 if not dim else 0.45) * alpha)
+	var tx := rect.position.x + pad + arrow_w
+	if arrow != 0:
+		var ac := Vector2(rect.position.x + pad + arrow_w * 0.45, rect.get_center().y)
+		_draw_arrow(ac, arrow, fs * 0.28, Color(accent.r, accent.g, accent.b, (0.95 if not dim else 0.4) * alpha))
+	draw_string(_font, Vector2(tx, rect.position.y + h * 0.5 + fs * 0.34), text, HORIZONTAL_ALIGNMENT_LEFT, w - pad * 2.0 - arrow_w, fs, txt_col)
+	return rect
+
+
+## Small solid arrow. dir: Sim.Gesture UP / DOWN / SIDE (double-headed).
+func _draw_arrow(c: Vector2, dir: int, r: float, col: Color) -> void:
+	match dir:
+		Sim.Gesture.UP:
+			draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, r * 0.8), c + Vector2(-r, r * 0.8)]), col)
+		Sim.Gesture.DOWN:
+			draw_colored_polygon(PackedVector2Array([c + Vector2(0, r), c + Vector2(r, -r * 0.8), c + Vector2(-r, -r * 0.8)]), col)
+		_:
+			draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 1.15, 0), c + Vector2(-r * 0.1, -r * 0.8), c + Vector2(-r * 0.1, r * 0.8)]), col)
+			draw_colored_polygon(PackedVector2Array([c + Vector2(r * 1.15, 0), c + Vector2(r * 0.1, -r * 0.8), c + Vector2(r * 0.1, r * 0.8)]), col)
+
+
+## Labelled petals: the sub-element's thrust / ground / sweep names around ATTACK while it is held
+## (flick that way), and push / sink around GUARD. Strong labels keep them faintly visible.
+func _draw_petals(rw: float, strong: bool) -> void:
+	var col := UiStyle.element_color(_ctx_element)
+	var atk_held := _btn_finger[TouchLayout.Id.ATTACK] != -1 and not _attack_shape
+	if (atk_held or strong) and not _ctx_petals.is_empty() and not _tech_live():
+		var hot := _atk_flick.hot if atk_held else 0
+		var a := 1.0 if atk_held else 0.38
+		for g in [Sim.Gesture.UP, Sim.Gesture.DOWN, Sim.Gesture.SIDE]:
+			var txt := str(_ctx_petals.get(_petal_key(g), ""))
+			if txt == "":
+				continue
+			var an := _layout.attack_petal_anchor(g)
+			_draw_pill(an.pos, int(an.align), txt, col, hot == g or (_atk_flick.fired and _atk_flick.last == g and atk_held), a, g)
+	var grd_held := _btn_finger[TouchLayout.Id.GUARD] != -1
+	if (grd_held or strong) and not _ctx_guard_petals.is_empty():
+		var ghot := _grd_flick.hot if grd_held else 0
+		var ga := 1.0 if grd_held else 0.38
+		for g2 in [Sim.Gesture.UP, Sim.Gesture.DOWN]:
+			var gt := str(_ctx_guard_petals.get(_petal_key(g2), ""))
+			if gt == "":
+				continue
+			var gan := _layout.guard_petal_anchor(g2)
+			_draw_pill(gan.pos, int(gan.align), gt, col, ghot == g2, ga, g2)
+	if _tech_live() and _ctx_shape_label != "":
+		var san := _layout.attack_petal_anchor(Sim.Gesture.UP)
+		_draw_pill(san.pos, int(san.align), "A: " + _ctx_shape_label, col, true, 1.0)
+
+
+static func _petal_key(g: int) -> String:
+	match g:
+		Sim.Gesture.UP:
+			return "up"
+		Sim.Gesture.DOWN:
+			return "down"
+	return "side"
+
+
+## The selected sub-element's name, beside the active element chip.
+func _draw_sub_label() -> void:
+	var names: Array = Sim.SUB_NAMES[clampi(_ctx_element, 0, 3)]
+	var id := TouchLayout.Id.ELEM_0 + _ctx_element
+	var c := _layout.centers[id]
+	var tech := _layout.centers[TouchLayout.Id.TECH]
+	var out := (c - tech).normalized()
+	var col := UiStyle.element_color(_ctx_element)
+	var fs := maxi(11, int(round(2.0 * _layout.ppm * minf(_layout_scale(), 1.2))))
+	var text: String = names[clampi(_ctx_sub, 0, 3)]
+	var tw := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var p := c + out * (_layout.radii[id] + 1.2 * _layout.ppm)
+	# Place the text outside the arc: left of left-pointing chips, above upward ones.
+	var pos := p + Vector2(-tw * (0.5 - 0.5 * out.x) - tw * 0.5 * (1.0 if out.x < -0.3 else 0.0), 0.0)
+	if out.x < -0.3:
+		pos = p + Vector2(-tw, fs * 0.35)
+	else:
+		pos = p + Vector2(-tw * 0.5, -fs * 0.15)
+	if _layout.left_handed:
+		pos.x = c.x + (_layout.radii[id] + 1.2 * _layout.ppm) if out.x > 0.3 else pos.x
+	var u := _layout.usable
+	pos.x = clampf(pos.x, u.position.x, maxf(u.position.x, u.end.x - tw))
+	pos.y = clampf(pos.y, u.position.y + fs, u.end.y)
+	var op := _opacity()
+	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(2, fs / 5), Color(0, 0, 0, 0.6 * op))
+	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(col.r, col.g, col.b, 0.5 + 0.5 * op))
+
+
+## The four sub-element petals of the open ring.
+func _draw_sub_ring(_rw: float) -> void:
+	if _ring_mode == RING_CLOSED:
+		return
+	var col := UiStyle.element_color(_ctx_element)
+	var names: Array = Sim.SUB_NAMES[clampi(_ctx_element, 0, 3)]
+	var rects := _layout.ring_rects()
+	# A soft backing so the ring reads on any scene.
+	var u := rects[0].merge(rects[3]).grow(_layout.ppm * 1.0)
+	if _pill_sb == null:
+		_pill_sb = StyleBoxFlat.new()
+		_pill_sb.anti_aliasing = true
+	_pill_sb.set_corner_radius_all(int(_layout.ppm * 2.4))
+	_pill_sb.bg_color = Color(0.02, 0.025, 0.035, 0.45)
+	_pill_sb.border_color = Color(col.r, col.g, col.b, 0.25)
+	_pill_sb.set_border_width_all(1)
+	draw_style_box(_pill_sb, u)
+	var fs := maxi(12, int(round(2.4 * _layout.ppm * minf(_layout_scale(), 1.2))))
+	for i in 4:
+		var r := rects[i]
+		var unlocked := is_sub_unlocked(i)
+		var cur := i == _ctx_sub
+		var hot := i == _ring_hover
+		_pill_sb.set_corner_radius_all(int(r.size.y * 0.5))
+		var bg := Color(0.05, 0.06, 0.08, 0.86)
+		if cur:
+			bg = Color(col.r, col.g, col.b, 0.34)
+		if hot and unlocked:
+			bg = Color(col.r, col.g, col.b, 0.62)
+		_pill_sb.bg_color = bg
+		_pill_sb.border_color = Color(col.r, col.g, col.b, (1.0 if (cur or hot) else 0.55) * (1.0 if unlocked else 0.4))
+		_pill_sb.set_border_width_all(maxi(2, int(round(0.25 * _layout.ppm))) if (cur or hot) else 1)
+		draw_style_box(_pill_sb, r)
+		var label: String = names[i]
+		var tw := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var a := 1.0 if unlocked else 0.4
+		draw_string(_font, Vector2(r.get_center().x - tw * 0.5 + _layout.ppm * 0.8, r.get_center().y + fs * 0.34), label, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - _layout.ppm, fs, Color(1, 1, 1, a))
+		# Index dot (sub 0..3) at the left end.
+		draw_circle(Vector2(r.position.x + r.size.y * 0.5, r.get_center().y), r.size.y * 0.12, Color(col.r, col.g, col.b, a))
+		if not unlocked:
+			draw_line(r.position + Vector2(r.size.y * 0.8, r.size.y * 0.5), r.position + Vector2(r.size.x - r.size.y * 0.8, r.size.y * 0.5), Color(1, 1, 1, 0.3), 1.5, true)
 
 
 func _draw_tech_aim(rw: float) -> void:

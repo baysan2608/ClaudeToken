@@ -159,14 +159,14 @@ static func field_tick(w: CombatWorld, z: MatBody, _dt: float) -> void:
 # ------------------------------------------------------------------ detonations (Combustion)
 
 ## Zones of a threat class around a point.
-static func zones_at(w: CombatWorld, p: Vector3, classes: Array) -> Array[MatBody]:
+static func zones_at(w: CombatWorld, p: Vector3, classes: Array, r: float = 0.2) -> Array[MatBody]:
 	var out: Array[MatBody] = []
 	for b in w.bodies:
 		if not b.alive or b.form != Sim.Form.ZONE:
 			continue
 		if not classes.has(String(Interactions.classify(b))) and not classes.has(String(b.tag)):
 			continue
-		if w._in_zone(b, p, 0.2):
+		if w._in_zone(b, p, r):
 			out.append(b)
 	return out
 
@@ -198,6 +198,20 @@ static func in_wind(w: CombatWorld, p: Vector3) -> bool:
 	return false
 
 
+## A volume carrier for a detonation (tier, move id and attack instance; no def counter power so the blast's own,
+## modified power counts).
+static func blast_inst(w: CombatWorld, move_id: String, tier: int, attack_id: int = 0, sub: int = 3) -> ActionInst:
+	var fi := ActionInst.new()
+	fi.id = move_id
+	fi.def = {"counter": {"cls": "blast"}, "fx": {"mat": "blast"}, "element": E, "sub": sub}
+	fi.element = E
+	fi.sub = sub
+	fi.attack_id = attack_id if attack_id != 0 else w.new_attack_id()
+	fi.data["tier"] = tier
+	fi.phase = ActionInst.P.ACTIVE
+	return fi
+
+
 ## A detonation of Combustion at `p` (MOVESET §7.12): vacuum suppresses it (a well it can out-push is filled and
 ## collapses instead), vapour halves it, moving air fans it (+30 % radius), the air inrush right after a vacuum
 ## collapses boosts it x1.5, a tornado at the point is disrupted (P >= the tornado's) - or, with mode "fuse",
@@ -210,6 +224,8 @@ static func detonate(w: CombatWorld, a: ActorState, inst: ActionInst, p: Vector3
 	var power := float(prm.get("power", 8.0))
 	var heat := float(prm.get("heat_hu", 0.0))
 	var tier := inst.tier() if inst != null else int(prm.get("tier", 0))
+	# The blast volume carries its tier and move (rule cells by tier) but its own power (modifiers apply to it).
+	inst = blast_inst(w, inst.id if inst != null else String(prm.get("move", "")), tier, inst.attack_id if inst != null else 0)
 	var vol := Agent.of_volume(w, a, inst, &"blast", p, Vector3.ZERO, {"P": power, "heat_hu": heat})
 	vol.power = power
 	vol.tier = tier

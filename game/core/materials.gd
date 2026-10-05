@@ -92,7 +92,7 @@ static func is_brittle(b: MatBody) -> bool:
 ## Lightning conductor node (docs/MOVESET.md §7.11): liquid water bodies (streams, blobs, waves,
 ## held shields, puddles, the pool), metal of any phase, conductive tags, fog zones and charged bodies.
 static func conducts(b: MatBody) -> bool:
-	if b.charge > 0.0:
+	if b.charge > 0.0 or bool(b.props.get("conducts", false)):
 		return true
 	if CONDUCTIVE_TAGS.has(String(b.tag)):
 		return true

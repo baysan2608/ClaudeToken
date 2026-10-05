@@ -10,6 +10,7 @@ var o: ActorState
 func _setup(elem: int = Sim.Element.EARTH) -> void:
 	h = SimHarness.new(1)
 	h.begin_scope()
+	h.legacy_bindings_only()   # engine mechanics with test-local moves; kits bind real moves elsewhere
 	Moves.register("t_strike", {"element": 0, "verb": "projectile", "slot": "strike", "startup": 0.24, "active": 0.06,
 		"recovery": 0.3, "cancel": 0.6, "heavy_min": 0.4, "cost": 5.0, "source": "ground", "mat": "stone", "mass": 10.0,
 		"speed": 18.0, "tiers": {"t1": {"mass": 16.0}, "t2": {"mass": 22.0}, "t3": {"mass": 30.0}}})

@@ -19,6 +19,7 @@ var _age: float = 0.0
 var _playing: bool = false
 var _intensity: float = 1.0
 var _length: float = 3.0
+var _blue: bool = false
 
 
 func _init() -> void:
@@ -61,6 +62,19 @@ func _make_mi(mesh: ArrayMesh, mat: ShaderMaterial) -> MeshInstance3D:
 	return mi
 
 
+## Blue fire palette for the next play (Fire / Blue cones, comets, columns). Reset on release.
+func set_blue(on: bool) -> void:
+	if on == _blue:
+		return
+	_blue = on
+	var cols: Array = [Color(0.10, 0.12, 0.55), Color(0.25, 0.45, 1.0), Color(0.55, 0.85, 1.0), Color(0.95, 0.98, 1.0)] if on \
+		else [Color(0.62, 0.07, 0.01), Color(1.0, 0.36, 0.05), Color(1.0, 0.78, 0.30), Color(1.0, 0.95, 0.75)]
+	for m in [_mat_outer, _mat_inner]:
+		for i in 4:
+			(m as ShaderMaterial).set_shader_parameter(["col_deep", "col_mid", "col_hot", "col_white"][i], VfxPalette.v3(cols[i]))
+	_light.light_color = Color(0.5, 0.7, 1.0) if on else Color(1.0, 0.52, 0.18)
+
+
 func play(origin: Vector3, dir: Vector3, length: float, intensity: float = 1.0) -> void:
 	var d: Vector3 = dir.normalized() if dir.length_squared() > 1e-8 else Vector3.FORWARD
 	_length = maxf(length, 0.2)
@@ -91,6 +105,8 @@ func is_playing() -> bool:
 func reset() -> void:
 	_playing = false
 	_age = 0.0
+	if _blue:
+		set_blue(false)
 	_light.visible = false
 	_light.light_energy = 0.0
 	visible = false

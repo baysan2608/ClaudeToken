@@ -4,8 +4,11 @@ extends RefCounted
 ## It produces InputFrames exactly like the touch layer does, so everything it
 ## shows goes through the real game path. Usage (user args after `--`):
 ##   --autoplay=flagship[:seconds]   intercept, melt, pour at the rival, repeat
-##   --autoplay=soak[:seconds]       random play across all elements (perf soak)
+##   --autoplay=soak[:seconds]       random play across all elements, sub-elements, slots and gestures (perf soak)
+##   --autoplay=duel[:seconds]       AI vs AI on the spar scenario (master presets, all four elements; docs/AI.md)
 ##   --autoplay=tour[:seconds]       element tour vs targets
+##   --autoplay=show_<name>[:seconds] scripted showcase (res://actors/showcase_<name>.gd), e.g. show_owner (the owner's
+##                                    examples across all four elements), show_earth_magma, show_fire_lightning ...
 ##   --shots=<dir>                    save screenshots at key events
 ##   --perf=<file.json>               write perf stats at the end
 
@@ -24,6 +27,9 @@ var _hold_t := 0.0
 var _next := 0.0
 var _rounds := 0
 var _game: Game
+## Duel mode: the brain that plays the player's fighter (its intents are turned into InputFrames).
+var duel_ai: AiBrain = null
+var _duel_seed := 77
 ## Element showcase choreography (res://actors/showcase_<name>.gd), used by --autoplay=show_<name>.
 ## Interface: scenario() -> String, bind(g: Game), frame(g: Game, f: InputFrame, t: float), shot(name) callback.
 var show: Object = null
@@ -42,7 +48,7 @@ func _init(spec: String) -> void:
 	match mode:
 		"flagship":
 			scenario = "molten_exchange"
-		"soak":
+		"soak", "duel":
 			scenario = "spar"
 		"tour":
 			scenario = "conduction"
@@ -62,9 +68,18 @@ func bind(g: Game) -> void:
 	_game = g
 	if show != null and show.has_method("bind"):
 		show.call("bind", g)
-	if mode == "soak":
+	if mode == "soak" or mode == "duel":
 		g.progress.lab_mode = true
 		g.player.kit = g.progress.kit()
+		g.player.elements = [true, true, true, true]
+	if mode == "duel":
+		# Both fighters are driven by the planner: the rival through the game's own brain, the player's
+		# fighter through a second brain whose intents go through InputFrame -> PlayerController.
+		if g.ai != null and g.ai.has_method("configure"):
+			g.ai.configure({"preset": "master", "elements": [0, 1, 2, 3]})
+		duel_ai = AiBrain.new(g.world, g.player, {}, _duel_seed)
+		duel_ai.configure({"preset": "master", "elements": [0, 1, 2, 3]})
+		_duel_seed += 1
 
 
 func frame(g: Game) -> InputFrame:
@@ -82,6 +97,8 @@ func frame(g: Game) -> InputFrame:
 			_flagship(g)
 		"soak":
 			_soak(g)
+		"duel":
+			_duel(g)
 		"tour":
 			_tour(g)
 	if _t >= duration:
@@ -188,32 +205,84 @@ func _flagship(g: Game) -> void:
 
 func _soak(g: Game) -> void:
 	if _t < _next:
-		f.move = f.move
+		# Holds between decisions: keep the guard flick / evade hold going for their tick.
 		return
 	_next = _t + rng.randf_range(0.15, 0.6)
 	f.move = Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).limit_length(1.0)
 	f.cam_delta = Vector2(rng.randf_range(-0.05, 0.05), 0.0)
 	var r := rng.randf()
+	var guarding := f.guard_held
 	f.attack_held = false
 	f.guard_held = false
+	f.evade_held = false
 	if f.tech_held and rng.randf() < 0.5:
 		f.tech_held = false
 		f.tech_released = true
-	if r < 0.08:
+	if r < 0.06:
 		f.element_select = rng.randi_range(0, 3)
-	elif r < 0.35:
+	elif r < 0.12:
+		f.sub_select = rng.randi_range(0, 3)       # sub-element ring
+	elif r < 0.36:
 		f.attack_pressed = true
-		f.attack_held = rng.randf() < 0.3
-	elif r < 0.5:
+		f.attack_held = rng.randf() < 0.35         # charge: T1..T3 by how long the next decisions keep it
+		if rng.randf() < 0.5:
+			f.attack_gesture = rng.randi_range(1, 3)   # thrust / ground / sweep flick
+	elif r < 0.46:
 		f.guard_pressed = true
 		f.guard_held = true
-	elif r < 0.6:
+	elif r < 0.52 and guarding:
+		f.guard_held = true
+		f.guard_gesture = Sim.Gesture.UP if rng.randf() < 0.5 else Sim.Gesture.DOWN   # push / sink
+	elif r < 0.62:
 		f.evade_pressed = true
-	elif r < 0.8:
+		f.evade_held = rng.randf() < 0.4           # evade_hold morph after 0.2 s
+	elif r < 0.82:
 		f.tech_pressed = true
 		f.tech_held = true
+		if rng.randf() < 0.4:
+			f.tech_aim = Vector2(rng.randf_range(-1, 1), rng.randf_range(0.2, 1)).limit_length(1.0)
+			f.tech_aim_active = true
 	if _t > 2.0 and int(_t) % 60 == 0 and _t - floor(_t) < Sim.DT:
 		_shot("soak_%d" % int(_t))
+
+
+## AI vs AI: the player's brain decides; its ActorIntent is mapped back to screen-space input with the
+## camera yaw PlayerController will use, so the real input path drives the fighter.
+func _duel(g: Game) -> void:
+	if duel_ai == null or duel_ai.w != g.world:
+		# The scenario reloaded (KO reset): rebind the player's brain to the new world.
+		duel_ai = AiBrain.new(g.world, g.player, {}, _duel_seed)
+		duel_ai.configure({"preset": "master", "elements": [0, 1, 2, 3]})
+		_duel_seed += 1
+	if g.ai != null and not g.ai.planner:
+		g.ai.configure({"preset": "master", "elements": [0, 1, 2, 3]})
+	var it := duel_ai.think(Sim.DT)
+	var yaw: float = g.cam.yaw
+	var fwd := Vector3(sin(yaw), 0.0, cos(yaw))
+	var right := fwd.cross(Vector3.UP)
+	f.move = Vector2(it.move.dot(right), it.move.dot(fwd)).limit_length(1.0)
+	f.attack_pressed = it.attack_pressed
+	f.attack_held = it.attack_held
+	f.attack_released = it.attack_released
+	f.guard_pressed = it.guard_pressed
+	f.guard_held = it.guard_held
+	f.guard_released = false
+	f.evade_pressed = it.evade_pressed
+	f.evade_held = it.evade_held
+	f.tech_pressed = it.tech_pressed
+	f.tech_held = it.tech_held
+	f.tech_released = it.tech_released
+	f.tech_cancel = it.tech_cancel
+	f.element_select = it.element_select
+	f.sub_select = it.sub_select
+	f.attack_gesture = it.attack_gesture
+	f.guard_gesture = it.guard_gesture
+	f.target_cycle = it.target_cycle
+	f.tech_aim_active = it.aim_active
+	if it.aim_active:
+		f.tech_aim = Vector2(it.aim_dir.dot(right), maxf(it.aim_dir.dot(fwd), -0.2)).limit_length(1.0)
+	if int(_t * 60.0) % 300 == 0:
+		_shot("duel_%03d" % int(_t))
 
 
 func _tour(g: Game) -> void:
@@ -230,6 +299,8 @@ func _tour(g: Game) -> void:
 
 
 func after_tick(g: Game, evs: Array[Dictionary]) -> void:
+	if show != null and show.has_method("after_tick"):
+		show.call("after_tick", g, evs)
 	if not OS.has_environment("AUTOPLAY_TRACE"):
 		return
 	for e in evs:

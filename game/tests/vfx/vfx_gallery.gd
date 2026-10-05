@@ -107,9 +107,9 @@ func _build_environment() -> void:
 func _build_ground() -> void:
 	var mi := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(STATION_SPACING * 14.0, 60.0)
+	pm.size = Vector2(STATION_SPACING * 20.0, 60.0)
 	mi.mesh = pm
-	mi.position = Vector3(STATION_SPACING * 6.0, 0.0, 0.0)
+	mi.position = Vector3(STATION_SPACING * 9.0, 0.0, 0.0)
 	var gm: ShaderMaterial = VfxMaterials.make("arena_ground")
 	gm.set_shader_parameter("wear", 0.4)
 	mi.material_override = gm
@@ -170,6 +170,22 @@ func _register_stations() -> void:
 	_stations.append({"name": "arena", "fn": _station_arena})
 	_stations.append({"name": "hero", "fn": _station_hero})
 	_stations.append({"name": "cost", "fn": _station_cost})
+	# Moveset families, built from synthetic sim bodies through BodyViews (the real mapping).
+	_stations.append({"name": "mv_earth", "fn": _station_mv_earth})
+	_stations.append({"name": "mv_water", "fn": _station_mv_water})
+	_stations.append({"name": "mv_fire", "fn": _station_mv_fire})
+	_stations.append({"name": "mv_air", "fn": _station_mv_air})
+	_stations.append({"name": "mv_cues", "fn": _station_mv_cues})
+	_stations.append({"name": "mv_cost", "fn": _station_mv_cost})
+
+
+var _bvs: Array[BodyViews] = []
+
+
+func _process(_dt: float) -> void:
+	for bv in _bvs:
+		if is_instance_valid(bv):
+			bv.render(1.0)
 
 
 func _run() -> void:
@@ -178,10 +194,10 @@ func _run() -> void:
 		await get_tree().process_frame
 	for i in _stations.size():
 		var st: Dictionary = _stations[i]
-		if (_only.is_empty() and st.name == "cost") or (not _only.is_empty() and not _only.has(st.name)):
+		if (_only.is_empty() and (st.name == "cost" or st.name == "mv_cost")) or (not _only.is_empty() and not _only.has(st.name)):
 			continue
 		var origin := Vector3(STATION_SPACING * i, 0.0, 0.0)
-		if _only_origin or st.name == "cost":
+		if _only_origin or st.name == "cost" or st.name == "mv_cost":
 			origin = Vector3.ZERO
 		var cam_info: Dictionary = await st.fn.call(origin)
 		if cam_info.get("skip_capture", false):
@@ -901,3 +917,294 @@ func _station_cost(o_unused: Vector3) -> Dictionary:
 		await get_tree().process_frame
 		await get_tree().process_frame
 	return {"pos": o + Vector3(0, 2.0, 5.0), "look": o + Vector3(0, 0.8, 0), "frames": 1, "skip_capture": true}
+
+
+# -------------------------------------------------------------------------------- moveset stations
+## A fresh sim world per station (no arena solids), bodies set by hand, views through BodyViews.
+func _mv_world() -> Array:
+	var w := CombatWorld.new(1)
+	w.arena.solids.clear()
+	var bv := BodyViews.new()
+	add_child(bv)
+	bv.bind(w)
+	_bvs.append(bv)
+	return [w, bv]
+
+
+func _mv_body(w: CombatWorld, mat: int, form: int, mass: float, p: Vector3, tag: String = "", f: Dictionary = {}) -> MatBody:
+	var b := w.spawn_body(mat, form, mass, p, "gallery")
+	b.tag = StringName(tag)
+	b.age = 2.0
+	for k in f:
+		b.set(k, f[k])
+	return b
+
+
+func _mv_zone(w: CombatWorld, tag: String, p: Vector3, r: float, mat: int = Sim.Mat.AIR, f: Dictionary = {}) -> MatBody:
+	var z := w.spawn_zone(StringName(tag), p, r, 0, 10.0, mat, 0.0, -1.0)
+	z.age = 2.0
+	for k in f:
+		z.set(k, f[k])
+	return z
+
+
+func _mv_wall(w: CombatWorld, mat: int, p: Vector3, tag: String, half: Vector3, f: Dictionary = {}) -> MatBody:
+	var b := _mv_body(w, mat, Sim.Form.WALL, 80.0, p, tag, f)
+	b.wall_half = half
+	b.wall_rise = 1.0
+	return b
+
+
+func _mv_wave(w: CombatWorld, mat: int, p: Vector3, tag: String, length: float, f: Dictionary = {}) -> MatBody:
+	var b := _mv_body(w, mat, Sim.Form.WAVE, 30.0, p, tag, f)
+	var path := PackedVector3Array()
+	for i in 8:
+		var t := float(i) / 7.0
+		path.append(p + Vector3(-length * (1.0 - t), 0, sin(t * 3.0) * 0.25))
+	b.wave_path = path
+	b.wave_width = 1.3
+	b.wave_dir = Vector3.RIGHT
+	b.vel = Vector3(4, 0, 0)
+	if mat == Sim.Mat.WATER:
+		b.phase = Sim.Phase.LIQUID
+		b.liquid = 1.0
+	return b
+
+
+func _mv_settle(bv: BodyViews) -> void:
+	bv.push_state()
+	bv.push_state()
+	bv.render(1.0)
+
+
+func _station_mv_earth(o: Vector3) -> Dictionary:
+	var wb := _mv_world()
+	var w: CombatWorld = wb[0]
+	var bv: BodyViews = wb[1]
+	# metal: disc (spinning), lance, Aegis plate, caltrop field, red-hot rod
+	_mv_body(w, Sim.Mat.METAL, Sim.Form.CHUNK, 2.0, o + Vector3(-6.0, 1.2, 1.5), "disc", {"spin": 40.0, "vel": Vector3(10, 0, 2), "radius": 0.28})
+	_mv_body(w, Sim.Mat.METAL, Sim.Form.CHUNK, 3.0, o + Vector3(-4.5, 1.3, 1.5), "lance", {"vel": Vector3(12, 1, 0), "radius": 0.2})
+	_mv_body(w, Sim.Mat.METAL, Sim.Form.CHUNK, 3.0, o + Vector3(-4.5, 0.7, 2.6), "rod", {"vel": Vector3(12, 0, -3), "radius": 0.2, "temp": 950.0})
+	_mv_wall(w, Sim.Mat.METAL, o + Vector3(-6.2, 0, -1.0), "plate", Vector3(0.7, 0.8, 0.1))
+	_mv_zone(w, "caltrops", o + Vector3(-4.0, 0, -1.2), 1.0, Sim.Mat.METAL)
+	_label("metal: disc / lance / hot rod / plate / caltrops", o + Vector3(-5.0, 2.4, 0.0))
+	# sand: slug, cloud, surge, quicksand, sand wall
+	_mv_body(w, Sim.Mat.SAND, Sim.Form.CHUNK, 3.0, o + Vector3(-1.6, 1.1, 2.2), "slug", {"vel": Vector3(9, 0, 1), "radius": 0.22})
+	_mv_zone(w, "sand_cloud", o + Vector3(-1.5, 0, -1.6), 1.6, Sim.Mat.SAND)
+	_mv_wave(w, Sim.Mat.SAND, o + Vector3(1.6, 0, 2.4), "sand_surge", 2.6)
+	_mv_zone(w, "quicksand", o + Vector3(1.2, 0, -0.6), 1.2, Sim.Mat.SAND)
+	_mv_wall(w, Sim.Mat.SAND, o + Vector3(0.6, 0, -3.2), "sand", Vector3(1.0, 0.5, 0.25))
+	_label("sand: slug / cloud / surge / quicksand / wall", o + Vector3(0.0, 2.4, 0.0))
+	# glass: wall, shards; magma: glob, bomb, obsidian wall, lava pool; stone spikes
+	_mv_wall(w, Sim.Mat.GLASS, o + Vector3(3.6, 0, -2.6), "glass", Vector3(1.0, 0.6, 0.25))
+	_mv_body(w, Sim.Mat.GLASS, Sim.Form.SHARD, 0.6, o + Vector3(3.2, 1.1, 1.6), "needle", {"vel": Vector3(9, 2, 0), "radius": 0.12})
+	_mv_body(w, Sim.Mat.STONE, Sim.Form.CHUNK, 4.0, o + Vector3(4.6, 1.0, 1.8), "glob", {"temp": 1150.0, "liquid": 0.8, "vel": Vector3(8, 1, 0), "radius": 0.24})
+	_mv_wall(w, Sim.Mat.STONE, o + Vector3(6.4, 0, -1.6), "obsidian", Vector3(1.0, 0.55, 0.28))
+	_mv_zone(w, "lava_pool", o + Vector3(5.8, 0, 1.0), 1.0, Sim.Mat.STONE, {"liquid": 1.0})
+	_mv_wall(w, Sim.Mat.STONE, o + Vector3(3.2, 0, -0.4), "spikes", Vector3(0.9, 0.5, 0.2))
+	_label("glass wall / shard, magma glob / pool, obsidian, spikes", o + Vector3(4.8, 2.4, 0.0))
+	_mv_settle(bv)
+	return {"shots": [
+		{"pos": o + Vector3(0, 5.6, 9.5), "look": o + Vector3(0, 0.4, -0.2), "frames": 6, "dt": 0.05, "fov": 50.0},
+		{"pos": o + Vector3(-5.0, 1.9, 4.6), "look": o + Vector3(-5.0, 0.8, 0.4), "frames": 2, "fov": 40.0},
+		{"pos": o + Vector3(4.8, 2.0, 5.0), "look": o + Vector3(4.6, 0.6, -0.6), "frames": 2, "fov": 42.0},
+	]}
+
+
+func _station_mv_water(o: Vector3) -> Dictionary:
+	var wb := _mv_world()
+	var w: CombatWorld = wb[0]
+	var bv: BodyViews = wb[1]
+	_mv_wave(w, Sim.Mat.WATER, o + Vector3(-3.2, 0, 2.2), "water_wave", 3.0)
+	_mv_wall(w, Sim.Mat.WATER, o + Vector3(-5.6, 0, -1.8), "ice", Vector3(1.1, 0.75, 0.3), {"phase": Sim.Phase.FROZEN, "liquid": 0.0})
+	_mv_wave(w, Sim.Mat.WATER, o + Vector3(-1.4, 0, -0.4), "rime", 2.4, {"phase": Sim.Phase.FROZEN})
+	_mv_zone(w, "ice_floor", o + Vector3(-1.6, 0, -2.8), 1.3, Sim.Mat.WATER)
+	_mv_body(w, Sim.Mat.WATER, Sim.Form.SHARD, 0.5, o + Vector3(-5.6, 1.2, 1.0), "needle", {"vel": Vector3(10, 1, 0), "radius": 0.1, "phase": Sim.Phase.FROZEN, "liquid": 0.0})
+	_mv_wall(w, Sim.Mat.WATER, o + Vector3(-3.6, 0, -3.4), "spikes", Vector3(0.8, 0.5, 0.2), {"phase": Sim.Phase.FROZEN})
+	_label("water wave / ice wall / rime / ice floor / spikes", o + Vector3(-3.4, 2.4, 0.0))
+	_mv_zone(w, "fog", o + Vector3(1.6, 0, -2.4), 1.8, Sim.Mat.WATER)
+	_mv_body(w, Sim.Mat.STEAM, Sim.Form.CLOUD, 2.0, o + Vector3(1.4, 0.2, 1.4), "", {"radius": 0.9})
+	_mv_zone(w, "geyser", o + Vector3(3.2, 0, 0.0), 1.4, Sim.Mat.WATER, {"tier": 2})
+	_mv_zone(w, "steam_screen", o + Vector3(3.0, 0, -3.4), 2.0, Sim.Mat.STEAM)
+	_label("fog / steam / geyser / steam screen", o + Vector3(2.2, 2.6, 0.0))
+	_mv_wall(w, Sim.Mat.PLANT, o + Vector3(6.0, 0, -2.4), "vine", Vector3(1.0, 0.8, 0.2))
+	_mv_wave(w, Sim.Mat.PLANT, o + Vector3(6.6, 0, 1.6), "roots", 2.2)
+	_mv_zone(w, "briar", o + Vector3(5.2, 0, 0.0), 0.9, Sim.Mat.PLANT)
+	_label("vine lattice / roots / briar", o + Vector3(6.0, 2.4, 0.0))
+	_mv_settle(bv)
+	return {"shots": [
+		{"pos": o + Vector3(0, 5.6, 9.5), "look": o + Vector3(0, 0.5, -0.4), "frames": 6, "dt": 0.05, "fov": 52.0},
+		{"pos": o + Vector3(-3.8, 1.8, 4.8), "look": o + Vector3(-3.4, 0.6, 0.0), "frames": 2, "fov": 44.0},
+		{"pos": o + Vector3(5.2, 2.0, 5.0), "look": o + Vector3(5.6, 0.7, -0.6), "frames": 2, "fov": 44.0},
+	]}
+
+
+func _station_mv_fire(o: Vector3) -> Dictionary:
+	var wb := _mv_world()
+	var w: CombatWorld = wb[0]
+	var bv: BodyViews = wb[1]
+	_mv_body(w, Sim.Mat.FIRE, Sim.Form.CHUNK, 1.0, o + Vector3(-5.5, 1.2, 1.4), "fireball", {"vel": Vector3(10, 0, 0), "heat_payload": 400.0, "tier": 1})
+	_mv_body(w, Sim.Mat.FIRE, Sim.Form.CHUNK, 1.0, o + Vector3(-5.5, 1.4, -0.6), "comet", {"vel": Vector3(14, 0, 0), "heat_payload": 600.0})
+	_mv_body(w, Sim.Mat.FIRE, Sim.Form.CHUNK, 0.3, o + Vector3(-3.6, 1.0, 2.0), "ember", {"vel": Vector3(6, 2, 0)})
+	_mv_body(w, Sim.Mat.FIRE, Sim.Form.CHUNK, 0.3, o + Vector3(-3.4, 0.15, 0.6), "ember", {"props": {"mine": true}, "radius": 0.15})
+	_label("fireball / comet / ember / mine", o + Vector3(-4.6, 2.4, 0.0))
+	_mv_zone(w, "fire_field", o + Vector3(-1.2, 0, -1.8), 1.5, Sim.Mat.FIRE)
+	_mv_zone(w, "fire_field", o + Vector3(1.8, 0, -2.8), 1.0, Sim.Mat.FIRE, {"props": {"blue": true}})
+	_mv_wave(w, Sim.Mat.FIRE, o + Vector3(0.6, 0, 2.0), "fire_line", 3.0)
+	_label("fire field / blue field / fire line", o + Vector3(0.0, 2.4, 0.0))
+	_mv_zone(w, "corona", o + Vector3(3.6, 0, 1.0), 0.9, Sim.Mat.FIRE)
+	_mv_zone(w, "static_field", o + Vector3(5.8, 0, -1.6), 1.6, Sim.Mat.AIR)
+	_mv_wave(w, Sim.Mat.AIR, o + Vector3(7.0, 0, 2.0), "ground_current", 2.5)
+	var cs := _mv_body(w, Sim.Mat.STONE, Sim.Form.CHUNK, 8.0, o + Vector3(4.0, 1.1, -1.4), "", {"charge": 25.0, "radius": 0.3})
+	cs.on_ground = false
+	_label("corona / static field / ground current / charged stone", o + Vector3(5.4, 2.4, 0.0))
+	_mv_settle(bv)
+	return {"shots": [
+		{"pos": o + Vector3(0, 5.0, 9.0), "look": o + Vector3(0, 0.6, -0.2), "frames": 6, "dt": 0.05, "fov": 52.0},
+		{"pos": o + Vector3(-4.6, 1.6, 4.2), "look": o + Vector3(-4.6, 0.9, 0.4), "frames": 2, "fov": 40.0},
+		{"pos": o + Vector3(5.0, 1.8, 5.0), "look": o + Vector3(5.0, 0.7, -0.4), "frames": 2, "fov": 42.0},
+	]}
+
+
+func _station_mv_air(o: Vector3) -> Dictionary:
+	var wb := _mv_world()
+	var w: CombatWorld = wb[0]
+	var bv: BodyViews = wb[1]
+	_mv_body(w, Sim.Mat.AIR, Sim.Form.CHUNK, 0.1, o + Vector3(-6.0, 1.2, 1.6), "crescent", {"vel": Vector3(14, 0, 0), "radius": 0.6})
+	var ww := _mv_wall(w, Sim.Mat.AIR, o + Vector3(-6.0, 0, -2.0), "wind_wall", Vector3(1.2, 1.0, 0.2))
+	ww.form = Sim.Form.ZONE
+	ww.tag = &"wind_wall"
+	_mv_zone(w, "tornado", o + Vector3(-3.4, 0, -1.0), 1.4, Sim.Mat.AIR, {"spin": 6.0})
+	_mv_zone(w, "tornado", o + Vector3(-0.6, 0, -1.4), 1.3, Sim.Mat.AIR, {"spin": 6.0, "props": {"infused": "sand"}})
+	_mv_zone(w, "tornado", o + Vector3(2.2, 0, -1.4), 1.3, Sim.Mat.AIR, {"spin": 6.0, "props": {"infused": "fire"}})
+	_mv_zone(w, "tornado", o + Vector3(5.0, 0, -1.4), 1.3, Sim.Mat.AIR, {"spin": 6.0, "props": {"infused": "water"}})
+	_label("crescent / wind wall / tornado: plain, sand, fire, water", o + Vector3(-1.0, 3.6, -1.0))
+	_mv_body(w, Sim.Mat.AIR, Sim.Form.CHUNK, 0.1, o + Vector3(-3.8, 0.9, 2.6), "twister", {"vel": Vector3(10, 0, 0), "radius": 0.3, "spin": 12.0})
+	_mv_zone(w, "eddy", o + Vector3(-1.2, 0, 2.4), 1.0, Sim.Mat.AIR, {"spin": 8.0})
+	_mv_zone(w, "null_bubble", o + Vector3(1.2, 1.0, 2.4), 1.0, Sim.Mat.AIR)
+	_mv_zone(w, "vacuum_well", o + Vector3(3.6, 0, 2.6), 1.4, Sim.Mat.AIR)
+	_mv_zone(w, "sound_barrier", o + Vector3(6.4, 0.0, 2.2), 1.1, Sim.Mat.AIR)
+	_mv_wave(w, Sim.Mat.AIR, o + Vector3(7.6, 0, -0.2), "dust_line", 2.0)
+	_label("twister / eddy / null bubble / vacuum well / sound barrier", o + Vector3(1.6, 2.6, 2.4))
+	_mv_settle(bv)
+	return {"shots": [
+		{"pos": o + Vector3(0, 5.6, 10.5), "look": o + Vector3(0, 0.9, 0.0), "frames": 6, "dt": 0.05, "fov": 54.0},
+		{"pos": o + Vector3(1.0, 1.8, 6.4), "look": o + Vector3(1.6, 0.8, 1.6), "frames": 2, "fov": 46.0},
+	]}
+
+
+func _station_mv_cues(o: Vector3) -> Dictionary:
+	var pool := VfxPool.new()
+	add_child(pool)
+	var styles := ["sand", "frost", "smoke", "leaves", "metal", "blue_sparks", "water", "ember"]
+	for i in styles.size():
+		var b: BurstFX = pool.get_fx("burst")
+		_track(b)
+		b.play(o + Vector3(-6.0 + i * 1.5, 0.1, 2.0), Vector3.UP, 1.0, styles[i])
+		b.advance(0.25)
+		_label(styles[i], o + Vector3(-6.0 + i * 1.5, 1.6, 2.0))
+	var mats := ["ice", "glass", "stone", "metal"]
+	for i in mats.size():
+		var sh: ShardsFX = pool.get_fx("shards")
+		_track(sh)
+		sh.play(o + Vector3(-5.0 + i * 2.2, 0.8, -0.4), Vector3.UP, 1.0, mats[i], i, o.y)
+		sh.advance(0.12)
+		_label("shards " + mats[i], o + Vector3(-5.0 + i * 2.2, 2.0, -0.4))
+	var bl: BlastFX = pool.get_fx("blast")
+	_track(bl)
+	bl.play(o + Vector3(4.6, 0.8, -1.2), 1.4, 1.0)
+	bl.advance(0.17)
+	var bm: BeamFX = pool.get_fx("beam")
+	_track(bm)
+	bm.play(o + Vector3(-6.0, 1.2, -3.0), o + Vector3(0.0, 1.0, -3.4), 0.5, "blue")
+	bm.advance(0.15)
+	var bs: BeamFX = pool.get_fx("beam")
+	_track(bs)
+	bs.play(o + Vector3(-6.0, 0.7, -2.4), o + Vector3(0.0, 0.6, -2.6), 0.5, "sand")
+	bs.advance(0.15)
+	for i in 3:
+		var r: RingFX = pool.get_fx("ring")
+		_track(r)
+		var col := VfxPalette.color(["sound", "vacuum", "wind"][i])
+		r.play(o + Vector3(1.6 + i * 1.8, 1.1, -3.2), Vector3.BACK, 0.2, 0.8, 0.5, col, {"billboard": true, "count": 2, "width": 0.1})
+		r.advance(0.22)
+	for t in 3:
+		var c: ChargeFX = pool.get_fx("charge")
+		if c == null:
+			c = ChargeFX.new()
+			add_child(c)
+		_track(c)
+		c.set_anchor(o + Vector3(5.6 + t * 1.2 - 2.4, 1.2, 1.4), o + Vector3(5.6 + t * 1.2 - 2.4, 0, 1.4))
+		c.set_charge(t + 1, 0.5, ["flame", "ice", "lightning"][t])
+		c.advance(0.1)
+	_label("blast / blue beam / sandblast / rings / charge T1-T3", o + Vector3(2.0, 2.8, -1.0))
+	return {"shots": [
+		{"pos": o + Vector3(0, 4.2, 9.0), "look": o + Vector3(0, 0.8, -0.6), "frames": 1, "dt": 0.0, "fov": 54.0},
+	]}
+
+
+## Draw calls / primitives of each new view (same method as `cost`).
+func _station_mv_cost(_o: Vector3) -> Dictionary:
+	_cam.global_position = Vector3(0, 2.0, 6.0)
+	_cam.look_at(Vector3(0, 0.8, 0), Vector3.UP)
+	await _settle(2.0)
+	var base: Vector3i = _info()
+	var makers: Array = [
+		["CloudView (sand_cloud)", func() -> Node:
+			var n := CloudView.new(); n.configure("sand_cloud", 1); n.set_shape(1.5, 1.2); n.on_acquire(); return n],
+		["CrystalView (wall)", func() -> Node:
+			var n := CrystalView.new(); n.setup("wall", 1, "ice", Vector3(1, 1, 0.5)); n.on_acquire(); return n],
+		["MetalView (disc spinning)", func() -> Node:
+			var n := MetalView.new(); n.setup("disc", 1, Vector3.ONE * 0.3); n.set_state(0.0, 40.0); n.on_acquire(); n.position = Vector3(0, 1, 0); return n],
+		["MetalView (caltrops r1.2)", func() -> Node:
+			var n := MetalView.new(); n.setup("caltrops", 1, Vector3.ONE, 1.2); n.on_acquire(); return n],
+		["GroundStripView water (8 pts)", func() -> Node:
+			var n := GroundStripView.new(); n.configure("water", 1)
+			var p := PackedVector3Array(); var wd := PackedFloat32Array()
+			for i in 8:
+				p.append(Vector3(-2.0 + i * 0.5, 0, 0)); wd.append(1.2)
+			n.set_path(p, wd); return n],
+		["VortexView (tornado)", func() -> Node:
+			var n := VortexView.new(); n.configure("tornado", "sand", 1); n.set_shape(1.4, 3.0); n.on_acquire(); n.advance(0.1); return n],
+		["ShellView (null bubble)", func() -> Node:
+			var n := ShellView.new(); n.configure("null_bubble"); n.set_shape(1.0); n.on_acquire(); n.position = Vector3(0, 1, 0); return n],
+		["ShellView (vacuum well)", func() -> Node:
+			var n := ShellView.new(); n.configure("vacuum_well"); n.set_shape(1.2, 0.45); n.on_acquire(); return n],
+		["VineView (lattice)", func() -> Node:
+			var n := VineView.new(); n.setup("lattice", 1, Vector3(1, 0.8, 0.2)); n.on_acquire(); return n],
+		["FlameFieldView (field r1.5)", func() -> Node:
+			var n := FlameFieldView.new(); n.setup("field", 1, 1.5, 0.6); n.on_acquire(); return n],
+		["FireballView", func() -> Node:
+			var n := FireballView.new(); n.setup("fireball", 0.3); n.on_acquire(); n.position = Vector3(0, 1, 0); return n],
+		["WindBladeView (crescent)", func() -> Node:
+			var n := WindBladeView.new(); n.setup("crescent", Vector3.ONE); n.on_acquire(); n.position = Vector3(0, 1, 0); return n],
+		["GroundDecalView", func() -> Node:
+			var n := GroundDecalView.new(); n.place(Vector3.ZERO, 1.2, "quicksand", 1); n.advance(0.5); return n],
+		["SpikesView (row)", func() -> Node:
+			var n := SpikesView.new(); n.setup("stone", "row", 1, Vector3(1, 0.8, 1)); n.on_acquire(); return n],
+		["ChargeFX (T3)", func() -> Node:
+			var n := ChargeFX.new(); n.set_anchor(Vector3(0, 1.2, 0), Vector3.ZERO); n.set_charge(3, 0.5, "flame"); n.advance(0.1); return n],
+		["RingFX (2 rings)", func() -> Node:
+			var n := RingFX.new(); n.manual_time = true; n.play(Vector3(0, 0.05, 0), Vector3.UP, 0.2, 1.5, 0.6, Color.WHITE, {"count": 2}); n.advance(0.2); return n],
+		["BurstFX (grit)", func() -> Node:
+			var n := BurstFX.new(); n.manual_time = true; n.play(Vector3.ZERO, Vector3.UP, 1.0, "grit"); n.advance(0.2); return n],
+		["ShardsFX (ice)", func() -> Node:
+			var n := ShardsFX.new(); n.manual_time = true; n.play(Vector3(0, 0.8, 0), Vector3.UP, 1.0, "ice", 1, 0.0); n.advance(0.1); return n],
+		["BlastFX", func() -> Node:
+			var n := BlastFX.new(); n.manual_time = true; n.play(Vector3(0, 0.8, 0), 1.4); n.advance(0.15); return n],
+		["BeamFX (blue)", func() -> Node:
+			var n := BeamFX.new(); n.manual_time = true; n.play(Vector3(-2, 1, 0), Vector3(2, 1, 0), 0.5, "blue"); n.advance(0.1); return n],
+	]
+	print("COST baseline objects=%d draws=%d prims=%d" % [base.x, base.y, base.z])
+	for m in makers:
+		var node: Node = m[1].call()
+		add_child(node)
+		if node is VfxEffect and not (node as VfxEffect).manual_time:
+			(node as VfxEffect).manual_time = true
+		await _settle(0.6)
+		var cur: Vector3i = _info()
+		print("COST %-30s objects=%d draws=%d prims=%d" % [m[0], cur.x - base.x, cur.y - base.y, cur.z - base.z])
+		node.queue_free()
+		await get_tree().process_frame
+		await get_tree().process_frame
+	return {"pos": Vector3(0, 2.0, 5.0), "look": Vector3(0, 0.8, 0), "frames": 1, "skip_capture": true}

@@ -11,7 +11,10 @@ const MATS := ["stone", "metal", "sand", "glass", "magma", "water", "ice", "mist
 	"flame", "blue", "lightning", "blast", "wind", "vortex", "vacuum", "sound"]
 ## Optional shape keys (field shape).
 const SHAPES := ["spear", "fan", "disc", "lance", "rod", "plate", "fireball", "comet", "ember", "crescent",
-	"spiral", "needles", "seed", "ground", "down", "small", "open", "short"]
+	"spiral", "needles", "seed", "ground", "down", "small", "open", "short",
+	# technique shaping (T+A) and stance / movement-mode auras (fx cast / aura `shape`)
+	"split", "freeze", "condense", "compress", "cool", "reforge", "retag", "flight", "glide", "surf", "skate", "hover",
+	"burrow", "run", "walk", "roots", "stone_skin", "iron", "anchor", "grounding", "stance", "wind", "storm", "sound", "vacuum"]
 ## MatBody.tag values by form family.
 const BODY_TAGS := {
 	"projectile": ["spear", "rubble", "crag", "disc", "lance", "rod", "plate", "caltrops", "slug", "glob", "bomb",
@@ -21,7 +24,7 @@ const BODY_TAGS := {
 	"wall": ["", "obsidian", "glass", "sand", "mud", "ice", "vine", "plate", "ridge", "spikes"],
 	"zone": ["fog", "mist", "steam", "sand_cloud", "sandstorm", "fire_field", "quicksand", "ice_floor", "mud",
 		"caltrops", "tornado", "vacuum_well", "null_bubble", "mine", "melt_pit", "corona", "eddy", "briar", "geyser",
-		"static_field", "wind_guard", "vortex_wall", "sound_barrier", "steam_screen", "lava_pool", "fuse"],
+		"static_field", "wind_guard", "vortex_wall", "sound_barrier", "steam_screen", "lava_pool", "fuse", "flight_field", "inrush"],
 }
 ## New event types of the engine (existing events keep their names and fields).
 const EVENTS := ["charge", "fx", "interaction", "status", "zone", "morph", "clash"]

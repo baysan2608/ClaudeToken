@@ -25,8 +25,10 @@ static func register() -> void:
 	_push_sink()
 	_mobility()
 	for pair in [["thrust", "fireball"], ["ground", "fire_line"], ["sweep", "fire_fan"], ["guard", "flame_guard"],
-			["push", "backdraft"], ["sink", "ground_heat"], ["evade", "flare_dash"], ["evade_hold", "rocket_hop"]]:
+			["push", "backdraft"], ["sink", "ground_heat"], ["evade_hold", "rocket_hop"]]:
 		Moves.bind(E, SUB, pair[0], pair[1])
+	# Sub 0 keeps today's evade (MOVESET §3; test_combat_rules pins its i-frame window): Flare Dash is registered for
+	# the Lab / other bindings and the legacy evade morphs into Rocket Hop when held.
 	KitFire.handle("flame_guard", {"tick": Callable(FireFlame, "guard_tick")})
 	KitFire.handle("rocket_hop", {"tick": Callable(FireFlame, "hop_tick")})
 	CombatWorld.register_body_tick(&"fireball", Callable(FireFlame, "fireball_tick"))
@@ -45,6 +47,8 @@ static func _extend_legacy() -> void:
 	d["sub"] = SUB
 	d["slot"] = "strike"
 	d["chain"] = 0.25
+	# T2 / T3 later than the default 1.0 / 1.8 s: a 1.33 s hold stays the legacy blaze (test_core_charge pins it).
+	d["tier_times"] = [0.40, 1.4, 2.2]
 	d["tiers"] = {
 		"t1": {"charge_drain": 0.0},
 		"t2": {"charge_drain": 8.0, "col_range": 7.0, "col_cone": 9.0, "col_hu": 300.0, "col_damage": 20.0, "col_balance": 40.0,
@@ -118,7 +122,7 @@ static func burst_fire_body(w: CombatWorld, b: MatBody, why: String) -> void:
 	var owner := w.get_actor(b.attack_owner if b.attack_owner >= 0 else b.residual_owner)
 	var d: Dictionary = Moves.DEFS.get(String(b.props.get("move", "")), {})
 	var tier := b.tier
-	var blue := b.tag == &"comet" or b.props.get("blue", false)
+	var blue: bool = b.tag == &"comet" or bool(b.props.get("blue", false))
 	var p := b.pos
 	var g := w.arena.ground_height(p.x, p.z, p.y + 0.5)
 	if p.y < g + 0.4:
@@ -152,6 +156,22 @@ static func fireball_tick(w: CombatWorld, b: MatBody, _dt: float) -> bool:
 			b.heat_payload += add
 			w.ledger.generated += add     # fantasy oxygen (like a fanned flame): booked as created heat
 			w.emit("fed", {"body": b.id, "by": ra.id, "add": add, "payload": b.heat_payload})
+	# No air, no fire: a vacuum snuffs it. A tornado swallows it and becomes a fire tornado (the heat rides the wind).
+	if not FireUtil.zones_at(w, b.pos, ["vacuum"], b.radius).is_empty():
+		w.emit("extinguish", {"body": b.id, "by": "vacuum"})
+		w.decay_body(b, "snuffed")
+		return true
+	for tor in FireUtil.zones_at(w, b.pos, ["tornado"], b.radius):
+		var f := FireUtil.spawn_field(w, b.attack_owner, tor.pos, maxf(1.5, tor.zone_radius * 0.8),
+			maxf(2.5, tor.max_life - tor.age if tor.max_life > 0.0 else 4.0), b.heat_payload, b.tag == &"comet", b.tier)
+		b.heat_payload = 0.0
+		f.props["follow"] = tor.id
+		f.props["spare_owner"] = false
+		tor.props["fire"] = true
+		tor.props["infused"] = "fire"
+		w.emit("infuse", {"actor": b.attack_owner, "body": tor.id, "with": "fire", "field": f.id})
+		w.decay_body(b, "infused")
+		return true
 	# Quenched by water it touches (the pool, puddles, streams, shields, ice).
 	for o in w.bodies:
 		if o == b or not o.alive or not o.is_water() or o.form == Sim.Form.CLOUD:
@@ -379,7 +399,7 @@ static func backdraft_execute(w: CombatWorld, a: ActorState, inst: ActionInst) -
 static func ground_heat_execute(w: CombatWorld, a: ActorState, inst: ActionInst) -> bool:
 	var r := float(Charge.param(inst, "radius", 2.0))
 	var boiled := 0
-	for b in w.bodies.duplicate():
+	for b: MatBody in w.bodies.duplicate():
 		if not b.alive or not b.is_water():
 			continue
 		var flat := Vector2(b.pos.x - a.pos.x, b.pos.z - a.pos.z).length()

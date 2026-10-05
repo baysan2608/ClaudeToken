@@ -15,8 +15,12 @@ signal reset_requested
 ## Emitted when the player opens the practice list; answer with set_practice_items().
 signal practice_requested
 signal practice_selected(id)
+## A row of option buttons under a practice item changed (e.g. Free Spar difficulty / kit).
+signal practice_option_changed(key: String, value: String)
 signal reset_progress_requested
 signal quit_to_lab_requested
+## "Dev" in the pause menu (touch has no backquote key): open the Lab dev panel.
+signal dev_requested
 signal opened
 signal closed
 
@@ -45,6 +49,7 @@ var _practice_scroll: ScrollContainer
 var _practice_box: VBoxContainer
 var _practice_back: Button
 var _resume_btn: Button
+var _dev_btn: Button
 var _confirm_dim: ColorRect
 var _confirm_card: PanelContainer
 var _confirm_cancel: Button
@@ -187,6 +192,9 @@ func _build() -> void:
 	var quit_btn := _button("Quit to lab")
 	quit_btn.pressed.connect(_on_quit)
 	_actions.add_child(quit_btn)
+	_dev_btn = _button("Dev")
+	_dev_btn.pressed.connect(_on_dev)
+	_actions.add_child(_dev_btn)
 
 	var right := Control.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -443,6 +451,41 @@ func _rebuild_practice_list() -> void:
 		var id: Variant = item.get("id", "")
 		b.pressed.connect(func() -> void: _on_practice_chosen(id))
 		_practice_box.add_child(b)
+		for opt in item.get("options", []):
+			_practice_box.add_child(_option_row(opt))
+
+
+## A labelled row of exclusive buttons under a practice item: {key, label, values, labels, value}.
+func _option_row(opt: Dictionary) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", int(round(1.0 * _ppm)))
+	var l := Label.new()
+	l.text = str(opt.get("label", ""))
+	l.custom_minimum_size.x = 14.0 * _ppm
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.add_theme_color_override("font_color", UiStyle.INK_DIM)
+	row.add_child(l)
+	var flow := HFlowContainer.new()
+	flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flow.add_theme_constant_override("h_separation", int(round(0.8 * _ppm)))
+	flow.add_theme_constant_override("v_separation", int(round(0.8 * _ppm)))
+	row.add_child(flow)
+	var group := ButtonGroup.new()
+	var values: Array = opt.get("values", [])
+	var labels: Array = opt.get("labels", values)
+	for i in values.size():
+		var b := Button.new()
+		b.text = str(labels[i])
+		b.toggle_mode = true
+		b.button_group = group
+		b.button_pressed = str(values[i]) == str(opt.get("value", ""))
+		b.focus_mode = Control.FOCUS_ALL
+		b.custom_minimum_size = Vector2(15.0 * _ppm, 8.4 * _ppm * _dens)
+		var key := str(opt.get("key", ""))
+		var val := str(values[i])
+		b.pressed.connect(func() -> void: practice_option_changed.emit(key, val))
+		flow.add_child(b)
+	return row
 
 
 # --- layout -------------------------------------------------------------------------------------------
@@ -530,6 +573,11 @@ func _on_practice() -> void:
 func _on_practice_chosen(id: Variant) -> void:
 	close_panel()
 	practice_selected.emit(id)
+
+
+func _on_dev() -> void:
+	close_panel()
+	dev_requested.emit()
 
 
 func _on_quit() -> void:

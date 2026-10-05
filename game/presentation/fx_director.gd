@@ -5,6 +5,13 @@ extends Node
 ## running only while their state holds. Feedback is distinct per outcome:
 ## block (thud, light haptic), deflect (bright ring), perfect (ring + shimmer +
 ## strong haptic), lost control (strained descending tone), transformation (swell).
+##
+## Moveset events (fx, interaction, charge, status, zone, clash, morph ...) go to FxCues; moveset
+## actions FighterView does not animate go through MoveAnimBridge. Game feel (docs/MOVESET.md §10.2):
+## hit-stop is a short global Engine.time_scale dip (HITSTOP_SCALE for N real frames, capped at
+## HITSTOP_CAP frames per rolling second, merged with the slow-mo assist); camera shake / kick / FOV
+## punch / transformation zoom run in real time in CameraRig; reduced_motion, flashes and
+## screen_shake are respected (settings).
 
 var world: CombatWorld
 var views: BodyViews
@@ -25,9 +32,37 @@ var _loop_bodies := {}       # stone body id -> last position (its heat/lava/dra
 var _step_t := {}
 var _slowmo := 0.0
 
+## Hit-stop: global time scale while frozen, frames-per-second cap, and a master switch (tests).
+const HITSTOP_SCALE := 0.05
+const HITSTOP_CAP := 12
+var hitstop_enabled := true
+var _hs_frames := 0
+var _hs_hist: Array[int] = []        # Time.get_ticks_msec() of each frozen frame (rolling 1 s)
+var _scale_applied := 1.0
+## Moveset cue handling and the animation bridge.
+var cues: FxCues
+## Test / debug hook: an Array that records every moveset cue sound name (null = off).
+var sfx_log: Variant = null
+var bridge := MoveAnimBridge.new()
+## MOVESET §10.2 table: kind -> [hit-stop frames, shake, kick m, fov punch deg, haptic]
+const FEEL := {
+	"t0": [3, 0.25, 0.0, 0.0, "light"], "t1": [5, 0.45, 0.1, 0.0, "light"], "t2": [7, 0.7, 0.1, 0.0, "heavy"],
+	"t3": [9, 1.0, 0.12, -3.0, "heavy"], "block": [2, 0.2, 0.0, 0.0, "block"], "block_heavy": [4, 0.38, 0.05, 0.0, "block"],
+	"perfect": [6, 0.5, 0.0, 0.0, "perfect"], "clash": [4, 0.38, 0.0, 0.0, "clash"], "shatter": [3, 0.3, 0.0, 0.0, "shatter"],
+	"transform": [0, 0.0, 0.0, 0.0, "transform"], "boom": [5, 0.9, 0.0, 0.0, "boom"],
+}
+
+
+func _init() -> void:
+	cues = FxCues.new(self)
+
 
 func bind(w: CombatWorld) -> void:
 	world = w
+	if cues:
+		cues.clear()
+	bridge.clear()
+	_hs_frames = 0
 	if views and views.pool:
 		for n in _charge_fx.values():
 			if is_instance_valid(n):
@@ -79,6 +114,74 @@ func _shake(amount: float) -> void:
 		cam.shake(amount)
 
 
+## One game-feel beat from the §10.2 table: hit-stop frames, camera shake (distance falloff, real
+## time), a kick along `dir`, the T3 FOV punch, and the kind's haptic for `haptic_actor`.
+func feel(kind: String, pos: Vector3, dir: Variant = Vector3.ZERO, haptic_actor: int = -1, scale: float = 1.0) -> void:
+	var f: Array = FEEL.get(kind, FEEL.t0)
+	hitstop(int(f[0]))
+	if cam:
+		if float(f[1]) > 0.0:
+			if cam.has_method("shake_at"):
+				cam.shake_at(float(f[1]) * clampf(scale, 0.5, 2.0), pos, 0.2 + 0.05 * float(f[0]) / 3.0)
+			else:
+				cam.shake(float(f[1]))
+		var dv: Vector3 = dir if dir is Vector3 else Vector3.ZERO
+		if float(f[2]) > 0.0 and dv.length_squared() > 1e-6 and cam.has_method("kick"):
+			cam.kick(dv, float(f[2]))
+		if float(f[3]) != 0.0 and cam.has_method("fov_punch"):
+			cam.fov_punch(float(f[3]), 0.25)
+	if haptic_actor >= 0:
+		_haptic(String(f[4]), haptic_actor)
+	if kind == "transform":
+		_zoom(pos)
+
+
+## Transformation moments: a 3 % zoom toward the event for 0.3 s (no hit-stop).
+func _zoom(pos: Vector3) -> void:
+	if cam and cam.has_method("zoom_to"):
+		cam.zoom_to(pos, 0.03, 0.3)
+
+
+## Request a hit-stop of `frames` rendered frames (the longest pending request wins; never more than
+## HITSTOP_CAP frozen frames in any second; reduced motion caps one request at 3 frames).
+func hitstop(frames: int) -> void:
+	if not hitstop_enabled or frames <= 0:
+		return
+	if settings and settings.reduced_motion:
+		frames = mini(frames, 3)
+	var now := Time.get_ticks_msec()
+	while not _hs_hist.is_empty() and now - _hs_hist[0] >= 1000:
+		_hs_hist.pop_front()
+	var budget := HITSTOP_CAP - _hs_hist.size()
+	_hs_frames = clampi(maxi(_hs_frames, frames), 0, maxi(budget, 0))
+
+
+## The time scale this frame wants (hit-stop and the slow-mo assist combined).
+func time_scale_wanted() -> float:
+	var sc := 1.0
+	if _hs_frames > 0:
+		sc = HITSTOP_SCALE
+	if _slowmo > 0.0:
+		sc = minf(sc, 0.55)
+	return sc
+
+
+func hitstop_pending() -> int:
+	return _hs_frames
+
+
+## Material-aware impact on a hit (debris in the threat's material, sparks for metal / energy).
+func _impact_cue(e: Dictionary, a: int) -> void:
+	var mat := String(e.get("mat", ""))
+	if mat == "" or mat == "stone":
+		return
+	var b := _fx("burst")
+	if b:
+		var st := String(FxCues.MAT_BURST.get(mat, "dust"))
+		var dv: Vector3 = e.get("dir", Vector3.ZERO)
+		b.call("play", _apos(a), -dv if dv.length_squared() > 1e-6 else Vector3.UP, 0.6 + 0.15 * int(e.get("tier", 0)), st)
+
+
 func _toast(text: String) -> void:
 	if hud and hud.has_method("toast"):
 		hud.call("toast", text)
@@ -101,13 +204,20 @@ func _event(e: Dictionary) -> void:
 			_call(_fx("dust_puff"), "play", [world.get_actor(a).pos if world.get_actor(a) else Vector3.ZERO, Vector3.UP, 0.6])
 			_haptic("heavy" if big else "light", a)
 			_haptic("light", e.get("attacker", -1))
-			_shake(0.6 if big else 0.25)
+			var tier := int(e.get("tier", 0))
+			if e.get("result", "") == "knockdown":
+				tier = 3
+			elif big:
+				tier = maxi(tier, 1)
+			feel("t%d" % clampi(tier, 0, 3), _apos(a), e.get("dir", Vector3.ZERO), -1)
+			_impact_cue(e, a)
 			if e.get("result", "") == "knockdown":
 				audio.play("knockdown", _apos(a))
 		"block":
 			audio.play("block", _apos(a) if a >= 0 else _bpos(e.get("body", -1)))
 			_haptic("block", a)
-			_shake(0.15)
+			var heavy_block := float(e.get("power", 0.0)) >= 25.0
+			feel("block_heavy" if heavy_block else "block", _apos(a) if a >= 0 else _bpos(e.get("body", -1)), e.get("dir", Vector3.ZERO), -1)
 			if e.get("kind", "") == "fire_water":
 				audio.play("steam_hiss", _apos(a))
 		"guard_break":
@@ -118,8 +228,8 @@ func _event(e: Dictionary) -> void:
 		"perfect_deflect":
 			audio.play("perfect_deflect", _apos(a))
 			_haptic("perfect", a)
-			_shake(0.2)
-			if hud and a == player_id:
+			feel("perfect", _apos(a), Vector3.ZERO, -1)
+			if hud and a == player_id and (settings == null or settings.flashes > 0.05):
 				hud.call("flash", "perfect")
 			if a == player_id and settings and settings.slowmo_assist:
 				_slowmo = 0.22
@@ -186,15 +296,18 @@ func _event(e: Dictionary) -> void:
 				"molten":
 					audio.play("melt_rise", p)
 					_haptic("transform", world.get_body(e.body).controller if world.get_body(e.body) else -1)
+					_zoom(p)
 				"wave":
 					audio.play("lava_splat", p)
 					_call(_fx("ember"), "play", [p, Vector3.UP, 0.8])
 				"rock":
+					_zoom(p)
 					audio.play("crust_hiss", p)
 					audio.play("cool_crack", p, -3.0)
 					_call(_fx("steam"), "play", [p + Vector3(0, 0.2, 0), 0.5])
 				"ice":
 					audio.play("freeze", p)
+					_zoom(p)
 				"water":
 					audio.play("ice_melt_drip", p)
 					# The melted ice slumps into a puddle (often merging into one nearby).
@@ -205,6 +318,10 @@ func _event(e: Dictionary) -> void:
 		"shatter":
 			audio.play("ice_shatter", _bpos(e.body))
 			_call(_fx("splash"), "play", [_bpos(e.body), Vector3.UP, 0.5])
+			var shd := _fx("shards")
+			if shd:
+				shd.call("play", _bpos(e.body), Vector3.UP, 0.8, "ice", int(e.body) * 31 + world.tick, _bpos(e.body).y - 1.0)
+			feel("shatter", _bpos(e.body), Vector3.ZERO, -1)
 		"phase":
 			pass
 		"wave_blocked", "wave_drop":
@@ -291,6 +408,20 @@ func _event(e: Dictionary) -> void:
 		"reserve_full":
 			if a == player_id:
 				_toast("Heat reserve full: vent it")
+		"fx":
+			cues.fx_event(e)
+		"interaction":
+			cues.interaction(e)
+		"charge":
+			cues.charge(e)
+		"status":
+			cues.status(e)
+		"zone":
+			cues.zone(e)
+		"clash":
+			cues.clash(e)
+		"morph", "chain", "weave", "counter_cancel", "slump", "convert", "capture", "ricochet", "stance", "mode":
+			cues.misc(e)
 
 
 func _call(n: Node, m: String, args: Array) -> void:
@@ -407,7 +538,13 @@ func update_continuous(dt: float) -> void:
 	_update_transient(dt)
 	if _slowmo > 0.0:
 		_slowmo -= dt / maxf(Engine.time_scale, 0.1)
-		Engine.time_scale = 0.55 if _slowmo > 0.0 else 1.0
+	if _hs_frames > 0:
+		_hs_frames -= 1
+		_hs_hist.append(Time.get_ticks_msec())
+	_apply_time_scale()
+	if cues:
+		cues.update(dt)
+	bridge.update(world, fighters, dt)
 	var live := {}
 	for b in world.bodies:
 		if not b.alive or not b.is_stone():
@@ -444,6 +581,17 @@ func update_continuous(dt: float) -> void:
 			if _step_t[a.id] >= 1.0:
 				_step_t[a.id] = 0.0
 				audio.step(a.pos)
+
+
+## Engine.time_scale follows hit-stop + slow-mo; only touched while one of them runs (and once to
+## restore 1.0), and only in a live scene tree (headless unit tests never change it).
+func _apply_time_scale() -> void:
+	var want := time_scale_wanted()
+	if want == _scale_applied:
+		return
+	_scale_applied = want
+	if is_inside_tree():
+		Engine.time_scale = want
 
 
 func _charge_visual(a: ActorState, charging: bool, bolt: bool) -> void:

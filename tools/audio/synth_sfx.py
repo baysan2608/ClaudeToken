@@ -1566,6 +1566,781 @@ def amb_courtyard_loop(r):
 
 
 # ---------------------------------------------------------------------------
+# MOVESET EXTENSION (docs/MOVESET.md section 12): metal, sand/glass, magma, water/ice/mist/plant, fire, air, system.
+# Every sound owns a fixed seed (crc32 of its name), so adding or editing one never changes another.
+# ---------------------------------------------------------------------------
+
+D3, A3 = 146.83, 220.0
+_BAR = (1.0, 2.756, 5.404, 8.933, 13.34)     # free-bar (metal) inharmonic partial ratios
+
+
+def _bar(f, tau, dur, amps=(1.0, 0.75, 0.5, 0.3, 0.15)):
+    """Struck metal bar: inharmonic modal ring, upper partials die faster."""
+    sc = (1.0, 0.55, 0.32, 0.2, 0.12)
+    pr = [(f * m, a, tau * s) for m, a, s in zip(_BAR, amps, sc) if f * m < 16000]
+    return modal([p[0] for p in pr], [p[1] for p in pr], [p[2] for p in pr], dur=dur)
+
+
+def _grains(r, n, count, t0, t1, flo, fhi, tau_lo=0.0005, tau_hi=0.002, amp=1.0, power=2.0):
+    g = np.zeros(n)
+    crackle(r, g, np.sort(r.uniform(t0, t1, count)), flo, fhi, tau_lo, tau_hi, amp=amp, power=power)
+    return g
+
+
+# --- metal ------------------------------------------------------------------
+
+
+@sfx("metal_clang", "metal", -16, 3, "Struck metal: sharp tink, inharmonic bar ring (ratios 1/2.76/5.4/8.9) with a "
+     "detuned shimmer. Bright and metallic, unlike the harmonic glassy deflect ping.", crest=18.0, fade_out=0.08,
+     max_dur=1.0)
+def metal_clang(r):
+    n = ns(0.95)
+    out = mixn(n, (_bar(640.0, 0.16, 0.9), 1.0), (_bar(640.0 * 1.0042, 0.14, 0.9), 0.5),
+               (click(r, 0.0025, lo=3000), 0.7),
+               (burst(r, 0.06, lo=1500, hi=9000, att=0.0003, tau=0.01), 0.6),
+               (thump(0.1, 380, 210, 0.01, 0.03, drive=1.6), 0.35))
+    return reverb(r, out, 0.3, 0.14, 8000, 0.003)
+
+
+@sfx("metal_scrape", "metal", -20, 2, "Blade on plate: stick-slip grind in the 1.2-5 kHz band over a ringing, "
+     "wandering squeal.", crest=14.0, fade_out=0.08, max_dur=0.9)
+def metal_scrape(r):
+    n = ns(0.75)
+    g = grind(r, 0.75, [(0, 18), (0.2, 60), (0.55, 45), (0.75, 10)], 1200, 5200, tau=(0.003, 0.012), base=0.35, grit=0.6)
+    fq = curve(n, [(0, 1800), (0.3, 2600), (0.75, 1500)], log=True) * (1 + 0.03 * fnoise(r, n, hi=30))
+    sq = norm_std(tv_biquad(white(r, n), "bp", fq, 16.0))
+    env = swell(n, 1.0, 1.4)
+    return mixn(n, (g * env, 1.0), (sq * env, 0.55))
+
+
+@sfx("disc_whirr_loop", "metal", -26, 2, "Spinning disc: blade-pass buzz (11 Hz) on a 540 Hz harmonic stack with air "
+     "and a high ring (loop 2.0 s).", loop=True, crest=12.0)
+def disc_whirr_loop(r):
+    L = 2.0
+    n = ns(L)
+    t = tarr(n)
+    ph = r.uniform(0, TWO_PI)
+    osc = harm_osc(np.full(n, 540.0), 22, 0.9, maxf=12000.0)
+    am = 0.62 + 0.38 * lfo(n, 22, ph)
+    air = snoise(r, n, m_bp(1800, 7500)) * loop_mod(r, n, 6, 0.4) * (0.6 + 0.4 * lfo(n, 22, ph + 0.7))
+    ring = np.sin(TWO_PI * 1480.0 * t) * (0.5 + 0.5 * lfo(n, 22, ph + 1.4))
+    return warm(mixn(n, (norm_std(osc) * am, 0.8), (air, 0.7), (ring, 0.07)), 1.3)
+
+
+@sfx("magnet_hum_loop", "metal", -28, 1, "Magnetic field: 147 Hz mains-style hum with a slow 1.5 Hz beat, strong "
+     "2nd-6th harmonics (phone-safe) and a faint mid band (loop 2.0 s).", loop=True, crest=10.0)
+def magnet_hum_loop(r):
+    L = 2.0
+    n = ns(L)
+    t = tarr(n)
+    ph = r.uniform(0, TWO_PI)
+    w = (0.35, 1.0, 0.8, 0.55, 0.4, 0.25, 0.15, 0.1, 0.06)
+    a = sum(g * np.sin(TWO_PI * 147.0 * (k + 1) * t + ph * k) for k, g in enumerate(w))
+    b = sum(g * np.sin(TWO_PI * 148.5 * (k + 1) * t + ph * k) for k, g in enumerate(w[1:4], 1))
+    mid = snoise(r, n, m_bp(300, 1500)) * loop_mod(r, n, 2, 0.3)
+    out = mixn(n, (a, 0.8), (b, 0.5), (mid, 0.35))
+    return warm(out * (0.85 + 0.15 * lfo(n, 3, ph)), 1.5)
+
+
+@sfx("metal_recall", "metal", -18, 2, "Metal called back to the hand: rising metallic zip with a shimmering tone and "
+     "a small clink on arrival.", crest=16.0, fade_out=0.08, max_dur=0.8)
+def metal_recall(r):
+    n = ns(0.7)
+    z = whoosh(r, 0.4, [(0, 500), (0.3, 5500), (0.4, 6000)], q=3.0, p=1.6, qq=1.2, air=0.15)
+    t4 = tarr(ns(0.4))
+    fr = 900 * 4 ** (t4 / 0.4)
+    sh = np.sin(TWO_PI * np.cumsum(fr) / SR) * swell(len(t4), 1.4, 1.0)
+    out = mixn(n, (z, 1.0), (sh, 0.22))
+    place(out, _bar(1250.0, 0.07, 0.3), 0.37, 0.9)
+    place(out, click(r, 0.002, lo=3500), 0.37, 0.5)
+    return reverb(r, out, 0.2, 0.1, 8000, 0.003)
+
+
+@sfx("rod_hum_loop", "metal", -30, 2, "Resonant rod: pure 587.5 Hz tone with vibrato, a detuned beating twin and thin "
+     "high shimmer (loop 2.0 s).", loop=True, crest=10.0)
+def rod_hum_loop(r):
+    L = 2.0
+    n = ns(L)
+    t = tarr(n)
+    ph = r.uniform(0, TWO_PI)
+    vib = 0.9 * np.sin(TWO_PI * 3 * t / L)
+    y = np.zeros(n)
+    for k, g in ((1, 1.0), (2, 0.35), (3, 0.2), (4, 0.08)):
+        y += g * np.sin(TWO_PI * 587.5 * k * t + k * vib + ph)
+        y += 0.55 * g * np.sin(TWO_PI * 589.5 * k * t + ph * 0.7)
+    sh = snoise(r, n, m_bp(5000, 9500)) * loop_mod(r, n, 5, 0.6)
+    return mixn(n, (y, 0.8), (sh, 0.06)) * (0.88 + 0.12 * lfo(n, 2, ph))
+
+
+# --- sand / glass ------------------------------------------------------------
+
+
+@sfx("sand_hiss", "sand", -24, 2, "Sand pouring: dry bright hiss (3.5-5 kHz) with a grain tick scatter.",
+     fade_out=0.1, max_dur=0.9)
+def sand_hiss(r):
+    n = ns(0.8)
+    hiss = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 5200), (0.8, 3600)], log=True), 0.7)) * swell(n, 0.8, 1.6)
+    body = fnoise(r, n, lo=400, hi=1800) * swell(n, 1.0, 1.6)
+    return mixn(n, (hiss, 0.9), (body, 0.18), (_grains(r, n, 70, 0.02, 0.7, 2000, 7000), 0.5))
+
+
+@sfx("sand_burst", "sand", -16, 3, "Sand blast: wide dry noise puff that darkens quickly, a spray of grains and a soft "
+     "pressure thump.", crest=16.0, fade_out=0.06, max_dur=0.7)
+def sand_burst(r):
+    n = ns(0.6)
+    t = tarr(n)
+    puff = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 6500), (0.3, 2200)], log=True), 0.7)) * ad(t, 0.0008, 0.07)
+    gr = np.zeros(n)
+    crackle(r, gr, poisson(r, 0.45, 160, lambda x: np.exp(-x / 0.2)), 1500, 8000, 0.0005, 0.002, amp=0.8)
+    return mixn(n, (puff, 1.0), (gr, 0.55), (thump(0.2, 200, 110, 0.015, 0.04, drive=1.5), 0.55),
+                (fnoise(r, n, lo=5000) * ad(t, 0.002, 0.04), 0.2))
+
+
+@sfx("sand_surge_loop", "sand", -26, 2, "Sand stream rushing: dense grain wash with slow surges (loop 2.0 s).",
+     loop=True, crest=12.0)
+def sand_surge_loop(r):
+    L = 2.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    sg = 0.65 + 0.35 * lfo(n, 2, ph)
+    wash = snoise(r, n, m_bp(800, 6500)) * loop_mod(r, n, 15, 0.5)
+    gr = np.zeros(n)
+    crackle(r, gr, strat(r, 380, L), 1500, 8000, 0.0005, 0.002, amp=0.8, wrap=True)
+    low = snoise(r, n, m_bp(180, 700)) * loop_mod(r, n, 3, 0.4)
+    return warm(mixn(n, (wash, 0.8), (gr, 0.5), (low, 0.35)) * sg, 1.3)
+
+
+@sfx("sandstorm_loop", "sand", -24, 1, "Sandstorm: wide howling wind with wandering formants, driving grit and a low "
+     "roar; slow gusts (loop 3.0 s).", loop=True, crest=12.0)
+def sandstorm_loop(r):
+    L = 3.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    gust = np.clip(0.7 + 0.25 * lfo(n, 1, ph) + 0.15 * lfo(n, 3, ph * 1.4), 0.2, None)
+    h1 = tv_loop(snoise(r, n, m_bp(200, 3500)), "bp", 900 * 2 ** (0.7 * lfo(n, 3, ph)), 3.0)
+    h2 = tv_loop(snoise(r, n, m_bp(300, 5000)), "bp", 1700 * 2 ** (0.6 * lfo(n, 3, ph + 2.1)), 3.5)
+    rum = snoise(r, n, m_bp(90, 450)) * loop_mod(r, n, 2, 0.4)
+    grit = np.zeros(n)
+    crackle(r, grit, strat(r, 700, L), 800, 6500, 0.0005, 0.002, amp=0.7, wrap=True)
+    roar = snoise(r, n, m_bp(500, 3000)) * (0.6 + 0.4 * lfo(n, 3, ph + 1.0))
+    out = mixn(n, (norm_std(h1), 0.7), (norm_std(h2), 0.45), (rum, 0.45), (grit, 0.5), (roar, 0.4))
+    return warm(out * gust, 1.3)
+
+
+@sfx("quicksand_loop", "sand", -26, 1, "Quicksand: hollow suction gurgle, slow sucking sweeps, wet gulps and a little "
+     "grit (loop 2.0 s).", loop=True, crest=12.0)
+def quicksand_loop(r):
+    L = 2.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    low = snoise(r, n, mprod(m_lp(900, 2), m_hp(120, 2))) * (0.6 + 0.4 * lfo(n, 2, ph)) * loop_mod(r, n, 4, 0.4)
+    suck = tv_loop(snoise(r, n, m_bp(200, 2500)), "bp", 450 * 2 ** (0.8 * lfo(n, 2, ph + 0.6)), 3.0)
+    gulp = _bubbles(r, n, (np.arange(14) + r.uniform(0.1, 0.9, 14)) / 14 * L, 400, 1300, 0.02, 0.05, 0.5, 0.9, wrap=True)
+    gr = np.zeros(n)
+    crackle(r, gr, strat(r, 120, L), 2000, 6000, 0.0005, 0.002, amp=0.5, wrap=True)
+    return warm(mixn(n, (low, 0.8), (norm_std(suck), 0.55), (gulp, 0.9), (gr, 0.3)), 1.4)
+
+
+@sfx("glass_fuse", "sand", -20, 2, "Sand fusing to glass: accelerating grain ticks, a rising crystalline shimmer and a "
+     "bright glassy ring as it sets.", crest=18.0, fade_out=0.1, max_dur=1.1)
+def glass_fuse(r):
+    n = ns(1.0)
+    t = tarr(n)
+    tk = np.zeros(n)
+    crackle(r, tk, poisson(r, 0.65, 130, lambda x: 0.15 + 0.85 * (x / 0.65) ** 1.5), 2000, 8500, 0.0004, 0.0015, amp=0.9)
+    sw = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 2500), (0.6, 9000), (1.0, 9000)], log=True), 2.5)) * \
+        swell(n, 2.0, 1.4)
+    sh = np.zeros(n)
+    for i, f in enumerate((D6, FS5 * 2, A5 * 2, D6 * 2)):
+        place(sh, tone(f, 0.5, 0.12, ((1, 1.0, 1.0), (2, 0.2, 0.5)), att=0.05, bend=-0.08, bend_tau=0.15), 0.2 + 0.07 * i, 0.5)
+    out = mixn(n, (tk, 0.8), (sw, 0.5), (sh, 0.35))
+    place(out, _ping(r, D6 * 2, ns(0.5), 0.9), 0.6, 0.9)
+    return reverb(r, out, 0.4, 0.15, 9500, 0.004)
+
+
+@sfx("glass_shatter", "sand", -14, 3, "Glass breaking: sharp bright crack and a shower of pitched shards (2.5-9.5 kHz) "
+     "with sparse chimes. No body knock, which separates it from ice_shatter.", crest=18.0, fade_out=0.1, max_dur=1.0)
+def glass_shatter(r):
+    n = ns(0.95)
+    crk = mixn(n, (burst(r, 0.02, lo=2000, att=0.0001, tau=0.0005), 1.0),
+               (burst(r, 0.1, lo=3500, hi=14000, att=0.0002, tau=0.008), 0.9))
+    sh = np.zeros(n)
+    crackle(r, sh, np.sort(r.uniform(0.01, 0.6, 46) ** 1.3), 2500, 9500, 0.02, 0.09, amp=0.9, power=1.5)
+    ch = np.zeros(n)
+    for f in (D6, FS5 * 2, A5 * 2):
+        place(ch, dsine(f * r.uniform(0.98, 1.02), 0.09), r.uniform(0.03, 0.3), r.uniform(0.3, 0.6))
+    out = mixn(n, (crk, 1.0), (sh, 0.6), (ch, 0.45), (burst(r, 0.3, lo=5000, att=0.005, tau=0.07), 0.1))
+    return reverb(r, out, 0.4, 0.16, 9500, 0.004)
+
+
+# --- magma -------------------------------------------------------------------
+
+
+@sfx("magma_glob", "magma", -18, 3, "Molten blob: wet slap, a viscous low-mid bloop that sags in pitch, and a quick "
+     "sizzle.", crest=14.0, fade_out=0.08, max_dur=0.7)
+def magma_glob(r):
+    n = ns(0.6)
+    t = tarr(n)
+    sz = np.zeros(n)
+    crackle(r, sz, np.sort(r.uniform(0.03, 0.4, 14)), 1500, 5000, 0.0008, 0.003, amp=0.6)
+    out = mixn(n, (dsine(190, 0.06, g=0.6, ln=6.0), 0.9), (dsine(320, 0.035, g=0.8, ln=6.0), 0.5),
+               (thump(0.25, 190, 95, 0.02, 0.06, drive=2.5), 0.7),
+               (burst(r, 0.12, lo=300, hi=2200, att=0.001, tau=0.03), 0.8),
+               (click(r, 0.003, lo=1500), 0.3), (sz, 0.4),
+               (fnoise(r, n, lo=3000, hi=7000) * ad(t, 0.01, 0.06), 0.12))
+    return filt(filt(out, "lp", 4200, 2), "hp", 130, 2)
+
+
+@sfx("magma_surge", "magma", -15, 2, "Magma surging: dark roar swelling upward with a heavy thump, thick bubbles and "
+     "crackle.", crest=16.0, fade_out=0.12, max_dur=1.2)
+def magma_surge(r):
+    n = ns(1.2)
+    t = tarr(n)
+    roar = norm_std(tv_biquad(white(r, n), "lp", curve(n, [(0, 300), (0.4, 1800), (1.2, 500)], log=True), 0.8)) * swell(n, 1.3, 1.1)
+    mid = fnoise(r, n, lo=200, hi=900) * swell(n, 1.2, 1.4)
+    bub = _bubbles(r, n, np.sort(r.uniform(0.1, 1.0, 9)), 90, 300, 0.05, 0.12, 0.35, 0.9, pop=0.2)
+    cr = np.zeros(n)
+    crackle(r, cr, poisson(r, 1.1, 40), 1000, 4000, 0.001, 0.004, amp=0.6)
+    out = mixn(n, (roar, 1.0), (mid, 0.5), (bub, 0.5), (cr, 0.3),
+               (thump(0.5, 140, 55, 0.05, 0.14, drive=3.0), 0.8),
+               (thump(0.25, 280, 160, 0.015, 0.05, drive=2.0), 0.5))
+    return reverb(r, out, 0.4, 0.15, 4000)
+
+
+@sfx("obsidian_set", "magma", -20, 2, "Lava setting to black glass: dwindling resonant ticks and a dark glassy ring "
+     "(single fall, fewer shards than glass_shatter).", crest=16.0, fade_out=0.1, max_dur=0.9)
+def obsidian_set(r):
+    n = ns(0.8)
+    tk = np.zeros(n)
+    for i, (tt, f) in enumerate(((0.0, 2400), (0.07, 1900), (0.16, 1500), (0.28, 1200), (0.42, 1000))):
+        place(tk, dsine(f, 0.012 + 0.003 * i, phase=i), tt, 0.9 - 0.14 * i)
+        place(tk, click(r, 0.002, lo=1600), tt, 0.4 - 0.05 * i)
+    ring = modal([1046, 1630, 2400, 3100], [1.0, 0.6, 0.4, 0.2], [0.12, 0.09, 0.06, 0.04], dur=0.5)
+    out = mixn(n, (tk, 0.9), (ring, 0.45), (burst(r, 0.2, lo=700, hi=3500, att=0.001, tau=0.04), 0.25))
+    return filt(reverb(r, out, 0.3, 0.14, 6000, 0.004), "lp", 5500, 2)
+
+
+@sfx("lava_hiss_quench", "magma", -16, 2, "Lava hit by water: big hiss burst with a sputter of low pops, a dull thump "
+     "and a crackle tail (steam_jet is cleaner, higher and has no pops).", crest=16.0, fade_out=0.12, max_dur=1.2)
+def lava_hiss_quench(r):
+    n = ns(1.1)
+    t = tarr(n)
+    hiss = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 2000), (0.4, 5500), (1.1, 7000)], log=True), 0.6)) * \
+        ad(t, 0.01, 0.38) * (1 + 0.3 * fnoise(r, n, hi=30))
+    pops = _bubbles(r, n, np.sort(r.uniform(0.0, 0.5, 14)), 150, 600, 0.01, 0.03, 0.3, 0.8, pop=0.3)
+    cr = np.zeros(n)
+    crackle(r, cr, poisson(r, 0.9, 60, lambda x: np.exp(-x / 0.35)), 1200, 5500, 0.0008, 0.004, amp=0.7)
+    out = mixn(n, (hiss, 1.0), (pops, 0.6), (cr, 0.45), (fnoise(r, n, lo=300, hi=1200) * ad(t, 0.01, 0.2), 0.3),
+               (thump(0.3, 190, 80, 0.03, 0.08, drive=2.6), 0.6))
+    return reverb(r, out, 0.35, 0.14, 6000)
+
+
+# --- water / ice / mist / plant -----------------------------------------------
+
+
+@sfx("wave_rush_loop", "water", -24, 2, "Tidal wave rushing: broad churning water with slow surges, foam top and a "
+     "weighty low band (loop 2.0 s).", loop=True, crest=12.0)
+def wave_rush_loop(r):
+    L = 2.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    sg = np.clip(0.65 + 0.35 * lfo(n, 1, ph) + 0.12 * lfo(n, 3, ph * 1.5), 0.15, None)
+    flow = snoise(r, n, m_bp(150, 3200)) * loop_mod(r, n, 6, 0.4)
+    mid = snoise(r, n, m_bp(600, 2500)) * loop_mod(r, n, 12, 0.5)
+    foam = snoise(r, n, m_bp(3000, 9000)) * loop_mod(r, n, 18, 0.7) * (0.5 + 0.5 * lfo(n, 1, ph + 0.8))
+    low = snoise(r, n, m_bp(70, 320)) * loop_mod(r, n, 2, 0.4)
+    bub = _bubbles(r, n, (np.arange(18) + r.uniform(0.1, 0.9, 18)) / 18 * L, 600, 2600, 0.01, 0.03, 0.6, 0.5, wrap=True)
+    return mixn(n, (flow, 0.8), (mid, 0.4), (foam, 0.3), (low, 0.35), (bub, 0.5)) * sg
+
+
+@sfx("water_jet_loop", "water", -26, 2, "Pressurised water jet: tight steady 2.5-9 kHz hiss with a narrow resonant "
+     "band and a light flutter (loop 2.0 s).", loop=True, crest=10.0)
+def water_jet_loop(r):
+    L = 2.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    hs = snoise(r, n, m_bp(2500, 9500)) * loop_mod(r, n, 25, 0.15)
+    nb = tv_loop(snoise(r, n, m_bp(1500, 6000)), "bp", 4200 * 2 ** (0.12 * lfo(n, 2, ph)), 4.0)
+    body = snoise(r, n, m_bp(300, 1200)) * loop_mod(r, n, 8, 0.2)
+    return mixn(n, (hs, 0.8), (norm_std(nb), 0.5), (body, 0.3)) * (0.9 + 0.1 * lfo(n, 5, ph))
+
+
+@sfx("ice_wall_raise", "ice", -16, 2, "Ice wall growing: rising stream of crystal ticks, a creaking resonance, then a "
+     "solid thunk and glassy ring.", crest=16.0, fade_out=0.12, max_dur=1.1)
+def ice_wall_raise(r):
+    n = ns(1.0)
+    tk = np.zeros(n)
+    crackle(r, tk, poisson(r, 0.7, 150, lambda x: 0.15 + 0.85 * (x / 0.7)), 2500, 9000, 0.004, 0.02, amp=0.8, g=0.0)
+    cq = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 400), (0.35, 900), (0.7, 1400)], log=True) *
+                            (1 + 0.04 * fnoise(r, n, hi=25)), 8.0)) * swell(n, 1.0, 1.2)
+    out = mixn(n, (tk, 0.8), (cq, 0.4), (fnoise(r, n, lo=4500) * swell(n, 1.4, 1.4), 0.08))
+    place(out, thump(0.25, 260, 120, 0.015, 0.05, drive=2.0), 0.7, 0.9)
+    place(out, click(r, 0.003, lo=2000), 0.7, 0.6)
+    place(out, modal([1568, 2400, 3500], [1.0, 0.5, 0.3], [0.1, 0.07, 0.05], dur=0.3), 0.7, 0.5)
+    return reverb(r, out, 0.35, 0.14, 8000)
+
+
+@sfx("ice_crack", "ice", -17, 3, "Ice cracking: sharp crack with a falling resonant chirp, then two smaller dwindling "
+     "cracks.", crest=18.0, fade_out=0.08, max_dur=0.6)
+def ice_crack(r):
+    n = ns(0.5)
+    out = np.zeros(n)
+    for tt, g in ((0.0, 1.0), (0.055, 0.5), (0.12, 0.28)):
+        place(out, click(r, 0.002, lo=2500), tt, 0.7 * g)
+        place(out, burst(r, 0.08, lo=1500, hi=12000, att=0.0002, tau=0.006), tt, g)
+        place(out, dsine(2800 * (1 - 0.1 * tt * 8), 0.04, g=-0.5), tt, 0.6 * g)
+    place(out, thump(0.1, 300, 160, 0.01, 0.03, drive=1.4), 0.0, 0.3)
+    return reverb(r, out, 0.3, 0.14, 9000, 0.003)
+
+
+@sfx("ice_slide_loop", "ice", -28, 1, "Sliding on ice: smooth silky hiss, a squeaking resonance that drifts, and sparse "
+     "scrape ticks (loop 2.0 s).", loop=True, crest=12.0)
+def ice_slide_loop(r):
+    L = 2.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    hs = snoise(r, n, m_bp(2500, 8000)) * loop_mod(r, n, 8, 0.3) * (0.7 + 0.3 * lfo(n, 2, ph))
+    sq = tv_loop(snoise(r, n, m_bp(1500, 5000)), "bp", 3200 * 2 ** (0.3 * lfo(n, 3, ph)), 12.0)
+    lowb = snoise(r, n, m_bp(150, 700)) * loop_mod(r, n, 4, 0.4)
+    tk = np.zeros(n)
+    crackle(r, tk, strat(r, 24, L), 2000, 7000, 0.001, 0.004, amp=0.6, wrap=True)
+    return mixn(n, (hs, 0.8), (norm_std(sq), 0.35), (lowb, 0.35), (tk, 0.4))
+
+
+@sfx("frost_hiss", "ice", -26, 2, "Frost forming: cold 5.5-12 kHz hiss with twinkling sparkles; colder and thinner "
+     "than steam_hiss.", fade_out=0.1, max_dur=0.9)
+def frost_hiss(r):
+    n = ns(0.8)
+    t = tarr(n)
+    hs = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 7000), (0.8, 9000)], log=True), 0.8)) * swell(n, 0.9, 1.5)
+    sp = np.zeros(n)
+    crackle(r, sp, np.sort(r.uniform(0.05, 0.7, 24)), 4000, 10000, 0.01, 0.03, amp=0.8, power=1.5)
+    tw = tone(D6 * 2, 0.4, 0.1, ((1, 1.0, 1.0),), att=0.03) * 0.5
+    out = mixn(n, (hs, 0.8), (sp, 0.45), (fnoise(r, n, lo=500, hi=2000) * ad(t, 0.1, 0.2), 0.08))
+    place(out, tw, 0.25, 0.12)
+    return out
+
+
+@sfx("mist_loop", "mist", -34, 1, "Fog bank: soft diffuse hush, slowly drifting; very quiet shimmering top and rare "
+     "tiny droplets (loop 3.0 s).", loop=True, crest=10.0)
+def mist_loop(r):
+    L = 3.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    hush = snoise(r, n, m_bp(1200, 7000)) * loop_mod(r, n, 0.7, 0.3)
+    shim = snoise(r, n, m_bp(3500, 9000)) * (0.6 + 0.4 * lfo(n, 2, ph))
+    dr = np.zeros(n)
+    crackle(r, dr, strat(r, 7, L), 3000, 7000, 0.01, 0.03, amp=0.5, power=1.5, wrap=True)
+    return mixn(n, (hush, 0.8), (shim, 0.4), (dr, 0.18)) * (0.8 + 0.2 * lfo(n, 1, ph + 1.0))
+
+
+@sfx("steam_jet", "mist", -17, 3, "Hard steam jet: sharp-onset 1.8-8 kHz hiss with fast flutter and a tiny pressure "
+     "pop; cleaner and brighter than lava_hiss_quench.", crest=14.0, fade_out=0.1, max_dur=1.0)
+def steam_jet(r):
+    n = ns(0.9)
+    t = tarr(n)
+    hs = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 6500), (0.9, 3200)], log=True), 0.6)) * ad(t, 0.004, 0.3)
+    hs *= 1 + 0.35 * fnoise(r, n, hi=60)
+    return mixn(n, (hs, 1.0), (fnoise(r, n, lo=400, hi=1600) * ad(t, 0.006, 0.12), 0.3),
+                (thump(0.1, 220, 120, 0.01, 0.03, drive=1.2), 0.35), (click(r, 0.002, lo=3000), 0.3))
+
+
+@sfx("geyser", "water", -14, 2, "Geyser: rising rumble, a sudden roaring water column, a splash and falling droplets "
+     "with steam.", crest=16.0, fade_out=0.15, max_dur=1.2)
+def geyser(r):
+    n = ns(1.3)
+    t = tarr(n)
+    rum = norm_std(tv_biquad(white(r, n), "lp", curve(n, [(0, 200), (0.4, 900), (1.3, 500)], log=True), 0.8)) * ad(t, 0.15, 0.5)
+    col = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0.3, 800), (0.5, 2800), (1.2, 1600)], log=True), 0.9)) * \
+        np.clip(ad(t - 0.3, 0.05, 0.4), 0, None) * (t > 0.3)
+    st = fnoise(r, n, lo=3500, hi=9000) * np.clip(ad(t - 0.35, 0.1, 0.4), 0, None) * (t > 0.35)
+    dr = _bubbles(r, n, np.sort(r.uniform(0.55, 1.2, 22)), 900, 3000, 0.01, 0.03, 0.6, 0.55)
+    out = mixn(n, (rum, 0.7), (col, 1.0), (st, 0.3), (dr, 0.55))
+    place(out, burst(r, 0.2, lo=800, hi=9000, att=0.002, tau=0.05), 0.42, 0.7)
+    place(out, thump(0.3, 170, 70, 0.03, 0.08, drive=2.4), 0.4, 0.6)
+    return reverb(r, out, 0.3, 0.12, 7000)
+
+
+@sfx("vine_creak", "plant", -22, 2, "Vine straining: slow stick-slip woody creak (pulse train through a drifting "
+     "~600 Hz formant) with small fibre ticks.", crest=14.0, fade_out=0.1, max_dur=0.9)
+def vine_creak(r):
+    n = ns(0.8)
+    rate = curve(n, [(0, 80), (0.25, 55), (0.5, 90), (0.8, 40)], log=True) * (1 + 0.05 * fnoise(r, n, hi=20))
+    pulse = harm_osc(rate, 45, 0.6)
+    fm = curve(n, [(0, 500), (0.15, 800), (0.3, 620), (0.5, 1100), (0.8, 640)], log=True)
+    cr = norm_std(tv_biquad(pulse, "bp", fm, 5.0)) * swell(n, 0.8, 1.0) * (1 + 0.3 * fnoise(r, n, hi=18))
+    return mixn(n, (cr, 1.0), (_grains(r, n, 14, 0.05, 0.7, 1500, 4500, 0.001, 0.004, 0.5), 0.35),
+                (fnoise(r, n, lo=1800, hi=5000) * swell(n, 1.2, 1.2), 0.1))
+
+
+@sfx("vine_snap", "plant", -17, 3, "Vine snapping: sharp woody crack, a brief twang and a fibrous tear.", crest=16.0,
+     fade_out=0.06, max_dur=0.5)
+def vine_snap(r):
+    n = ns(0.35)
+    out = mixn(n, (click(r, 0.002, lo=1500), 0.8), (burst(r, 0.06, lo=1200, hi=8000, att=0.0003, tau=0.004), 1.0),
+               (dsine(780, 0.03, g=-0.3), 0.5), (thump(0.1, 260, 140, 0.01, 0.03, drive=1.5), 0.35))
+    place(out, burst(r, 0.12, lo=2000, hi=9000, att=0.003, tau=0.025), 0.015, 0.45)
+    return out
+
+
+@sfx("vine_burn", "plant", -22, 2, "Green vine burning: wet sizzle and steam hiss with popping sap and crackle.",
+     crest=14.0, fade_out=0.12, max_dur=1.1)
+def vine_burn(r):
+    n = ns(1.0)
+    t = tarr(n)
+    hs = norm_std(tv_biquad(white(r, n), "bp", curve(n, [(0, 6000), (1.0, 3500)], log=True), 0.6)) * ad(t, 0.03, 0.4)
+    hs *= 1 + 0.4 * fnoise(r, n, hi=40)
+    cr = np.zeros(n)
+    crackle(r, cr, poisson(r, 0.9, 55, lambda x: np.exp(-x / 0.5)), 1000, 6000, 0.0008, 0.004, amp=0.9)
+    pp = _bubbles(r, n, np.sort(r.uniform(0.03, 0.8, 9)), 600, 1800, 0.008, 0.02, 0.5, 0.6)
+    return filt(mixn(n, (hs, 0.9), (cr, 0.6), (pp, 0.5)), "lp", 8000, 2)
+
+
+# --- fire ---------------------------------------------------------------------
+
+
+@sfx("fireball_whoosh", "fire", -17, 3, "Fireball passing: roaring whoosh that swells and falls with a low-mid body "
+     "and crackle in its wake.", crest=16.0, fade_out=0.12, max_dur=1.0)
+def fireball_whoosh(r):
+    n = ns(0.9)
+    w = whoosh(r, 0.85, [(0, 350), (0.35, 1800), (0.85, 700)], q=0.9, p=1.4, qq=1.6, body=0.9, air=0.15)
+    cr = np.zeros(n)
+    crackle(r, cr, np.sort(r.uniform(0.05, 0.85, 50)), 1200, 6000, 0.0008, 0.004, amp=0.8)
+    roar = fnoise(r, n, lo=150, hi=900) * swell(n, 1.5, 1.8)
+    return mixn(n, (w, 1.0), (cr, 0.5), (roar, 0.4)) * (1 + 0.15 * fnoise(r, n, hi=30))
+
+
+@sfx("fire_field_loop", "fire", -26, 2, "Burning ground: dense crackle over a low breathing roar and faint hiss "
+     "(loop 2.0 s).", loop=True, crest=12.0)
+def fire_field_loop(r):
+    L = 2.0
+    n = ns(L)
+    roar = snoise(r, n, m_bp(100, 1000)) * loop_mod(r, n, 3, 0.45)
+    mid = snoise(r, n, m_bp(800, 3000)) * loop_mod(r, n, 14, 0.7)
+    hiss = snoise(r, n, m_bp(4000, 9000)) * loop_mod(r, n, 20, 0.8)
+    cr = np.zeros(n)
+    crackle(r, cr, strat(r, 130, L), 800, 6000, 0.0008, 0.005, amp=1.0, power=2.2, wrap=True)
+    return warm(mixn(n, (roar, 0.7), (mid, 0.3), (hiss, 0.15), (cr, 0.8)), 1.4)
+
+
+@sfx("blue_roar_loop", "fire", -24, 1, "Blue flame: smooth turbine-like jet hiss with a resonant 2.2 kHz ring, a "
+     "faint 1.65 kHz whine and almost no crackle (loop 2.0 s).", loop=True, crest=10.0)
+def blue_roar_loop(r):
+    L = 2.0
+    n = ns(L)
+    t = tarr(n)
+    ph = r.uniform(0, TWO_PI)
+    jet = snoise(r, n, m_bp(1500, 6500)) * loop_mod(r, n, 10, 0.15)
+    ring = tv_loop(snoise(r, n, m_bp(800, 5000)), "bp", 2200 * 2 ** (0.2 * lfo(n, 2, ph)), 4.0)
+    body = snoise(r, n, m_bp(200, 900)) * loop_mod(r, n, 3, 0.3)
+    wh = np.sin(TWO_PI * 1650.0 * t) * (0.6 + 0.4 * lfo(n, 3, ph))
+    cr = np.zeros(n)
+    crackle(r, cr, strat(r, 14, L), 2500, 7000, 0.0006, 0.002, amp=0.4, wrap=True)
+    return warm(mixn(n, (jet, 0.8), (norm_std(ring), 0.6), (body, 0.4), (wh, 0.05), (cr, 0.2)), 1.2)
+
+
+@sfx("blue_ignite", "fire", -17, 3, "Blue flame lighting: spark tick, a tight gas 'fwoomp' and a rising whine that "
+     "settles into a jet hiss.", crest=15.0, fade_out=0.1, max_dur=0.8)
+def blue_ignite(r):
+    n = ns(0.65)
+    t = tarr(n)
+    fw = norm_std(tv_biquad(white(r, n), "lp", curve(n, [(0, 1200), (0.08, 3500), (0.4, 1500)], log=True), 0.8)) * ad(t, 0.012, 0.12)
+    wh = np.sin(TWO_PI * np.cumsum(900 * 4 ** (1 - np.exp(-t / 0.15))) / SR) * ad(t, 0.03, 0.15)
+    jet = fnoise(r, n, lo=2500, hi=8000) * swell(n, 0.8, 1.5)
+    out = mixn(n, (fw, 1.0), (wh, 0.18), (jet, 0.35), (thump(0.2, 170, 80, 0.02, 0.05, drive=2.0), 0.6))
+    place(out, burst(r, 0.02, lo=3000, att=0.0002, tau=0.003), 0.0, 0.9)
+    return out
+
+
+@sfx("spark_snap", "fire", -22, 4, "Tiny electric snap: a sharp dry click with a fast falling zap and one or two "
+     "after-ticks.", crest=16.0, fade_out=0.04, trim=-45)
+def spark_snap(r):
+    n = ns(0.2)
+    out = mixn(n, (burst(r, 0.02, lo=2500, att=0.0001, tau=0.0006), 1.0),
+               (burst(r, 0.05, lo=1500, hi=12000, att=0.0002, tau=0.004), 0.8),
+               (dsine(3600, 0.012, g=-0.6), 0.5))
+    place(out, burst(r, 0.02, lo=3000, att=0.0002, tau=0.002), 0.045, 0.4)
+    place(out, burst(r, 0.02, lo=3500, att=0.0002, tau=0.002), 0.085, 0.25)
+    place(out, dsine(2400, 0.02, g=-0.3), 0.045, 0.2)
+    return reverb(r, out, 0.12, 0.2, 9000, 0.002)
+
+
+@sfx("thunderclap", "fire", -11, 2, "Thunderclap: broadband rip then a heavy boom that rolls away in echoing rumbles. "
+     "No zap or buzz tail, which separates it from lightning_strike.", crest=16.0, fade_out=0.25, max_dur=1.2)
+def thunderclap(r):
+    n = ns(1.4)
+    t = tarr(n)
+    rip = burst(r, 0.4, lo=300, hi=9000, att=0.0008, tau=0.05)
+    boom = thump(0.9, 150, 55, 0.05, 0.28, drive=3.2)
+    rum = fnoise(r, n, lo=120, hi=700) * ad(t, 0.03, 0.5) * (1 + 0.6 * fnoise(r, n, hi=9))
+    out = mixn(n, (rip, 1.0), (boom, 0.9), (rum, 0.9), (fnoise(r, n, lo=3000) * ad(t, 0.001, 0.05), 0.2))
+    for tt, g in ((0.25, 0.5), (0.5, 0.35), (0.8, 0.2)):
+        place(out, filt(burst(r, 0.5, lo=100, hi=900, att=0.05, tau=0.12), "lp", 700, 2), tt, g)
+    return filt(reverb(r, out, 0.7, 0.35, 3500), "hp", 110, 2)
+
+
+@sfx("static_crackle_loop", "fire", -32, 1, "Static charge field: sparse dry sparks and snaps with a faint high "
+     "hiss and no tonal hum (loop 2.0 s).", loop=True, crest=14.0)
+def static_crackle_loop(r):
+    L = 2.0
+    n = ns(L)
+    cr = np.zeros(n)
+    crackle(r, cr, strat(r, 34, L), 2500, 10000, 0.0004, 0.0012, amp=1.0, power=1.6, wrap=True)
+    sn = np.zeros(n)
+    crackle(r, sn, strat(r, 8, L), 1500, 5000, 0.001, 0.004, amp=1.0, power=1.2, wrap=True)
+    hs = snoise(r, n, m_bp(4000, 10000)) * loop_mod(r, n, 10, 0.8)
+    return mixn(n, (cr, 0.8), (sn, 0.6), (hs, 0.06))
+
+
+def _explosion(r, dur, f0, boom_tau, rumble_tau, debris, rt, wet, burst_tau, hp=130):
+    n = ns(dur)
+    t = tarr(n)
+    deb = np.zeros(n)
+    crackle(r, deb, poisson(r, dur * 0.8, debris, lambda x: np.exp(-x / (dur * 0.35))), 400, 5000, 0.002, 0.012, amp=0.8)
+    out = mixn(n, (click(r, 0.003, lo=1500), 0.6),
+               (burst(r, 0.3, lo=300, hi=9000, att=0.0006, tau=burst_tau), 1.0),
+               (thump(dur, f0, f0 * 0.35, 0.04, boom_tau, drive=3.4), 1.1),
+               (thump(0.3, f0 * 2.2, f0 * 1.2, 0.012, 0.05, drive=2.0), 0.7),
+               (fnoise(r, n, lo=150, hi=1400) * ad(t, 0.01, rumble_tau), 0.8),
+               (deb, 0.5))
+    return filt(reverb(r, out, rt, wet, 5000), "hp", hp, 2)
+
+
+@sfx("explosion_small", "fire", -15, 3, "Small explosion: short sharp bang, tight thump and a handful of fragments.",
+     crest=16.0, fade_out=0.1, max_dur=0.8)
+def explosion_small(r):
+    return _explosion(r, 0.65, 230.0, 0.09, 0.15, 25, 0.25, 0.18, 0.035, hp=150)
+
+
+@sfx("explosion_large", "fire", -9, 2, "Large explosion: a deep long boom, a long rolling rumble and a dense debris "
+     "shower; scale (length, weight, level) grows with tier.", crest=16.0, fade_out=0.25, max_dur=1.2)
+def explosion_large(r):
+    x = _explosion(r, 1.4, 170.0, 0.25, 0.45, 70, 0.7, 0.3, 0.09, hp=120)
+    place(x, filt(burst(r, 0.5, lo=100, hi=900, att=0.04, tau=0.14), "lp", 800, 2), 0.35, 0.35)
+    return x
+
+
+@sfx("fuse_tick", "fire", -26, 4, "Burning fuse: a woody tick over a short sizzle; repeat for a countdown.",
+     crest=12.0, fade_out=0.05, max_dur=0.4)
+def fuse_tick(r):
+    n = ns(0.22)
+    t = tarr(n)
+    sz = fnoise(r, n, lo=3000, hi=9000) * ad(t, 0.004, 0.06)
+    cr = np.zeros(n)
+    crackle(r, cr, np.sort(r.uniform(0.0, 0.15, 7)), 1800, 6000, 0.0006, 0.002, amp=0.8)
+    return mixn(n, (click(r, 0.002, lo=2000), 0.8), (dsine(1800, 0.01), 0.6), (sz, 0.35), (cr, 0.4))
+
+
+# --- air ------------------------------------------------------------------------
+
+
+@sfx("crescent_whoosh", "air", -19, 3, "Blade of air: a thin, fast, high band sweep (1.4-5 kHz) with a singing edge "
+     "tone.", crest=14.0, fade_out=0.08, max_dur=0.7)
+def crescent_whoosh(r):
+    n = ns(0.55)
+    w = whoosh(r, 0.5, [(0, 1400), (0.2, 5200), (0.5, 2600)], q=3.2, p=1.0, qq=2.0, air=0.3)
+    ed = tone(2637, 0.3, 0.07, ((1, 1.0, 1.0),), att=0.02, bend=-0.25, bend_tau=0.1)
+    return mixn(n, (w, 1.0), (ed, 0.1))
+
+
+@sfx("tornado_loop", "air", -24, 1, "Tornado: two wandering howl formants rotating once per second over a low roar, "
+     "debris ticks and a wide mid wash (loop 3.0 s).", loop=True, crest=12.0)
+def tornado_loop(r):
+    L = 3.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    h1 = tv_loop(snoise(r, n, m_bp(200, 3500)), "bp", 900 * 2 ** (0.7 * lfo(n, 3, ph)), 3.0)
+    h2 = tv_loop(snoise(r, n, m_bp(300, 5000)), "bp", 1700 * 2 ** (0.6 * lfo(n, 3, ph + 2.1)), 3.5)
+    rum = snoise(r, n, m_bp(80, 420)) * loop_mod(r, n, 2, 0.4)
+    deb = np.zeros(n)
+    crackle(r, deb, strat(r, 60, L), 600, 4000, 0.001, 0.004, amp=0.6, wrap=True)
+    roar = snoise(r, n, m_bp(500, 3000)) * (0.6 + 0.4 * lfo(n, 3, ph + 1.0))
+    return warm(mixn(n, (norm_std(h1), 0.8), (norm_std(h2), 0.5), (rum, 0.5), (deb, 0.3), (roar, 0.4)), 1.3)
+
+
+@sfx("vacuum_implode", "air", -16, 2, "Air collapsing inward: a falling, ever louder suction sweep that ends in a "
+     "sudden pop and a hollow breath.", crest=16.0, fade_out=0.1, max_dur=1.0)
+def vacuum_implode(r):
+    n = ns(0.95)
+    w = whoosh(r, 0.58, [(0, 5500), (0.4, 1800), (0.58, 500)], q=1.0, p=3.0, qq=0.5, air=0.1)
+    out = mixn(n, (w, 1.0))
+    place(out, click(r, 0.003, lo=1200), 0.56, 1.0)
+    place(out, thump(0.25, 250, 100, 0.012, 0.05, drive=2.2), 0.56, 0.8)
+    place(out, burst(r, 0.3, lo=300, hi=1400, att=0.01, tau=0.09), 0.58, 0.45)
+    return reverb(r, out, 0.3, 0.12, 5000)
+
+
+@sfx("vacuum_loop", "air", -28, 1, "Vacuum pocket: a hollow, endlessly falling Shepard glide under a dull 200-1400 Hz "
+     "breath; feels like absence (loop 2.0 s).", loop=True, crest=12.0)
+def vacuum_loop(r):
+    L = 2.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    fall = norm_std(shepard(L, 27.5, 10, 600.0, 0.9, harm=((1, 1.0), (2, 0.25))))[::-1]
+    br = snoise(r, n, m_bp(200, 1400)) * loop_mod(r, n, 3, 0.3)
+    ho = tv_loop(snoise(r, n, m_bp(300, 3000)), "bp", 800 * 2 ** (-0.5 * lfo(n, 1, ph)), 5.0)
+    return mixn(n, (fall, 0.5), (br, 0.6), (norm_std(ho), 0.3))
+
+
+@sfx("sonic_boom", "air", -10, 2, "Sonic boom: two crisp shock cracks 35 ms apart, a hard pressure thump and a "
+     "falling airy wash; dry and short (thunderclap rolls, this does not).", crest=16.0, fade_out=0.15, max_dur=1.0)
+def sonic_boom(r):
+    n = ns(1.0)
+    t = tarr(n)
+    out = mixn(n, (thump(0.5, 220, 80, 0.02, 0.12, drive=3.0), 0.9),
+               (norm_std(tv_biquad(white(r, n), "lp", curve(n, [(0, 7000), (0.7, 1200)], log=True), 0.8)) * ad(t, 0.004, 0.18), 0.5))
+    place(out, burst(r, 0.12, lo=800, hi=14000, att=0.0001, tau=0.006), 0.0, 1.0)
+    place(out, burst(r, 0.12, lo=800, hi=14000, att=0.0001, tau=0.007), 0.035, 0.85)
+    place(out, click(r, 0.002, lo=3000), 0.0, 0.6)
+    place(out, click(r, 0.002, lo=3000), 0.035, 0.5)
+    return filt(reverb(r, out, 0.5, 0.2, 6000), "hp", 140, 2)
+
+
+@sfx("roar_wave", "air", -14, 2, "Roar wave: a rough falling 190-85 Hz voice-like buzz opened by sweeping vowel "
+     "formants, with breath noise and a heavy front.", crest=14.0, fade_out=0.15, max_dur=1.2)
+def roar_wave(r):
+    n = ns(1.15)
+    t = tarr(n)
+    f = curve(n, [(0, 190), (0.25, 150), (1.15, 85)], log=True) * (1 + 0.04 * fnoise(r, n, hi=25))
+    osc = harm_osc(f, 40, 1.0)
+    f1 = norm_std(tv_biquad(osc, "bp", curve(n, [(0, 500), (0.3, 1100), (1.15, 420)], log=True), 2.0))
+    f2 = norm_std(tv_biquad(osc, "bp", np.full(n, 2400.0), 3.0))
+    env = ad(t, 0.06, 0.5)
+    out = mixn(n, (f1 * env, 1.0), (f2 * env, 0.35), (fnoise(r, n, lo=600, hi=3500) * env, 0.3),
+               (thump(0.4, 180, 70, 0.03, 0.1, drive=2.4), 0.4))
+    return warm(out, 1.4)
+
+
+@sfx("echo_ping", "air", -22, 2, "Sonar ping: a soft A5 sine ping repeated as three ever darker, quieter echoes "
+     "(single plain ping, unlike the glassy deflect ring).", fade_out=0.12, max_dur=1.0)
+def echo_ping(r):
+    n = ns(0.95)
+    h = ((1, 1.0, 1.0), (2, 0.15, 0.5))
+    out = np.zeros(n)
+    for i, (tt, g, lp) in enumerate(((0.0, 1.0, 9000), (0.2, 0.55, 3500), (0.4, 0.3, 2400), (0.6, 0.16, 1700))):
+        place(out, filt(tone(A5 * (1 - 0.01 * i), 0.25, 0.04, h, att=0.002), "lp", lp, 2), tt, g)
+    place(out, burst(r, 0.02, lo=3000, att=0.0002, tau=0.003), 0.0, 0.25)
+    return reverb(r, out, 0.3, 0.14, 6000)
+
+
+@sfx("flight_loop", "air", -26, 1, "Sustained flight: steady rushing wind with a wandering mid band, thin whistle and "
+     "gentle flutter; fuller than glide_loop (loop 2.0 s).", loop=True, crest=12.0)
+def flight_loop(r):
+    L = 2.0
+    n = ns(L)
+    ph = r.uniform(0, TWO_PI)
+    rush = tv_loop(snoise(r, n, m_bp(300, 4000)), "bp", 1300 * 2 ** (0.4 * lfo(n, 2, ph)), 1.5)
+    air = snoise(r, n, m_bp(3000, 8500)) * loop_mod(r, n, 4, 0.4)
+    low = snoise(r, n, m_bp(80, 420)) * loop_mod(r, n, 2, 0.35)
+    wh = tv_loop(snoise(r, n, m_bp(1000, 4000)), "bp", 1900 * 2 ** (0.15 * lfo(n, 2, ph + 1.0)), 12.0)
+    return mixn(n, (norm_std(rush), 0.8), (air, 0.35), (low, 0.4), (norm_std(wh), 0.18)) * (0.88 + 0.12 * lfo(n, 6, ph))
+
+
+# --- system ---------------------------------------------------------------------
+# Charge cues rise in size with the tier (0.3 / 0.45 / 0.7 s, -22 / -19 / -16 dB). The plain names are the
+# defaults; AudioDirector.play(..., pitch) shifts them per element (earth 0.75, water 1.0, fire 1.26, air 1.5).
+
+
+@sfx("charge_t1", "system", -22, 2, "Charge tier 1: one small rising D5 pluck with a faint airy sweep.",
+     fade_out=0.06, max_dur=0.4)
+def charge_t1(r):
+    n = ns(0.35)
+    h = ((1, 1.0, 1.0), (2, 0.25, 0.5), (3, 0.08, 0.4))
+    out = mixn(n, (tone(D5, 0.25, 0.08, h, att=0.01, bend=-0.15, bend_tau=0.05), 1.0),
+               (burst(r, 0.2, lo=2000, hi=5000, att=0.04, tau=0.05), 0.1))
+    return reverb(r, out, 0.15, 0.1, 7000, 0.003)
+
+
+@sfx("charge_t2", "system", -19, 2, "Charge tier 2: rising D5 to A5 pair over a held fifth, brighter and longer.",
+     fade_out=0.08, max_dur=0.55)
+def charge_t2(r):
+    n = ns(0.5)
+    h = ((1, 1.0, 1.0), (2, 0.3, 0.5), (3, 0.12, 0.4), (4, 0.05, 0.3))
+    out = np.zeros(n)
+    place(out, tone(D5, 0.3, 0.09, h, att=0.01, bend=-0.15, bend_tau=0.05), 0.0, 0.9)
+    place(out, tone(A5, 0.35, 0.11, h, att=0.01, bend=-0.12, bend_tau=0.05), 0.09, 1.0)
+    place(out, tone(D5 / 2, 0.4, 0.14, ((1, 1.0, 1.0), (2, 0.3, 0.6)), att=0.02), 0.0, 0.45)
+    place(out, burst(r, 0.3, lo=2500, hi=7000, att=0.06, tau=0.07), 0.0, 0.1)
+    return reverb(r, out, 0.25, 0.14, 8000, 0.003)
+
+
+@sfx("charge_t3", "system", -16, 2, "Charge tier 3 (full): fast D5-A5-D6 arpeggio into a bell chord with sparkle and a "
+     "low weight pulse.", crest=16.0, fade_out=0.12, max_dur=0.85)
+def charge_t3(r):
+    n = ns(0.8)
+    h = ((1, 1.0, 1.0), (2, 0.3, 0.5), (3, 0.15, 0.4), (4, 0.06, 0.3))
+    out = np.zeros(n)
+    for i, f in enumerate((D5, A5, D6)):
+        place(out, tone(f, 0.3, 0.09, h, att=0.008, bend=-0.1, bend_tau=0.04), 0.07 * i, 0.8 + 0.1 * i)
+    for f, g in ((D6, 0.8), (FS5 * 2, 0.5), (A5, 0.6)):
+        place(out, fm_bell(f, 0.5, 0.16, 1.0, 1.2, 0.06), 0.2, 0.4 * g)
+    sp = np.zeros(n)
+    crackle(r, sp, np.sort(r.uniform(0.1, 0.5, 14)), 5000, 10000, 0.01, 0.025, amp=0.7, power=1.5)
+    out += 0.25 * sp
+    place(out, thump(0.25, 220, 110, 0.02, 0.06, drive=2.0), 0.0, 0.4)
+    place(out, burst(r, 0.4, lo=2500, hi=8000, att=0.08, tau=0.08), 0.0, 0.12)
+    return reverb(r, out, 0.4, 0.18, 8500, 0.004)
+
+
+@sfx("counter_success", "system", -13, 2, "Counter landed: a solid catch thump, then a warm rising D-major bell chord "
+     "(D5-F#5-A5) over an upward sweep. A chord, so it can never be confused with the single deflect ping or the dull "
+     "block thud.", crest=16.0, fade_out=0.15, max_dur=1.0)
+def counter_success(r):
+    n = ns(0.95)
+    out = mixn(n, (thump(0.2, 260, 150, 0.015, 0.05, drive=2.0), 0.8), (click(r, 0.002, lo=2500), 0.4),
+               (burst(r, 0.06, lo=500, hi=3500, att=0.0005, tau=0.012), 0.4))
+    for tt, f, g in ((0.04, D5, 0.9), (0.09, FS5, 0.8), (0.14, A5, 1.0), (0.14, D6, 0.5)):
+        place(out, fm_bell(f, 0.7, 0.2, 1.0, 1.3, 0.06), tt, 0.5 * g)
+        place(out, tone(f, 0.7, 0.16, ((1, 1.0, 1.0), (2, 0.2, 0.5))), tt, 0.3 * g)
+    m = ns(0.35)
+    sw = norm_std(tv_biquad(white(r, m), "bp", curve(m, [(0, 1200), (0.3, 6000)], log=True), 2.5)) * swell(m, 1.4, 1.6)
+    place(out, sw, 0.04, 0.1)
+    return reverb(r, out, 0.45, 0.2, 8500, 0.005)
+
+
+@sfx("counter_fail", "system", -16, 2, "Counter failed: a heavy muffled thump, a falling saturated buzz and a sinking "
+     "noise wash. No ring, no bell; darker and harsher than challenge_fail.", crest=14.0, fade_out=0.1, max_dur=0.8)
+def counter_fail(r):
+    n = ns(0.7)
+    t = tarr(n)
+    f = curve(n, [(0, 420), (0.5, 130)], log=True)
+    buz = norm_std(tv_biquad(harm_osc(f, 30, 0.8), "lp", curve(n, [(0, 1800), (0.5, 400)], log=True), 0.9)) * ad(t, 0.004, 0.18)
+    wash = norm_std(tv_biquad(white(r, n), "lp", curve(n, [(0, 3000), (0.5, 300)], log=True), 0.8)) * ad(t, 0.004, 0.15)
+    out = mixn(n, (thump(0.4, 180, 70, 0.04, 0.1, drive=2.8), 1.0), (warm(buz, 2.0), 0.8), (wash, 0.5),
+               (burst(r, 0.08, lo=300, hi=1800, att=0.001, tau=0.02), 0.4))
+    return filt(filt(out, "lp", 3200, 2), "hp", 130, 2)
+
+
+@sfx("clash_solid", "system", -13, 3, "Two solid bodies meeting: a hard crack, a heavy thock, a short dead stone ring "
+     "and a bounce echo; harder and cracklier than block.", crest=16.0, fade_out=0.1, max_dur=0.8)
+def clash_solid(r):
+    n = ns(0.7)
+    out = mixn(n, (click(r, 0.003, lo=1800), 0.8), (burst(r, 0.15, lo=400, hi=7000, att=0.0004, tau=0.02), 0.95),
+               (thump(0.3, 300, 170, 0.02, 0.06, drive=2.6), 0.9), (_stone_ring(520, 1.0, 0.35), 0.6),
+               (_debris(r, n, 0.02, 0.35, 14, 400, 4000, 0.002, 0.008, 0.5, 1.2), 0.4))
+    place(out, burst(r, 0.08, lo=600, hi=5000, att=0.0004, tau=0.015), 0.012, 0.5)
+    return filt(reverb(r, out, 0.3, 0.16, 5500), "hp", 150, 2)
+
+
+@sfx("clash_energy", "system", -13, 3, "Two energies colliding: a bright noise flash, a fast falling zap, crackle and a "
+     "shimmering pressure thump; sizzly and unpitched compared with clash_solid.", crest=16.0, fade_out=0.12,
+     max_dur=0.9)
+def clash_energy(r):
+    n = ns(0.8)
+    t = tarr(n)
+    fl = norm_std(tv_biquad(white(r, n), "lp", curve(n, [(0, 12000), (0.25, 2000)], log=True), 0.8)) * ad(t, 0.0006, 0.08)
+    zp = np.sin(TWO_PI * np.cumsum(4000 * 0.1 ** (1 - np.exp(-t / 0.05))) / SR) * ad(t, 0.0005, 0.06)
+    cr = np.zeros(n)
+    crackle(r, cr, poisson(r, 0.6, 60, lambda x: np.exp(-x / 0.3)), 1500, 8000, 0.0006, 0.003, amp=0.9)
+    sh = np.zeros(n)
+    for f in (3000, 4200, 5600, 7000):
+        place(sh, dsine(f * r.uniform(0.97, 1.03), 0.05), r.uniform(0.0, 0.1), 0.4)
+    out = mixn(n, (fl, 1.0), (zp, 0.35), (cr, 0.5), (sh, 0.3), (thump(0.3, 140, 65, 0.025, 0.08, drive=2.6), 0.6))
+    return reverb(r, out, 0.35, 0.16, 8000)
+
+
+
+# ---------------------------------------------------------------------------
 # finishing / output
 # ---------------------------------------------------------------------------
 
@@ -1707,8 +2482,13 @@ def main(argv=None) -> int:
             print("  ", row)
     elif AUDIT is not None:
         print("\nAUDIT: no layer is truncated while audible")
-    if not args.only:
-        (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    mpath = args.out / "manifest.json"
+    if args.only and mpath.exists():
+        merged = json.loads(mpath.read_text())      # --only updates just the named entries, keeps the rest as is
+        merged.update(manifest)
+        manifest = merged
+    if not args.only or mpath.exists():
+        mpath.write_text(json.dumps(manifest, indent=2) + "\n")
     return 0
 
 

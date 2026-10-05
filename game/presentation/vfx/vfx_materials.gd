@@ -5,6 +5,8 @@ extends RefCounted
 ## pooled effects can animate their own uniforms.
 
 const SHADER_DIR: String = "res://presentation/shaders/"
+## Moveset VFX shaders (cloud, crystal, metal, ring, shell, vortex, strips, flames, vine, beam, blast...).
+const FX_SHADER_DIR: String = "res://presentation/vfx/shaders/"
 
 ## Global quality switch. False drops every screen-texture read (water refraction, air-push
 ## distortion), so the engine skips the per-frame opaque-framebuffer copy. Set it BEFORE creating
@@ -21,6 +23,25 @@ static func shader(shader_name: String) -> Shader:
 		s = load(SHADER_DIR + shader_name + ".gdshader") as Shader
 		_shaders[shader_name] = s
 	return s
+
+
+## New ShaderMaterial for a moveset shader in presentation/vfx/shaders, with the shared 2D noise bound
+## to `noise_tex` (every moveset shader that has the uniform uses it).
+static func make_fx(shader_name: String) -> ShaderMaterial:
+	var key := "fx/" + shader_name
+	var s: Shader = _shaders.get(key)
+	if s == null:
+		s = load(FX_SHADER_DIR + shader_name + ".gdshader") as Shader
+		_shaders[key] = s
+	var m := ShaderMaterial.new()
+	m.shader = s
+	m.set_shader_parameter("noise_tex", VfxTextures.noise_2d())
+	return m
+
+
+## Lite path for the moveset effects (quality 0): no screen reads, fewer particles / puffs.
+static func lite() -> bool:
+	return not screen_refraction
 
 
 ## New, unshared ShaderMaterial for a shader file (without the .gdshader extension).

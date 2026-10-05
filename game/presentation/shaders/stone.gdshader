@@ -20,6 +20,10 @@ uniform float u_damage = 0.0;
 uniform float u_rise = 1.0;
 uniform float u_rise_height = 1.0;
 uniform float u_detail = 1.0;   // >1 = finer plates / grain (large objects such as walls)
+// Material variants of the same rock model (BodyViews): obsidian (dark tint + glass 1), sandstone
+// (warm bright tint), mud (dark brown + half gloss). Defaults keep plain stone.
+uniform vec3 u_tint = vec3(1.0);
+uniform float u_glass = 0.0;
 
 varying vec3 v_p;
 
@@ -75,8 +79,8 @@ void fragment() {
 	float sc = length(MODEL_MATRIX[0].xyz);
 	NORMAL = vfx_bump(VERTEX, NORMAL, hgrain, 0.35 * sc);
 
-	ALBEDO = albedo;
-	ROUGHNESS = rough;
-	SPECULAR = mix(0.28, 0.5, smoothstep(0.0, 0.6, u_melt) * (1.0 - u_crust));
+	ALBEDO = albedo * u_tint;
+	ROUGHNESS = mix(rough, 0.06 + 0.1 * grain, u_glass);
+	SPECULAR = mix(mix(0.28, 0.5, smoothstep(0.0, 0.6, u_melt) * (1.0 - u_crust)), 0.75, u_glass);
 	EMISSION = emis;
 }

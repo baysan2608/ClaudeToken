@@ -13,7 +13,10 @@ extends Node
 ## instance (reset + reuse) if `recycle_oldest` is true, otherwise returns null:
 ##   stone 24, earth_wall 6, lava_wave 4, water_ribbon 4, water_blob 3,
 ##   fire_burst 4, fire_charge 2, lightning_arc 3, charge_aim 2, air_push 3, glide_trail 2,
-##   dust_puff 8, steam 6, splash 6, ember 4, scorch_decal 8
+##   dust_puff 8, steam 6, splash 6, ember 4, scorch_decal 8,
+##   moveset: cloud 8, crystal 10, metal 12, ground_strip 4, vortex 3, shell 6, vine 4, flame_field 4,
+##   fireball 6, wind_blade 4, crackle 4, ground_decal 8, spikes 4, charge 2, ring 8, burst 8, shards 4,
+##   blast 3, beam 3
 ## Pooled nodes stay children of the pool node (their own transform is global, so the pool can
 ## live anywhere in the tree, ideally a plain Node under the world root).
 
@@ -42,6 +45,27 @@ func _init() -> void:
 	register("splash", func() -> Node: return SplashFX.new(), 6)
 	register("ember", func() -> Node: return EmberFX.new(), 4)
 	register("scorch_decal", func() -> Node: return ScorchDecal.new(), 8)
+	# Moveset views and cues (docs/VFX.md "Moveset layer"). Kept views grow their cap through
+	# BodyViews.acquire; one-shots recycle the oldest at cap.
+	register("cloud", func() -> Node: return CloudView.new(), 8)
+	register("crystal", func() -> Node: return CrystalView.new(), 10)
+	register("metal", func() -> Node: return MetalView.new(), 12)
+	register("ground_strip", func() -> Node: return GroundStripView.new(), 4)
+	register("vortex", func() -> Node: return VortexView.new(), 3)
+	register("shell", func() -> Node: return ShellView.new(), 6)
+	register("vine", func() -> Node: return VineView.new(), 4)
+	register("flame_field", func() -> Node: return FlameFieldView.new(), 4)
+	register("fireball", func() -> Node: return FireballView.new(), 6)
+	register("wind_blade", func() -> Node: return WindBladeView.new(), 4)
+	register("crackle", func() -> Node: return CrackleView.new(), 4)
+	register("ground_decal", func() -> Node: return GroundDecalView.new(), 8)
+	register("spikes", func() -> Node: return SpikesView.new(), 4)
+	register("charge", func() -> Node: return ChargeFX.new(), 2)
+	register("ring", func() -> Node: return RingFX.new(), 8)
+	register("burst", func() -> Node: return BurstFX.new(), 8)
+	register("shards", func() -> Node: return ShardsFX.new(), 4)
+	register("blast", func() -> Node: return BlastFX.new(), 3)
+	register("beam", func() -> Node: return BeamFX.new(), 3)
 
 
 ## Register (or replace) a type. `factory` returns a fresh Node.
@@ -104,6 +128,18 @@ func prewarm(at: Vector3, frames: int = 3) -> void:
 			continue
 		warmed.append(node)
 		_prewarm_node(key, node, at)
+	# Second material variants of the moveset views (a pooled node holds one at a time).
+	var gs: Node = get_fx("ground_strip")
+	if gs != null:
+		warmed.append(gs)
+		gs.configure("sand", 2)
+		gs.set_path(PackedVector3Array([at, at + Vector3(0.05, 0, 0)]), PackedFloat32Array([0.05, 0.05]))
+	var sh: Node = get_fx("shell")
+	if sh != null:
+		warmed.append(sh)
+		sh.configure("aura", Color(1, 0.5, 0.2))
+		sh.set_shape(0.05)
+		sh.position = at
 	for _i in frames:
 		await get_tree().process_frame
 		for node in warmed:
@@ -155,6 +191,62 @@ func _prewarm_node(key: String, node: Node, at: Vector3) -> void:
 			node.play(at, 0.1)
 		"scorch_decal":
 			node.place(at, tiny, "scorch", 1.0)
+		"cloud":
+			node.configure("steam", 1)
+			node.set_shape(tiny, tiny)
+			node.position = at
+		"crystal":
+			node.setup("cluster", 1, "ice", Vector3.ONE * tiny)
+			node.position = at
+		"metal":
+			node.setup("disc", 1, Vector3.ONE * tiny)
+			node.position = at
+			node.set_state(0.5, 40.0)
+		"ground_strip":
+			node.configure("water", 1)
+			node.set_path(PackedVector3Array([at, at + Vector3(tiny, 0, 0)]), PackedFloat32Array([tiny, tiny]))
+			node.set_state(1.0, 0.0, 1.0)
+		"vortex":
+			node.configure("tornado", "sand", 1)
+			node.set_shape(tiny, tiny * 2.0)
+			node.position = at
+		"shell":
+			node.configure("null_bubble")
+			node.set_shape(tiny)
+			node.position = at
+		"vine":
+			node.setup("briar", 1, Vector3.ONE * tiny)
+			node.position = at
+		"flame_field":
+			node.setup("field", 1, tiny, tiny)
+			node.position = at
+		"fireball":
+			node.setup("fireball", tiny)
+			node.position = at
+		"wind_blade":
+			node.setup("crescent", Vector3.ONE * tiny)
+			node.position = at
+		"crackle":
+			node.setup("body", tiny, 1)
+			node.set_target(at)
+		"ground_decal":
+			node.place(at, tiny, "quicksand", 1)
+		"spikes":
+			node.setup("ice", "ring", 1, Vector3.ONE * tiny)
+			node.position = at
+		"charge":
+			node.set_anchor(at, at)
+			node.set_charge(3, 0.5, "flame")
+		"ring":
+			node.play(at, Vector3.UP, tiny, tiny * 2.0, 0.2, Color.WHITE)
+		"burst":
+			node.play(at, Vector3.UP, 0.1, "grit")
+		"shards":
+			node.play(at, Vector3.UP, 0.2, "ice", 1, at.y - tiny)
+		"blast":
+			node.play(at, tiny, 0.2)
+		"beam":
+			node.play(at, at + Vector3(tiny, 0, 0), 0.2, "blue")
 
 
 ## Return a node to its pool (safe to call twice).

@@ -215,3 +215,386 @@ func test_puddle_mark_follows_the_live_radius() -> void:
 		bv.render(1.0)
 		near(mark.scale.x * n.scale.x * 0.5, b.radius, 0.02, "the wet mark matches the puddle at mass %.0f" % mass)
 	_free_views(bv)
+
+
+# ------------------------------------------------------------------------------ moveset presentation
+# BodyViews mapping of MOVESET §15.6 bodies, FxDirector feel (hit-stop table / cap / reduced motion),
+# moveset cue events, and the MoveAnimBridge with test-local move defs. Views run in the tree here.
+
+## Records loops; one-shot names are read from FxDirector.sfx_log (no dependency on play()'s
+## signature, which the audio stream owns). `enabled = false` keeps AudioDirector.play silent.
+class SfxProbe extends AudioDirector:
+	var on := {}
+
+	func loop(key: String, _nm: String, on_now: bool, _pos: Vector3, _vol_db: float = 0.0) -> void:
+		on[key] = on_now
+
+	func step(_pos: Vector3) -> void:
+		pass
+
+	func ui(_nm: String, _vol_db: float = 0.0) -> void:
+		pass
+
+
+## The runner has no live scene tree (tests run in SceneTree._init): views run off-tree, where the
+## legacy global_position writes log "not inside tree"; keep the log clean while they run.
+func _tree_views(h: SimHarness) -> BodyViews:
+	var bv := BodyViews.new()
+	bv.bind(h.w)
+	Engine.print_error_messages = false
+	return bv
+
+
+func _free_tree_views(bv: BodyViews) -> void:
+	Engine.print_error_messages = true
+	bv.pool.free()
+	bv.free()
+
+
+func _director(h: SimHarness, bv: BodyViews) -> FxDirector:
+	var fx := FxDirector.new()   # stays off-tree: never touches Engine.time_scale in tests
+	fx.world = h.w
+	fx.views = bv
+	var probe := SfxProbe.new()
+	probe.enabled = false
+	fx.audio = probe
+	fx.sfx_log = []
+	fx.bind(h.w)
+	return fx
+
+
+func _drop(fx: FxDirector, bv: BodyViews) -> void:
+	fx.audio.free()
+	fx.free()
+	_free_tree_views(bv)
+
+
+func test_moveset_bodies_map_to_their_views() -> void:
+	var h := SimHarness.new(1)
+	var bv := _tree_views(h)
+	var w := h.w
+	var cases: Array = []   # [body, expected class name]
+	var add := func(mat: int, form: int, tag: String, want: String, f: Dictionary = {}) -> void:
+		var b := w.spawn_body(mat, form, 2.0, Vector3(cases.size() * 1.5 - 12.0, 1.0, 3.0), "test")
+		b.tag = StringName(tag)
+		for k in f:
+			b.set(k, f[k])
+		cases.append([b, want])
+	add.call(Sim.Mat.METAL, Sim.Form.CHUNK, "disc", "MetalView", {"spin": 40.0})
+	add.call(Sim.Mat.METAL, Sim.Form.CHUNK, "lance", "MetalView")
+	add.call(Sim.Mat.SAND, Sim.Form.CHUNK, "slug", "CloudView")
+	add.call(Sim.Mat.SAND, Sim.Form.WAVE, "sand_surge", "GroundStripView")
+	add.call(Sim.Mat.GLASS, Sim.Form.WALL, "glass", "CrystalView")
+	add.call(Sim.Mat.GLASS, Sim.Form.SHARD, "needle", "CrystalView")
+	add.call(Sim.Mat.STONE, Sim.Form.WALL, "obsidian", "EarthWallView")
+	add.call(Sim.Mat.STONE, Sim.Form.WALL, "spikes", "SpikesView")
+	add.call(Sim.Mat.STONE, Sim.Form.CHUNK, "glob", "StoneView", {"temp": 1100.0, "liquid": 0.6})
+	add.call(Sim.Mat.WATER, Sim.Form.WAVE, "water_wave", "GroundStripView", {"liquid": 1.0})
+	add.call(Sim.Mat.WATER, Sim.Form.WALL, "ice", "CrystalView", {"phase": Sim.Phase.FROZEN})
+	add.call(Sim.Mat.STEAM, Sim.Form.CLOUD, "", "CloudView")
+	add.call(Sim.Mat.PLANT, Sim.Form.WALL, "vine", "VineView")
+	add.call(Sim.Mat.FIRE, Sim.Form.CHUNK, "fireball", "FireballView")
+	add.call(Sim.Mat.FIRE, Sim.Form.CHUNK, "comet", "FireballView")
+	add.call(Sim.Mat.FIRE, Sim.Form.WAVE, "fire_line", "FlameFieldView")
+	add.call(Sim.Mat.AIR, Sim.Form.CHUNK, "crescent", "WindBladeView")
+	add.call(Sim.Mat.AIR, Sim.Form.CHUNK, "twister", "VortexView", {"spin": 12.0})
+	_check_views(bv, cases)
+	cases.clear()
+	# zones in a second world (MAX_BODIES = 32 counts zones too)
+	var h2 := SimHarness.new(2)
+	bv.bind(h2.w)
+	w = h2.w
+	var zones := [["sand_cloud", "CloudView"], ["fog", "CloudView"], ["quicksand", "GroundDecalView"],
+		["fire_field", "FlameFieldView"], ["tornado", "VortexView"], ["null_bubble", "ShellView"],
+		["vacuum_well", "ShellView"], ["caltrops", "MetalView"], ["briar", "VineView"], ["corona", "ShellView"],
+		["static_field", "ShellView"], ["lava_pool", "LavaWaveView"], ["ice_floor", "GroundDecalView"], ["geyser", "CloudView"],
+		["sound_barrier", "ShellView"], ["eddy", "VortexView"], ["steam_screen", "CloudView"], ["mine", "ShellView"]]
+	for z in zones:
+		var zb := w.spawn_zone(StringName(z[0]), Vector3(cases.size() * 1.5 - 12.0, 0.0, -3.0), 1.5, -1, 10.0)
+		cases.append([zb, z[1]])
+	_check_views(bv, cases)
+	# a charged body crackles (overlay), and loses it when discharged
+	var cs := w.spawn_body(Sim.Mat.STONE, Sim.Form.CHUNK, 5.0, Vector3(0, 1, 6), "test")
+	cs.charge = 20.0
+	bv.push_state()
+	bv.render(1.0)
+	check(int(bv.pool.get_stats().crackle[0]) == 1, "a charged stone crackles")
+	cs.charge = 0.0
+	bv.render(1.0)
+	check(int(bv.pool.get_stats().crackle[0]) == 0, "the crackle goes back to the pool when discharged")
+	# a sand wall fusing to glass swaps its view (and the wall view goes back square)
+	var sw := w.spawn_body(Sim.Mat.SAND, Sim.Form.WALL, 60.0, Vector3(4, 0, 8), "test")
+	bv.push_state()
+	check(bv.view_of(sw.id) is EarthWallView, "a sand wall is a (sandstone) earth wall view")
+	sw.mat = Sim.Mat.GLASS
+	bv.push_state()
+	check(bv.view_of(sw.id) is CrystalView, "fused to glass it becomes a crystal wall")
+	bv.clear()
+	var total := 0
+	for k in bv.pool.get_stats():
+		total += int(bv.pool.get_stats()[k][0])
+	check(total == 0, "clear() returns every view (active %d)" % total)
+	_free_tree_views(bv)
+
+
+func _check_views(bv: BodyViews, cases: Array) -> void:
+	bv.push_state()
+	bv.render(1.0)
+	var seen := {}
+	for c in cases:
+		var b: MatBody = c[0]
+		var n := bv.view_of(b.id)
+		var got := "null" if n == null else String(n.get_script().get_global_name())
+		check(got == c[1], "%s %s [%s] -> %s (got %s)" % [Sim.MAT_NAMES[b.mat], Sim.FORM_NAMES[b.form], b.tag, c[1], got])
+		check(n == null or not seen.has(n), "body %d has its own view" % b.id)
+		if n:
+			seen[n] = true
+			check(n.visible, "%s view is visible" % b.tag)
+
+
+func test_zones_fade_in_and_out_with_their_life() -> void:
+	var h := SimHarness.new(1)
+	var bv := _tree_views(h)
+	var z := h.w.spawn_zone(&"fog", Vector3(0, 0, 3), 2.0, -1, 5.0, Sim.Mat.WATER, 0.0, 3.0)
+	z.age = 0.0
+	check(is_zero_approx(bv._life01(z)), "a zone opens from nothing")
+	z.age = 1.0
+	near(bv._life01(z), 1.0, 1e-4, "fully shown mid-life")
+	z.age = 2.9
+	check(bv._life01(z) < 0.3, "fading out before max_life (%.2f)" % bv._life01(z))
+	_free_tree_views(bv)
+
+
+func test_thrown_stones_tumble_and_resting_stones_do_not() -> void:
+	var h := SimHarness.new(1)
+	var bv := _tree_views(h)
+	var b := h.w.spawn_body(Sim.Mat.STONE, Sim.Form.CHUNK, 6.0, Vector3(0, 1.5, 3), "test")
+	b.vel = Vector3(10, 0, 0)
+	b.on_ground = false
+	bv.push_state()
+	var n := bv.view_of(b.id)
+	var b0 := n.basis
+	bv.render(1.0)
+	check(not n.basis.is_equal_approx(b0), "a flying stone turns")
+	var axis := (n.basis * b0.inverse()).get_rotation_quaternion().get_axis()
+	check(absf(axis.dot(Vector3.UP.cross(b.vel).normalized())) > 0.9, "about up x velocity (axis %s)" % axis)
+	b.on_ground = true
+	var b1 := n.basis
+	bv.render(1.0)
+	check(n.basis.is_equal_approx(b1), "a resting stone stays put")
+	b.tag = &"spear"
+	b.on_ground = false
+	bv.render(1.0)
+	check(n.basis.z.normalized().dot(Vector3.RIGHT) > 0.99 and n.basis.z.length() > 2.0, "a spear flies point first, stretched")
+	_free_tree_views(bv)
+
+
+func test_hitstop_follows_the_table_and_is_capped() -> void:
+	var h := SimHarness.new(1)
+	var bv := _tree_views(h)
+	var fx := _director(h, bv)
+	fx.feel("t0", Vector3.ZERO)
+	check(fx.hitstop_pending() == 3, "T0 hit: 3 frames (got %d)" % fx.hitstop_pending())
+	fx.feel("t3", Vector3.ZERO)
+	check(fx.hitstop_pending() == 9, "T3 hit: 9 frames, requests do not stack (got %d)" % fx.hitstop_pending())
+	near(fx.time_scale_wanted(), FxDirector.HITSTOP_SCALE, 1e-6, "frozen while pending")
+	for i in 9:
+		fx.update_continuous(0.016)
+	check(fx.hitstop_pending() == 0 and is_equal_approx(fx.time_scale_wanted(), 1.0), "time runs again after 9 frames")
+	fx.feel("t3", Vector3.ZERO)
+	check(fx.hitstop_pending() == 3, "<= 12 frozen frames per second: only 3 left (got %d)" % fx.hitstop_pending())
+	fx._hs_hist.clear()
+	fx._hs_frames = 0
+	var gs := GameSettings.new()
+	gs.reduced_motion = true
+	fx.settings = gs
+	fx.feel("t3", Vector3.ZERO)
+	check(fx.hitstop_pending() <= 3, "reduced motion keeps hit-stop short (got %d)" % fx.hitstop_pending())
+	fx._slowmo = 0.2
+	fx._hs_frames = 0
+	near(fx.time_scale_wanted(), 0.55, 1e-6, "the slow-mo assist still works on its own")
+	check(Engine.time_scale == 1.0, "unit tests never change the engine time scale")
+	_drop(fx, bv)
+
+
+func test_camera_feel_runs_in_real_time_and_respects_reduced_motion() -> void:
+	var cam := CameraRig.new()
+	cam.cam = Camera3D.new()
+	cam.add_child(cam.cam)
+	cam.shake_at(1.0, Vector3.ZERO)
+	var near_s: float = cam.feel_state()[0]
+	cam._shake = 0.0
+	cam.shake_at(1.0, Vector3(40, 0, 0))
+	check(float(cam.feel_state()[0]) < near_s * 0.3, "shake falls off with distance (1 / (1 + d / 8))")
+	cam.fov_punch(-3.0, 0.25)
+	check(float(cam.feel_state()[2]) < -2.9, "T3 FOV punch")
+	cam._feel(0.1)
+	check(cam.cam.fov < CameraRig.BASE_FOV and cam.cam.fov > CameraRig.BASE_FOV - 3.0, "eases back (fov %.2f)" % cam.cam.fov)
+	cam._feel(0.2)
+	near(cam.cam.fov, CameraRig.BASE_FOV, 1e-3, "and is gone after 0.25 s")
+	cam.reduced_motion = true
+	cam._shake = 0.0
+	cam.fov_punch(-3.0)
+	cam.zoom_to(Vector3(0, 0, 5))
+	cam.shake(1.0)
+	check(is_zero_approx(float(cam.feel_state()[2])) and is_zero_approx(float(cam.feel_state()[3])), "reduced motion: no FOV punch, no zoom")
+	near(float(cam.feel_state()[0]), CameraRig.REDUCED_SHAKE, 1e-4, "reduced motion: shake x0.3")
+	cam.free()
+
+
+func test_moveset_cue_events_play_pooled_effects_within_caps() -> void:
+	var h := SimHarness.new(1)
+	var a := h.actor("A", Vector3.ZERO, 0, {}, Sim.Element.FIRE)
+	var o := h.actor("O", Vector3(0, 0, 6), 1, {}, Sim.Element.WATER)
+	var bv := _tree_views(h)
+	var fx := _director(h, bv)
+	fx.player_id = a.id
+	var evs: Array[Dictionary] = []
+	for key in FxEvents.FX:
+		for mat in FxEvents.MATS:
+			evs.append({"type": "fx", "fx": key, "mat": mat, "shape": "down" if mat == "lightning" else "", "actor": a.id, "tier": 2,
+				"pos": Vector3(0, 1, 1), "dir": Vector3(0, 0, 1), "radius": 1.5, "length": 4.0, "power": 20.0, "on": true})
+	for oc in FxEvents.OUTCOMES:
+		evs.append({"type": "interaction", "threat": "stone", "counter": "wall_ice", "outcome": oc, "band": "full",
+			"perfect": oc == "deflect", "pos": Vector3(0, 1, 3), "dir": Vector3(0, 0, -1), "tp": 30.0, "cp": 40.0,
+			"threat_actor": o.id, "counter_actor": a.id, "threat_body": -1, "counter_body": -1, "to": "steam"})
+	evs.append({"type": "clash", "a": -1, "b": -1, "pos": Vector3(0, 1, 2), "mat": "metal", "power": 30.0})
+	evs.append({"type": "zone", "body": -1, "kind": "sand_cloud", "phase": "open", "radius": 2.0, "owner": a.id, "pos": Vector3(2, 0, 2)})
+	evs.append({"type": "zone", "body": -1, "kind": "sand_cloud", "phase": "close", "radius": 2.0, "owner": a.id, "pos": Vector3(2, 0, 2)})
+	fx.handle(evs)
+	var played: Array = fx.sfx_log
+	check(played.size() > 20, "the cues play sounds (%d)" % played.size())
+	for nm in ["fireball_whoosh", "thunderclap", "counter_success", "clash_solid", "explosion_small"]:
+		check(played.has(nm), "plays %s" % nm)
+	var st := bv.pool.get_stats()
+	for k in ["ring", "burst", "shards", "blast", "beam"]:
+		check(int(st[k][0]) <= int(st[k][2]), "%s stays within its pool cap (%s)" % [k, st[k]])
+	check(fx.hitstop_pending() > 0, "the cues requested hit-stop")
+	# stance aura on / off
+	fx.handle([{"type": "fx", "fx": "aura", "mat": "metal", "actor": a.id, "on": true, "pos": Vector3.ZERO}] as Array[Dictionary])
+	check(fx.cues._auras.has(a.id), "aura on")
+	fx.handle([{"type": "fx", "fx": "aura", "mat": "metal", "actor": a.id, "on": false, "pos": Vector3.ZERO}] as Array[Dictionary])
+	check(not fx.cues._auras.has(a.id), "aura off")
+	_drop(fx, bv)
+
+
+func test_charge_and_status_cues_live_while_their_state_holds() -> void:
+	var h := SimHarness.new(1)
+	var a := h.actor("A", Vector3.ZERO, 0, {}, Sim.Element.EARTH)
+	h.actor("O", Vector3(0, 0, 6), 1, {}, Sim.Element.EARTH)
+	var bv := _tree_views(h)
+	var fx := _director(h, bv)
+	h.step(20)
+	h.press(a, "attack")
+	h.step(40)
+	if not check(a.action != null and a.action.phase == ActionInst.P.CHARGE, "setup: charging"):
+		_drop(fx, bv)
+		return
+	fx.handle([{"type": "charge", "actor": a.id, "move": a.action.id, "element": 0, "sub": 0, "tier": 1, "ready": false}] as Array[Dictionary])
+	fx.update_continuous(0.016)
+	check(int(bv.pool.get_stats().charge[0]) == 1, "the tier telegraph shows while charging")
+	h.release(a, "attack")
+	h.step(2)
+	fx.update_continuous(0.016)
+	check(int(bv.pool.get_stats().charge[0]) == 0, "and goes back to the pool on release")
+	for s in ["burning", "frozen", "shocked", "rooted", "concealed", "wet", "blinded"]:
+		fx.handle([{"type": "status", "actor": a.id, "status": s, "on": true, "t": 2.0, "mag": 1.0}] as Array[Dictionary])
+	fx.update_continuous(0.4)
+	check(fx.cues._status.size() == 7, "seven status cues live (%d)" % fx.cues._status.size())
+	for s in ["burning", "frozen", "shocked", "rooted", "concealed", "wet", "blinded"]:
+		fx.handle([{"type": "status", "actor": a.id, "status": s, "on": false, "t": 0.0, "mag": 0.0}] as Array[Dictionary])
+	check(fx.cues._status.is_empty(), "and all end")
+	for k in ["flame_field", "shell", "crackle", "vine", "cloud"]:
+		check(int(bv.pool.get_stats()[k][0]) == 0, "%s returned" % k)
+	_drop(fx, bv)
+
+
+func _bridge_def(anim_active: String = "mv_front_kick") -> Dictionary:
+	return {"name": "Bridge test", "element": Sim.Element.EARTH, "sub": 2, "slot": "strike", "verb": "cone",
+		"startup": 0.3, "active": 0.1, "recovery": 0.35, "heavy_min": 0.4, "cost": 0.0, "range": 2.0, "angle": 30.0,
+		"power": 1.0, "damage": 1.0, "tiers": {"t1": {"range": 3.0}},
+		"anim": "mv_palm_thrust", "anim_hold": "earth_hold", "anim_active": anim_active}
+
+
+func test_bridge_aligns_contact_holds_and_stops() -> void:
+	var h := SimHarness.new(1)
+	h.begin_scope()
+	Moves.register("vfx_bridge_test", _bridge_def())
+	Moves.bind(Sim.Element.EARTH, 2, "strike", "vfx_bridge_test")
+	var p := h.actor("P", Vector3.ZERO, 0, {}, Sim.Element.EARTH)
+	h.actor("O", Vector3(0, 0, 8), 1, {}, Sim.Element.EARTH)
+	var fv := FighterView.new()
+	fv.setup(1, {})
+	var br := MoveAnimBridge.new()
+	var fighters := {p.id: fv}
+	h.sub(p, 2)
+	h.step(30)
+	# --- tap: startup clip with its contact on the end of startup
+	h.press(p, "attack")
+	h.step(1)
+	h.release(p, "attack")
+	if not check(p.action != null and p.action.id == "vfx_bridge_test", "setup: the test move runs (%s)" % [p.action.id if p.action else "none"]):
+		h.end_scope()
+		fv.free()
+		return
+	var clip := fv.resolve_clip("mv_palm_thrust")
+	var guard := 0
+	while p.action != null and p.action.phase == ActionInst.P.STARTUP and guard < 60:
+		br.update(h.w, fighters, Sim.DT)
+		fv._animate(p, Sim.DT)
+		fv.ap.advance(Sim.DT)
+		h.step(1)
+		guard += 1
+	check(fv._one_shot == clip, "startup plays the def's anim (%s, got %s)" % [clip, fv._one_shot])
+	var late := (fv.ap.current_animation_position - MoveAnimBridge.contact_of(clip)) / maxf(fv.ap.speed_scale, 0.01)
+	check(late >= -0.02 and late <= Sim.DT + 0.01, "contact lands within a tick of startup end (%.3f s late)" % late)
+	br.update(h.w, fighters, Sim.DT)
+	check(fv._one_shot == fv.resolve_clip("mv_front_kick"), "active plays anim_active (got %s)" % fv._one_shot)
+	while p.action != null and guard < 200:
+		br.update(h.w, fighters, Sim.DT)
+		fv._animate(p, Sim.DT)
+		h.step(1)
+		guard += 1
+	br.update(h.w, fighters, Sim.DT)
+	for i in 10:
+		fv._animate(p, Sim.DT)
+	check(fv._one_shot_t <= 0.0, "nothing is re-issued after the action ends")
+	check(br.state_of(p.id).is_empty(), "bridge state cleared")
+	# --- hold: anim_hold loops during CHARGE by refreshing short one-shots
+	h.step(20)
+	h.press(p, "attack")
+	var issued0 := br.issued
+	var holds := 0
+	for i in 70:
+		h.step(1)
+		br.update(h.w, fighters, Sim.DT)
+		fv._animate(p, Sim.DT)
+		if p.action != null and p.action.phase == ActionInst.P.CHARGE:
+			holds += 1
+			check(fv._one_shot == fv.resolve_clip("earth_hold") and fv._one_shot_t > 0.0, "charging loops anim_hold")
+	check(holds > 20, "setup: charged for %d frames" % holds)
+	check(br.issued - issued0 >= holds / 8, "short one-shots are refreshed while the charge holds (%d)" % (br.issued - issued0))
+	# --- a stun drops it at once
+	p.stun = 0.5
+	p.stun_kind = "light"
+	br.update(h.w, fighters, Sim.DT)
+	fv._animate(p, Sim.DT)
+	check(fv._one_shot_t <= 0.0 and br.state_of(p.id).is_empty(), "a stun stops the bridge")
+	h.end_scope()
+	fv.free()
+
+
+func test_bridge_leaves_legacy_actions_to_fighter_view() -> void:
+	var h := SimHarness.new(1)
+	var p := h.actor("P", Vector3.ZERO, 0, {}, Sim.Element.EARTH)
+	h.actor("O", Vector3(0, 0, 8), 1, {}, Sim.Element.EARTH)
+	var fv := FighterView.new()
+	fv.setup(1, {})
+	var br := MoveAnimBridge.new()
+	h.step(20)
+	h.press(p, "attack")
+	h.step(2)
+	br.update(h.w, {p.id: fv}, Sim.DT)
+	check(p.action != null and p.action.id == "earth_attack", "setup: legacy attack")
+	check(br.issued == 0 and fv._one_shot_t <= 0.0, "legacy earth_attack is FighterView's own")
+	fv.free()

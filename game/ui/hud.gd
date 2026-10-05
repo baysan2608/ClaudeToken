@@ -19,8 +19,13 @@ var challenge_text := ""
 var show_debug := false
 var debug_lines: PackedStringArray = []
 var perf_text := ""
+## Lab: draw bodies / zones / power numbers over the arena.
+var lab_overlay := false
+## Lab: "FROZEN" / "x0.25" tag under the rival's vitals ("" = hidden).
+var lab_status := ""
 
 var _toast := ""
+var _status_t0 := {}   # "actor/status" -> longest remaining time seen (status icon fill)
 var _toast_t := 0.0
 var _flash := ""
 var _flash_t := 0.0
@@ -120,15 +125,39 @@ func _draw() -> void:
 	_bar(Vector2(x, y), bw, p.health / Sim.HEALTH_MAX, Color(0.92, 0.9, 0.86), _alpha)
 	_bar(Vector2(x, y + row), bw * 0.8, p.balance / Sim.BALANCE_MAX, Color(0.75, 0.82, 0.92), _alpha * 0.9)
 	_bar(Vector2(x, y + 2 * row), bw * 0.8, p.focus / Sim.FOCUS_MAX, Color(0.96, 0.82, 0.45), _alpha * 0.9)
-	# The HEAT label sits beside its bar, under the end of the longer focus bar: keep it clear.
-	var heat_y := y + 3 * row + grow_stat * 0.5
-	var heat_base := heat_y + 6 * s + grow_bar * 0.5 + grow_stat * 0.35
+	# Sub-element label, then the resource bars (heat reserve, waterskin, metal satchel, static charge).
+	var ecol := UiStyle.element_color(p.element)
+	var sub_base := y + 3 * row + fs_stat + grow_stat * 0.2
+	var sub_text := "%s / %s" % [Sim.ELEMENT_NAMES[p.element], Sim.SUB_NAMES[p.element][p.sub()]]
+	draw_string_outline(_font, Vector2(x, sub_base), sub_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, maxi(2, fs_stat / 6), Color(0, 0, 0, 0.45 * _alpha))
+	draw_string(_font, Vector2(x, sub_base), sub_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(ecol.r, ecol.g, ecol.b, 0.95 * _alpha))
+	var ry := sub_base + 4 * s + grow_bar * 0.5
+	var res_step := maxf(9 * s + grow_bar + grow_stat * 0.2, fs_stat + 2.0 * s)
+	var heat_base := ry + 6 * s + grow_bar * 0.5 + grow_stat * 0.35
 	if p.heat_reserve > 1.0:
-		_bar(Vector2(x, heat_y), bw * 0.6, p.heat_reserve / Sim.RESERVE_MAX, Color(1.0, 0.45, 0.2), 1.0)
+		_bar(Vector2(x, ry), bw * 0.6, p.heat_reserve / Sim.RESERVE_MAX, Color(1.0, 0.45, 0.2), 1.0)
 		draw_string(_font, Vector2(x + bw * 0.62, heat_base), "HEAT %d" % int(p.heat_reserve), HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(1, 0.6, 0.4, 0.9))
-	var water_base := heat_base + 11 * s + grow_stat
-	if p.element == Sim.Element.WATER:
-		draw_string(_font, Vector2(x, water_base), "water %.0f kg" % p.water_carried, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(0.6, 0.85, 1.0, 0.8 * _alpha))
+		ry += res_step
+		heat_base += res_step
+	if p.element == Sim.Element.WATER or p.water_carried < 5.95:
+		_bar(Vector2(x, ry), bw * 0.6, p.water_carried / 6.0, Color(0.45, 0.78, 1.0), 0.9 * _alpha)
+		draw_string(_font, Vector2(x + bw * 0.62, heat_base), "water %.1f kg" % p.water_carried, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(0.6, 0.85, 1.0, 0.85 * _alpha))
+		ry += res_step
+		heat_base += res_step
+	if (p.element == Sim.Element.EARTH and p.sub() == 1) or p.metal_carried < 11.95:
+		_bar(Vector2(x, ry), bw * 0.6, p.metal_carried / 12.0, Color(0.72, 0.78, 0.86), 0.9 * _alpha)
+		draw_string(_font, Vector2(x + bw * 0.62, heat_base), "metal %.1f kg" % p.metal_carried, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(0.8, 0.85, 0.92, 0.85 * _alpha))
+		ry += res_step
+		heat_base += res_step
+	if p.static_charge > 0.5 or (p.element == Sim.Element.FIRE and p.sub() == 2):
+		_bar(Vector2(x, ry), bw * 0.6, p.static_charge / 60.0, Color(0.7, 0.55, 1.0), 0.9 * _alpha)
+		draw_string(_font, Vector2(x + bw * 0.62, heat_base), "static %d" % int(p.static_charge), HORIZONTAL_ALIGNMENT_LEFT, -1, fs_stat, Color(0.8, 0.7, 1.0, 0.85 * _alpha))
+		ry += res_step
+		heat_base += res_step
+	var water_base := heat_base
+	water_base = maxf(water_base, ry)
+	var status_h := _draw_statuses(p, Vector2(x, ry + 1.5 * s), s, false)
+	water_base += status_h
 	# Rival vitals (locked target), top centre, compact.
 	var t := world.get_actor(p.lock_target)
 	if t != null:
@@ -137,6 +166,12 @@ func _draw() -> void:
 		_bar(Vector2(cx - 64 * s, y + row), 128 * s, t.balance / Sim.BALANCE_MAX, Color(0.75, 0.82, 0.92), 0.7)
 		var name_base := y + 28 * s + grow_bar + (fs_name - int(12 * s)) * 0.75
 		draw_string(_font, Vector2(cx - 80 * s, name_base), t.name, HORIZONTAL_ALIGNMENT_CENTER, 160 * s, fs_name, Color(1, 1, 1, 0.7))
+		if not t.status.is_empty():
+			_draw_statuses(t, Vector2(cx - 80 * s, name_base + 5 * s), s, true)
+	if lab_status != "":
+		var lx := sr.get_center().x
+		draw_string(_font, Vector2(lx - 90 * s, y + 52 * s + grow_bar + grow_stat), lab_status, HORIZONTAL_ALIGNMENT_CENTER, 180 * s, fs_stat, Color(1.0, 0.85, 0.45, 0.95))
+	_draw_charge_bar(p, sr, s)
 	# Objective + challenge.
 	var obj_base := sr.end.y - 10 * s
 	if objective != "":
@@ -152,6 +187,8 @@ func _draw() -> void:
 			col.a *= GameSettings.current().flashes
 			draw_rect(get_viewport_rect(), col)
 	_threat_arrows(sr, s)
+	if lab_overlay:
+		_lab_overlay(s)
 	if show_debug:
 		_timing_bars(s)
 		var dy := water_base + 16 * s
@@ -215,3 +252,119 @@ func _threat_arrows(sr: Rect2, s: float) -> void:
 		var tip := edge + v * 14 * s
 		var side := Vector2(-v.y, v.x) * 9 * s
 		draw_colored_polygon(PackedVector2Array([tip, edge + side, edge - side]), col)
+
+
+# ================================================================ status icons, charge bar, Lab overlay
+
+## Short code, colour and display name of every status (docs/MOVESET.md section 15.8).
+const STATUS_STYLE := {
+	"wet": ["WT", Color(0.45, 0.75, 1.0)], "burning": ["BN", Color(1.0, 0.5, 0.25)], "chilled": ["CH", Color(0.7, 0.9, 1.0)],
+	"frozen": ["FZ", Color(0.6, 0.85, 1.0)], "rooted": ["RT", Color(0.5, 0.8, 0.4)], "slowed": ["SL", Color(0.8, 0.8, 0.6)],
+	"muddy": ["MD", Color(0.65, 0.5, 0.35)], "slick": ["SK", Color(0.6, 0.9, 0.95)], "blinded": ["BL", Color(0.85, 0.85, 0.6)],
+	"concealed": ["CN", Color(0.7, 0.75, 0.85)], "deafened": ["DF", Color(0.8, 0.7, 0.9)], "shocked": ["SH", Color(0.95, 0.9, 0.4)],
+	"anchored": ["AN", Color(0.8, 0.7, 0.5)], "armored": ["AR", Color(0.75, 0.78, 0.85)], "levitating": ["LV", Color(0.7, 0.95, 0.9)],
+	"charged": ["CG", Color(1.0, 0.9, 0.5)],
+}
+
+
+## A row of status icons (rounded square, 2-letter code, remaining time as a fill). Returns the height used.
+func _draw_statuses(a: ActorState, origin: Vector2, s: float, centred: bool) -> float:
+	if a.status.is_empty():
+		return 0.0
+	var sz := maxf(16.0 * s, 3.8 * _ppm)
+	var gap := 3.0 * s
+	var names: Array = a.status.keys()
+	names.sort()
+	var total := names.size() * (sz + gap) - gap
+	var x := origin.x
+	if centred:
+		x = origin.x + (160.0 * s - total) * 0.5
+	var fs := maxi(8, int(sz * 0.42))
+	for nm in names:
+		var st: Dictionary = a.status[nm]
+		var sty: Array = STATUS_STYLE.get(nm, [String(nm).substr(0, 2).to_upper(), Color(0.8, 0.8, 0.8)])
+		var col: Color = sty[1]
+		var r := Rect2(Vector2(x, origin.y), Vector2(sz, sz))
+		draw_rect(r, Color(0.04, 0.05, 0.07, 0.55 * _alpha))
+		var t := float(st.get("t", -1.0))
+		if t >= 0.0:
+			var key := "%d/%s" % [a.id, nm]
+			_status_t0[key] = maxf(float(_status_t0.get(key, 0.0)), t)
+			var f := clampf(t / maxf(float(_status_t0[key]), 0.1), 0.0, 1.0)
+			draw_rect(Rect2(Vector2(x, origin.y + sz * (1.0 - f)), Vector2(sz, sz * f)), Color(col.r, col.g, col.b, 0.25 * _alpha))
+		draw_rect(r, Color(col.r, col.g, col.b, 0.9 * _alpha), false, maxf(1.5, sz * 0.07))
+		draw_string(_font, Vector2(x, origin.y + sz * 0.5 + fs * 0.36), sty[0], HORIZONTAL_ALIGNMENT_CENTER, sz, fs, Color(1, 1, 1, 0.95 * _alpha))
+		x += sz + gap
+	return sz + 3.0 * s
+
+
+## The sim's charge tiers (Charge.progress) as three segments with the move name: desktop / pad players
+## have no ring on a button, touch players get both.
+func _draw_charge_bar(p: ActorState, sr: Rect2, s: float) -> void:
+	var inst := p.action
+	if inst == null or not (inst.phase == ActionInst.P.CHARGE or inst.phase == ActionInst.P.CHANNEL):
+		return
+	var def := Charge.pdef(inst)
+	var mx := Charge.max_tier(def)
+	if mx <= 0:
+		return
+	var pr := Charge.progress(inst)
+	var tier := int(pr.x)
+	var w := maxf(150.0 * s, 28.0 * _ppm)
+	var h := maxf(6.0 * s, 1.2 * _ppm)
+	var x := sr.get_center().x - w * 0.5
+	var y := sr.end.y - 62.0 * s
+	var col := UiStyle.element_color(inst.element)
+	var gap := 4.0 * s
+	var seg := (w - gap * (mx - 1)) / mx
+	for k in mx:
+		var r := Rect2(Vector2(x + k * (seg + gap), y), Vector2(seg, h))
+		draw_rect(r, Color(0, 0, 0, 0.45))
+		var lit := 1.0 if k < tier else (pr.y if k == tier else 0.0)
+		if lit > 0.0:
+			draw_rect(Rect2(r.position, Vector2(seg * lit, h)), Color(col.r, col.g, col.b, 0.95))
+		draw_rect(r, Color(1, 1, 1, 0.35), false, 1.0)
+	var names := String(def.get("name", inst.id)).split(" / ")
+	var nm: String = names[clampi(tier, 0, names.size() - 1)]
+	var fs := _fs(12, TEXT_MM)
+	draw_string_outline(_font, Vector2(x, y - 4 * s), "%s  T%d" % [nm, tier], HORIZONTAL_ALIGNMENT_CENTER, w, fs, maxi(2, fs / 6), Color(0, 0, 0, 0.6))
+	draw_string(_font, Vector2(x, y - 4 * s), "%s  T%d" % [nm, tier], HORIZONTAL_ALIGNMENT_CENTER, w, fs, Color(1, 1, 1, 0.95))
+
+
+## Lab overlay: every live body (id, tag, mass, temperature, power), zone radii, actor action / status.
+func _lab_overlay(s: float) -> void:
+	if cam == null:
+		return
+	var fs := maxi(10, int(10 * s))
+	for b in world.bodies:
+		if not b.alive or b.form == Sim.Form.POOL:
+			continue
+		var sp: Variant = cam.world_to_screen(b.pos + Vector3(0, 0.3, 0))
+		if sp == null:
+			continue
+		var col := Color(0.6, 1.0, 0.7, 0.85)
+		if b.form == Sim.Form.ZONE or b.zone_radius > 0.0:
+			col = Color(0.7, 0.8, 1.0, 0.85)
+			var edge: Variant = cam.world_to_screen(b.pos + cam.forward_flat().cross(Vector3.UP) * maxf(b.zone_radius, 0.2))
+			if edge != null:
+				var rad := (edge as Vector2).distance_to(sp as Vector2)
+				draw_arc(sp as Vector2, rad, 0.0, TAU, 40, Color(col, 0.5), maxf(1.5, s), true)
+		elif b.is_hot():
+			col = Color(1.0, 0.65, 0.4, 0.9)
+		var txt := "#%d %s%s %.0fkg %.0fC" % [b.id, Sim.MAT_NAMES[b.mat], ("[%s]" % b.tag) if b.tag != &"" else "", b.mass, b.temp]
+		if b.power > 0.0:
+			txt += " P%.0f" % b.power
+		if b.tier > 0:
+			txt += " T%d" % b.tier
+		draw_circle(sp as Vector2, 3.0 * s, col)
+		draw_string_outline(_font, (sp as Vector2) + Vector2(6 * s, -4 * s), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(2, fs / 5), Color(0, 0, 0, 0.7))
+		draw_string(_font, (sp as Vector2) + Vector2(6 * s, -4 * s), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+	for a in world.actors:
+		var ap: Variant = cam.world_to_screen(a.pos + Vector3(0, 2.4, 0))
+		if ap == null:
+			continue
+		var act := "-" if a.action == null else "%s/%s" % [a.action.id, a.action.phase_name()]
+		var st := " ".join(PackedStringArray(a.status.keys()))
+		var line := "%s %s%s" % [a.name, act, (" [" + st + "]") if st != "" else ""]
+		draw_string_outline(_font, (ap as Vector2) + Vector2(-60 * s, 0), line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(2, fs / 5), Color(0, 0, 0, 0.7))
+		draw_string(_font, (ap as Vector2) + Vector2(-60 * s, 0), line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 0.8, 0.9))

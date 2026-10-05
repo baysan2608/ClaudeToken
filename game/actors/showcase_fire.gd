@@ -10,7 +10,10 @@ extends RefCounted
 ##   heat draw: pull the heat back out until the lava sets into rock (reserve fills) ->
 ##   vent the reserve -> run to the pool ->
 ##   lightning: hold attack until it crackles (aim line), release at a target standing in
-##   the pool: the bolt conducts through the water into the other target -> a second bolt.
+##   the pool: the bolt conducts through the water into the other target -> a second bolt ->
+##   (moveset, sub 0 Flame) Fire Column (hold 1.4 s) leaves a burning field -> Fireball (flick up) -> Fire Line
+##   (flick down) -> Fire Fan (flick side) -> SCORCH: a stone wall in front, hold the technique: its face slumps.
+## The other sub-elements have their own showcases: showcase_fire_blue / _lightning / _combustion.
 
 const THERMAL_SPOT := Vector3(0.3, 0.0, 2.7)     # start; the thermal beats happen here
 const POOL_SPOT := Vector3(4.4, 0.0, 2.6)        # the lightning beats happen here
@@ -205,6 +208,43 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 			if bt > 1.8 and bt < 1.9:
 				_shot = "bolt2"
 			if bt >= 3.4:
+				p.kit.erase("lightning")   # the moveset Flame: long holds grow into Fire Column / Inferno
+				_want_target = FLARE_T
+				_cam_yaw = _yaw_to(p.pos, w.get_actor(FLARE_T).pos) + 0.5
+				_go("column", t)
+		# ---------------------------------------------------------------- moveset Flame
+		"column":
+			_hold_attack(f, bt - 0.4, 1.5)
+			if bt > 2.0 and bt < 2.1:
+				_shot = "fire_column"
+			if bt >= 2.8:
+				_go("fireball", t)
+		"fireball":
+			_gesture_attack(f, bt - 0.1, Sim.Gesture.UP)
+			if bt > 0.6 and bt < 0.7:
+				_shot = "fireball"
+			if bt >= 1.4:
+				_go("fireline", t)
+		"fireline":
+			_gesture_attack(f, bt - 0.1, Sim.Gesture.DOWN)
+			if bt > 0.8 and bt < 0.9:
+				_shot = "fire_line"
+			if bt >= 1.8:
+				_go("fan", t)
+		"fan":
+			_gesture_attack(f, bt - 0.1, Sim.Gesture.SIDE)
+			if bt > 0.35 and bt < 0.45:
+				_shot = "fire_fan"
+			if bt >= 1.3:
+				_spawn_wall(g)
+				_go("scorch", t)
+		"scorch":
+			f.tech_held = bt > 0.3 and bt < 2.2
+			f.tech_pressed = bt > 0.3 and bt < 0.3 + Sim.DT * 1.5
+			f.tech_released = bt >= 2.2 and bt < 2.2 + Sim.DT * 1.5
+			if bt > 1.75 and bt < 1.85:
+				_shot = "scorch_slump"
+			if bt >= 3.0:
 				_go("end", t)
 		"end":
 			pass
@@ -213,6 +253,37 @@ func frame(g: Game, f: InputFrame, t: float) -> void:
 	_steer_cam(g, f)
 	if _trace:
 		_trace_tick(g, t)
+
+
+## A flick gesture on the attack button (desktop: press + gesture on one tick).
+func _gesture_attack(f: InputFrame, bt: float, g: int) -> void:
+	if bt < 0.0:
+		return
+	if bt < Sim.DT * 1.5:
+		f.attack_pressed = true
+		f.attack_gesture = g
+	f.attack_held = bt < 0.05
+	f.attack_released = bt >= 0.05 and bt < 0.05 + Sim.DT * 1.5
+
+
+## The SCORCH beat: a Bulwark (booked from the ground) 3 m in front of the player, toward the flare target.
+func _spawn_wall(g: Game) -> void:
+	var w := g.world
+	var p := g.player
+	var d := w.get_actor(FLARE_T).pos - p.pos
+	d.y = 0.0
+	d = d.normalized()
+	var at := p.pos + d * 3.0
+	at.y = w.arena.ground_height(at.x, at.z, p.pos.y + 0.5)
+	var b := w.spawn_body(Sim.Mat.STONE, Sim.Form.WALL, Sim.WALL_MASS, at, "ground@showcase")
+	w.mass_ledger.ground_taken += Sim.WALL_MASS
+	b.wall_yaw = atan2(d.x, d.z)
+	b.wall_half = Vector3(1.1, 0.75, 0.28)
+	b.static_body = true
+	b.props["standing"] = 8.0
+	b.props["rise_time"] = 0.25
+	b.touch(w.get_actor(FLARE_T).id, "wall", w.tick)
+	w.emit("wall", {"actor": FLARE_T, "body": b.id})
 
 
 ## A vent aim with nothing to work in it (no stone, lava or loose water): away from the rock.

@@ -494,5 +494,437 @@
     "suggested_volume_db": -8.5,
     "max_voices": 1,
     "notes": "Quiet courtyard bed: distant airy wind and soft leaf-rustle air, very low level (-18 dBFS peak) (loop 3.0 s)."
+  },
+  "metal_clang": {
+    "category": "metal",
+    "loop": false,
+    "duration_s": 0.812,
+    "suggested_volume_db": -3.0,
+    "max_voices": 3,
+    "notes": "Struck metal: sharp tink, inharmonic bar ring (ratios 1/2.76/5.4/8.9) with a detuned shimmer. Bright and metallic, unlike the harmonic glassy deflect ping."
+  },
+  "metal_scrape": {
+    "category": "metal",
+    "loop": false,
+    "duration_s": 0.75,
+    "suggested_volume_db": -7.0,
+    "max_voices": 2,
+    "notes": "Blade on plate: stick-slip grind in the 1.2-5 kHz band over a ringing, wandering squeal."
+  },
+  "disc_whirr_loop": {
+    "category": "metal",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -16.5,
+    "max_voices": 2,
+    "notes": "Spinning disc: blade-pass buzz (11 Hz) on a 540 Hz harmonic stack with air and a high ring (loop 2.0 s)."
+  },
+  "magnet_hum_loop": {
+    "category": "metal",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -19.5,
+    "max_voices": 1,
+    "notes": "Magnetic field: 147 Hz mains-style hum with a slow 1.5 Hz beat, strong 2nd-6th harmonics (phone-safe) and a faint mid band (loop 2.0 s)."
+  },
+  "metal_recall": {
+    "category": "metal",
+    "loop": false,
+    "duration_s": 0.688,
+    "suggested_volume_db": -6.0,
+    "max_voices": 2,
+    "notes": "Metal called back to the hand: rising metallic zip with a shimmering tone and a small clink on arrival."
+  },
+  "rod_hum_loop": {
+    "category": "metal",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -22.0,
+    "max_voices": 2,
+    "notes": "Resonant rod: pure 587.5 Hz tone with vibrato, a detuned beating twin and thin high shimmer (loop 2.0 s)."
+  },
+  "sand_hiss": {
+    "category": "sand",
+    "loop": false,
+    "duration_s": 0.792,
+    "suggested_volume_db": -9.0,
+    "max_voices": 2,
+    "notes": "Sand pouring: dry bright hiss (3.5-5 kHz) with a grain tick scatter."
+  },
+  "sand_burst": {
+    "category": "sand",
+    "loop": false,
+    "duration_s": 0.423,
+    "suggested_volume_db": -3.0,
+    "max_voices": 3,
+    "notes": "Sand blast: wide dry noise puff that darkens quickly, a spray of grains and a soft pressure thump."
+  },
+  "sand_surge_loop": {
+    "category": "sand",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -16.5,
+    "max_voices": 2,
+    "notes": "Sand stream rushing: dense grain wash with slow surges (loop 2.0 s)."
+  },
+  "sandstorm_loop": {
+    "category": "sand",
+    "loop": true,
+    "duration_s": 3.0,
+    "suggested_volume_db": -15.5,
+    "max_voices": 1,
+    "notes": "Sandstorm: wide howling wind with wandering formants, driving grit and a low roar; slow gusts (loop 3.0 s)."
+  },
+  "quicksand_loop": {
+    "category": "sand",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -17.0,
+    "max_voices": 1,
+    "notes": "Quicksand: hollow suction gurgle, slow sucking sweeps, wet gulps and a little grit (loop 2.0 s)."
+  },
+  "glass_fuse": {
+    "category": "sand",
+    "loop": false,
+    "duration_s": 1.1,
+    "suggested_volume_db": -7.0,
+    "max_voices": 2,
+    "notes": "Sand fusing to glass: accelerating grain ticks, a rising crystalline shimmer and a bright glassy ring as it sets."
+  },
+  "glass_shatter": {
+    "category": "sand",
+    "loop": false,
+    "duration_s": 0.877,
+    "suggested_volume_db": 0.0,
+    "max_voices": 3,
+    "notes": "Glass breaking: sharp bright crack and a shower of pitched shards (2.5-9.5 kHz) with sparse chimes. No body knock, which separates it from ice_shatter."
+  },
+  "magma_glob": {
+    "category": "magma",
+    "loop": false,
+    "duration_s": 0.383,
+    "suggested_volume_db": -6.5,
+    "max_voices": 3,
+    "notes": "Molten blob: wet slap, a viscous low-mid bloop that sags in pitch, and a quick sizzle."
+  },
+  "magma_surge": {
+    "category": "magma",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -2.5,
+    "max_voices": 2,
+    "notes": "Magma surging: dark roar swelling upward with a heavy thump, thick bubbles and crackle."
+  },
+  "obsidian_set": {
+    "category": "magma",
+    "loop": false,
+    "duration_s": 0.648,
+    "suggested_volume_db": -7.5,
+    "max_voices": 2,
+    "notes": "Lava setting to black glass: dwindling resonant ticks and a dark glassy ring (single fall, fewer shards than glass_shatter)."
+  },
+  "lava_hiss_quench": {
+    "category": "magma",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -4.5,
+    "max_voices": 2,
+    "notes": "Lava hit by water: big hiss burst with a sputter of low pops, a dull thump and a crackle tail (steam_jet is cleaner, higher and has no pops)."
+  },
+  "wave_rush_loop": {
+    "category": "water",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -12.5,
+    "max_voices": 2,
+    "notes": "Tidal wave rushing: broad churning water with slow surges, foam top and a weighty low band (loop 2.0 s)."
+  },
+  "water_jet_loop": {
+    "category": "water",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -14.5,
+    "max_voices": 2,
+    "notes": "Pressurised water jet: tight steady 2.5-9 kHz hiss with a narrow resonant band and a light flutter (loop 2.0 s)."
+  },
+  "ice_wall_raise": {
+    "category": "ice",
+    "loop": false,
+    "duration_s": 1.1,
+    "suggested_volume_db": -4.0,
+    "max_voices": 2,
+    "notes": "Ice wall growing: rising stream of crystal ticks, a creaking resonance, then a solid thunk and glassy ring."
+  },
+  "ice_crack": {
+    "category": "ice",
+    "loop": false,
+    "duration_s": 0.313,
+    "suggested_volume_db": -0.5,
+    "max_voices": 3,
+    "notes": "Ice cracking: sharp crack with a falling resonant chirp, then two smaller dwindling cracks."
+  },
+  "ice_slide_loop": {
+    "category": "ice",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -16.5,
+    "max_voices": 1,
+    "notes": "Sliding on ice: smooth silky hiss, a squeaking resonance that drifts, and sparse scrape ticks (loop 2.0 s)."
+  },
+  "frost_hiss": {
+    "category": "ice",
+    "loop": false,
+    "duration_s": 0.797,
+    "suggested_volume_db": -10.5,
+    "max_voices": 2,
+    "notes": "Frost forming: cold 5.5-12 kHz hiss with twinkling sparkles; colder and thinner than steam_hiss."
+  },
+  "mist_loop": {
+    "category": "mist",
+    "loop": true,
+    "duration_s": 3.0,
+    "suggested_volume_db": -23.5,
+    "max_voices": 1,
+    "notes": "Fog bank: soft diffuse hush, slowly drifting; very quiet shimmering top and rare tiny droplets (loop 3.0 s)."
+  },
+  "steam_jet": {
+    "category": "mist",
+    "loop": false,
+    "duration_s": 0.9,
+    "suggested_volume_db": -5.5,
+    "max_voices": 3,
+    "notes": "Hard steam jet: sharp-onset 1.8-8 kHz hiss with fast flutter and a tiny pressure pop; cleaner and brighter than lava_hiss_quench."
+  },
+  "geyser": {
+    "category": "water",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": -2.0,
+    "max_voices": 2,
+    "notes": "Geyser: rising rumble, a sudden roaring water column, a splash and falling droplets with steam."
+  },
+  "vine_creak": {
+    "category": "plant",
+    "loop": false,
+    "duration_s": 0.8,
+    "suggested_volume_db": -6.5,
+    "max_voices": 2,
+    "notes": "Vine straining: slow stick-slip woody creak (pulse train through a drifting ~600 Hz formant) with small fibre ticks."
+  },
+  "vine_snap": {
+    "category": "plant",
+    "loop": false,
+    "duration_s": 0.169,
+    "suggested_volume_db": 0.0,
+    "max_voices": 3,
+    "notes": "Vine snapping: sharp woody crack, a brief twang and a fibrous tear."
+  },
+  "vine_burn": {
+    "category": "plant",
+    "loop": false,
+    "duration_s": 1.0,
+    "suggested_volume_db": -9.0,
+    "max_voices": 2,
+    "notes": "Green vine burning: wet sizzle and steam hiss with popping sap and crackle."
+  },
+  "fireball_whoosh": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 0.878,
+    "suggested_volume_db": -3.5,
+    "max_voices": 3,
+    "notes": "Fireball passing: roaring whoosh that swells and falls with a low-mid body and crackle in its wake."
+  },
+  "fire_field_loop": {
+    "category": "fire",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -17.5,
+    "max_voices": 2,
+    "notes": "Burning ground: dense crackle over a low breathing roar and faint hiss (loop 2.0 s)."
+  },
+  "blue_roar_loop": {
+    "category": "fire",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -14.5,
+    "max_voices": 1,
+    "notes": "Blue flame: smooth turbine-like jet hiss with a resonant 2.2 kHz ring, a faint 1.65 kHz whine and almost no crackle (loop 2.0 s)."
+  },
+  "blue_ignite": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 0.65,
+    "suggested_volume_db": -5.0,
+    "max_voices": 3,
+    "notes": "Blue flame lighting: spark tick, a tight gas 'fwoomp' and a rising whine that settles into a jet hiss."
+  },
+  "spark_snap": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 0.149,
+    "suggested_volume_db": -3.5,
+    "max_voices": 4,
+    "notes": "Tiny electric snap: a sharp dry click with a fast falling zap and one or two after-ticks."
+  },
+  "thunderclap": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": 0.0,
+    "max_voices": 2,
+    "notes": "Thunderclap: broadband rip then a heavy boom that rolls away in echoing rumbles. No zap or buzz tail, which separates it from lightning_strike."
+  },
+  "static_crackle_loop": {
+    "category": "fire",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -20.0,
+    "max_voices": 1,
+    "notes": "Static charge field: sparse dry sparks and snaps with a faint high hiss and no tonal hum (loop 2.0 s)."
+  },
+  "explosion_small": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 0.692,
+    "suggested_volume_db": -3.5,
+    "max_voices": 3,
+    "notes": "Small explosion: short sharp bang, tight thump and a handful of fragments."
+  },
+  "explosion_large": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 1.2,
+    "suggested_volume_db": 0.0,
+    "max_voices": 2,
+    "notes": "Large explosion: a deep long boom, a long rolling rumble and a dense debris shower; scale (length, weight, level) grows with tier."
+  },
+  "fuse_tick": {
+    "category": "fire",
+    "loop": false,
+    "duration_s": 0.22,
+    "suggested_volume_db": -12.5,
+    "max_voices": 4,
+    "notes": "Burning fuse: a woody tick over a short sizzle; repeat for a countdown."
+  },
+  "crescent_whoosh": {
+    "category": "air",
+    "loop": false,
+    "duration_s": 0.493,
+    "suggested_volume_db": -7.0,
+    "max_voices": 3,
+    "notes": "Blade of air: a thin, fast, high band sweep (1.4-5 kHz) with a singing edge tone."
+  },
+  "tornado_loop": {
+    "category": "air",
+    "loop": true,
+    "duration_s": 3.0,
+    "suggested_volume_db": -15.0,
+    "max_voices": 1,
+    "notes": "Tornado: two wandering howl formants rotating once per second over a low roar, debris ticks and a wide mid wash (loop 3.0 s)."
+  },
+  "vacuum_implode": {
+    "category": "air",
+    "loop": false,
+    "duration_s": 0.903,
+    "suggested_volume_db": -5.0,
+    "max_voices": 2,
+    "notes": "Air collapsing inward: a falling, ever louder suction sweep that ends in a sudden pop and a hollow breath."
+  },
+  "vacuum_loop": {
+    "category": "air",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -16.0,
+    "max_voices": 1,
+    "notes": "Vacuum pocket: a hollow, endlessly falling Shepard glide under a dull 200-1400 Hz breath; feels like absence (loop 2.0 s)."
+  },
+  "sonic_boom": {
+    "category": "air",
+    "loop": false,
+    "duration_s": 0.967,
+    "suggested_volume_db": 0.0,
+    "max_voices": 2,
+    "notes": "Sonic boom: two crisp shock cracks 35 ms apart, a hard pressure thump and a falling airy wash; dry and short (thunderclap rolls, this does not)."
+  },
+  "roar_wave": {
+    "category": "air",
+    "loop": false,
+    "duration_s": 1.15,
+    "suggested_volume_db": -3.0,
+    "max_voices": 2,
+    "notes": "Roar wave: a rough falling 190-85 Hz voice-like buzz opened by sweeping vowel formants, with breath noise and a heavy front."
+  },
+  "echo_ping": {
+    "category": "air",
+    "loop": false,
+    "duration_s": 0.802,
+    "suggested_volume_db": -8.0,
+    "max_voices": 2,
+    "notes": "Sonar ping: a soft A5 sine ping repeated as three ever darker, quieter echoes (single plain ping, unlike the glassy deflect ring)."
+  },
+  "flight_loop": {
+    "category": "air",
+    "loop": true,
+    "duration_s": 2.0,
+    "suggested_volume_db": -13.5,
+    "max_voices": 1,
+    "notes": "Sustained flight: steady rushing wind with a wandering mid band, thin whistle and gentle flutter; fuller than glide_loop (loop 2.0 s)."
+  },
+  "charge_t1": {
+    "category": "system",
+    "loop": false,
+    "duration_s": 0.348,
+    "suggested_volume_db": -11.0,
+    "max_voices": 2,
+    "notes": "Charge tier 1: one small rising D5 pluck with a faint airy sweep."
+  },
+  "charge_t2": {
+    "category": "system",
+    "loop": false,
+    "duration_s": 0.528,
+    "suggested_volume_db": -6.5,
+    "max_voices": 2,
+    "notes": "Charge tier 2: rising D5 to A5 pair over a held fifth, brighter and longer."
+  },
+  "charge_t3": {
+    "category": "system",
+    "loop": false,
+    "duration_s": 0.832,
+    "suggested_volume_db": -5.0,
+    "max_voices": 2,
+    "notes": "Charge tier 3 (full): fast D5-A5-D6 arpeggio into a bell chord with sparkle and a low weight pulse."
+  },
+  "counter_success": {
+    "category": "system",
+    "loop": false,
+    "duration_s": 0.997,
+    "suggested_volume_db": -2.0,
+    "max_voices": 2,
+    "notes": "Counter landed: a solid catch thump, then a warm rising D-major bell chord (D5-F#5-A5) over an upward sweep. A chord, so it can never be confused with the single deflect ping or the dull block thud."
+  },
+  "counter_fail": {
+    "category": "system",
+    "loop": false,
+    "duration_s": 0.7,
+    "suggested_volume_db": -5.0,
+    "max_voices": 2,
+    "notes": "Counter failed: a heavy muffled thump, a falling saturated buzz and a sinking noise wash. No ring, no bell; darker and harsher than challenge_fail."
+  },
+  "clash_solid": {
+    "category": "system",
+    "loop": false,
+    "duration_s": 0.373,
+    "suggested_volume_db": -2.0,
+    "max_voices": 3,
+    "notes": "Two solid bodies meeting: a hard crack, a heavy thock, a short dead stone ring and a bounce echo; harder and cracklier than block."
+  },
+  "clash_energy": {
+    "category": "system",
+    "loop": false,
+    "duration_s": 0.573,
+    "suggested_volume_db": -2.0,
+    "max_voices": 3,
+    "notes": "Two energies colliding: a bright noise flash, a fast falling zap, crackle and a shimmering pressure thump; sizzly and unpitched compared with clash_solid."
   }
 }

@@ -132,6 +132,90 @@ One-shot effects release themselves when done; persistent views (stone, wall, wa
 | dust_puff / steam / splash / ember | ... | 8 / 6 / 6 / 4 |
 | scorch_decal | ScorchDecal | 8 |
 
+## Moveset layer (docs/MOVESET.md §10-§12, §15.6)
+
+Persistent visuals come from **body state** (BodyViews), one-shot cues from **events** (FxDirector -> FxCues),
+feel (hit-stop, camera) from the §10.2 table, and new moves animate through MoveAnimBridge. New shaders live in
+`presentation/vfx/shaders/` (`fx_lib.gdshaderinc` shared helpers); `VfxMaterials.make_fx(name)` binds the shared noise.
+Colours: `VfxPalette` (one per material family, also per element/sub). Lite path (`VfxMaterials.lite()`, quality 0):
+no screen reads (vacuum shells drop the refraction), fewer cloud puffs / flames / shards / particles.
+
+### Body -> view map (BodyViews)
+| body (mat / form / tag) | view | driven by |
+|---|---|---|
+| stone CHUNK (spear rubble crag block glob bomb ember) | StoneView (spear stretched point-first, others tumble from velocity: axis up x v, rate v / r) | heat, liquid (melt), crust |
+| stone WALL `obsidian` / sand WALL / `mud` | EarthWallView + `set_material_style` (obsidian black glass, sandstone, mud) | rise, damage |
+| stone / ice / glass `spikes`, WAVE `spike_line` | SpikesView (row / ring / path, 1 MultiMesh) | rise, heat |
+| stone WAVE `tremor`, air `tremor` | travelling ground rings (RingFX one-shots) + dust | position |
+| metal (disc lance rod plate orb), WALL plate, ZONE `caltrops` | MetalView (disc spin + blur ring, red-hot heat, caltrop MultiMesh) | spin, heat, velocity |
+| sand CHUNK `slug` | CloudView `slug` (dense ochre puffs, trailing) | radius, velocity |
+| sand WAVE `sand_surge`, water WAVE `water_wave` / `rime`, mud | GroundStripView (lava strip geometry; water translucent with foam lip, sand granular, rime frosted) | path, liquid, crust (water wave freezes in place) |
+| ZONE fog mist steam sand_cloud sandstorm steam_screen geyser, steam CLOUD, `dust_line` | CloudView (2 camera-facing puff layers, vertex-animated) | zone_radius, age / max_life fade, mass |
+| ZONE quicksand ice_floor mud melt_pit | GroundDecalView (swirl, glossy ice, wet mud, glowing pit) | fade, power |
+| ZONE lava_pool | LavaWaveView (short wide strip, same lava material) | liquid / life |
+| glass / ice WALL (`glass`, `ice`, `ridge`), `needle` shards | CrystalView (faceted, edge-lit, transparent) | heat (molten glass), damage (cracks), rise |
+| plant WALL `vine` / WAVE `roots` / ZONE `briar` / lash | VineView (all tubes one mesh; growth by uniform; burns, freezes) | rise / life, temp, phase |
+| fire CHUNK fireball / comet / ember | FireballView (hot core + trailing tongues, blue for comets) | velocity, tier, heat_payload |
+| fire WAVE `fire_line`, ZONE `fire_field` (+ `blue`) | FlameFieldView (flame tongues MultiMesh) | path, life, power |
+| fire `mine` / `bomb`, ZONE mine fuse corona static_field null_bubble vacuum_well wind_guard sound_barrier | ShellView (fresnel shell; vacuum styles refract the opaque screen unless lite; well adds a spiral inflow; static field adds arcs) | zone_radius, tier, life |
+| WAVE `ground_current` | CrackleView (arcs crawl back from the front) | path, power |
+| any body with charge > 4 | + CrackleView overlay | charge |
+| air `crescent`, `wind_wall` | WindBladeView (arc blade / curved sheet with speed streaks) | velocity, tier |
+| air `twister funnel spiral`, ZONE `tornado eddy vortex_wall` | VortexView (2 funnel layers + orbiting debris; sand / fire / water / steam infusion tints from `props.infused`) | spin, zone_radius, life |
+
+Continuities: stone -> lava -> rock (one rock material), water -> ice (strip / blob / ribbon `frozen`) -> steam (cloud),
+sand -> glass (sandstone wall -> crystal wall, slug -> shard; `convert` / `transform` cue with zoom), magma -> obsidian.
+
+### Cues (FxDirector / FxCues)
+* `fx`: cast (element ring at the hands), release (material burst + sound), cone (flame / blue FireBurstFX, wind / sand
+  AirPushFX, water splash, steam, frost, sound rings, vacuum inflow, lightning arc), beam (lightning path / skybreak `down`,
+  BeamFX blue needle, flame, sand, water, sound, vacuum), burst (BlastFX, shards, puffs, rings), ring, erupt, trail, splash,
+  aura (stance / guard shell on/off).
+* `interaction`: the §11.3 outcome cues (block puff in the threat material, deflect ring + spark streak, reclaim grip glow,
+  absorb inward swirl, transform puff by `to`, shards, sink, arcs to ground / conductor, smoke, flare-up, small versions for
+  weaken / bend / slow, the counter's own break effect on overwhelm); perfect = flash (flashes setting) + `counter_success`.
+  Stingers <= 1 per 0.1 s.
+* `charge`: ChargeFX (T1 hand ring, T2 + ground ripple, T3 + aura shell, light pulse, 2-frame glint) + `charge_t1..3`.
+* `status`: burning (flames on the body), wet (drips), chilled / frozen (frost shell), shocked / charged (crackle), blinded
+  (grit), rooted (vines), concealed (mist veil), anchored (dust ring), armored (aura), muddy, levitating, deafened.
+* `zone` open / close puffs and rings; zone and body loops (`sandstorm_loop`, `tornado_loop`, `disc_whirr_loop` ...).
+* `clash`, `morph`, `chain`, `weave`, `counter_cancel`, `slump`, `convert`, `capture`, `ricochet`, `stance`, `mode`.
+
+### Game feel (§10.2)
+`FxDirector.feel(kind, pos, dir, haptic_actor)`: hit-stop frames (T0 3 / T1 5 / T2 7 / T3 & knockdown 9 / block 2-4 /
+perfect 6 / clash 4 / shatter 3 / explosion 5) as `Engine.time_scale = 0.05` for N rendered frames, never more than 12
+frozen frames per rolling second, merged with the slow-mo assist (min of both). CameraRig runs in real time:
+`shake_at` (falloff 1 / (1 + d / 8), per-shake decay), `kick` (0.1 m along the hit, 0.2 s), `fov_punch` (-3 deg, 0.25 s,
+T3), `zoom_to` (3 % toward the event, 0.3 s: molten, rock, ice, slump, glass). Reduced motion: shake x0.3, no kick /
+FOV punch / zoom, hit-stop <= 3 frames; `flashes` 0 disables the white flashes. Haptics added: clash, shatter, charge,
+counter, boom, zone (one pulse, >= 60 ms apart).
+
+### Animation bridge
+`MoveAnimBridge` (stepped by FxDirector) animates every action FighterView does not (all but the 14 legacy ids) through
+`FighterView.play_one_shot`: `anim` time-scaled so its contact (fighter_clips.json) lands at the end of startup (re-aimed
+from the clip position every frame), `anim_hold` looped with 0.12 s refreshed one-shots while charging / channelling,
+`anim_heavy` / `anim_active` (or the startup clip playing on) after; slot / element fallbacks when a def has no clips.
+Stops when the action ends (last one-shot runs out <= 0.12 s) or on stun.
+
+### Moveset budgets (gallery `mv_cost`, visible pass, one effect alone)
+MV_COST_TABLE
+
+Per effect: <= 2 transparent layers, <= 32 particles per one-shot (BurstFX 16 + 16), shadowless omni lights only
+(FireballView, FlameFieldView, BlastFX 0.1 s, BeamFX blue, ChargeFX T3 pulse: 1 each; crackles never light).
+Kept views grow their pool cap through `BodyViews.acquire` (the sim bounds bodies at 32); one-shots recycle the oldest.
+`VfxPool.prewarm` covers every key plus the second material variants (sand strip, plain shell).
+
+| key | class | cap |
+|---|---|---|
+| cloud / crystal / metal | CloudView / CrystalView / MetalView | 8 / 10 / 12 |
+| ground_strip / vortex / shell / vine | GroundStripView / VortexView / ShellView / VineView | 4 / 3 / 6 / 4 |
+| flame_field / fireball / wind_blade / crackle | FlameFieldView / FireballView / WindBladeView / CrackleView | 4 / 6 / 4 / 4 |
+| ground_decal / spikes / charge | GroundDecalView / SpikesView / ChargeFX | 8 / 4 / 2 |
+| ring / burst / shards / blast / beam | RingFX / BurstFX / ShardsFX / BlastFX / BeamFX | 8 / 8 / 4 / 3 / 3 |
+
+Gallery stations: `mv_earth`, `mv_water`, `mv_fire`, `mv_air` (synthetic sim bodies through the real BodyViews mapping),
+`mv_cues` (one-shots mid-play, charge tiers), `mv_cost` (table above).
+
 ## Arena materials (all procedural, no textures)
 Use `VfxMaterials.arena("arena_ground")` etc. for one shared material per shader, then
 `VfxMaterials.set_arena_wetness(w)` darkens/glosses flagstones, metal and ledge stone together ("global" wetness); duplicate a
@@ -207,6 +291,7 @@ opaque-framebuffer copy triggered once per frame as soon as any visible water/ai
   (`-- stones lava`); flags: `--noshadow`, `--lite`, `--skip=a,b`. `-- cost` prints the draw-call / triangle table.
   Effects are driven with manual time so screenshots are deterministic; the harness waits ~3 s for software-Vulkan pipelines to compile.
 * `tools/scripts/godot.sh --headless -s res://tests/vfx/vfx_smoke_test.gd`: API, determinism, triangle budget, pool cap/recycle/release, prewarm.
+* Moveset stations: `mv_earth mv_water mv_fire mv_air mv_cues`, cost: `-- mv_cost`.
 * Stations: `stones` (heat 0/.5/1, melt .35/.65/1, crust .45/.8/1, cooled rock/blob, seeds), `lava` (crust 0/.5/1, solid ridge, 0.5 m ledge step),
   `water` (whip + orb at frozen 0/.5/1), `particles`, `fire`, `lightning` (+ aim line), `air` (+ glide trail), `wall` (rise, damage, scorch/wet),
   `arena` (flagstones dry/wet, metal, ledge, pool), `hero` (composite).

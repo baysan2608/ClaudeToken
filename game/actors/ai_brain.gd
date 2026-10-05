@@ -38,6 +38,26 @@ var _guard_at := -1.0      # scheduled timed guard press
 var _last_mode := ""
 var debug_state := ""
 
+# ------------------------------------------------------------------ planner mode (docs/AI.md)
+## Difficulty presets (MOVESET §13): AiPresets.TABLE.
+const PRESETS := AiPresets.TABLE
+const DRILLS := ["", "passive", "stone_rain", "seize", "lightning", "matrix", "element:<e>/<sub>"]
+const LEGACY_DRILLS := ["stone_rain", "seize", "lightning"]
+## True once configure() ran: matrix-driven counters and offense. False = the legacy rules exactly.
+var planner := false
+## Preset row (+ overrides) the planner reads: reaction counter misjudge timing_err aggression chain weave punish env tiers.
+var prm := {}
+## Kit the planner uses: {element: [subs]}.
+var kit := {}
+## Last counter decision (debug overlay, Lab, tests): option dict + threat, key, tti, err.
+var last_plan := {}
+var _plan := {}            # counter / offense plan being executed (see _exec_plan)
+var _pending_gesture := 0  # attack gesture sent with a pending (post-switch) press
+var _drill_i := 0
+var _matrix := []          # [[threat class, [moves]], ...] for the "matrix" drill
+var _recent := {}          # move id -> recent use weight (offense variety; decays)
+var _aim_hold := Vector3.ZERO  # explicit aim kept while an attack is held (bank shots)
+
 
 func _init(world: CombatWorld, actor: ActorState, config: Dictionary = {}, seed_value: int = 3) -> void:
 	w = world
@@ -56,15 +76,30 @@ func think(dt: float) -> ActorIntent:
 	if me.stun > 0.0:
 		_hold = ""
 		_pending_press = ""
+		if planner:
+			_plan = {}
+			_guard_at = -1.0
 		debug_state = "stunned"
 		return intent
 	_continue_holds(foe)
+	if planner and _aim_hold != Vector3.ZERO:
+		if _hold == "attack" or (me.action != null and me.action.phase != ActionInst.P.RECOVERY):
+			intent.aim_dir = _aim_hold
+			intent.aim_active = true
+		else:
+			_aim_hold = Vector3.ZERO
+	if planner and not _plan.is_empty():
+		_exec_plan(foe)
 	if _pending_press != "":
 		_press(_pending_press)
+		if _pending_gesture != 0:
+			intent.attack_gesture = _pending_gesture
+			_pending_gesture = 0
 		_pending_press = ""
 		return intent
-	if _guard_at >= 0.0 or _hold != "" or _await_draw >= 0:
-		_react_to_threats(foe, true)   # keep perceiving while busy; decide once free
+	if _guard_at >= 0.0 or _hold != "" or _await_draw >= 0 or not _plan.is_empty():
+		if _react(foe, true):   # keep perceiving while busy; decide once free
+			return intent
 	if _guard_at >= 0.0:
 		if _t >= _guard_at:
 			_press("guard")
@@ -78,6 +113,9 @@ func think(dt: float) -> ActorIntent:
 		# that was estimated to set the lava in time arrive too late.
 		_move_tactical(foe, 0.0 if _hold == "tech" and _hold_draw else 0.3)
 		return intent
+	if not _plan.is_empty():
+		_move_tactical(foe, 0.0 if _plan.get("stage", "") == "tech" else 0.3)
+		return intent
 	if _await_draw >= 0:
 		var wb := w.get_body(_await_draw)
 		if wb == null or not wb.alive or wb.form != Sim.Form.WAVE:
@@ -89,8 +127,10 @@ func think(dt: float) -> ActorIntent:
 		else:
 			if me.element != Sim.Element.FIRE:
 				intent.element_select = Sim.Element.FIRE
+			if planner and me.sub_of(Sim.Element.FIRE) != 0:
+				intent.sub_select = 0
 			return intent
-	if _react_to_threats(foe):
+	if _react(foe):
 		return intent
 	if foe == null:
 		return intent
@@ -99,9 +139,20 @@ func think(dt: float) -> ActorIntent:
 		return intent
 	if _opportunities(foe):
 		return intent
-	_offense(foe)
+	if planner:
+		if _chain(foe) or _interrupt(foe):
+			return intent
+		_offense_planner(foe)
+	else:
+		_offense(foe)
 	_move_tactical(foe, 1.0)
 	return intent
+
+
+func _react(foe: ActorState, stamp_only: bool = false) -> bool:
+	if planner:
+		return _react_planner(foe, stamp_only)
+	return _react_to_threats(foe, stamp_only)
 
 
 # ------------------------------------------------------------------ holds
@@ -181,13 +232,6 @@ func _switch_then(element: int, what: String) -> bool:
 
 
 # ------------------------------------------------------------------ threats
-
-func _perceived(key: String) -> bool:
-	if not _seen.has(key):
-		_seen[key] = _t + rng.randf_range(-0.05, 0.08)
-		return false
-	return _t - float(_seen[key]) >= float(cfg.reaction)
-
 
 func _react_to_threats(foe: ActorState, stamp_only: bool = false) -> bool:
 	## stamp_only: busy (holding) - start the reaction clock on new threats, decide nothing yet.
@@ -376,7 +420,14 @@ func _act_on(decision: String, b: MatBody, tti: float = 1.0) -> bool:
 				intent.element_select = Sim.Element.EARTH
 			# Time the guard press so the stone meets the rising wall inside the perfect window.
 			var wall_lead := (1.25 / maxf(b.vel.length(), 1.0))
-			_guard_at = _t + maxf(0.0, tti - wall_lead - 0.09 - rng.randf_range(0.0, 0.06))
+			if planner:
+				# Perfect-timing error of the preset (uniform ±timing_err around the window centre).
+				var e := float(prm.get("timing_err", 0.05))
+				_guard_at = _t + maxf(0.0, tti - wall_lead - 0.09 + rng.randf_range(-e, e))
+				if me.sub_of(Sim.Element.EARTH) != 0:
+					intent.sub_select = 0
+			else:
+				_guard_at = _t + maxf(0.0, tti - wall_lead - 0.09 - rng.randf_range(0.0, 0.06))
 			return true
 		"block":
 			_press("guard")
@@ -397,7 +448,11 @@ func _start_draw(b: MatBody) -> void:
 	debug_state = "draw"
 	_hold_tech(b.id, 4.0)
 	_hold_draw = true
-	if me.element != Sim.Element.FIRE:
+	if planner and me.sub_of(Sim.Element.FIRE) != 0:
+		intent.element_select = Sim.Element.FIRE
+		intent.sub_select = 0
+		_pending_press = "tech"
+	elif me.element != Sim.Element.FIRE:
 		intent.element_select = Sim.Element.FIRE
 		_pending_press = "tech"
 	else:
@@ -536,6 +591,9 @@ func _move_tactical(foe: ActorState, amount: float) -> void:
 	var want := Vector3.ZERO
 	var lo := 6.5 - 2.0 * float(cfg.aggression)
 	var hi := 11.0 - 2.0 * float(cfg.aggression)
+	if cfg.has("range_lo"):
+		lo = float(cfg.range_lo)
+		hi = float(cfg.range_hi)
 	if dist > hi:
 		want = dir
 	elif dist < lo:
@@ -546,9 +604,28 @@ func _move_tactical(foe: ActorState, amount: float) -> void:
 		_strafe_t = maxf(_strafe_t, 1.2)
 		side = -side
 	want = side if blind else want + side * 0.45
+	if planner and _needs_water() and dist > 4.0:
+		# A water kit with an empty waterskin walks to the pool to refill (wading costs wetness).
+		var a := w.arena
+		var tgt := Vector3(clampf(me.pos.x, a.pool_min.x + 0.6, a.pool_max.x - 0.6), me.pos.y, clampf(me.pos.z, a.pool_min.y + 0.6, a.pool_max.y - 0.6))
+		var to_pool := tgt - me.pos
+		to_pool.y = 0.0
+		if to_pool.length() > 0.2:
+			debug_state = "refill water"
+			intent.move = to_pool.normalized() * amount * 0.9
+			return
 	# Don't wander into the pool unless chasing: steer round it.
 	want = _around_pool(want)
 	intent.move = want.limit_length(1.0) * amount * (0.55 if dist < hi else 0.9)
+
+
+func _needs_water() -> bool:
+	if not kit.has(Sim.Element.WATER) or me.water_carried >= 1.5 or me.in_water:
+		return false
+	for e in kit:
+		if int(e) != Sim.Element.WATER:
+			return false   # another element to fight with: no detour
+	return true
 
 
 func _around_pool(want: Vector3) -> Vector3:
@@ -589,3 +666,614 @@ func _turn_steps(v: Vector3, sense: float, reach: float) -> int:
 		if not _wet(v.rotated(Vector3.UP, sense * k * PI / 12.0), reach):
 			return k
 	return 13
+
+
+# ================================================================== planner mode (docs/AI.md)
+
+## Preset names for the UI ("novice", "adept", "master").
+static func preset_names() -> Array:
+	return AiPresets.names()
+
+
+## Configures the brain for the matrix-driven planner (docs/AI.md "Config API"):
+## {preset, elements, subs, drill, interval, reaction, counter, misjudge, timing_err, aggression, unlock, kit}.
+func configure(opts: Dictionary) -> void:
+	planner = true
+	var pname := String(opts.get("preset", cfg.get("preset", "adept")))
+	prm = AiPresets.get_preset(pname)
+	cfg["preset"] = pname
+	for k in ["reaction", "counter", "aggression", "misjudge", "timing_err"]:
+		cfg[k] = prm[k]
+	for k in opts:
+		if k in ["preset", "elements", "subs", "kit", "unlock"]:
+			continue
+		cfg[k] = opts[k]
+		if prm.has(k):
+			prm[k] = opts[k]
+	var unlock := bool(opts.get("unlock", true))
+	# Kit breadth: explicit elements, else the preset's count starting from the fighter's element.
+	var els: Array = []
+	if opts.has("elements"):
+		for e in opts.elements:
+			if int(e) >= 0 and int(e) < 4 and not els.has(int(e)):
+				els.append(int(e))
+	else:
+		var order: Array = [me.element]
+		for e in 4:
+			if not order.has(e):
+				order.append(e)
+		for e in order:
+			if els.size() >= int(prm.elements):
+				break
+			if unlock or me.elements[e]:
+				els.append(e)
+	var subs_opt: Variant = opts.get("subs", null)
+	kit = {}
+	for e in els:
+		var subs: Array = []
+		if subs_opt is Dictionary and (subs_opt as Dictionary).has(e):
+			subs = (subs_opt[e] as Array).duplicate()
+		elif subs_opt is Dictionary and (subs_opt as Dictionary).has(str(e)):
+			subs = (subs_opt[str(e)] as Array).duplicate()
+		elif subs_opt is Array and (subs_opt as Array).size() > e and subs_opt[e] is Array:
+			subs = (subs_opt[e] as Array).duplicate()
+		else:
+			for s in int(prm.subs):
+				subs.append(s)
+		var clean: Array = []
+		for s in subs:
+			if int(s) >= 0 and int(s) < 4 and not clean.has(int(s)):
+				clean.append(int(s))
+		kit[e] = clean
+	# Drill kits: the drilled element/sub (or every element for the matrix) is part of the kit.
+	var drill := String(cfg.get("drill", ""))
+	var es := AiPresets.parse_element_drill(drill)
+	if es[0] >= 0:
+		if not kit.has(es[0]):
+			kit[es[0]] = []
+		if not (kit[es[0]] as Array).has(es[1]):
+			(kit[es[0]] as Array).append(es[1])
+	if drill == "matrix":
+		_build_matrix()
+	if unlock:
+		var granted := [false, false, false, false]
+		for e in kit:
+			granted[e] = true
+			for s in kit[e]:
+				me.subs_unlocked[e][s] = true
+		if drill == "matrix":
+			granted = [true, true, true, true]
+			for e in 4:
+				for s in 4:
+					me.subs_unlocked[e][s] = true
+		me.elements = granted
+		var k: Dictionary = prm.get("kit", {})
+		for t in k:
+			me.kit[t] = k[t]
+		for t in opts.get("kit", {}):
+			me.kit[t] = opts.kit[t]
+	else:
+		for e in kit.keys():
+			if not me.elements[e]:
+				kit.erase(e)
+			else:
+				var keep: Array = []
+				for s in kit[e]:
+					if me.subs_unlocked[e][s]:
+						keep.append(s)
+				kit[e] = keep
+	var el_list: Array = kit.keys()
+	el_list.sort()
+	cfg["elements"] = el_list
+	if not kit.is_empty() and not kit.has(me.element):
+		intent.element_select = int(el_list[0])
+	_set_ranges()
+	_plan = {}
+	_drill_i = 0
+
+
+## Current configuration (UI / Lab / debug overlay).
+func describe() -> Dictionary:
+	return {"planner": planner, "preset": String(cfg.get("preset", "")), "elements": cfg.get("elements", []),
+		"subs": kit.duplicate(true), "drill": String(cfg.get("drill", "")), "reaction": float(cfg.reaction),
+		"counter": float(cfg.counter), "aggression": float(cfg.aggression),
+		"misjudge": float(cfg.get("misjudge", 0.0)), "timing_err": float(cfg.get("timing_err", 0.0))}
+
+
+## Preferred spacing from the kit's attack ranges (pokes / finishers), shifted by aggression.
+func _set_ranges() -> void:
+	var mids: Array = []
+	for c in AiPlanner.kit_moves(kit, AiPlanner.OFFENSE_SLOTS):
+		var ai: Dictionary = Moves.DEFS[c.id].get("ai", {})
+		if String(ai.get("role", "")) in ["poke", "finisher", "zone"]:
+			var r: Array = ai.get("range", [2.0, 8.0])
+			mids.append(clampf((float(r[0]) + float(r[1])) * 0.5, 3.0, 10.0))
+	var pref := 7.5
+	if not mids.is_empty():
+		mids.sort()
+		pref = float(mids[mids.size() / 2])
+	var ag := float(cfg.aggression)
+	cfg["range_lo"] = clampf(pref - 1.5 - 1.5 * ag, 2.5, 9.0)
+	cfg["range_hi"] = clampf(pref + 3.0 - 1.5 * ag, 5.0, 13.0)
+
+
+func _planner_params() -> Dictionary:
+	var p := prm.duplicate()
+	for k in ["reaction", "counter", "aggression", "misjudge", "timing_err"]:
+		p[k] = float(cfg.get(k, p.get(k, 0.0)))
+	p["draw_ok"] = Callable(self, "_draw_sets_in_time")
+	p["recent"] = _recent
+	return p
+
+
+# ------------------------------------------------------------------ perception + counter decisions
+
+func _react_planner(foe: ActorState, stamp_only: bool) -> bool:
+	# The foe's pour wind-up is the wave's telegraph (the wave is the same body).
+	if foe != null and foe.action != null and foe.action.id == "pour" and foe.held_body >= 0:
+		var pk := "pour%d" % foe.action.attack_id
+		_perceived(pk)
+		_pour_body = foe.held_body
+		_pour_seen = _seen[pk]
+	var best := {}
+	for b in w.bodies:
+		if not b.alive or b.controller >= 0:
+			continue
+		if b.attack_id == 0 and b.form != Sim.Form.ZONE and b.form != Sim.Form.CLOUD:
+			continue
+		var th := AiPlanner.body_threat(w, me, b)
+		if th.is_empty():
+			continue
+		var key := String(th.key)
+		if b.form == Sim.Form.WAVE and b.id == _pour_body:
+			_pour_body = -1
+			if not _seen.has(key):
+				_seen[key] = _pour_seen
+		if not _perceived(key) or _decided.has(key):
+			continue
+		if best.is_empty() or float(th.tti) < float(best.tti):
+			best = th
+	if foe != null and (not Status.hidden(foe) or foe.pos.distance_to(me.pos) < 2.0):
+		var vt := AiPlanner.action_threat(w, me, foe)
+		if not vt.is_empty() and _perceived(String(vt.key)) and not _decided.has(String(vt.key)):
+			if best.is_empty() or float(vt.tti) < float(best.tti):
+				best = vt
+	if _seen.size() > 64:
+		for k in _seen.keys():
+			if _t - float(_seen[k]) > 8.0:
+				_seen.erase(k)
+				_decided.erase(k)
+	if best.is_empty():
+		return false
+	if stamp_only:
+		# Busy. An open-ended charge / channel of ours is dropped for an imminent threat (guard and
+		# evade cancel charges); otherwise only a waiting (not yet pressed) plan gives way to a more
+		# urgent threat.
+		var act := me.action
+		if (_hold == "attack" or (_hold == "tech" and not _hold_draw)) and _guard_at < 0.0 and float(best.tti) < 0.7 \
+				and act != null and (act.phase == ActionInst.P.CHARGE or act.phase == ActionInst.P.CHANNEL) and w.held(me) == null:
+			_hold = ""
+			_plan = {}
+			return _decide(best)
+		if _plan.is_empty() or String(_plan.get("stage", "")) != "wait" or _hold != "" or _guard_at >= 0.0:
+			return false
+		if float(best.tti) >= float(_plan.press_at) - _t:
+			return false
+		_plan = {}
+	return _decide(best)
+
+
+func _perceived(key: String) -> bool:
+	if not _seen.has(key):
+		_seen[key] = _t + rng.randf_range(-0.05, 0.08) + (0.2 if planner and Status.has(me, "blinded") else 0.0)
+		return false
+	return _t - float(_seen[key]) >= float(cfg.reaction)
+
+
+func _decide(th: Dictionary) -> bool:
+	var m := float(cfg.get("misjudge", 0.0))
+	var err := rng.randf_range(-m, m)
+	var p := _planner_params()
+	var opts := AiPlanner.counters(w, me, th, kit, p, err)
+	var pick := AiPlanner.choose(opts, p, rng)
+	var key := String(th.key)
+	if pick.is_empty():
+		_decided[key] = "none"
+		return false
+	_decided[key] = String(pick.label)
+	last_plan = pick.duplicate()
+	last_plan["threat"] = String(th.cls)
+	last_plan["key"] = key
+	last_plan["tti"] = float(th.tti)
+	last_plan["err"] = err
+	last_plan["t"] = _t
+	last_plan["options"] = opts.size()
+	debug_state = "counter " + String(pick.label)
+	_adopt(pick, th)
+	return true
+
+
+## Starts executing an option (counter or offense): switch element/sub, wait for the press time, press.
+func _adopt(pick: Dictionary, th: Dictionary = {}) -> void:
+	var p := pick.duplicate()
+	p["t0"] = _t
+	p["stage"] = "wait"
+	var b: MatBody = th.get("body")
+	p["body"] = b.id if b != null else -1
+	p["attack_id"] = int(th.get("attack_id", 0))
+	p["tti_abs"] = _t + float(th.get("tti", 0.0))
+	p["legacy"] = ""
+	if b == null and int(p.get("aim_body", -1)) >= 0:
+		p["body"] = int(p.aim_body)   # offense on a body (Smelter on a wall face)
+	if p.get("slot", "") == "tech" and String(p.get("mode", "")) == "DRAW" and b != null:
+		p.legacy = "draw"
+	elif p.get("slot", "") == "guard" and p.id == "guard" and int(p.element) == Sim.Element.EARTH and bool(p.get("perfect", false)) \
+			and b != null and b.is_projectile():
+		p.legacy = "redirect"
+	elif p.get("slot", "") == "evade" and b != null:
+		p.legacy = "dodge"
+	var press_in := float(p.get("press_in", 0.0))
+	if bool(p.get("perfect", false)) and p.legacy == "":
+		var e := float(cfg.get("timing_err", 0.05))
+		press_in = maxf(press_in, float(th.get("tti", 0.0)) - AiPlanner.PERFECT_LEAD + rng.randf_range(-e, e))
+	if p.legacy == "redirect" or p.legacy == "draw":
+		press_in = 0.0
+	p["press_at"] = _t + press_in
+	if p.has("guard_for"):
+		p["guard_until"] = _t + float(p.guard_for)
+	_plan = p
+	_exec_plan(w.get_actor(me.lock_target))
+
+
+func _end_plan() -> void:
+	if _plan.get("stage", "") == "tech":
+		intent.tech_held = false
+		intent.tech_released = true
+	_plan = {}
+
+
+## Drives the plan stages: wait (switch element/sub, wait for the press time) -> press ->
+## guard_gesture (push / sink) | tech (grip, aim, release) | evade_hold; attacks and guards hand over to
+## the legacy holds (_hold) once pressed.
+func _exec_plan(foe: ActorState) -> void:
+	var p := _plan
+	if _t > float(p.t0) + 5.0:
+		_end_plan()
+		return
+	match String(p.stage):
+		"wait":
+			if int(p.element) != me.element or me.sub_of(int(p.element)) != int(p.sub):
+				intent.element_select = int(p.element)
+				intent.sub_select = int(p.sub)
+				p.press_at = maxf(float(p.press_at), _t + Sim.DT)
+				return
+			if _t + 1e-6 < float(p.press_at):
+				return
+			if String(p.legacy) != "":
+				var b := w.get_body(int(p.body))
+				_plan = {}
+				if b == null or not b.alive:
+					return
+				_act_on(String(p.legacy), b, maxf(0.0, float(p.tti_abs) - _t))
+				return
+			_press_plan(p, foe)
+		"guard_gesture":
+			intent.guard_held = true
+			var a := me.action
+			if _t >= float(p.gesture_at) and a != null and a.id == "guard" and a.phase == ActionInst.P.CHANNEL:
+				intent.guard_gesture = Sim.Gesture.UP if p.slot == "push" else Sim.Gesture.DOWN
+				p.stage = "after_gesture"
+				p["gest_t"] = _t
+			elif _t > float(p.gesture_at) + 0.5 or (a == null and _t > float(p.press_t) + 0.2):
+				_plan = {}
+		"after_gesture":
+			# Keep the guard button down one more tick, then let the push / sink run.
+			if _t - float(p.gest_t) < 0.05:
+				intent.guard_held = true
+			else:
+				_plan = {}
+		"tech":
+			_tech_stage(p, foe)
+		"evade_hold":
+			intent.evade_held = true
+			intent.move = p.get("move", Vector3.ZERO)
+			if _t >= float(p.until):
+				_plan = {}
+
+
+func _press_plan(p: Dictionary, foe: ActorState) -> void:
+	p["press_t"] = _t
+	match String(p.press):
+		"attack":
+			_press("attack")
+			intent.attack_gesture = int(p.get("gesture", 0))
+			_hold = "attack"
+			_hold_until = _t + maxf(float(p.get("hold", 0.0)), 0.05)
+			_aim_hold = p.get("aim", Vector3.ZERO)
+			_plan = {}
+		"guard":
+			_press("guard")
+			if p.slot == "guard":
+				_hold = "guard"
+				_hold_until = float(p.get("guard_until", _t + 0.6))
+				_guard_attack = int(p.get("attack_id", 0))
+				_plan = {}
+			else:
+				p.stage = "guard_gesture"
+				p["gesture_at"] = _t + maxf(float(p.get("hold", 0.0)), 2.0 * Sim.DT)
+		"tech":
+			_press("tech")
+			_aim_plan(p, foe)
+			p.stage = "tech"
+			p["started"] = false
+			p["release_at"] = _t + maxf(float(p.get("hold", 0.0)), float(Moves.DEFS[p.id].get("startup", 0.1)) + 0.05)
+		"evade":
+			var side := me.forward().cross(Vector3.UP)
+			if rng.randf() < 0.5:
+				side = -side
+			intent.move = side if p.slot != "evade_hold" else Vector3.ZERO   # stances are taken standing
+			_press("evade")
+			if p.slot == "evade_hold":
+				intent.evade_held = true
+				p.stage = "evade_hold"
+				p["move"] = Vector3.ZERO
+				p["until"] = _t + 0.25 + maxf(float(p.get("hold", 0.0)), 0.6)
+			else:
+				_plan = {}
+		_:
+			_plan = {}
+
+
+func _aim_plan(p: Dictionary, foe: ActorState) -> void:
+	var b := w.get_body(int(p.get("body", -1)))
+	var target := Vector3.ZERO
+	if b != null and b.alive and w.held(me) == null:
+		target = b.pos
+	elif foe != null:
+		target = foe.pos
+	else:
+		return
+	var d := target - me.pos
+	d.y = 0.0
+	if d.length() > 0.1:
+		intent.aim_dir = d.normalized()
+		intent.aim_active = true
+
+
+func _tech_stage(p: Dictionary, foe: ActorState) -> void:
+	intent.tech_held = true
+	_aim_plan(p, foe)
+	var act := me.action
+	if not bool(p.started):
+		if act != null and act.slot == "tech" and act.id == String(p.id):
+			p.started = true
+		elif _t - float(p.press_t) < 0.6:
+			intent.tech_pressed = true   # the world buffers a press only briefly: keep pressing
+			return
+		else:
+			_end_plan()
+			return
+	if act == null or act.slot != "tech":
+		_plan = {}
+		return
+	var held := w.held(me)
+	var grip := String(act.def.get("verb", "")) == "grip" or act.id == "earth_tech"
+	if held != null and not p.has("caught_at"):
+		p["caught_at"] = _t
+	var release := false
+	if grip:
+		if p.has("caught_at"):
+			release = _t >= float(p.caught_at) + maxf(0.2, float(p.get("hold", 0.0)) * 0.5)
+		else:
+			release = _t > float(p.press_t) + 1.6
+	else:
+		release = _t >= float(p.release_at)
+	if release or _t > float(p.press_t) + 3.0:
+		if foe != null:
+			var d := foe.pos - me.pos
+			d.y = 0.0
+			if d.length() > 0.1:
+				intent.aim_dir = d.normalized()
+				intent.aim_active = true
+		intent.tech_held = false
+		intent.tech_released = true
+		_plan = {}
+
+
+# ------------------------------------------------------------------ offense (planner)
+
+func _offense_planner(foe: ActorState) -> void:
+	var drill := String(cfg.drill)
+	if _t < _next_attack or me.action != null:
+		return
+	if LEGACY_DRILLS.has(drill):
+		_offense(foe)
+		return
+	var interval := float(cfg.interval) if drill != "" else lerpf(3.2, 1.1, float(cfg.aggression))
+	if drill == "matrix":
+		_next_attack = _t + interval * rng.randf_range(0.9, 1.1)
+		_drill_matrix(foe)
+		return
+	var es := AiPresets.parse_element_drill(drill)
+	if es[0] >= 0:
+		_next_attack = _t + interval * rng.randf_range(0.8, 1.25)
+		_drill_element(foe, es[0], es[1])
+		return
+	if Status.hidden(foe) and me.pos.distance_to(foe.pos) > 2.0:
+		_next_attack = _t + 0.3   # can't see it: no aimed attacks into the fog
+		return
+	var opts := AiPlanner.offense(w, me, foe, kit, _planner_params(), rng)
+	if opts.is_empty():
+		_next_attack = _t + 0.4
+		return
+	var pick: Dictionary = opts[0]
+	var st := AiPlanner.observe(w, me, foe)
+	if bool(st.cover) and not (pick.reasons as Array).has("barrier"):
+		# Behind cover: don't throw into it (_move_tactical steps out).
+		_next_attack = _t + 0.3
+		return
+	_next_attack = _t + interval * rng.randf_range(0.8, 1.25)
+	debug_state = "offense " + String(pick.label)
+	for k in _recent.keys():
+		_recent[k] = float(_recent[k]) * 0.7
+		if float(_recent[k]) < 0.05:
+			_recent.erase(k)
+	_recent[pick.id] = float(_recent.get(pick.id, 0.0)) + 1.0
+	_adopt(pick)
+
+
+## Chain (same sub-element) or weave (Master) after an attack made contact, inside the chain window.
+func _chain(foe: ActorState) -> bool:
+	var a := me.action
+	if foe == null or a == null or a.phase != ActionInst.P.RECOVERY or not a.data.get("contact", false):
+		return false
+	if not Sim.ATTACK_SLOTS.has(a.slot) or not a.def.has("chain"):
+		return false
+	if int(me.chain.get("n", 0)) >= mini(int(prm.get("chain", 1)), CombatWorld.CHAIN_MAX):
+		return false
+	var rec := float(a.def.recovery) * Status.recovery_mult(me)
+	if rec > 0.0 and a.t / rec < float(a.def.chain):
+		return false
+	var key := "ch%d" % a.attack_id
+	if _decided.has(key):
+		return false
+	var pick := AiPlanner.chain_follow(w, me, foe, kit, _planner_params(), rng)
+	_decided[key] = String(pick.get("label", "none"))
+	if pick.is_empty():
+		return false
+	debug_state = String(pick.label)
+	if int(pick.element) != me.element or me.sub_of(int(pick.element)) != int(pick.sub):
+		intent.element_select = int(pick.element)
+		intent.sub_select = int(pick.sub)
+		_pending_press = "attack"
+		_pending_gesture = int(pick.gesture)
+		_hold = "attack"
+		_hold_until = _t + Sim.DT + 0.05
+		return true
+	_press("attack")
+	intent.attack_gesture = int(pick.gesture)
+	_hold = "attack"
+	_hold_until = _t + 0.05
+	return true
+
+
+## Punish a visible charge (Master / punish presets): Disrupt or the fastest hit that reaches, once per charge.
+func _interrupt(foe: ActorState) -> bool:
+	if not bool(prm.get("punish", false)) or foe == null or foe.action == null or me.action != null:
+		return false
+	var fa := foe.action
+	if fa.phase != ActionInst.P.CHARGE and not (fa.phase == ActionInst.P.CHANNEL and fa.id != "guard"):
+		return false
+	var key := "int%d" % fa.attack_id
+	if not _perceived(key) or _decided.has(key):
+		return false
+	_decided[key] = "skip"
+	if rng.randf() >= float(cfg.counter):
+		return false
+	for o in AiPlanner.offense(w, me, foe, kit, _planner_params(), rng):
+		var rs: Array = o.reasons
+		if rs.has("disrupt") or rs.has("interrupt"):
+			# Disrupt needs P >= 6 + 4 x the charge's tier: the lowest tier that clears it (one tier of
+			# growth allowed for while we hold), else a quick T0 hit (a hit staggers a charge too).
+			var def: Dictionary = Moves.DEFS[o.id]
+			var dist := me.pos.distance_to(foe.pos)
+			if rs.has("disrupt"):
+				for t in range(int(o.tier), Charge.max_tier(def) + 1):
+					var grow := 1 if AiPlanner.hold_for(def, t) > 0.3 else 0
+					if Charge.counter_power(def, t) >= Interactions.disrupt_threshold(fa.tier() + grow) \
+							and AiPlanner.reach_of(def, t) + 0.3 >= dist:
+						o.tier = t
+						break
+			o.hold = AiPlanner.hold_for(def, o.tier) if o.press == "attack" else o.hold
+			_decided[key] = String(o.label)
+			debug_state = "interrupt " + String(o.label)
+			_adopt(o)
+			return true
+	return false
+
+
+# ------------------------------------------------------------------ drills
+
+func _drill_moves(e: int, s: int) -> Array:
+	var out: Array = []
+	for c in AiPlanner.kit_moves({e: [s]}, AiPlanner.OFFENSE_SLOTS):
+		var def: Dictionary = Moves.DEFS[c.id]
+		var role := String(def.get("ai", {}).get("role", ""))
+		if c.slot == "tech" and (c.id in ["air_tech", "water_tech", "fire_tech", "earth_tech"] or role == "mobility" or role == "counter"):
+			continue
+		if def.has("threat") or role in ["poke", "zone", "finisher", "setup"]:
+			out.append(c)
+	return out
+
+
+func _drill_element(foe: ActorState, e: int, s: int) -> void:
+	var moves := _drill_moves(e, s)
+	if moves.is_empty():
+		return
+	var c: Dictionary = moves[rng.randi_range(0, moves.size() - 1)]
+	_fire_drill_move(c, foe)
+
+
+func _fire_drill_move(c: Dictionary, foe: ActorState) -> void:
+	var def: Dictionary = Moves.DEFS[c.id]
+	var tier := rng.randi_range(0, mini(2, Charge.max_tier(def))) if rng.randf() < 0.5 else 0
+	var g := 0
+	match String(c.slot):
+		"thrust":
+			g = Sim.Gesture.UP
+		"ground":
+			g = Sim.Gesture.DOWN
+		"sweep":
+			g = Sim.Gesture.SIDE
+	var hold := AiPlanner.hold_for(def, tier)
+	if c.slot == "tech" and hold <= 0.0:
+		hold = maxf(0.35, float(def.get("startup", 0.2)) + 0.1)
+	var o := {"id": c.id, "element": int(c.element), "sub": int(c.sub), "slot": String(c.slot),
+		"press": "tech" if c.slot == "tech" else "attack", "gesture": g, "tier": tier, "hold": hold,
+		"label": "drill %s T%d" % [c.id, tier]}
+	debug_state = String(o.label)
+	_adopt(o)
+
+
+func _build_matrix() -> void:
+	var by := {}
+	for e in 4:
+		for s in 4:
+			for c in _drill_moves(e, s):
+				var def: Dictionary = Moves.DEFS[c.id]
+				var cls := String(def.get("threat", {}).get("cls", ""))
+				if cls == "":
+					continue
+				if not by.has(cls):
+					by[cls] = []
+				var dup := false
+				for x in by[cls]:
+					if x.id == c.id:
+						dup = true
+				if not dup:
+					by[cls].append(c)
+	var keys: Array = by.keys()
+	keys.sort()
+	_matrix = []
+	for k in keys:
+		_matrix.append([k, by[k]])
+
+
+## The threat class the matrix drill launches next (Lab HUD).
+func matrix_next() -> String:
+	if _matrix.is_empty():
+		return ""
+	return String(_matrix[_drill_i % _matrix.size()][0])
+
+
+func _drill_matrix(foe: ActorState) -> void:
+	if _matrix.is_empty():
+		_build_matrix()
+	if _matrix.is_empty():
+		return
+	var row: Array = _matrix[_drill_i % _matrix.size()]
+	_drill_i += 1
+	var moves: Array = row[1]
+	var c: Dictionary = moves[rng.randi_range(0, moves.size() - 1)]
+	_fire_drill_move(c, foe)
+	debug_state = "matrix %s: %s" % [row[0], c.id]

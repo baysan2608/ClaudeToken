@@ -83,8 +83,9 @@ static func _tags() -> void:
 	Interactions.register_tag_class(&"ember", &"ember", &"ember")
 	Interactions.register_tag_class(&"magma_rift", &"", &"magma_rift")
 	Interactions.register_tag_class(&"ground_current", &"lightning", &"ground_current")
-	Interactions.register_tag_class(&"static_field", &"lightning", &"ward_static")
-	Interactions.register_tag_class(&"corona", &"blue_fire", &"aura_blue")
+	Interactions.register_tag_class(&"static_field", &"lightning", &"static_field")
+	Interactions.register_tag_class(&"corona", &"blue_fire", &"corona")
+	Interactions.register_tag_class(&"kiln", &"kiln", &"kiln")
 	for tg in [&"fire_field", &"fire_line", &"fireball", &"comet", &"ember", &"corona"]:
 		Interactions.register_channels(tg, Callable(FireRules, "_fire_channels"))
 	Interactions.register_channels(&"ground_current", Callable(FireRules, "_current_channels"))
@@ -741,12 +742,12 @@ static func _lightning_column() -> void:
 		{"move": "static_ward", "tier": 0, "expect": "fire_static"})
 	# --- lightning (bolts, sparks, arcs) meeting bodies on their path.
 	c = "lightning"
-	_cell("stone", c, {"outcome": "shatter", "partial": "pass", "fail": "pass", "pieces": 3},
+	_cell("stone", c, {"inert": "pass", "outcome": "shatter", "partial": "pass", "fail": "pass", "pieces": 3},
 		{"move": "spark", "tier": 1, "expect": "shatter"})
-	_cell("stone_heavy", c, {"outcome": "shatter", "partial": "pass", "fail": "pass", "pieces": 3},
+	_cell("stone_heavy", c, {"inert": "pass", "outcome": "shatter", "partial": "pass", "fail": "pass", "pieces": 3},
 		{"move": "spark", "tier": 2, "expect": "shatter", "tp": 32.0})
-	_cell("boulder", c, {"bands": [[0.0, "pass"], [0.45, "shatter"]], "pieces": 2}, {"move": "spark", "tier": 3, "expect": "shatter"})
-	_cell("hot_rock", c, {"outcome": "shatter", "partial": "pass", "fail": "pass", "pieces": 3}, {"move": "spark", "tier": 2, "expect": "shatter"})
+	_cell("boulder", c, {"inert": "pass", "bands": [[0.0, "pass"], [0.45, "shatter"]], "pieces": 2}, {"move": "spark", "tier": 3, "expect": "shatter"})
+	_cell("hot_rock", c, {"inert": "pass", "outcome": "shatter", "partial": "pass", "fail": "pass", "pieces": 3}, {"move": "spark", "tier": 2, "expect": "shatter"})
 	_cell("magma", c, {"bands": [[0.0, "pass"]], "full_at": 0.0}, {"move": "spark", "tier": 2, "expect": "pass"})
 	_cell("lava_wave", c, {"bands": [[0.0, "pass"]], "full_at": 0.0}, {"move": "spark", "tier": 2, "expect": "pass"})
 	_cell("metal", c, {"bands": [[0.0, "fire_charge_body"]], "full_at": 0.0, "share": 0.5}, {"move": "spark", "tier": 0, "expect": "fire_charge_body"})
@@ -756,7 +757,7 @@ static func _lightning_column() -> void:
 	_cell("sand_cloud", c, {"bands": [[0.0, "fire_fulgurite"]], "full_at": 0.0, "pass": 0.5})
 	_cell("water", c, {"bands": [[0.0, "fire_conduct_owner"]], "full_at": 0.0}, {"move": "rail_arc", "tier": 0, "expect": "fire_conduct_owner"})
 	_cell("water_wave", c, {"bands": [[0.0, "fire_conduct_owner"]], "full_at": 0.0}, {"move": "rail_arc", "tier": 0, "expect": "fire_conduct_owner"})
-	_cell("ice", c, {"outcome": "shatter", "partial": "shatter", "fail": "pass", "pieces": 3}, {"move": "spark", "tier": 0, "expect": "shatter"})
+	_cell("ice", c, {"inert": "pass", "outcome": "shatter", "partial": "shatter", "fail": "pass", "pieces": 3}, {"move": "spark", "tier": 0, "expect": "shatter"})
 	_cell("mist", c, {"bands": [[0.0, "conduct"]], "full_at": 0.0, "factor": 0.6}, {"move": "spark", "tier": 1, "expect": "conduct"})
 	_cell("steam", c, {"bands": [[0.0, "pass"]], "full_at": 0.0}, {"move": "spark", "tier": 1, "expect": "pass"})
 	_cell("vine", c, {"bands": [[0.0, "pass"]], "full_at": 0.0}, {"move": "spark", "tier": 0, "expect": "pass"})
@@ -781,7 +782,7 @@ static func _combustion_column() -> void:
 	_cell("*", c, _plain_guard())
 	for t in ["stone", "hot_rock", "metal", "glass", "ice", "sand", "water"]:
 		_cell(t, c, {"outcome": "fire_reactive", "partial": "block", "fail": "block", "fallback": "block", "eff": 2.0 if t == "sand" else 1.0,
-			"chip": 0.12, "bal": 0.55, "knock": 0.35}, {"move": "reactive_blast", "tier": 0, "expect": "fire_reactive"})
+			"chip": 0.12, "bal": 0.55, "knock": 0.35}, {"move": "reactive_blast", "tier": 0, "expect": "block" if t == "hot_rock" else "fire_reactive"})
 	for t in ["stone_heavy", "boulder", "magma", "lava_wave", "sand_surge", "water_wave", "lightning", "vine"]:
 		_cell(t, c, _plain_guard(), {"move": "reactive_blast", "tier": 0, "expect": "block"})
 	_cell("flame", c, {"outcome": "fire_reactive", "partial": "block", "fail": "block", "eff": 1.5, "chip": 0.12, "bal": 0.55, "knock": 0.35},
@@ -798,27 +799,27 @@ static func _combustion_column() -> void:
 		{"move": "reactive_blast", "tier": 0, "expect": "weaken"})
 	# --- blast (Pop / Burst / Blast / Detonation, Shockwave, Chain Blasts, mines) meeting loose bodies.
 	c = "blast"
-	_cell("stone", c, {"outcome": "deflect", "partial": "bend", "fail": "pass", "side": 0.8, "up": 3.0}, {"move": "pop", "tier": 1, "expect": "deflect"})
-	_cell("stone", c, {"outcome": "shatter", "partial": "deflect", "fail": "pass", "pieces": 3, "tiers": [3]}, {"move": "pop", "tier": 3, "expect": "shatter"})
-	_cell("stone_heavy", c, {"outcome": "weaken", "partial": "weaken", "fail": "pass"}, {"move": "pop", "tier": 2, "expect": "weaken", "tp": 32.0})
-	_cell("stone_heavy", c, {"outcome": "shatter", "partial": "weaken", "fail": "pass", "pieces": 3, "tiers": [3]},
+	_cell("stone", c, {"inert": "push", "outcome": "deflect", "partial": "bend", "fail": "pass", "side": 0.8, "up": 3.0}, {"move": "pop", "tier": 2, "expect": "deflect"})
+	_cell("stone", c, {"inert": "push", "outcome": "shatter", "partial": "deflect", "fail": "pass", "pieces": 3, "tiers": [3]}, {"move": "pop", "tier": 3, "expect": "shatter"})
+	_cell("stone_heavy", c, {"inert": "push", "outcome": "weaken", "partial": "weaken", "fail": "pass"}, {"move": "pop", "tier": 2, "expect": "weaken", "tp": 32.0})
+	_cell("stone_heavy", c, {"inert": "push", "outcome": "shatter", "partial": "weaken", "fail": "pass", "pieces": 3, "tiers": [3]},
 		{"move": "pop", "tier": 3, "expect": "shatter", "tp": 32.0})
-	_cell("boulder", c, {"outcome": "weaken", "partial": "weaken", "fail": "weaken", "full_at": 0.25, "partial_at": 0.0},
+	_cell("boulder", c, {"inert": "push", "outcome": "weaken", "partial": "weaken", "fail": "weaken", "full_at": 0.25, "partial_at": 0.0},
 		{"move": "pop", "tier": 3, "expect": "weaken"})
-	_cell("hot_rock", c, {"outcome": "deflect", "partial": "bend", "fail": "pass", "side": 0.8, "up": 3.0}, {"move": "pop", "tier": 3, "expect": "deflect"})
-	_cell("magma", c, {"outcome": "shatter", "partial": "weaken", "fail": "pass", "pieces": 3}, {"move": "pop", "tier": 3, "expect": "weaken"})
+	_cell("hot_rock", c, {"inert": "push", "outcome": "deflect", "partial": "bend", "fail": "pass", "side": 0.8, "up": 3.0}, {"move": "pop", "tier": 3, "expect": "deflect"})
+	_cell("magma", c, {"inert": "push", "outcome": "shatter", "partial": "weaken", "fail": "pass", "pieces": 3}, {"move": "pop", "tier": 3, "expect": "weaken"})
 	_cell("lava_wave", c, {"outcome": "weaken", "partial": "weaken", "fail": "pass"}, {"move": "pop", "tier": 2, "expect": "weaken"})
-	_cell("metal", c, {"outcome": "deflect", "partial": "bend", "fail": "pass", "side": 0.8, "up": 3.0}, {"move": "pop", "tier": 1, "expect": "deflect"})
-	_cell("sand", c, {"outcome": "deflect", "partial": "bend", "fail": "pass", "eff": 2.0, "side": 1.0, "up": 2.0}, {"move": "pop", "tier": 0, "expect": "deflect"})
+	_cell("metal", c, {"inert": "push", "outcome": "deflect", "partial": "bend", "fail": "pass", "side": 0.8, "up": 3.0}, {"move": "pop", "tier": 1, "expect": "deflect"})
+	_cell("sand", c, {"inert": "push", "outcome": "deflect", "partial": "bend", "fail": "pass", "eff": 2.0, "side": 1.0, "up": 2.0}, {"move": "pop", "tier": 0, "expect": "deflect"})
 	_cell("sand_cloud", c, {"outcome": "disperse", "partial": "disperse", "fail": "pass", "eff": 2.0}, {"move": "pop", "tier": 0, "expect": "disperse"})
 	_cell("sand_surge", c, {"outcome": "weaken", "partial": "weaken", "fail": "pass"}, {"move": "chain_blasts", "tier": 1, "expect": "weaken"})
-	_cell("water", c, {"outcome": "deflect", "partial": "deflect", "fail": "pass", "side": 1.0, "up": 3.0}, {"move": "pop", "tier": 0, "expect": "deflect"})
+	_cell("water", c, {"inert": "push", "outcome": "deflect", "partial": "deflect", "fail": "pass", "side": 1.0, "up": 3.0}, {"move": "pop", "tier": 0, "expect": "deflect"})
 	_cell("water_wave", c, {"outcome": "weaken", "partial": "weaken", "fail": "pass"}, {"move": "pop", "tier": 2, "expect": "weaken"})
-	_cell("ice", c, {"outcome": "shatter", "partial": "shatter", "fail": "pass", "eff": 2.0, "pieces": 3}, {"move": "pop", "tier": 0, "expect": "shatter"})
-	_cell("glass", c, {"outcome": "shatter", "partial": "shatter", "fail": "pass", "eff": 2.0, "pieces": 3}, {"move": "pop", "tier": 0, "expect": "shatter"})
+	_cell("ice", c, {"inert": "push", "outcome": "shatter", "partial": "shatter", "fail": "pass", "eff": 2.0, "pieces": 3}, {"move": "pop", "tier": 0, "expect": "shatter"})
+	_cell("glass", c, {"inert": "push", "outcome": "shatter", "partial": "shatter", "fail": "pass", "eff": 2.0, "pieces": 3}, {"move": "pop", "tier": 0, "expect": "shatter"})
 	_cell("mist", c, {"outcome": "disperse", "partial": "disperse", "fail": "disperse"}, {"move": "pop", "tier": 0, "expect": "disperse"})
 	_cell("steam", c, {"outcome": "disperse", "partial": "disperse", "fail": "pass", "eff": 0.5}, {"move": "pop", "tier": 1, "expect": "disperse"})
-	_cell("vine", c, {"outcome": "shatter", "partial": "weaken", "fail": "pass", "eff": 1.5, "pieces": 2}, {"move": "pop", "tier": 1, "expect": "shatter"})
+	_cell("vine", c, {"inert": "push", "outcome": "shatter", "partial": "weaken", "fail": "pass", "eff": 1.5, "pieces": 2}, {"move": "pop", "tier": 1, "expect": "shatter"})
 	_cell("flame", c, {"bands": [[0.0, "fire_snuffed"]], "full_at": 0.0, "eff": 1.5}, {"move": "pop", "tier": 0, "expect": "fire_snuffed"})
 	_cell("blue_fire", c, {"outcome": "fire_snuffed", "partial": "pass", "fail": "pass"}, {"move": "pop", "tier": 2, "expect": "fire_snuffed"})
 	_cell("ember", c, {"bands": [[0.0, "fire_snuffed"]], "full_at": 0.0})
