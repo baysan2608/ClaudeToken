@@ -19,6 +19,7 @@ def rest_state():
         "neck": (0.0, 0.0, 0.0), "head": (0.0, 0.0, 0.0),
         "sl": (0.0, 0.0), "sr": (0.0, 0.0),
         "hl": REST_HAND_L, "fl": REST_FOOT_L,
+        "gl": (0.0, 0.0, 0.0, 0.0, 0.0), "gr": (0.0, 0.0, 0.0, 0.0, 0.0),
     }
     st["hr"] = fp.mirror_state_value("hl", st["hl"])
     st["fr"] = fp.mirror_state_value("fl", st["fl"])
@@ -103,7 +104,7 @@ def _convert_hand_space(rig, st, side, upd):
 
 def apply_spec(rig, prev, base, spec):
     st = dict(base if spec.get("_base") else prev)
-    for ch in ("hp",) + ROT_CHANNELS + ("sl", "sr"):
+    for ch in ("hp",) + ROT_CHANNELS + ("sl", "sr", "gl", "gr"):
         if ch in spec:
             st[ch] = tuple(float(x) for x in spec[ch])
     for ch in ("fl", "fr"):
@@ -132,6 +133,13 @@ class ClipDef:
         self.lag = {"neck": 1.0, "head": 2.0} if lag is None else lag
         self.mirror_of = mirror_of
         self.extra = extra or {}
+
+
+def fp_smooth(f, a, b):
+    if b <= a:
+        return 1.0 if f >= b else 0.0
+    u = min(max((f - a) / (b - a), 0.0), 1.0)
+    return u * u * (3 - 2 * u)
 
 
 def n_frames(dur):
@@ -164,6 +172,26 @@ def build_clip(rig, cd, rest=None):
             if lag:
                 st[ch] = tl.eval(float(f) - lag)[ch]
         states.append(st)
+    # optional: keep the hips over a support foot (spins): extra["pivot_hips"] = (side, f0, f1, f2, f3) blends the correction in
+    # over frames f0..f1 and out over f2..f3 (the support foot channel is `fl` for L / `fr` for R)
+    if cd.extra.get("pivot_hips"):
+        side, f0, f1, f2, f3 = cd.extra["pivot_hips"][:5]
+        over = cd.extra["pivot_hips"][5] if len(cd.extra["pivot_hips"]) > 5 else 0.0      # 0 = over the ankle, 1 = over the ball
+        ch = "fl" if side == "L" else "fr"
+        for f, st in enumerate(states):
+            w = fp_smooth(f, f0, f1) * (1.0 - fp_smooth(f, f2, f3))
+            if w <= 0:
+                continue
+            Rp, Hp, _ = rig.body_fk(st)
+            hipw = Hp["hips"] + Rp["hips"] @ rig.off[f"thigh.{side}"]
+            x, y, lift, yaw, pitch, roll, pv = st[ch][:7]
+            ya = math.radians(yaw)
+            tx, ty = x - pv * (1 - over) * math.sin(ya), y - pv * (1 - over) * math.cos(ya)      # pivot is `pv` ahead of the ankle
+            dx, dy = tx - hipw.x, ty + hipw.y
+            hp = st["hp"]
+            st = dict(st)
+            st["hp"] = (hp[0] + dx * w, hp[1] + dy * w, hp[2])
+            states[f] = st
     # optional: lower the hips where a planted leg would be out of reach (gaits)
     if cd.extra.get("auto_hips"):
         drops = []
@@ -193,6 +221,12 @@ def build_clip(rig, cd, rest=None):
             hp = states[i]["hp"]
             states[i] = dict(states[i])
             states[i]["hp"] = (hp[0], hp[1], hp[2] + d)
+    # hand shapes (finger poses) from the grip table, keyed by clip name
+    import fighter_grips as grips
+    period = N / FPS
+    for f, st in enumerate(states):
+        gl, gr = grips.grip_at(cd.name, f / FPS, period, cd.loop)
+        st["gl"], st["gr"] = gl, gr
     frames, diags = [], []
     ctx = {}
     for f, st in enumerate(states):
@@ -211,7 +245,7 @@ def mirror_clipdef(cd, new_name):
                 out[ch] = v
             elif ch in ("hp",) + ROT_CHANNELS:
                 out[ch] = fp.mirror_state_value(ch, v)
-            elif ch in ("sl", "sr"):
+            elif ch in ("sl", "sr", "gl", "gr"):
                 out[fp.SWAP[ch]] = v
             elif ch in ("hl", "hr"):
                 out[fp.SWAP[ch]] = mirror_hand_dict(v)

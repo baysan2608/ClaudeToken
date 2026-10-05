@@ -7,7 +7,8 @@ const LOOSE_RADIUS := 2.6
 
 
 static func _stone_filter(b: MatBody) -> bool:
-	return b.is_stone() and b.form != Sim.Form.WALL and b.phase != Sim.Phase.MOLTEN and b.form != Sim.Form.WAVE
+	# Legality through the engine (legacy cells stone* x grip_stone: reclaim).
+	return b.form != Sim.Form.WALL and b.phase != Sim.Phase.MOLTEN and b.form != Sim.Form.WAVE and Interactions.allows(b, &"grip_stone")
 
 
 static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, _it: ActorIntent) -> void:

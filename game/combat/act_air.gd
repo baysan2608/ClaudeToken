@@ -5,6 +5,9 @@ extends RefCounted
 ## heavy stones barely move, lava waves are unaffected, fire is only dispersed by an air guard.
 
 const LIGHT_MASS := 30.0
+## Pressure of the palm gust / cyclone push (MOVESET §7.13, counter power vs threats).
+const POWER := 7.0
+const HEAVY_POWER := 11.0
 
 
 static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIntent) -> void:
@@ -101,10 +104,14 @@ static func _push(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	var knock := float(d.heavy_knock) if heavy else float(d.knock)
 	var dir: Vector3 = inst.data.face
 	w.emit("gust", {"actor": a.id, "dir": dir, "range": rng_m, "heavy": heavy})
+	# The gust is a pressure volume: a threat to fighters, a counter (class "gust") to the bodies it meets.
+	var gust := Agent.of_volume(w, a, inst, &"gust", a.chest(), dir, {"P": float(Charge.param(inst, "power", HEAVY_POWER if heavy else POWER))})
+	gust.data["knock"] = knock
+	FxEvents.fx_for(w, a, inst, "cone", "wind", {"length": rng_m, "angle": cone, "power": gust.power})
 	for t in w.actors_in_cone(a, dir, rng_m, cone):
 		w.hit_actor(t, {"attacker": a.id, "attack_id": inst.attack_id,
 			"damage": d.heavy_damage if heavy else d.damage, "balance": d.heavy_balance if heavy else d.balance,
-			"knock": dir * knock + Vector3(0, 1.5, 0), "kind": "air", "from": a.chest()})
+			"knock": dir * knock + Vector3(0, 1.5, 0), "kind": "air", "from": a.chest(), "agent": gust})
 	var cos_lim := cos(deg_to_rad(cone))
 	for b in w.bodies:
 		if not b.alive or b.controller >= 0 or b.static_body:
@@ -113,28 +120,6 @@ static func _push(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 		var dist := to.length()
 		if dist > rng_m or (dist > 0.5 and Vector3(to.x, 0, to.z).normalized().dot(dir) < cos_lim):
 			continue
-		match b.form:
-			Sim.Form.CLOUD:
-				b.vel += dir * 9.0
-				b.max_life = minf(b.max_life, b.age + 0.6)   # dispersed
-				w.emit("disperse", {"actor": a.id, "body": b.id})
-			Sim.Form.WAVE, Sim.Form.PUDDLE, Sim.Form.WALL, Sim.Form.POOL:
-				pass   # air does not move these
-			_:
-				if b.is_projectile() and b.attack_owner != a.id:
-					if b.mass < LIGHT_MASS:
-						# Light projectiles are turned along the push.
-						var spd := b.vel.length()
-						b.vel = (dir * spd * 0.8) + Vector3(0, 1.5, 0)
-						b.attack_owner = a.id
-						b.attack_id = w.new_attack_id()
-						b.hit_set.clear()
-						b.hit_set[a.id] = true
-						w.emit("deflect", {"actor": a.id, "body": b.id, "verb": "gust", "kind": "stone"})
-					else:
-						# Heavy: small trajectory bend only (impulse / mass).
-						b.vel += dir * (60.0 / b.mass)
-						w.emit("bend", {"actor": a.id, "body": b.id})
-				elif b.mass < LIGHT_MASS:
-					b.vel += dir * (knock * 12.0 / maxf(b.mass, 1.0)) + Vector3(0, 1.0, 0)
-					b.on_ground = false
+		# Legacy cell (*, gust) T0-T1: light hostile shots turn and change owner, heavy ones bend,
+		# loose light bodies are pushed, clouds disperse, waves/puddles/walls/pool stay (CoreRules._gust).
+		Interactions.resolve(w, Agent.of_body(w, b, a), gust, {"site": "gust"})

@@ -10,6 +10,10 @@ const CLIPS_JSON := "res://assets/characters/fighter_clips.json"
 const BONES := ["root", "hips", "spine", "chest", "neck", "head", "shoulder.L", "upper_arm.L", "forearm.L", "hand.L",
 	"shoulder.R", "upper_arm.R", "forearm.R", "hand.R", "thigh.L", "shin.L", "foot.L", "toe.L", "thigh.R", "shin.R",
 	"foot.R", "toe.R"]
+## bones added in v2 (articulated hands, sash tails, hair); must exist too, 42 in total
+const EXTRA_BONES := ["thumb_1", "thumb_2", "finger_im_1", "finger_im_2", "finger_rp_1", "finger_rp_2"]
+const SECONDARY := ["sash_tail.L.001", "sash_tail.L.002", "sash_tail.L.003", "sash_tail.R.001", "sash_tail.R.002", "sash_tail.R.003",
+	"hair_top.001", "hair_top.002"]
 
 var failures := 0
 
@@ -58,8 +62,17 @@ func _run() -> void:
 	for b in BONES:
 		if skel.find_bone(b) < 0:
 			_fail("missing bone " + b)
-	if skel.get_bone_count() != BONES.size():
-		_fail("bone count %d != %d" % [skel.get_bone_count(), BONES.size()])
+	var want_bones := BONES.size() + 2 * EXTRA_BONES.size() + SECONDARY.size()
+	for e in EXTRA_BONES:
+		for sd in ["L", "R"]:
+			if skel.find_bone("%s.%s" % [e, sd]) < 0:
+				_fail("missing finger bone %s.%s" % [e, sd])
+	for b in SECONDARY:
+		if skel.find_bone(b) < 0:
+			_fail("missing secondary bone " + b)
+	if skel.get_bone_count() != want_bones:
+		_fail("bone count %d != %d" % [skel.get_bone_count(), want_bones])
+	# the 22 original bones keep their rest transform convention: root, hips ... (names are what the game uses)
 
 	print("== mesh ==")
 	var mesh: Mesh = mi.mesh

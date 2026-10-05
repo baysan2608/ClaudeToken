@@ -52,12 +52,24 @@ Godot 4.7.2.stable.official.ed1daf0bf · Blender 4.5.14 LTS (bpy module) · Pyth
 - No foot IK (clips are authored with planted feet and speed-matched; uneven-ground planting is future work).
 - Fighter is a clean training mannequin (mitten hands, no face detail, no cloth sim). Arena is a block-out courtyard.
 - Haptics use `Input.vibrate_handheld`; patterned Core Haptics needs a native iOS plugin.
-- Metal, sand, mist, vortex are documented extension points only (`docs/COMBAT_SPEC.md` §10).
+- Metal, sand, mist, vortex and the other sub-elements are designed (`docs/MOVESET.md`) but not implemented yet.
 
 ## Paused work (resume here)
 A quality pass (character mesh/textures, animation runtime, environment textures/props/lighting, material-physics VFX,
 in-game Dev/Test panel) was started and paused on 2026-10-04. Its unfinished changes are saved in `wip/` (see `wip/README.md`)
 and are NOT applied to the playable code. To resume: `git apply wip/quality-pass-wip.patch`, then re-run `tools/workflows/quality_pass.js`.
+
+## Design (2026-10-05): moveset expansion
+The full design for many moves per element is in **`docs/MOVESET.md`**: 16 sub-elements (Earth: Stone/Metal/Sand/Magma · Water:
+Water/Ice/Mist/Plant · Fire: Flame/Blue/Lightning/Combustion · Air: Gust/Vortex/Vacuum/Sound), one input grammar for all of them
+(tap/hold/flick on ATTACK, guard flicks, technique shape), unified charge tiers T0–T3, a physical counter rule (counter power vs
+threat power from mass·speed, heat, charge, pressure, with partial outcomes), the full counter matrix, 28 showcase combos, game feel,
+VFX/audio direction, matrix-driven AI and Lab tooling. Implementation plan: one **core** job first (registry + bindings + gestures +
+charge + interaction engine with legacy rules + verbs + hooks + event contract, `game/core` / `game/combat`), then parallel streams
+with disjoint files: Earth, Water, Fire, Air kits (`game/combat/kits/<element>/`), VFX (`game/presentation/vfx`, `body_views.gd`,
+`fx_director.gd`), Audio (`tools/audio`), AI (`game/actors/ai_*`), UI/Lab (`game/ui`, `game/game.gd`, `game/scenarios`). Sub-element 0
+of each element keeps today's moves exactly, so the existing tests keep their meaning. New moves animate through existing clips via a
+presentation bridge until the animation owner adds a def-driven branch to `FighterView` (follow-up after the quality pass).
 
 ## Next concrete steps (priority order)
 1. On the Mac: export, run on the oldest available iPhone, play Molten Exchange 10–15 min with Settings ▸ show debug; follow `docs/PERF.md` checklist.
@@ -65,5 +77,5 @@ and are NOT applied to the playable code. To resume: `git apply wip/quality-pass
 3. Foot IK on steps/terrace edges (Godot `TwoBoneIK3D` on thigh/shin/foot), then content: a second arena and opponent kit.
 
 ## Docs
-`docs/COMBAT_SPEC.md` (rules, units, flagship), `docs/CONTROLS.md`, `docs/ANIMATION.md`, `docs/VFX.md`, `docs/AUDIO.md`,
+`docs/COMBAT_SPEC.md` (rules, units, flagship), `docs/MOVESET.md` (moveset, counter matrix, engine contract), `docs/CONTROLS.md`, `docs/ANIMATION.md`, `docs/VFX.md`, `docs/AUDIO.md`,
 `docs/ASSET_MANIFEST.md`, `docs/PERF.md`, `docs/TUNING_LOG.md`, `docs/REVIEW.md`.

@@ -19,6 +19,14 @@ const WALK_SPEED := 1.4
 const RUN_SPEED := 5.5
 const STRAFE_SPEED := 1.1
 const BACK_SPEED := 1.0
+## Stand-ins for clips an older fighter.glb may lack (generic moveset clips -> closest legacy clip).
+const FALLBACK_CLIPS := {
+	"mv_push_two_hand": "air_push", "mv_uppercut_lift": "earth_lift", "mv_stomp": "earth_wall",
+	"mv_sweep_low": "pour", "mv_spin": "air_gust", "mv_palm_thrust": "earth_throw",
+	"mv_overhead_slam": "earth_heavy", "mv_wide_draw": "water_draw", "mv_ground_slap": "pour",
+	"mv_rising_guard": "deflect", "mv_roundhouse": "water_whip", "mv_front_kick": "fire_jab",
+	"land": "idle", "deflect": "guard",
+}
 
 var actor_id := -1
 var ap: AnimationPlayer
@@ -29,6 +37,9 @@ var _cur := ""
 var _cur_key := ""
 var _one_shot := ""
 var _one_shot_t := 0.0
+var _one_shot_speed := 1.0
+var _one_shot_n := 0
+var _yaw_rate_s := 0.0
 var _prev_pos := Vector3.ZERO
 var _curr_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -87,8 +98,11 @@ func setup(id: int, palette: Dictionary) -> void:
 			secondary = FighterSecondaryMotion.attach(skel)
 	else:
 		_build_fallback()
-	if "--animdebug" in OS.get_cmdline_user_args():
+	var args := OS.get_cmdline_user_args()
+	if "--animdebug" in args:
 		AnimDebugHotkeys.install(self)
+	if "--anim=off" in args:
+		AnimRigSettings.all_off()
 	if FileAccess.file_exists(CLIPS_JSON):
 		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(CLIPS_JSON))
 		if j is Dictionary:
@@ -169,9 +183,7 @@ func snap(a: ActorState) -> void:
 	_prev_health = -1.0
 	_prev_grounded = a.grounded
 	if rig:
-		rig.hits.reset()
-		rig.land_y = 0.0
-		rig.land_v = 0.0
+		rig.reset_state()
 
 
 func render(a: ActorState, alpha: float, dt: float) -> void:
@@ -186,10 +198,42 @@ func render(a: ActorState, alpha: float, dt: float) -> void:
 		_drive_rig(a, dt)
 
 
-func play_one_shot(clip: String, dur: float = 0.35) -> void:
-	_one_shot = clip
-	_one_shot_t = dur
+## Plays any clip of the library once, over everything but stuns, for `dur` seconds (<= 0: the
+## clip's own length). With contact_in >= 0 the clip is time-scaled so its authored contact lands
+## that many seconds from now (like the sim-driven attacks). A clip missing from the library falls
+## back to a stand-in (FALLBACK_CLIPS, e.g. a new mv_* clip on an older asset); with none, nothing
+## changes and false is returned.
+func play_one_shot(clip: String, dur: float = 0.35, contact_in: float = -1.0) -> bool:
+	var c := resolve_clip(clip)
+	if c == "":
+		return false
+	var speed := 1.0
+	if contact_in >= 0.0:
+		speed = clampf(_contact(c) / maxf(contact_in, 0.03), 0.5, 2.5)
+	_one_shot = c
+	_one_shot_speed = speed
+	_one_shot_t = dur if dur > 0.0 else _clip_len(c) / speed
+	_one_shot_n += 1
 	_cur_key = ""
+	return true
+
+
+## The clip that plays for `clip`: itself when the library has it, else its stand-in, else "".
+func resolve_clip(clip: String) -> String:
+	if _has_clip(clip):
+		return clip
+	var alt := String(FALLBACK_CLIPS.get(clip, ""))
+	if alt != "" and _has_clip(alt):
+		return alt
+	return ""
+
+
+func _has_clip(c: String) -> bool:
+	if c == "":
+		return false
+	if ap != null:
+		return ap.has_animation(c)
+	return clips.has(c)
 
 
 func hand_position(right: bool = true) -> Vector3:
@@ -223,7 +267,8 @@ func _play(c: String, key: String, speed: float = 1.0, blend: float = 0.12, from
 		_cur = c
 		return
 	if not ap.has_animation(c):
-		c = "idle" if ap.has_animation("idle") else c
+		var r := resolve_clip(c)
+		c = r if r != "" else "idle"
 		if not ap.has_animation(c):
 			return
 	if key == _cur_key and c == _cur:
@@ -251,11 +296,8 @@ func _play_aligned(c: String, key: String, remaining: float) -> void:
 
 
 func _animate(a: ActorState, dt: float) -> void:
-	if _one_shot_t > 0.0:
-		_one_shot_t -= dt
-		_play(_one_shot, "oneshot:" + _one_shot, 1.0, 0.05)
-		return
 	if a.stun > 0.0:
+		_one_shot_t = 0.0
 		match a.stun_kind:
 			"knockdown":
 				_play("knockdown", "kd", 1.0, 0.06)
@@ -268,6 +310,10 @@ func _animate(a: ActorState, dt: float) -> void:
 			_:
 				var back := a.last_hit_dir.dot(a.forward()) > 0.3
 				_play("hit_back" if back else "hit_front", "hl", 1.0, 0.04)
+		return
+	if _one_shot_t > 0.0:
+		_one_shot_t -= dt
+		_play(_one_shot, "oneshot%d:%s" % [_one_shot_n, _one_shot], _one_shot_speed, 0.05)
 		return
 	var inst := a.action
 	if inst != null:
@@ -395,6 +441,40 @@ func _animate_action(a: ActorState, inst: ActionInst) -> void:
 				_play("jump", key, 1.0, 0.05)
 			else:
 				_play("glide" if a.gliding else "fall", "at%s" % str(a.gliding), 1.0, 0.18)
+		_:
+			_animate_from_def(a, inst)
+
+
+## Any other action (new moves from the move registry) animates from its def's clip names
+## (docs/MOVESET.md, def schema): `anim` through startup with its contact aligned to the end of
+## startup, `anim_hold`/`anim_charge` while charging or channelling, then `anim_heavy` (heavy) or
+## `anim_active` from its contact, else `anim` simply plays on. Unknown clips use their stand-ins;
+## with no usable clip the current one keeps playing.
+func _animate_from_def(_a: ActorState, inst: ActionInst) -> void:
+	var d: Dictionary = inst.def
+	var P := ActionInst.P
+	var ph := inst.phase
+	var base := resolve_clip(String(d.get("anim", "")))
+	var su := float(inst.data.get("startup", d.get("startup", 0.0)))
+	var tag := "def:%s:%d" % [inst.id, inst.attack_id]
+	if ph == P.STARTUP:
+		if base != "":
+			_play_aligned(base, tag + ":s", su - inst.total)
+		return
+	if ph == P.CHARGE or ph == P.CHANNEL:
+		var hold := resolve_clip(String(d.get("anim_hold", d.get("anim_charge", ""))))
+		if hold != "":
+			_play(hold, tag + ":h", 1.0, 0.12)
+		return
+	var fin := ""
+	if inst.heavy:
+		fin = resolve_clip(String(d.get("anim_heavy", "")))
+	if fin == "":
+		fin = resolve_clip(String(d.get("anim_active", "")))
+	if fin != "":
+		_play(fin, tag + ":a", 1.0, 0.05, maxf(_contact(fin) - 0.03, 0.0))
+	elif base != "" and _cur != base:
+		_play(base, tag + ":a", 1.0, 0.05, maxf(_contact(base) - 0.03, 0.0))
 
 
 # ------------------------------------------------------------------ runtime layers
@@ -498,20 +578,33 @@ func _drive_rig(a: ActorState, dt: float) -> void:
 		_acc_s = _acc_s.lerp((_vel_s - prev) / dt, 1.0 - exp(-8.0 * dt))
 	var f := Vector3(sin(rotation.y), 0.0, cos(rotation.y))
 	var r := f.cross(Vector3.UP)                     # the character's right
-	rig.local_vel = Vector2(_vel_s.dot(r), _vel_s.dot(f))
+	var local := Vector2(_vel_s.dot(r), _vel_s.dot(f))
+	var spd := _vel_s.length()
+	# Turning on the spot steps the feet round: the yaw rate becomes a small sideways gait input
+	# (a left turn steps left). Slow target tracking stays planted (foot locking absorbs it).
+	_yaw_rate_s = lerpf(_yaw_rate_s, clampf(_yaw_rate, -20.0, 20.0), 1.0 - exp(-10.0 * dt))
+	var turn_k := smoothstep(1.2, 3.0, absf(_yaw_rate_s)) * (1.0 - smoothstep(0.4, 1.0, spd))
+	if turn_k > 0.0:
+		local.x += clampf(-_yaw_rate_s * 0.22, -1.0, 1.0) * turn_k
+	rig.local_vel = local
 	rig.stance = ["stance_earth", "stance_water", "stance_fire", "stance_air"][clampi(a.element, 0, 3)]
 	var inst := a.action
-	var free := a.grounded and inst == null and a.stun <= 0.0
+	var shot := _one_shot_t > 0.0 and a.stun <= 0.0
+	var free := a.grounded and inst == null and a.stun <= 0.0 and not shot
 	rig.loco_target = 1.0 if free else 0.0
-	var spd := _vel_s.length()
 	var legs := 0.0
-	if a.grounded and inst != null and a.stun <= 0.0:
-		var ph := inst.phase
-		if inst.id == "guard" and a.wall_body < 0:
+	if a.grounded and a.stun <= 0.0 and (inst != null or shot):
+		if shot:
 			legs = smoothstep(0.15, 0.6, spd)
-		elif ph == ActionInst.P.CHARGE or ph == ActionInst.P.CHANNEL:
+		elif inst.id == "guard" and a.wall_body < 0:
+			legs = smoothstep(0.15, 0.6, spd)
+		elif inst.phase == ActionInst.P.CHARGE or inst.phase == ActionInst.P.CHANNEL:
 			legs = smoothstep(0.2, 0.7, spd)
 	rig.legs_target = legs
+	rig.model_lift = model.position.y
+	# Planted feet lock to the ground while the legs belong to a gait or a stance (not in stuns,
+	# where the knockback slide should drag them).
+	rig.lock_target_w = 1.0 if (a.grounded and a.stun <= 0.0 and (free or legs > 0.0 or inst == null or inst.id == "guard")) else 0.0
 	# Lean into acceleration and into turns (centripetal: speed x yaw rate), only on the ground.
 	var lean := Vector2.ZERO
 	if free:
@@ -550,6 +643,7 @@ func _drive_rig(a: ActorState, dt: float) -> void:
 				aim_w = 1.0
 	rig.aim_target_w = aim_w
 	rig.tick(dt)
+	_sync_player_to_blend()
 	if AnimRigSettings.debug_draw:
 		if _debug_draw == null:
 			_debug_draw = AnimDebugDraw.new()
@@ -558,6 +652,25 @@ func _drive_rig(a: ActorState, dt: float) -> void:
 	elif _debug_draw:
 		_debug_draw.queue_free()
 		_debug_draw = null
+
+
+## While the blend space owns the body, the AnimationPlayer's own gait/stance clip is kept on the
+## blend's phase and rate, so when an action takes over (the blend fades out in ~0.1 s) the clip it
+## cross-fades from is the same step, not a different one (no scissoring legs).
+func _sync_player_to_blend() -> void:
+	if ap == null or rig.loco_w < 0.98 or not AnimRigSettings.loco_blend:
+		return
+	var c := ap.current_animation
+	if not rig.anims.has(c) or c != _cur:
+		return
+	var anim: Animation = rig.anims[c]
+	var want := rig.loco.clip_time(c, anim.length)
+	var now := ap.current_animation_position
+	var drift := wrapf(now - want, -anim.length * 0.5, anim.length * 0.5)
+	if LocomotionBlender.GAITS.has(c):
+		ap.speed_scale = maxf(rig.loco.cycle_rate * anim.length, 0.05)
+	if absf(drift) > 0.03:
+		ap.seek(want, false)
 
 
 ## World point to look at: the nearest incoming attack body (by time to impact), else the

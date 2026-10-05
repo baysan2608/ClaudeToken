@@ -1,9 +1,9 @@
 {
  "idle": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 50,
+   "vertex": 139,
    "frames": [
     0,
     60
@@ -34,9 +34,9 @@
  },
  "stance_earth": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 12,
+   "vertex": 128,
    "frames": [
     0,
     60
@@ -67,9 +67,9 @@
  },
  "stance_water": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 60,
+   "vertex": 233,
    "frames": [
     0,
     72
@@ -100,9 +100,9 @@
  },
  "stance_fire": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 28,
+  "contact_runs": 64,
   "worst_run": {
-   "vertex": 43,
+   "vertex": 248,
    "frames": [
     0,
     36
@@ -133,9 +133,9 @@
  },
  "stance_air": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 28,
+  "contact_runs": 64,
   "worst_run": {
-   "vertex": 62,
+   "vertex": 264,
    "frames": [
     0,
     60
@@ -166,9 +166,9 @@
  },
  "walk": {
   "sole_skate_cm": 1.36,
-  "contact_runs": 54,
+  "contact_runs": 200,
   "worst_run": {
-   "vertex": 51,
+   "vertex": 278,
    "frames": [
     2,
     17
@@ -176,21 +176,21 @@
   }
  },
  "run": {
-  "sole_skate_cm": 0.74,
-  "contact_runs": 44,
+  "sole_skate_cm": 0.97,
+  "contact_runs": 166,
   "worst_run": {
-   "vertex": 117,
+   "vertex": 562,
    "frames": [
     10,
-    13
+    12
    ]
   }
  },
  "strafe_l": {
-  "sole_skate_cm": 0.74,
-  "contact_runs": 44,
+  "sole_skate_cm": 0.76,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 34,
+   "vertex": 236,
    "frames": [
     0,
     14
@@ -198,10 +198,10 @@
   }
  },
  "strafe_r": {
-  "sole_skate_cm": 0.74,
-  "contact_runs": 44,
+  "sole_skate_cm": 0.76,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 34,
+   "vertex": 236,
    "frames": [
     0,
     14
@@ -209,10 +209,10 @@
   }
  },
  "walk_back": {
-  "sole_skate_cm": 1.13,
-  "contact_runs": 54,
+  "sole_skate_cm": 1.3,
+  "contact_runs": 200,
   "worst_run": {
-   "vertex": 108,
+   "vertex": 562,
    "frames": [
     0,
     3
@@ -221,9 +221,9 @@
  },
  "evade_l": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 88,
+  "contact_runs": 356,
   "worst_run": {
-   "vertex": 5,
+   "vertex": 137,
    "frames": [
     0,
     3
@@ -262,9 +262,9 @@
  },
  "evade_r": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 88,
+  "contact_runs": 356,
   "worst_run": {
-   "vertex": 5,
+   "vertex": 137,
    "frames": [
     0,
     3
@@ -303,9 +303,9 @@
  },
  "evade_back": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 88,
+  "contact_runs": 356,
   "worst_run": {
-   "vertex": 71,
+   "vertex": 447,
    "frames": [
     9,
     14
@@ -344,9 +344,9 @@
  },
  "evade_fwd": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 88,
+  "contact_runs": 356,
   "worst_run": {
-   "vertex": 6,
+   "vertex": 137,
    "frames": [
     0,
     3
@@ -384,13 +384,13 @@
   }
  },
  "jump": {
-  "sole_skate_cm": 0.11,
-  "contact_runs": 44,
+  "sole_skate_cm": 1.2,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 41,
+   "vertex": 251,
    "frames": [
     0,
-    5
+    4
    ]
   },
   "planted_bone_variance": {
@@ -433,10 +433,10 @@
   }
  },
  "land": {
-  "sole_skate_cm": 0.76,
-  "contact_runs": 40,
+  "sole_skate_cm": 0.92,
+  "contact_runs": 153,
   "worst_run": {
-   "vertex": 108,
+   "vertex": 564,
    "frames": [
     2,
     5
@@ -499,9 +499,9 @@
  },
  "guard": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 50,
+   "vertex": 240,
    "frames": [
     0,
     48
@@ -532,9 +532,9 @@
  },
  "deflect": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 62,
+   "vertex": 280,
    "frames": [
     0,
     11
@@ -565,11 +565,11 @@
  },
  "earth_wall": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 126,
+   "vertex": 137,
    "frames": [
-    5,
+    0,
     12
    ]
   },
@@ -598,9 +598,9 @@
  },
  "hit_front": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 5,
+   "vertex": 141,
    "frames": [
     0,
     11
@@ -631,9 +631,9 @@
  },
  "hit_back": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 5,
+   "vertex": 277,
    "frames": [
     0,
     11
@@ -664,9 +664,9 @@
  },
  "hit_heavy": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 66,
+  "contact_runs": 267,
   "worst_run": {
-   "vertex": 72,
+   "vertex": 448,
    "frames": [
     0,
     18
@@ -701,9 +701,9 @@
  },
  "knockdown": {
   "sole_skate_cm": 1.61,
-  "contact_runs": 52,
+  "contact_runs": 237,
   "worst_run": {
-   "vertex": 127,
+   "vertex": 577,
    "frames": [
     0,
     7
@@ -734,9 +734,9 @@
  },
  "getup": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 71,
+   "vertex": 449,
    "frames": [
     5,
     24
@@ -767,9 +767,9 @@
  },
  "stagger": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 5,
+   "vertex": 141,
    "frames": [
     0,
     15
@@ -800,9 +800,9 @@
  },
  "earth_lift": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 12,
+   "vertex": 128,
    "frames": [
     0,
     12
@@ -833,9 +833,9 @@
  },
  "earth_throw": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 63,
+   "vertex": 281,
    "frames": [
     0,
     14
@@ -866,9 +866,9 @@
  },
  "earth_heavy": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 6,
+   "vertex": 136,
    "frames": [
     0,
     24
@@ -899,9 +899,9 @@
  },
  "earth_hold": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 77,
+   "vertex": 449,
    "frames": [
     0,
     36
@@ -932,9 +932,9 @@
  },
  "water_draw": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 11,
+   "vertex": 240,
    "frames": [
     0,
     15
@@ -965,9 +965,9 @@
  },
  "water_hold": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 72,
+   "vertex": 477,
    "frames": [
     0,
     48
@@ -998,9 +998,9 @@
  },
  "water_whip": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 77,
+   "vertex": 462,
    "frames": [
     0,
     15
@@ -1031,9 +1031,9 @@
  },
  "water_freeze": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 5,
+   "vertex": 136,
    "frames": [
     0,
     12
@@ -1064,9 +1064,9 @@
  },
  "water_shield": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 33,
+   "vertex": 248,
    "frames": [
     0,
     48
@@ -1097,9 +1097,9 @@
  },
  "fire_jab": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 28,
+  "contact_runs": 64,
   "worst_run": {
-   "vertex": 43,
+   "vertex": 253,
    "frames": [
     0,
     9
@@ -1130,9 +1130,9 @@
  },
  "fire_charge": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 28,
+  "contact_runs": 64,
   "worst_run": {
-   "vertex": 50,
+   "vertex": 267,
    "frames": [
     0,
     24
@@ -1162,10 +1162,10 @@
   }
  },
  "fire_release": {
-  "sole_skate_cm": 0.35,
-  "contact_runs": 28,
+  "sole_skate_cm": 0.26,
+  "contact_runs": 64,
   "worst_run": {
-   "vertex": 100,
+   "vertex": 562,
    "frames": [
     0,
     12
@@ -1196,9 +1196,9 @@
  },
  "heat_draw": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 60,
+   "vertex": 252,
    "frames": [
     0,
     48
@@ -1229,9 +1229,9 @@
  },
  "magma_hold": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 52,
+   "vertex": 238,
    "frames": [
     0,
     24
@@ -1262,9 +1262,9 @@
  },
  "pour": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 44,
+  "contact_runs": 178,
   "worst_run": {
-   "vertex": 6,
+   "vertex": 135,
    "frames": [
     0,
     15
@@ -1295,9 +1295,9 @@
  },
  "lightning_charge": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 28,
+  "contact_runs": 64,
   "worst_run": {
-   "vertex": 41,
+   "vertex": 561,
    "frames": [
     0,
     36
@@ -1328,9 +1328,9 @@
  },
  "lightning_release": {
   "sole_skate_cm": 0.11,
-  "contact_runs": 32,
+  "contact_runs": 70,
   "worst_run": {
-   "vertex": 127,
+   "vertex": 577,
    "frames": [
     0,
     11
@@ -1360,12 +1360,12 @@
   }
  },
  "air_push": {
-  "sole_skate_cm": 0.29,
-  "contact_runs": 28,
+  "sole_skate_cm": 0.21,
+  "contact_runs": 76,
   "worst_run": {
-   "vertex": 99,
+   "vertex": 548,
    "frames": [
-    0,
+    9,
     11
    ]
   },
@@ -1394,9 +1394,9 @@
  },
  "air_gust": {
   "sole_skate_cm": 0.0,
-  "contact_runs": 28,
+  "contact_runs": 64,
   "worst_run": {
-   "vertex": 99,
+   "vertex": 559,
    "frames": [
     0,
     18
@@ -1420,6 +1420,391 @@
      [
       0,
       18
+     ]
+    ]
+   }
+  }
+ },
+ "mv_push_two_hand": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 178,
+  "worst_run": {
+   "vertex": 128,
+   "frames": [
+    0,
+    15
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   }
+  }
+ },
+ "mv_uppercut_lift": {
+  "sole_skate_cm": 0.57,
+  "contact_runs": 68,
+  "worst_run": {
+   "vertex": 562,
+   "frames": [
+    7,
+    15
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 3.21,
+    "ball_cm": 0.44,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   }
+  }
+ },
+ "mv_stomp": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 178,
+  "worst_run": {
+   "vertex": 475,
+   "frames": [
+    0,
+    17
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      7,
+      17
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      17
+     ]
+    ]
+   }
+  }
+ },
+ "mv_sweep_low": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 89,
+  "worst_run": {
+   "vertex": 141,
+   "frames": [
+    0,
+    21
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      21
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   }
+  }
+ },
+ "mv_spin": {
+  "sole_skate_cm": 15.96,
+  "contact_runs": 188,
+  "worst_run": {
+   "vertex": 292,
+   "frames": [
+    3,
+    30
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 17.66,
+    "ball_cm": 1.11,
+    "runs": [
+     [
+      0,
+      30
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 13.54,
+    "ball_cm": 10.16,
+    "runs": [
+     [
+      0,
+      2
+     ],
+     [
+      28,
+      30
+     ]
+    ]
+   }
+  }
+ },
+ "mv_palm_thrust": {
+  "sole_skate_cm": 0.57,
+  "contact_runs": 68,
+  "worst_run": {
+   "vertex": 563,
+   "frames": [
+    0,
+    14
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      14
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 1.84,
+    "ball_cm": 0.05,
+    "runs": [
+     [
+      0,
+      14
+     ]
+    ]
+   }
+  }
+ },
+ "mv_overhead_slam": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 178,
+  "worst_run": {
+   "vertex": 140,
+   "frames": [
+    0,
+    21
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      21
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      21
+     ]
+    ]
+   }
+  }
+ },
+ "mv_wide_draw": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 64,
+  "worst_run": {
+   "vertex": 279,
+   "frames": [
+    0,
+    24
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      24
+     ]
+    ]
+   }
+  }
+ },
+ "mv_ground_slap": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 178,
+  "worst_run": {
+   "vertex": 537,
+   "frames": [
+    0,
+    21
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      21
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      21
+     ]
+    ]
+   }
+  }
+ },
+ "mv_rising_guard": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 178,
+  "worst_run": {
+   "vertex": 449,
+   "frames": [
+    0,
+    15
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      15
+     ]
+    ]
+   }
+  }
+ },
+ "mv_roundhouse": {
+  "sole_skate_cm": 7.09,
+  "contact_runs": 32,
+  "worst_run": {
+   "vertex": 291,
+   "frames": [
+    0,
+    20
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 7.12,
+    "ball_cm": 0.3,
+    "runs": [
+     [
+      0,
+      20
+     ]
+    ]
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   }
+  }
+ },
+ "mv_front_kick": {
+  "sole_skate_cm": 0.0,
+  "contact_runs": 32,
+  "worst_run": {
+   "vertex": 559,
+   "frames": [
+    0,
+    17
+   ]
+  },
+  "planted_bone_variance": {
+   "L": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": []
+   },
+   "R": {
+    "ankle_cm": 0.0,
+    "ball_cm": 0.0,
+    "runs": [
+     [
+      0,
+      17
      ]
     ]
    }

@@ -1,84 +1,67 @@
-// Arena courtyard flagstones (procedural, self-contained, no textures).
-// World-space running-bond flagstones with per-stone tone, bevelled seams, subtle wear and grime.
-// Expects mostly horizontal (+Y up) surfaces; the layout is in world XZ so adjacent meshes line up.
-// Cost: 2 value-noise evaluations + tile hashing, no texture fetches.
+// Arena courtyard flagstones: tileable PBR set (flagstone_albedo / _normal / _orm, 4 m repeat) projected
+// in world XZ (every mesh lines up), anti-tiled by height-blended second layer, macro tone variation,
+// baked contact-AO map, dust and rain wetness.  Mobile cost: 6 texture fetches (3 with anti_tile off,
+// the Low quality tier) + 3 value-noise evaluations.
 //
-// Wetness: the `wetness` uniform (0 dry .. 1 soaked). Use one shared material per look and call
-// VfxMaterials.set_arena_wetness(w) to change it for every arena surface at once ("global"), or
-// give a mesh its own material copy for local puddles.
+// Wetness: the `wetness` uniform (0 dry .. 1 soaked); VfxMaterials.set_arena_wetness(w) drives the shared
+// material.  Without textures bound (e.g. VfxMaterials.make("arena_ground") in the VFX gallery) the shader
+// falls back to a plain stone colour.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
-uniform vec2 tile_size = vec2(1.5, 0.95);          // flagstone width / depth in metres
-uniform float seam_width : hint_range(0.005, 0.08) = 0.022;
-uniform vec3 stone_a : source_color = vec3(0.50, 0.47, 0.43);   // warm sandstone
-uniform vec3 stone_b : source_color = vec3(0.38, 0.38, 0.38);   // cool grey granite
-uniform vec3 seam_color : source_color = vec3(0.12, 0.11, 0.10);
-uniform float wear : hint_range(0.0, 1.0) = 0.55;  // dust / scuffing amount
-uniform float wetness : hint_range(0.0, 1.0) = 0.0;   // 0 dry .. 1 soaked (see VfxMaterials.set_arena_wetness)
+#include "res://presentation/shaders/env_common.gdshaderinc"
+
+uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D orm_tex : hint_default_black, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D ao_map : hint_default_white, filter_linear, repeat_disable;
+uniform vec4 ao_rect = vec4(-17.0, -17.0, 34.0, 34.0);   // world x0, z0, size x, size z of ao_map
+uniform float ao_strength : hint_range(0.0, 1.0) = 0.9;
+uniform float tile_m = 4.0;                               // metres per texture repeat
+uniform bool anti_tile = true;
+uniform vec3 tint : source_color = vec3(1.0);
+uniform float saturation : hint_range(0.0, 1.5) = 0.72;   // colour grade of the generated stone palette
+uniform vec3 fallback_color : source_color = vec3(0.5, 0.47, 0.43);
+uniform float normal_strength : hint_range(0.0, 2.0) = 1.0;
+uniform float wear : hint_range(0.0, 1.0) = 0.55;        // dust / scuffing amount
+uniform float wetness : hint_range(0.0, 1.0) = 0.0;      // 0 dry .. 1 soaked
 
 varying vec3 v_world;
-
-float h21(vec2 p) {
-	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-	p3 += dot(p3, p3.yzx + 33.33);
-	return fract((p3.x + p3.y) * p3.z);
-}
-
-float vnoise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	f = f * f * (3.0 - 2.0 * f);
-	return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), f.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), f.x), f.y);
-}
 
 void vertex() {
 	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {
+	vec3 wn0 = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	vec2 uv; vec3 T; vec3 B; vec3 N;
+	env_face_frame(wn0, v_world, uv, T, B, N);
+	vec3 alb; float hgt; vec3 nrm; vec3 orm; float mask;
+	env_sample(albedo_tex, normal_tex, orm_tex, uv / tile_m, v_world.xz / tile_m, anti_tile, alb, hgt, nrm, orm, mask);
+	if (orm.r + orm.g + orm.b < 0.004) {      // no texture set bound: plain stone
+		alb = fallback_color;
+		orm = vec3(1.0, 0.85, 0.0);
+		nrm = vec3(0.0, 0.0, 1.0);
+		hgt = 1.0;
+	}
 	vec2 p = v_world.xz;
-	// running bond: rows of equal depth, per-row random stone width and offset
-	float row = floor(p.y / tile_size.y);
-	float rw = tile_size.x * (0.78 + 0.44 * h21(vec2(row, 3.7)));
-	float xo = h21(vec2(row, 9.1)) * rw;
-	float col = floor((p.x + xo) / rw);
-	vec2 cell = vec2((p.x + xo) / rw - col, p.y / tile_size.y - row);
-	vec2 id = vec2(col, row);
-	float th = h21(id + 17.0);
-	float th2 = h21(id + 41.0);
+	vec3 albedo = env_grade(alb, saturation) * tint * env_macro_tint(p, 0.55);
+	// dust: pale, slightly rougher haze on the high spots, thicker in the worn mid-field
+	float dust = smoothstep(0.35, 0.8, env_vnoise(p * 0.7 + 23.0) * 0.7 + env_vnoise(p * 2.3) * 0.3) * wear * smoothstep(0.3, 0.8, hgt);
+	albedo = mix(albedo, albedo * 1.14 + vec3(0.012), dust * 0.5);
 
-	// distance to the nearest stone edge in metres, and which edge
-	vec2 dm = vec2(min(cell.x, 1.0 - cell.x) * rw, min(cell.y, 1.0 - cell.y) * tile_size.y);
-	float d = min(dm.x, dm.y);
-	float aa = fwidth(d) * 1.2;
-	float seam = (1.0 - smoothstep(seam_width * 0.4 - aa, seam_width * 1.3 + aa, d)) * (1.0 - smoothstep(seam_width * 4.0, seam_width * 12.0, aa));
-	float bevel = 1.0 - smoothstep(0.0, 0.05, d);
-
-	// tone: per-stone blend between warm and cool stone + low frequency mottling
-	float mott = vnoise(p * 0.9 + th * 13.0);
-	vec3 albedo = mix(stone_a, stone_b, smoothstep(0.25, 0.75, th * 0.7 + mott * 0.45));
-	albedo *= 0.82 + 0.3 * th2;
-	// wear: worn lighter dust in the middle of stones, darker grime in seams and corners
-	float grain = vnoise(p * 6.5 + th * 5.0);
-	albedo *= 1.0 + (grain - 0.5) * 0.35;
-	albedo = mix(albedo, albedo * 1.18 + vec3(0.02), wear * smoothstep(0.1, 0.9, mott) * 0.45);
-	albedo = mix(albedo, seam_color, seam * 0.75);
-	albedo *= 1.0 - 0.28 * (1.0 - smoothstep(0.0, 0.12, d)) * (1.0 - seam);
-
-	// per-stone tilt and bevel normal (world space -> view space)
-	vec2 tilt = (vec2(h21(id + 5.0), h21(id + 9.0)) - 0.5) * 0.06;
-	vec2 toward_edge = dm.x < dm.y ? vec2(cell.x < 0.5 ? -1.0 : 1.0, 0.0) : vec2(0.0, cell.y < 0.5 ? -1.0 : 1.0);
-	vec2 bump = tilt + toward_edge * bevel * 0.55 + (vec2(grain, mott) - 0.5) * 0.10;
-	vec3 wn = normalize(vec3(bump.x, 1.0, bump.y));
-	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
-
-	// wetness: darker, glossy, puddling in the lower parts of stones and along seams
+	// wetness: darker, glossy; puddles gather in the joints / low spots
 	float wet = clamp(wetness, 0.0, 1.0);
-	float puddle = smoothstep(0.35, 0.7, vnoise(p * 1.7 + 11.0) + seam * 0.25);
-	float w_amt = wet * mix(0.6, 1.0, puddle);
-	albedo *= mix(1.0, 0.52, w_amt);
+	float puddle = smoothstep(0.35, 0.7, env_vnoise(p * 1.7 + 11.0) + (1.0 - hgt) * 0.3);
+	float w_amt = wet * mix(0.55, 1.0, puddle);
+	albedo *= mix(1.0, 0.55, w_amt);
+	float flat_n = mix(1.0, 0.25, w_amt * puddle);
+
+	NORMAL = env_world_to_view_normal(nrm, T, B, N, normal_strength * flat_n, VIEW_MATRIX);
 	ALBEDO = albedo;
-	ROUGHNESS = mix(0.86 - 0.12 * grain, mix(0.35, 0.05, puddle), w_amt);
-	SPECULAR = mix(0.4, 0.75, w_amt);
+	ROUGHNESS = mix(clamp(orm.g + dust * 0.06, 0.2, 1.0), mix(0.32, 0.05, puddle), w_amt);
+	SPECULAR = mix(0.45, 0.75, w_amt);
+	float ao_b = mix(1.0, env_arena_ao(ao_map, ao_rect, p), ao_strength * smoothstep(0.5, 0.95, N.y));
+	AO = orm.r * ao_b;
+	AO_LIGHT_AFFECT = 0.55;
 }

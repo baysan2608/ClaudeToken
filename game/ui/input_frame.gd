@@ -36,6 +36,14 @@ var tech_cancel := false
 var element_select := -1
 var target_cycle := false
 var pause_pressed := false
+## -1 = no change, else sub-element 0..3 of the current element (edge).
+var sub_select := -1
+## Sim.Gesture recognised on this frame (edge): ATTACK flick (thrust/ground/sweep) and
+## GUARD flick (UP push / DOWN sink while guarding).
+var attack_gesture := 0
+var guard_gesture := 0
+## EVADE button held (level).
+var evade_held := false
 
 
 func clear_edges() -> void:
@@ -51,6 +59,9 @@ func clear_edges() -> void:
 	target_cycle = false
 	pause_pressed = false
 	cam_delta = Vector2.ZERO
+	sub_select = -1
+	attack_gesture = 0
+	guard_gesture = 0
 
 
 func copy_from(o: InputFrame) -> void:
@@ -72,6 +83,10 @@ func copy_from(o: InputFrame) -> void:
 	element_select = o.element_select
 	target_cycle = o.target_cycle
 	pause_pressed = o.pause_pressed
+	sub_select = o.sub_select
+	attack_gesture = o.attack_gesture
+	guard_gesture = o.guard_gesture
+	evade_held = o.evade_held
 
 
 ## Merge another device's frame into this one (touch + gamepad/keyboard at
@@ -97,3 +112,10 @@ func merge_from(o: InputFrame) -> void:
 		element_select = o.element_select
 	target_cycle = target_cycle or o.target_cycle
 	pause_pressed = pause_pressed or o.pause_pressed
+	if sub_select < 0:
+		sub_select = o.sub_select
+	if attack_gesture == 0:
+		attack_gesture = o.attack_gesture
+	if guard_gesture == 0:
+		guard_gesture = o.guard_gesture
+	evade_held = evade_held or o.evade_held

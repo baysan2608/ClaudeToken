@@ -70,6 +70,24 @@ var wall_yaw := 0.0
 var wall_rise := 0.0               # 0..1
 var wall_damage := 0.0             # >= 1 crumbles
 
+# --- Moveset engine (docs/COMBAT_SPEC.md "Engine") -----------------------------
+var sub := 0                       # sub-element of the move that made it
+var tag: StringName = &""          # shape semantics (MOVESET §15.6 body tags); "" = legacy
+var tier := 0                      # charge tier the body was released with (0..3)
+var owner := -1                    # zones/fields: owning actor (-1 = neutral)
+var power := 0.0                   # zone / volume power (PU) on its main channel
+var heat_payload := 0.0            # HU carried by FIRE bodies (counted by thermal_energy)
+var spin := 0.0                    # rad/s (vortices, discs) - presentation reads it
+var zone_radius := 0.0             # ZONE form: radius of the field (m)
+var captured: Array[int] = []      # bodies held inside this one (vortex, wave carry)
+var captured_by := -1              # body id this one is captured by
+var gravity_scale := 1.0           # projectiles: 0.4 = flat spear
+var hardness := -1.0               # counter power per kg override (< 0 = Materials)
+## Free per-body parameters set by verbs and kits: homing, pierce, ricochet, on_impact, speed,
+## channel, ccls (counter class override), cls (threat class override), walk_height, friction,
+## leave_zone, knock, lift, fuse, linger ... (documented in COMBAT_SPEC "Engine").
+var props := {}
+
 
 func is_stone() -> bool:
 	return mat == Sim.Mat.STONE
@@ -97,22 +115,44 @@ func is_projectile() -> bool:
 
 
 func thermal_energy() -> float:
-	## Heat above ambient in HU, including latent heat. Used by the energy ledger.
+	## Heat above ambient in HU, including latent heat and any carried heat payload.
+	## Used by the energy ledger.
 	if mat == Sim.Mat.STONE:
-		return mass * Sim.STONE_C * (temp - Sim.AMBIENT_C) + mass * Sim.STONE_LATENT * liquid
+		return mass * Sim.STONE_C * (temp - Sim.AMBIENT_C) + mass * Sim.STONE_LATENT * liquid + heat_payload
 	if mat == Sim.Mat.WATER:
-		return mass * Sim.WATER_C * (temp - Sim.AMBIENT_C) - mass * Sim.WATER_LATENT_FUSION * (1.0 - liquid)
-	return 0.0
+		return mass * Sim.WATER_C * (temp - Sim.AMBIENT_C) - mass * Sim.WATER_LATENT_FUSION * (1.0 - liquid) + heat_payload
+	if Materials.is_fusible(mat):
+		return mass * Materials.c(mat) * (temp - Sim.AMBIENT_C) + mass * Materials.latent(mat) * liquid + heat_payload
+	if mat == Sim.Mat.PLANT:
+		return mass * Materials.c(mat) * (temp - Sim.AMBIENT_C) + heat_payload
+	return heat_payload
+
+
+func is_metal() -> bool:
+	return mat == Sim.Mat.METAL
+
+
+func is_zone() -> bool:
+	return form == Sim.Form.ZONE
+
+
+## Fusible materials in their molten phase (lava, molten metal, molten sand/glass).
+func is_molten_any() -> bool:
+	return Materials.is_fusible(mat) and phase == Sim.Phase.MOLTEN
 
 
 func update_radius() -> void:
 	match mat:
-		Sim.Mat.STONE:
+		Sim.Mat.STONE, Sim.Mat.SAND, Sim.Mat.GLASS:
 			radius = Sim.stone_radius(mass)
+		Sim.Mat.METAL:
+			radius = Sim.stone_radius(mass * 0.35)   # dense: a 6 kg plate reads small
 		Sim.Mat.WATER:
 			radius = Sim.water_radius(mass)
+		Sim.Mat.PLANT:
+			radius = Sim.stone_radius(mass * 0.6)
 		_:
-			radius = 0.5
+			radius = 0.5 if zone_radius <= 0.0 else zone_radius
 
 
 func update_radius_puddle() -> void:
@@ -130,6 +170,6 @@ func touch(actor_id: int, verb: String, tick: int) -> void:
 
 
 func describe() -> String:
-	return "#%d %s %s/%s %.1fkg %.0f°C liq=%.2f ctl=%d" % [
-		id, ["stone", "water", "steam"][mat], Sim.FORM_NAMES[form], Sim.PHASE_NAMES[phase],
+	return "#%d %s%s %s/%s %.1fkg %.0f°C liq=%.2f ctl=%d" % [
+		id, Sim.MAT_NAMES[mat], ("[%s]" % tag) if tag != &"" else "", Sim.FORM_NAMES[form], Sim.PHASE_NAMES[phase],
 		mass, temp, liquid, controller]

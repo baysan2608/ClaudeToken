@@ -19,6 +19,11 @@ const MAX_DROP := 0.38               # never reach further down than a step (dee
 const MAX_LIFT := 0.45
 const LOOK_YAW_MAX := 1.05           # rad (about 60 deg) beyond the animated head direction
 const LOOK_PITCH_MAX := 0.45
+const PROBES := ["head", "hand.L", "hand.R", "shin.L", "shin.R", "foot.L", "foot.R", "toe.L", "toe.R", "hips"]
+const LOCK_MAX_DIST := 0.2           # m a locked foot may lag the animated one before it lets go
+const LOCK_MAX_YAW := 0.7            # rad of body turn a locked foot tolerates
+const LOCK_MAX_FOOT_SPEED := 0.7    # m/s: an animated foot moving faster than this is not set down
+const LOCK_RELEASE := 0.22           # s to ease a released foot back onto the animation
 
 # ---- inputs (set by FighterView every frame) ----
 var loco_target := 0.0               # 1 = locomotion owns the whole body
@@ -49,6 +54,20 @@ var land_y := 0.0
 var land_v := 0.0
 var pelvis_shift := 0.0
 var foot_off := [0.0, 0.0]
+var hip_tilt := 0.0
+var lock_target_w := 0.0             # input: 1 = planted feet may lock to the ground
+var locked := [false, false]
+var lock_w := [0.0, 0.0]
+var lock_pos := [Vector3.ZERO, Vector3.ZERO]
+var lock_yaw := [0.0, 0.0]
+var relock_wait := [false, false]
+var catch_lift := [0.0, 0.0]
+var _last_origin := Vector3.ZERO
+var _prev_anim_w := [Vector3.ZERO, Vector3.ZERO]
+var model_lift := 0.0                # input: visual height smoothing offset of the model (m)
+var foot_world := [Vector3.ZERO, Vector3.ZERO]   # [left, right] ankles after all layers
+var _leg_len := [0.82, 0.82]
+var probe_world := PackedVector3Array()   # world positions of PROBES (AnimRigSettings.record_probes)
 var look_yaw := 0.0
 var look_pitch := 0.0
 var hand_world := [Vector3.ZERO, Vector3.ZERO]   # [right, left] after all layers
@@ -68,6 +87,13 @@ func setup_rig(sk: Skeleton3D, ap: AnimationPlayer) -> void:
 		_b[n] = sk.find_bone(n)
 	_ready_ok = _b.hips >= 0 and _b["thigh.L"] >= 0 and _b["shin.L"] >= 0 and _b["foot.L"] >= 0 \
 		and _b["thigh.R"] >= 0 and _b["shin.R"] >= 0 and _b["foot.R"] >= 0
+	if _ready_ok:
+		for i in 2:
+			var s := "L" if i == 0 else "R"
+			var a := sk.get_bone_global_rest(_b["thigh." + s]).origin
+			var b := sk.get_bone_global_rest(_b["shin." + s]).origin
+			var c := sk.get_bone_global_rest(_b["foot." + s]).origin
+			_leg_len[i] = (b - a).length() + (c - b).length()
 	sampler.resize(sk.get_bone_count())
 	_legs_mask.resize(sk.get_bone_count())
 	_legs_mask.fill(0)
@@ -143,30 +169,34 @@ func _process_modification_with_delta(_delta: float) -> void:
 	var ank: Array[Vector3] = [sk.get_bone_global_pose(_b["foot.L"]).origin, sk.get_bone_global_pose(_b["foot.R"]).origin]
 	var fbas: Array[Basis] = [sk.get_bone_global_pose(_b["foot.L"]).basis, sk.get_bone_global_pose(_b["foot.R"]).basis]
 	var use_ik := ik_w > 0.002 and arena != null
-	var off_eff := [0.0, 0.0]
+	var goal: Array[Vector3] = [ank[0], ank[1]]
+	var gbas: Array[Basis] = [fbas[0], fbas[1]]
 	if use_ik:
-		var floor_y := xf.origin.y
-		var k := 1.0 - exp(-22.0 * _dt)
+		_ground_goals(sk, xf, ank, goal)
+		var ball: Array[Vector3] = [ank[0], ank[1]]
 		for i in 2:
 			var toe: int = _b["toe.L" if i == 0 else "toe.R"]
-			var aw := xf * ank[i]
-			var bw := xf * (sk.get_bone_global_pose(toe).origin if toe >= 0 else ank[i])
-			var from_y := floor_y + Sim.STEP_HEIGHT + 0.02
-			var g := maxf(arena.ground_height(aw.x, aw.z, from_y), arena.ground_height(bw.x, bw.z, from_y))
-			var off := g - floor_y
-			if off < -MAX_DROP:
-				off = 0.0          # past a ledge edge: the foot stays on the edge, no reaching into the void
-			off = clampf(off, -MAX_DROP, MAX_LIFT)
-			var plant := 1.0 - smoothstep(PLANT_FROM, PLANT_TO, ank[i].y)
-			var tgt := off if off > 0.0 else off * plant
-			foot_off[i] = lerpf(float(foot_off[i]), tgt, k)
-			off_eff[i] = foot_off[i]
-		var shift_t := clampf(minf(float(off_eff[0]), float(off_eff[1])), -MAX_DROP, 0.4)
-		pelvis_shift = lerpf(pelvis_shift, shift_t, 1.0 - exp(-10.0 * _dt))
+			if toe >= 0:
+				ball[i] = sk.get_bone_global_pose(toe).origin
+			ball[i].y += float(foot_off[i])
+		_lock_feet(xf, ank, ball, goal, fbas, gbas)
+		# Pelvis: down to the lower foot's ground, and far enough that both goals stay in reach.
+		var shift_t := clampf(minf(float(foot_off[0]), float(foot_off[1])), -MAX_DROP, 0.4)
+		shift_t = minf(shift_t, -_reach_drop(sk, goal, shift_t))
+		shift_t = maxf(shift_t, -MAX_DROP)
+		pelvis_shift = lerpf(pelvis_shift, shift_t, 1.0 - exp(-12.0 * _dt))
+		# Hip tilt toward the lower foot (the pelvis follows uneven ground), torso counter-tilts.
+		var tilt_t := clampf((float(foot_off[0]) - float(foot_off[1])) * 1.1, -0.2, 0.2)
+		hip_tilt = lerpf(hip_tilt, tilt_t, 1.0 - exp(-10.0 * _dt))
 	else:
 		pelvis_shift = lerpf(pelvis_shift, 0.0, 1.0 - exp(-10.0 * _dt))
+		hip_tilt = lerpf(hip_tilt, 0.0, 1.0 - exp(-10.0 * _dt))
 		foot_off[0] = 0.0
 		foot_off[1] = 0.0
+		_unlock(0)
+		_unlock(1)
+		lock_w[0] = 0.0
+		lock_w[1] = 0.0
 	# 3. additive layers
 	var hips: int = _b.hips
 	var dy := pelvis_shift * ik_w + land_y
@@ -181,12 +211,13 @@ func _process_modification_with_delta(_delta: float) -> void:
 	var ax_roll := Vector3(0, 0, 1)            # +Z tips the top toward -X (the character's right)
 	# hips take part of the lean only when the feet are pinned by IK
 	var hip_share := 0.35 * ik_w
-	if hip_share > 0.001:
-		LegIK.rotate_global(sk, hips, Quaternion(ax_pitch, pitch * hip_share) * Quaternion(ax_roll, roll * hip_share) * HitReactor.quat(t, 0.25 * ik_w))
+	var tilt := hip_tilt * ik_w
+	if hip_share > 0.001 or absf(tilt) > 1e-4:
+		LegIK.rotate_global(sk, hips, Quaternion(ax_pitch, pitch * hip_share) * Quaternion(ax_roll, roll * hip_share + tilt) * HitReactor.quat(t, 0.25 * ik_w))
 	var rest := 1.0 - hip_share
 	var torso_rest := 1.0 - 0.25 * ik_w
 	var spine_q := Quaternion(Vector3.UP, aim_yaw * aim_w * 0.4) * Quaternion(ax_pitch, pitch * rest * 0.5) \
-		* Quaternion(ax_roll, roll * rest * 0.5) * HitReactor.quat(t, torso_rest * 0.45)
+		* Quaternion(ax_roll, roll * rest * 0.5 - tilt) * HitReactor.quat(t, torso_rest * 0.45)
 	LegIK.rotate_global(sk, _b.spine, spine_q)
 	var chest_q := Quaternion(Vector3.UP, aim_yaw * aim_w * 0.6) * Quaternion(ax_pitch, pitch * rest * 0.5) \
 		* Quaternion(ax_roll, roll * rest * 0.5) * HitReactor.quat(t, torso_rest * 0.55)
@@ -201,19 +232,150 @@ func _process_modification_with_delta(_delta: float) -> void:
 	# 4. foot IK
 	dbg_points.clear()
 	last_reach_error = 0.0
-	if use_ik or ik_w > 0.002:
+	if use_ik:
 		for i in 2:
 			var s := "L" if i == 0 else "R"
-			var goal: Vector3 = ank[i] + Vector3(0, float(off_eff[i]), 0)
-			last_reach_error = maxf(last_reach_error, LegIK.solve(sk, _b["thigh." + s], _b["shin." + s], _b["foot." + s], goal, fbas[i], ik_w))
+			last_reach_error = maxf(last_reach_error, LegIK.solve(sk, _b["thigh." + s], _b["shin." + s], _b["foot." + s], goal[i], gbas[i], ik_w))
 			if AnimRigSettings.debug_draw:
-				dbg_points.append(xf * goal)
-	# hands for VFX anchoring
+				dbg_points.append(xf * goal[i])
+	# outputs: hands for VFX anchoring, feet for tests and the lab
 	if _b["hand.R"] >= 0:
 		hand_world[0] = xf * sk.get_bone_global_pose(_b["hand.R"]).origin
 	if _b["hand.L"] >= 0:
 		hand_world[1] = xf * sk.get_bone_global_pose(_b["hand.L"]).origin
+	foot_world[0] = xf * sk.get_bone_global_pose(_b["foot.L"]).origin
+	foot_world[1] = xf * sk.get_bone_global_pose(_b["foot.R"]).origin
 	hand_frame = Engine.get_process_frames()
+	if AnimRigSettings.record_probes:
+		probe_world.resize(PROBES.size())
+		for i in PROBES.size():
+			var b: int = _b.get(PROBES[i], -1)
+			probe_world[i] = xf * sk.get_bone_global_pose(b).origin if b >= 0 else xf.origin
+
+
+## Ground offsets of the two feet from the analytic ArenaMap (heel or ball, whichever is higher),
+## smoothed into foot_off; goal[i] = animated ankle + its offset. Surfaces higher than a step above
+## the fighter's floor are walls (never stood on); deeper than MAX_DROP is a ledge edge (the foot
+## keeps the fighter's floor height rather than reaching into the void).
+func _ground_goals(sk: Skeleton3D, xf: Transform3D, ank: Array[Vector3], goal: Array[Vector3]) -> void:
+	var floor_y := xf.origin.y - model_lift
+	var k := 1.0 - exp(-22.0 * _dt)
+	for i in 2:
+		var toe: int = _b["toe.L" if i == 0 else "toe.R"]
+		var aw := xf * ank[i]
+		var bw := xf * (sk.get_bone_global_pose(toe).origin if toe >= 0 else ank[i])
+		var hw := aw + (aw - bw).normalized() * 0.09     # the heel, behind the ankle
+		var top := floor_y + Sim.STEP_HEIGHT + 0.02
+		var g := maxf(arena.ground_height(hw.x, hw.z, top, 0.0), arena.ground_height(bw.x, bw.z, top, 0.0))
+		var off := g - xf.origin.y
+		if g - floor_y < -MAX_DROP:
+			off = floor_y - xf.origin.y    # past a ledge edge: stay level with the edge
+		off = clampf(off, -MAX_DROP - 0.1, MAX_LIFT)
+		var plant := 1.0 - smoothstep(PLANT_FROM, PLANT_TO, ank[i].y)
+		var tgt := off if off > 0.0 else off * plant
+		foot_off[i] = lerpf(float(foot_off[i]), tgt, k)
+		goal[i] = ank[i] + Vector3(0, float(foot_off[i]), 0)
+
+
+## Foot locking: a planted foot keeps its world position and heading until it lifts (or the body has
+## moved too far from it), then eases back onto the animated foot. Removes the residual slide of
+## speed mismatches, blends, accelerations and turns.
+func _lock_feet(xf: Transform3D, ank: Array[Vector3], ball: Array[Vector3], goal: Array[Vector3], fbas: Array[Basis], gbas: Array[Basis]) -> void:
+	var inv := xf.affine_inverse()
+	# A teleport (respawn, reset) or a long hitch: nothing stays locked.
+	var jumped := (xf.origin - _last_origin).length() > 0.6
+	_last_origin = xf.origin
+	for i in 2:
+		var plant := 1.0 - smoothstep(PLANT_FROM, PLANT_TO, ank[i].y)
+		# The ball of the foot is what stays put (the heel peels off around it).
+		var anim_w := xf * ball[i]
+		# World speed of the animated foot: ~0 for a stance foot of a speed-matched gait, about twice
+		# the body speed for a swinging one (robust where blending flattens the foot lift).
+		var pv: Vector3 = _prev_anim_w[i]
+		var vel := Vector2(anim_w.x - pv.x, anim_w.z - pv.z).length() / maxf(_dt, 1e-4)
+		_prev_anim_w[i] = anim_w
+		var can := lock_target_w > 0.5 and AnimRigSettings.foot_lock and ik_w > 0.95 and not jumped
+		if locked[i]:
+			var lp: Vector3 = lock_pos[i]
+			var d := Vector2(lp.x - anim_w.x, lp.z - anim_w.z).length()
+			var yaw_d := absf(wrapf(_yaw_of(xf.basis * fbas[i]) - float(lock_yaw[i]), -PI, PI))
+			if not can or plant < 0.4 or d > LOCK_MAX_DIST or yaw_d > LOCK_MAX_YAW:
+				_unlock(i)
+				# Torn loose while still planted: no new lock until this foot has stepped, and the
+				# catch-up is a quick step (the foot lifts on the way) rather than a slide.
+				relock_wait[i] = plant >= 0.4
+				catch_lift[i] = clampf(d * 0.45, 0.0, 0.09) if plant >= 0.4 else 0.0
+		elif can and plant > 0.9 and float(lock_w[i]) < 0.35 and vel < LOCK_MAX_FOOT_SPEED + 0.8 * local_vel.length() and not relock_wait[i]:
+			# Lock where the foot is drawn now (mid-release that is not the animated spot).
+			var e0 := float(lock_w[i])
+			e0 = e0 * e0 * (3.0 - 2.0 * e0)
+			var lp0: Vector3 = lock_pos[i]
+			var cur := anim_w.lerp(Vector3(lp0.x, anim_w.y, lp0.z), e0)
+			var dyaw0 := wrapf(float(lock_yaw[i]) - _yaw_of(xf.basis * fbas[i]), -PI, PI) * e0
+			locked[i] = true
+			lock_pos[i] = cur
+			lock_yaw[i] = _yaw_of(xf.basis * fbas[i]) + dyaw0
+			lock_w[i] = 1.0
+		if plant < 0.5 or vel > 1.4:
+			relock_wait[i] = false
+		if not locked[i]:
+			lock_w[i] = move_toward(float(lock_w[i]), 0.0, _dt / LOCK_RELEASE)
+		var w := float(lock_w[i])
+		if w <= 1e-3:
+			continue
+		var lp2: Vector3 = lock_pos[i]
+		# Hold the ball horizontally (the ankle goal moves by the same amount); heights stay animated.
+		var e := w * w * (3.0 - 2.0 * w)       # smoothstep release
+		var shift := Vector3(lp2.x - anim_w.x, 0.0, lp2.z - anim_w.z) * e
+		goal[i] = goal[i] + inv.basis * shift
+		if float(catch_lift[i]) > 0.0 and not locked[i]:
+			goal[i].y += 4.0 * float(catch_lift[i]) * w * (1.0 - w)
+		# Keep the foot's world heading: undo the body's yaw change since touchdown.
+		var dyaw := wrapf(float(lock_yaw[i]) - _yaw_of(xf.basis * fbas[i]), -PI, PI) * e
+		gbas[i] = Basis(Vector3.UP, dyaw) * fbas[i]
+
+
+func _unlock(i: int) -> void:
+	locked[i] = false
+
+
+## Drops every foot lock and spring at once (FighterView.snap: respawn / scenario reset).
+func reset_state() -> void:
+	for i in 2:
+		locked[i] = false
+		lock_w[i] = 0.0
+		relock_wait[i] = false
+		foot_off[i] = 0.0
+	hits.reset()
+	land_y = 0.0
+	land_v = 0.0
+	pelvis_shift = 0.0
+	hip_tilt = 0.0
+
+
+static func _yaw_of(b: Basis) -> float:
+	# Heading of the foot's forward (+Z of the skeleton-space foot is along the sole after the rig's roll;
+	# use the projected bone direction: local Y points from ankle to toe).
+	var f := b.y
+	return atan2(f.x, f.z)
+
+
+## How far the pelvis must come down (m, >= 0) so both foot goals are within leg reach.
+func _reach_drop(sk: Skeleton3D, goal: Array[Vector3], shift: float) -> float:
+	var need := 0.0
+	for i in 2:
+		var s := "L" if i == 0 else "R"
+		var th: int = _b["thigh." + s]
+		var hip := sk.get_bone_global_pose(th).origin + Vector3(0, shift, 0)
+		var l := float(_leg_len[i]) * 0.985
+		var d: Vector3 = goal[i] - hip
+		var h2 := d.x * d.x + d.z * d.z
+		if h2 >= l * l:
+			continue
+		var v := -d.y                     # hip above the goal
+		var extra := v - sqrt(l * l - h2)
+		need = maxf(need, extra)
+	return clampf(need, 0.0, 0.2)
 
 
 ## Head/neck/chest turn toward look_world, relative to where the clip already points the head,

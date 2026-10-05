@@ -47,11 +47,37 @@ var wall_body := -1
 
 var buffered := ""           # buffered press: "attack", "evade", "tech", "guard"
 var buffered_tick := -1000
+var buffered_slot := ""       # slot of a buffered attack press (gesture)
 var attack_hold := 0.0
 
 # Telemetry for presentation
 var last_hit_dir := Vector3.ZERO
 var last_result := ""
+
+# --- Moveset engine (docs/COMBAT_SPEC.md "Engine") -----------------------------
+## Selected sub-element per element (0 = legacy kit). Switching affects the next action only.
+var subs := [0, 0, 0, 0]
+## Unlocked sub-elements per element.
+var subs_unlocked := [[true, true, true, true], [true, true, true, true], [true, true, true, true], [true, true, true, true]]
+## Active statuses: name -> {t: seconds left (< 0 = until removed), mag: float, src: actor id}. See Status.
+var status := {}
+var metal_carried := 12.0    # kg in the metal satchel (Earth/Metal)
+var static_charge := 0.0     # 0..60 stored by the Static Ward (Fire/Lightning)
+## Movement stance: "", stone_skin, iron, anchor, roots, lava_wade, overcharge, flight, hover, ...
+var stance := ""
+var armor := 0.0             # fraction of K damage removed (0..1)
+var anchored := false        # immune to knockback / pull / lift
+var flying := false          # airborne by a mode (flight / hover): immune to ground lines
+## Chain/weave bookkeeping for MOVESET §9.1 (slots used in the current string, weave used).
+var chain := {"n": 0, "slots": [], "weaved": false}
+
+
+func sub() -> int:
+	return int(subs[element])
+
+
+func sub_of(e: int) -> int:
+	return int(subs[clampi(e, 0, 3)])
 
 
 func forward() -> Vector3:

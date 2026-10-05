@@ -8,6 +8,7 @@ def build_character():
     mb = MeshBuilder()
     body.build_head(mb)
     body.build_neck(mb)
+    body.build_eyes(mb)
     body.build_hair(mb)
     body.build_torso_skin(mb)
     try:

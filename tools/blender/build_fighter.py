@@ -41,6 +41,8 @@ SPEC_ORDER = [
     "fire_jab", "fire_charge", "fire_release", "heat_draw", "magma_hold", "pour", "lightning_charge", "lightning_release",
     "air_push", "air_gust",
 ]
+# generic moveset clips (fighter_clips.MV_ORDER) are appended after the 47 game-spec clips
+SPEC_ORDER = SPEC_ORDER + list(C.MV_ORDER)
 
 
 def build(args):
@@ -116,7 +118,7 @@ def build(args):
         export_apply=False,
         export_materials="EXPORT",
         export_normals=True,
-        export_texcoords=False,
+        export_texcoords=True,
         export_tangents=False,
         export_vertex_color="NONE",
         export_cameras=False,

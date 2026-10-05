@@ -12,7 +12,9 @@ const BUFFER_TIME := 0.15        # press buffer
 const PERFECT_WINDOW := 0.18     # guard press this close before contact = perfect
 const GUARD_MASH_LOCK := 0.35    # a new perfect window needs this gap since the last press
 
-const DEFS := {
+## Today's moves, values unchanged (tests pin them). Moves.DEFS is built from these plus kit
+## registrations plus Lab live-tuning overrides.
+const BASE_DEFS := {
 	# ---------------------------------------------------------------- common
 	"evade": {"module": "common", "startup": 0.0, "active": 0.30, "recovery": 0.12,
 		"distance": 2.8, "iframes": 0.14, "cost": 4.0, "anim": "evade"},
@@ -76,5 +78,176 @@ const TECHNIQUES := {
 }
 
 
+## Live move table: BASE_DEFS + kit registrations (register) + Lab overrides (set_override).
+## `Moves.DEFS.pour` etc. keep working. Never assign to it; use the API below.
+static var DEFS: Dictionary = BASE_DEFS.duplicate(true)
+
+## Slot bindings "element/sub/slot" -> move id. Sub-0 bindings are the legacy ids.
+static var BINDINGS := {}
+## Ids registered by kits (in registration order).
+static var REGISTERED: Array[String] = []
+## Lab live tuning: id -> {key: original value} (only for overridden keys) and id -> {key: value}.
+static var _orig := {}
+static var _over := {}
+static var _ensured := false
+
+## Legacy (sub 0) bindings: today's moves exactly.
+const LEGACY_BINDINGS := {
+	0: {"strike": "earth_attack", "guard": "guard", "tech": "earth_tech", "evade": "evade"},
+	1: {"strike": "water_attack", "guard": "guard", "tech": "water_tech", "evade": "evade"},
+	2: {"strike": "fire_attack", "guard": "guard", "tech": "fire_tech", "evade": "evade"},
+	3: {"strike": "air_attack", "guard": "guard", "tech": "air_tech", "evade": "air_dash"},
+}
+## Keys every def has after register() (docs/MOVESET.md §15.2 schema; kits may add more).
+const DEF_DEFAULTS := {"module": "verbs", "startup": 0.0, "active": 0.0, "recovery": 0.0}
+
+
 static func get_def(id: String) -> Dictionary:
 	return DEFS[id]
+
+
+## Idempotent: sets up the legacy bindings, the core interaction rules and every kit's
+## registrations. CombatWorld._init calls it; tests and tools may call it any time.
+static func ensure() -> void:
+	if _ensured:
+		return
+	_ensured = true
+	for e in LEGACY_BINDINGS:
+		for slot in LEGACY_BINDINGS[e]:
+			BINDINGS[_key(e, 0, slot)] = LEGACY_BINDINGS[e][slot]
+	Interactions.ensure()
+	Status.ensure()
+	KitEarth.register()
+	KitWater.register()
+	KitFire.register()
+	KitAir.register()
+
+
+static func _key(element: int, sub: int, slot: String) -> String:
+	return "%d/%d/%s" % [element, sub, slot]
+
+
+## Registers (or replaces) a move def. Missing schema keys get DEF_DEFAULTS; `name` defaults to the id.
+## Registering an id of BASE_DEFS is refused (legacy moves are fixed; bind a new id instead).
+static func register(id: String, def: Dictionary) -> void:
+	if BASE_DEFS.has(id):
+		push_error("Moves.register: '%s' is a legacy move and cannot be replaced" % id)
+		return
+	var d := def.duplicate(true)
+	for k in DEF_DEFAULTS:
+		if not d.has(k):
+			d[k] = DEF_DEFAULTS[k]
+	if not d.has("name"):
+		d["name"] = id
+	d["id"] = id
+	if not REGISTERED.has(id):
+		REGISTERED.append(id)
+	DEFS[id] = d
+	# Re-apply live overrides that target this id.
+	for k in _over.get(id, {}):
+		_orig[id][k] = d.get(k)
+		d[k] = _over[id][k]
+
+
+## Removes a registered (non-legacy) move and every binding to it.
+static func unregister(id: String) -> void:
+	if BASE_DEFS.has(id) or not DEFS.has(id):
+		return
+	DEFS.erase(id)
+	REGISTERED.erase(id)
+	for k in BINDINGS.keys():
+		if BINDINGS[k] == id:
+			BINDINGS.erase(k)
+
+
+## Binds a move id to (element, sub, slot). Slots: Sim.SLOTS. Binding sub 0 replaces a legacy
+## binding (only do that with a def that keeps the legacy behaviour; tests pin it).
+static func bind(element: int, sub: int, slot: String, id: String) -> void:
+	if not Sim.SLOTS.has(slot):
+		push_error("Moves.bind: unknown slot '%s'" % slot)
+		return
+	BINDINGS[_key(element, sub, slot)] = id
+
+
+static func unbind(element: int, sub: int, slot: String) -> void:
+	BINDINGS.erase(_key(element, sub, slot))
+	if sub == 0 and LEGACY_BINDINGS.get(element, {}).has(slot):
+		BINDINGS[_key(element, 0, slot)] = LEGACY_BINDINGS[element][slot]
+
+
+## Move id for (element, sub, slot): the exact binding, else the sub-0 binding, else the legacy id,
+## else "" (nothing bound: callers fall back, e.g. an unbound thrust plays the strike).
+static func resolve(element: int, sub: int, slot: String) -> String:
+	var k := _key(element, sub, slot)
+	if BINDINGS.has(k) and DEFS.has(BINDINGS[k]):
+		return BINDINGS[k]
+	var k0 := _key(element, 0, slot)
+	if BINDINGS.has(k0) and DEFS.has(BINDINGS[k0]):
+		return BINDINGS[k0]
+	return String(LEGACY_BINDINGS.get(element, {}).get(slot, ""))
+
+
+## Every move id bound for (element, sub) in slot order (unbound slots skipped; sub-0 fallbacks included).
+static func list(element: int, sub: int) -> Array[String]:
+	var out: Array[String] = []
+	for slot in Sim.SLOTS:
+		var id := resolve(element, sub, slot)
+		if id != "" and not out.has(id):
+			out.append(id)
+	return out
+
+
+## The slot an id is bound to for (element, sub), or "".
+static func slot_of(element: int, sub: int, id: String) -> String:
+	for slot in Sim.SLOTS:
+		if resolve(element, sub, slot) == id:
+			return slot
+	return ""
+
+
+## Lab live tuning: change one numeric (or any) field of a def. No effect until called.
+static func set_override(id: String, key: String, value: Variant) -> void:
+	if not DEFS.has(id):
+		return
+	var d: Dictionary = DEFS[id]
+	if not _orig.has(id):
+		_orig[id] = {}
+		_over[id] = {}
+	if not _orig[id].has(key):
+		_orig[id][key] = d.get(key)
+	_over[id][key] = value
+	d[key] = value
+
+
+## Restores every overridden field to its registered/base value.
+static func clear_overrides() -> void:
+	for id in _orig:
+		if not DEFS.has(id):
+			continue
+		var d: Dictionary = DEFS[id]
+		for key in _orig[id]:
+			if _orig[id][key] == null:
+				d.erase(key)
+			else:
+				d[key] = _orig[id][key]
+	_orig.clear()
+	_over.clear()
+
+
+## Current overrides: {id: {key: value}}.
+static func overrides() -> Dictionary:
+	return _over.duplicate(true)
+
+
+## Snapshot / restore of registrations, bindings and overrides (tests and Lab presets).
+static func save_state() -> Dictionary:
+	return {"defs": DEFS.duplicate(true), "bindings": BINDINGS.duplicate(), "registered": REGISTERED.duplicate(),
+		"orig": _orig.duplicate(true), "over": _over.duplicate(true)}
+
+
+static func load_state(st: Dictionary) -> void:
+	DEFS = st.defs.duplicate(true)
+	BINDINGS = st.bindings.duplicate()
+	REGISTERED.assign(st.registered)
+	_orig = st.orig.duplicate(true)
+	_over = st.over.duplicate(true)

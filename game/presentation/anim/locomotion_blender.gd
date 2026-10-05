@@ -18,7 +18,7 @@ const GAITS := {
 }
 const WEIGHT_RATE := 9.0        # 1/s, how fast clip weights follow their targets
 const MOVE_START := 0.12        # m/s: below this the stance is shown alone
-const MOVE_FULL := 0.75         # m/s: above this the gait is fully in
+const MOVE_FULL := 1.05         # m/s: above this the gait is fully in (stride shrinks below it)
 const RUN_FROM := 2.2           # m/s walk -> run blend range (sim: walk <= 1.8, run >= 4.0)
 const RUN_TO := 3.8
 const DIRECTIONAL_MAX := 3.2    # m/s: faster than this only the forward run is used
@@ -91,7 +91,14 @@ func update(dt: float, local_vel: Vector2, stance: String) -> void:
 			stride += float(weights[c]) * float(GAITS[c].stride)
 	if gw > 1e-3:
 		stride /= gw
-		cycle_rate = clampf(speed / maxf(stride, 0.1), 0.6, 2.0)
+		# Blending with the (planted) stance shrinks the footprints by the gait's share of the mix:
+		# the cadence follows the effective stride, so slow walks take short quick steps, not long
+		# slow-motion ones (and the feet still travel at ground speed).
+		var tot := 0.0
+		for c in weights:
+			tot += float(weights[c])
+		var eff := stride * clampf(gw / maxf(tot, 1e-3), 0.25, 1.0)
+		cycle_rate = clampf(speed / maxf(eff, 0.1), 0.5, 2.2)
 	else:
 		cycle_rate = 0.0
 	phase = fposmod(phase + cycle_rate * dt, 1.0)

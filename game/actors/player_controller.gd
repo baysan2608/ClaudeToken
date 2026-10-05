@@ -30,4 +30,8 @@ func build(f: InputFrame, cam_yaw: float) -> ActorIntent:
 		intent.aim_dir = d.normalized() if d.length() > 0.05 else fwd
 	intent.element_select = f.element_select
 	intent.target_cycle = f.target_cycle
+	intent.sub_select = f.sub_select
+	intent.attack_gesture = f.attack_gesture
+	intent.guard_gesture = f.guard_gesture
+	intent.evade_held = f.evade_held
 	return intent

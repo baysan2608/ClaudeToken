@@ -11,14 +11,29 @@ const GRAVITY := 18.0
 
 enum Element { EARTH, WATER, FIRE, AIR }
 const ELEMENT_NAMES := ["Earth", "Water", "Fire", "Air"]
+## Sub-elements per element (docs/MOVESET.md §2). Sub 0 is the legacy kit of each element.
+const SUB_NAMES := [
+	["Stone", "Metal", "Sand", "Magma"],
+	["Water", "Ice", "Mist", "Plant"],
+	["Flame", "Blue", "Lightning", "Combustion"],
+	["Gust", "Vortex", "Vacuum", "Sound"],
+]
+## Input gestures on the ATTACK / GUARD buttons (flick up / down / side).
+enum Gesture { NONE, UP, DOWN, SIDE }
+## Move slots filled by every sub-element (docs/MOVESET.md §3).
+const SLOTS := ["strike", "thrust", "ground", "sweep", "guard", "push", "sink", "tech", "evade", "evade_hold"]
+const ATTACK_SLOTS := ["strike", "thrust", "ground", "sweep"]
 
 ## Composition class. Lava = STONE in MOLTEN phase; ice = WATER in FROZEN phase.
-enum Mat { STONE, WATER, STEAM }
+## Appended values only (existing ints never change): METAL..AIR are the moveset materials.
+enum Mat { STONE, WATER, STEAM, METAL, SAND, GLASS, PLANT, FIRE, AIR }
+const MAT_NAMES := ["stone", "water", "steam", "metal", "sand", "glass", "plant", "fire", "air"]
 enum Phase { SOLID, SOFTENED, MOLTEN, LIQUID, FROZEN, GAS }
 const PHASE_NAMES := ["solid", "softened", "molten", "liquid", "frozen", "gas"]
 ## Representation of the same logical body. Changing form never changes identity.
-enum Form { CHUNK, BLOB, WAVE, WALL, STREAM, SHARD, PUDDLE, POOL, CLOUD }
-const FORM_NAMES := ["chunk", "blob", "wave", "wall", "stream", "shard", "puddle", "pool", "cloud"]
+## ZONE (appended): a non-solid field or barrier attached to the ground or an actor (MatBody.zone_radius).
+enum Form { CHUNK, BLOB, WAVE, WALL, STREAM, SHARD, PUDDLE, POOL, CLOUD, ZONE }
+const FORM_NAMES := ["chunk", "blob", "wave", "wall", "stream", "shard", "puddle", "pool", "cloud", "zone"]
 
 # --- Thermal (see Thermal) -------------------------------------------------
 const AMBIENT_C := 20.0

@@ -18,8 +18,9 @@ def G(x, z, cx, cz, sx, sz):
 # ---------------------------------------------------------------------------------------------------------------------
 # head silhouette (superellipse rings, A frame)
 # ---------------------------------------------------------------------------------------------------------------------
-HEAD_Z = [1.514, 1.521, 1.528, 1.535, 1.541, 1.547, 1.552, 1.5565, 1.5605, 1.564, 1.5685, 1.573, 1.578, 1.584, 1.590, 1.597,
-          1.604, 1.611, 1.619, 1.627, 1.634, 1.641, 1.648, 1.655, 1.663, 1.672, 1.683, 1.695, 1.708, 1.721, 1.733, 1.743]
+HEAD_Z = [1.514, 1.521, 1.528, 1.535, 1.541, 1.547, 1.552, 1.5565, 1.5605, 1.5645, 1.5685, 1.5725, 1.5765, 1.5805, 1.5845, 1.5885,
+          1.5925, 1.5965, 1.6005, 1.6045, 1.6085, 1.6125, 1.6165, 1.6205, 1.6245, 1.6285, 1.6325, 1.6365, 1.6405, 1.6445, 1.6485,
+          1.6525, 1.6565, 1.661, 1.666, 1.672, 1.683, 1.695, 1.708, 1.721, 1.733, 1.743]
 _hk = [1.514, 1.524, 1.540, 1.560, 1.580, 1.600, 1.625, 1.650, 1.675, 1.700, 1.720, 1.735, 1.745]
 HEAD_W = Curve(list(zip(_hk, [0.022, 0.034, 0.048, 0.058, 0.064, 0.068, 0.072, 0.075, 0.0765, 0.075, 0.068, 0.053, 0.034])))
 _front = [0.080, 0.084, 0.091, 0.096, 0.099, 0.099, 0.099, 0.102, 0.103, 0.100, 0.090, 0.071, 0.042]
@@ -58,18 +59,18 @@ def face_disp(x, z):
     d += -0.0030 * G(ax, z, 0.070, 1.650, 0.012, 0.022)                          # temples
     # eye sockets, lids
     ze = 1.6355
-    d += -0.0070 * G(ax, z, 0.0325, ze, 0.0165, 0.0105)
+    d += -0.0050 * G(ax, z, 0.0325, ze, 0.0165, 0.0105)
     d += 0.0035 * G(ax, z, 0.0325, ze + 0.012, 0.0175, 0.0038)
     d += 0.0016 * G(ax, z, 0.0325, ze - 0.011, 0.015, 0.004)
     d += -0.0030 * G(ax, z, 0.011, ze, 0.007, 0.012)                             # inner corner / nasion dip
     # nose
     tip = 1.5915
-    hb = 0.0040 + 0.0170 * sstep(1.642, tip, z)
+    hb = 0.0035 + 0.0112 * sstep(1.640, tip, z)
     hb *= sstep(tip - 0.016, tip - 0.001, z) * sstep(1.658, 1.636, z)
-    sxn = 0.0065 + 0.0105 * sstep(1.628, tip, z)
+    sxn = 0.0085 + 0.0110 * sstep(1.628, tip, z)
     d += hb * math.exp(-(x / sxn) ** 2)
     d += 0.0055 * G(ax, z, 0.0165, tip - 0.002, 0.0085, 0.0075)                   # alar wings
-    d += 0.0030 * G(ax, z, 0.0, tip - 0.001, 0.0085, 0.0055)                      # tip
+    d += 0.0022 * G(ax, z, 0.0, tip - 0.001, 0.0085, 0.0055)                      # tip
     d += -0.0050 * G(ax, z, 0.0095, tip - 0.012, 0.0050, 0.0036)                  # nostrils
     # cheeks, nasolabial, philtrum
     d += 0.0050 * G(ax, z, 0.050, 1.610, 0.024, 0.017)
@@ -129,6 +130,50 @@ def build_head(mb):
         mb.loft(rr, lambda i, j, p: {"head": 1.0}, SKIN,
                 cap_start=(ax_c + Vector((sx * -0.008, 0, 0)), {"head": 1.0}),
                 cap_end=(ax_c + Vector((sx * 0.0085, 0.0015, 0.0)), {"head": 1.0}))
+
+
+EYE_Z = 1.6355
+EYE_X = 0.0325
+EYE_R = 0.0108
+
+
+def face_point(x, z):
+    """Displaced face-surface point (Blender coords) at lateral position x (m, + = left) and height z."""
+    lo, hi = 0.0, 80.0
+    sgn = 1.0 if x >= 0 else -1.0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        p, _n = head_surface(z, sgn * mid)
+        if abs(p.x) < abs(x):
+            lo = mid
+        else:
+            hi = mid
+    th = sgn * 0.5 * (lo + hi)
+    p, nrm = head_surface(z, th)
+    return p + nrm * (face_disp(p.x, z) * sstep(82, 48, abs(th))), nrm
+
+
+def eye_centres():
+    out = []
+    for sx in (1, -1):
+        p, _ = face_point(sx * EYE_X, EYE_Z)
+        # the eyeball sits in the socket: its front pole is slightly behind the un-displaced skull surface
+        out.append(Vector((p.x, p.y - 0.0016 + EYE_R, EYE_Z)))
+    return out
+
+
+def build_eyes(mb):
+    for k, c in enumerate(eye_centres()):
+        mb.begin(f"eye{k}", WRAPS, density=4.0)
+        rings = []
+        ang = [math.pi * q / 8 for q in range(1, 8)]
+        for a in ang:
+            rr = EYE_R * math.sin(a)
+            cy = c.y - EYE_R * math.cos(a)                     # front pole at -y
+            rings.append([Vector((c.x + rr * 1.10 * math.cos(2 * math.pi * j / 10), cy, c.z + rr * 0.92 * math.sin(2 * math.pi * j / 10)))
+                          for j in range(10)])
+        mb.loft(rings, lambda i, j, p: {"head": 1.0}, WRAPS, cap_start=(Vector((c.x, c.y - EYE_R, c.z)), {"head": 1.0}),
+                cap_end=(Vector((c.x, c.y + EYE_R * 0.9, c.z)), {"head": 1.0}))
 
 
 def build_neck(mb):

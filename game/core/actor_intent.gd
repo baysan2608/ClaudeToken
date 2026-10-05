@@ -20,6 +20,14 @@ var aim_dir := Vector3.ZERO
 var aim_active := false
 var element_select := -1
 var target_cycle := false
+## Sub-element select (-1 = no change, else 0..3) for the current element.
+var sub_select := -1
+## Gestures (Sim.Gesture) recognised on this tick: ATTACK flick -> thrust/ground/sweep,
+## GUARD flick while guarding -> push (UP) / sink (DOWN).
+var attack_gesture := 0
+var guard_gesture := 0
+## EVADE held (level): >= 0.2 s morphs the evade into the evade_hold move when bound.
+var evade_held := false
 
 
 func clear() -> void:
@@ -38,3 +46,7 @@ func clear() -> void:
 	aim_active = false
 	element_select = -1
 	target_cycle = false
+	sub_select = -1
+	attack_gesture = 0
+	guard_gesture = 0
+	evade_held = false

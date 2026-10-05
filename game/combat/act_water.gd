@@ -6,7 +6,8 @@ extends RefCounted
 
 
 static func _water_filter(b: MatBody) -> bool:
-	return b.is_water() and b.phase == Sim.Phase.LIQUID and (b.form == Sim.Form.PUDDLE) and b.mass > 0.5
+	# Legality through the engine (legacy cell puddle x grip_water: reclaim).
+	return b.is_water() and b.phase == Sim.Phase.LIQUID and b.mass > 0.5 and Interactions.allows(b, &"grip_water")
 
 
 static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIntent) -> void:
@@ -160,20 +161,21 @@ static func _lash(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	var dir: Vector3 = inst.data.face
 	var d := inst.def
 	w.emit("lash", {"actor": a.id, "dir": dir, "range": d.range})
+	# The lash is a water volume: a threat to fighters, a counter (class "water_jet") to shots it meets.
+	var lash := Agent.of_volume(w, a, inst, &"water", a.chest(), dir, {"P": float(d.get("power", 8.0))})
+	lash.ccls = &"water_jet"
+	FxEvents.fx_for(w, a, inst, "cone", "water", {"length": float(d.range), "angle": float(d.arc) * 0.5, "power": lash.power})
 	for t in w.actors_in_cone(a, dir, float(d.range), float(d.arc) * 0.5):
 		var res := w.hit_actor(t, {"attacker": a.id, "attack_id": inst.attack_id, "damage": d.damage,
-			"balance": d.balance, "knock": dir * float(d.knock), "kind": "water", "from": a.chest()})
+			"balance": d.balance, "knock": dir * float(d.knock), "kind": "water", "from": a.chest(), "agent": lash})
 		if res != "dup" and res != "evaded":
 			t.wetness = 1.0
-	# The lash also knocks light incoming stones aside.
+	# The lash also knocks light incoming stones aside (legacy cell (*, water_jet): <= 25 kg).
 	for b in w.bodies:
-		if b.alive and b.is_projectile() and b.attack_owner != a.id and b.mass <= 25.0:
+		if b.alive and b.is_projectile() and b.attack_owner != a.id:
 			var to := b.pos - a.chest()
 			if to.length() < float(d.range) and Vector3(to.x, 0, to.z).normalized().dot(dir) > cos(deg_to_rad(float(d.arc) * 0.5)):
-				var side := dir.cross(Vector3.UP).normalized()
-				b.vel = side * b.vel.length() * 0.45 * (1.0 if side.dot(b.vel) >= 0.0 else -1.0) + Vector3(0, 2.0, 0)
-				b.attack_id = 0
-				w.emit("deflect", {"actor": a.id, "body": b.id, "verb": "lash", "kind": "stone"})
+				Interactions.resolve(w, Agent.of_body(w, b, a), lash, {"site": "lash"})
 
 
 static func _ice_lance(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:

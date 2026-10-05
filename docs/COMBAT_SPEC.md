@@ -123,8 +123,32 @@ or **redirect** (*redirect current* technique + Fire element + guard within the 
 reaction delay (default 0.28 s ± jitter), decides once per threat, pays the same costs and uses only its kit
 (`elements`, techniques). Tunables: `aggression`, `counter` (chance to pick the best counter), `reaction`, drills.
 
-## 10. Extension plan (not implemented)
+## 10. Extension plan (superseded by §11 and `docs/MOVESET.md`)
 
 Metal (conductive manipulable bodies: `mat=METAL`, conductivity node, magnetic-style control), sand (granular split/merge
 clouds using CLOUD form), mist (water CLOUD that conducts weakly and blocks sight), vortex (air CLOUD with angular
 velocity bending projectiles). Each reuses MatBody state, splits/merges and the contest resolver.
+
+## 11. Moveset extension: sub-elements, charge tiers and the counter rule
+
+Design: `docs/MOVESET.md` (authoritative for moves, numbers, the counter matrix and the engine contract). Summary of the rules this adds:
+
+* **Sub-elements.** Each element has four: Earth (Stone, Metal, Sand, Magma), Water (Water, Ice, Mist, Plant), Fire (Flame, Blue,
+  Lightning, Combustion), Air (Gust, Vortex, Vacuum, Sound). Sub-element 0 of each element is today's kit, unchanged. Selecting a
+  sub-element, like an element, only affects the next action.
+* **Slots.** Every kit fills the same slots: `strike` (attack tap/hold), `thrust` / `ground` / `sweep` (attack flick up / down / side),
+  `guard` (+ perfect), `push` / `sink` (guard flick up / down), `tech` (hold, aim, release; `T+A` shapes held material), `evade`, `evade_hold`.
+  A move is `Moves.resolve(element, sub, slot)`; gestures morph a running attack startup once (first 0.12 s, or at charge release).
+* **Charge tiers.** T0 tap (< 0.18 s), T1 at the move's `heavy_min` (default 0.40 s), T2 1.00 s, T3 1.80 s (per-move `tier_times`); Focus drains
+  while charging (`charge_drain`); an empty pool stalls the tier, never drops the charge; hits interrupt; every tier-up emits `charge`.
+* **Power and counters.** Threat power TP = K (`m·v/20`) + H (`heat/20`) + C + E + P (rule-weighted); counter power CP = barrier
+  `mass·hardness` or the move's tier power, ×1.5 when perfect, × efficacy for the material pair. `ratio = CP_eff / TP`: ≥ 1 full outcome,
+  0.5–1 partial (subtractive weaken, bend, slow, partial transform), < 0.5 the counter breaks and the threat continues weakened.
+  Special bands (wind vs fire: fan / deflect / extinguish; lightning vs barriers: ground / blast through). All heat and mass moved by an
+  outcome goes through the ledgers.
+* **Legacy behaviour is a set of rules**, not a special case: guard chip (12 % / 55 %), perfect deflect, Earth redirect, wall blocks
+  waves and bolts (E ≤ CP), grounded stance (40 %), redirect current (80 %), water-shield steam block, air guard vs fire, flame absorb,
+  gust deflection, lava quench, heat draw — all keep their tested numbers.
+
+The engine API (registry, `Agent` / `Interactions`, verbs, hooks, events) is documented by the core implementation in an "Engine" section
+below once it lands; `docs/MOVESET.md` §15 is the contract it implements.

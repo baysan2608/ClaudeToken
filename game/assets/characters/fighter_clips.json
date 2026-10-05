@@ -327,5 +327,89 @@
     "contact": 0.3667,
     "notes": "Big push: coil the torso ~105 deg to the left (hips 30 + spine/chest 75, feet planted), unwind through the front into a two-palm drive; contact = palms drive forward (0.37 s). Total yaw change 105 to -10 deg, ends in air stance.",
     "frames": 18
+  },
+  "mv_push_two_hand": {
+    "duration": 0.5,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Wide low stance: palms chambered at the ribs, then the whole body lunges forward and both palms drive out together at chest height; contact = palms land (0.2 s). Feet planted.",
+    "frames": 15
+  },
+  "mv_uppercut_lift": {
+    "duration": 0.5,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Sink and coil on the rear hip, then drive the rear fist straight up from hip to chin height while the body rises; contact = fist reaches the top of the arc (0.2 s). Starts/ends in fire stance.",
+    "frames": 15
+  },
+  "mv_stomp": {
+    "duration": 0.5667,
+    "loop": false,
+    "contact": 0.2333,
+    "notes": "Lift the knee with raised hands, then slam the front foot flat while both palms press down; contact = foot lands (0.23 s). Planted on the right foot throughout.",
+    "frames": 17
+  },
+  "mv_sweep_low": {
+    "duration": 0.7,
+    "loop": false,
+    "contact": 0.3333,
+    "notes": "Drop into a crouch on the left foot, whip the right leg around along the floor in a half circle (rear to front, ankle 4 cm above the ground); contact = the leg passes through the front (0.33 s). Left foot pivots in place.",
+    "frames": 21
+  },
+  "mv_spin": {
+    "duration": 1.0,
+    "loop": false,
+    "contact": 0.6,
+    "notes": "Wind up, then a full 360 degree turn on the left foot (hips over the pivot, right leg tucked and circling, right arm trailing wide, chest lags the hips); contact = arm sweeps through the front (0.6 s). Ends in the idle ready pose.",
+    "frames": 30
+  },
+  "mv_palm_thrust": {
+    "duration": 0.4667,
+    "loop": false,
+    "contact": 0.1667,
+    "notes": "Coil on the rear hip, then the rear palm thrusts straight out with a hip drive; contact = palm lands (0.17 s). Starts/ends in fire stance, feet planted.",
+    "frames": 14
+  },
+  "mv_overhead_slam": {
+    "duration": 0.7,
+    "loop": false,
+    "contact": 0.3667,
+    "notes": "Rise and arch back with both hands overhead, then drop into a deep lunge and crash both fists down to thigh height; contact = fists reach the bottom (0.37 s). Starts/ends in earth stance.",
+    "frames": 21
+  },
+  "mv_wide_draw": {
+    "duration": 0.8,
+    "loop": false,
+    "contact": 0.6333,
+    "notes": "Both arms sweep wide to the sides, arc up overhead and then gather in front of the chest with a small sink; contact = hands meet (0.63 s). Starts/ends in air stance, feet planted on the balls.",
+    "frames": 24
+  },
+  "mv_ground_slap": {
+    "duration": 0.7,
+    "loop": false,
+    "contact": 0.2667,
+    "notes": "Sink low into the stance, wind the right hand up, then slap the floor in front of the lead foot; contact = palm hits the ground (0.27 s). Both feet planted in the earth stance.",
+    "frames": 21
+  },
+  "mv_rising_guard": {
+    "duration": 0.5,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Start from a deep crouch with the hands low, then rise explosively with both forearms crossing up in front of the face; contact = arms lock overhead guard (0.2 s). Starts/ends in the guard pose.",
+    "frames": 15
+  },
+  "mv_roundhouse": {
+    "duration": 0.6667,
+    "loop": false,
+    "contact": 0.2667,
+    "notes": "Chamber the right knee across the body, pivot on the left foot and whip the right leg around to chest height; contact = shin passes through the front (0.27 s). Starts/ends in fire stance.",
+    "frames": 20
+  },
+  "mv_front_kick": {
+    "duration": 0.5667,
+    "loop": false,
+    "contact": 0.2,
+    "notes": "Drive the lead knee up, then snap the foot straight out at stomach height (leaning back slightly); contact = foot extension (0.2 s). Planted on the rear foot. Starts/ends in fire stance.",
+    "frames": 17
   }
 }

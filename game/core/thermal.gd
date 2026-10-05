@@ -27,6 +27,12 @@ static func heat(b: MatBody, energy: float) -> float:
 	if b.mat == Sim.Mat.WATER:
 		var r := _water(b, energy)
 		return r
+	if Materials.is_fusible(b.mat):
+		return _solid(b, energy, Materials.c(b.mat), Materials.melt(b.mat), Materials.latent(b.mat), Materials.max_temp(b.mat))
+	if b.mat == Sim.Mat.PLANT:
+		return _sensible(b, energy, Materials.c(b.mat), Materials.max_temp(b.mat))
+	if b.mat == Sim.Mat.FIRE:
+		return _payload(b, energy)
 	return 0.0
 
 
@@ -37,51 +43,81 @@ static func apply_heat(b: MatBody, energy: float) -> Vector2:
 
 
 static func _stone(b: MatBody, e: float) -> float:
+	return _solid(b, e, Sim.STONE_C, Sim.STONE_MELT_C, Sim.STONE_LATENT, STONE_MAX_C)
+
+
+## Melting solid (stone, metal, sand, glass): sensible -> latent -> superheat (heating) and back.
+## Removal never cools below ambient.
+static func _solid(b: MatBody, e: float, sc: float, melt_c: float, lat: float, max_c: float) -> float:
 	var m := b.mass
 	var applied := 0.0
 	if e > 0.0:
 		var left := e
-		if b.temp < Sim.STONE_MELT_C and b.liquid <= 0.0:
-			var need := (Sim.STONE_MELT_C - b.temp) * m * Sim.STONE_C
+		if b.temp < melt_c and b.liquid <= 0.0:
+			var need := (melt_c - b.temp) * m * sc
 			var use := minf(left, need)
-			b.temp += use / (m * Sim.STONE_C)
+			b.temp += use / (m * sc)
 			left -= use
 			applied += use
 		if left > 0.0 and b.liquid < 1.0:
-			b.temp = maxf(b.temp, Sim.STONE_MELT_C)
-			var need_l := (1.0 - b.liquid) * m * Sim.STONE_LATENT
+			b.temp = maxf(b.temp, melt_c)
+			var need_l := (1.0 - b.liquid) * m * lat
 			var use_l := minf(left, need_l)
-			b.liquid = minf(1.0, b.liquid + use_l / (m * Sim.STONE_LATENT))
+			b.liquid = minf(1.0, b.liquid + use_l / (m * lat))
 			left -= use_l
 			applied += use_l
 		if left > 0.0 and b.liquid >= 1.0:
-			var need_s := (STONE_MAX_C - b.temp) * m * Sim.STONE_C
+			var need_s := (max_c - b.temp) * m * sc
 			var use_s := clampf(left, 0.0, maxf(need_s, 0.0))
-			b.temp += use_s / (m * Sim.STONE_C)
+			b.temp += use_s / (m * sc)
 			applied += use_s
 		return applied
 	# Cooling: superheat, then latent (solidification), then sensible heat to ambient.
 	var take := -e
-	if b.temp > Sim.STONE_MELT_C:
-		var avail := (b.temp - Sim.STONE_MELT_C) * m * Sim.STONE_C
+	if b.temp > melt_c:
+		var avail := (b.temp - melt_c) * m * sc
 		var use := minf(take, avail)
-		b.temp -= use / (m * Sim.STONE_C)
+		b.temp -= use / (m * sc)
 		take -= use
 		applied -= use
 	if take > 0.0 and b.liquid > 0.0:
-		var avail_l := b.liquid * m * Sim.STONE_LATENT
+		var avail_l := b.liquid * m * lat
 		var use_l := minf(take, avail_l)
-		b.liquid = maxf(0.0, b.liquid - use_l / (m * Sim.STONE_LATENT))
+		b.liquid = maxf(0.0, b.liquid - use_l / (m * lat))
 		if b.liquid < 1e-6:
 			b.liquid = 0.0
 		take -= use_l
 		applied -= use_l
 	if take > 0.0 and b.liquid <= 0.0 and b.temp > Sim.AMBIENT_C:
-		var avail_s := (b.temp - Sim.AMBIENT_C) * m * Sim.STONE_C
+		var avail_s := (b.temp - Sim.AMBIENT_C) * m * sc
 		var use_s := minf(take, avail_s)
-		b.temp -= use_s / (m * Sim.STONE_C)
+		b.temp -= use_s / (m * sc)
 		applied -= use_s
 	return applied
+
+
+## Sensible heat only (plant): never below ambient, never above max_c.
+static func _sensible(b: MatBody, e: float, sc: float, max_c: float) -> float:
+	var m := b.mass
+	if sc <= 0.0 or m <= 0.0:
+		return 0.0
+	if e > 0.0:
+		var use := minf(e, maxf(0.0, (max_c - b.temp) * m * sc))
+		b.temp += use / (m * sc)
+		return use
+	var use_c := minf(-e, maxf(0.0, (b.temp - Sim.AMBIENT_C) * m * sc))
+	b.temp -= use_c / (m * sc)
+	return -use_c
+
+
+## FIRE bodies: heat lives in heat_payload (never negative).
+static func _payload(b: MatBody, e: float) -> float:
+	if e > 0.0:
+		b.heat_payload += e
+		return e
+	var use := minf(-e, b.heat_payload)
+	b.heat_payload -= use
+	return -use
 
 
 static func _water(b: MatBody, e: float) -> float:
@@ -177,13 +213,26 @@ static func ambient_step(b: MatBody, dt: float) -> float:
 			return _water(b, gain)
 		if b.temp > Sim.AMBIENT_C + 0.5:
 			return _water(b, -k * (b.temp - Sim.AMBIENT_C) / 100.0 * dt)
+		return 0.0
+	if Materials.is_fusible(b.mat):
+		var over_s := b.temp - Sim.AMBIENT_C
+		if over_s <= 0.5 and b.liquid <= 0.0:
+			return 0.0
+		return _solid(b, -k * over_s / 100.0 * dt, Materials.c(b.mat), Materials.melt(b.mat), Materials.latent(b.mat), Materials.max_temp(b.mat))
+	if b.mat == Sim.Mat.PLANT:
+		var over_p := b.temp - Sim.AMBIENT_C
+		if over_p <= 0.5:
+			return 0.0
+		return _sensible(b, -k * over_p / 100.0 * dt, Materials.c(b.mat), Materials.max_temp(b.mat))
+	if b.mat == Sim.Mat.FIRE and b.heat_payload > 0.0:
+		return _payload(b, -b.heat_payload * float(Materials.prop(Sim.Mat.FIRE, "fire_decay", 0.35)) * dt)
 	return 0.0
 
 
 ## Updates the phase label with hysteresis. Returns true when the label changed.
 static func update_phase(b: MatBody) -> bool:
 	var old := b.phase
-	if b.mat == Sim.Mat.STONE:
+	if Materials.is_fusible(b.mat):
 		match b.phase:
 			Sim.Phase.SOLID:
 				if b.liquid >= Sim.MOLTEN_UP:
@@ -221,6 +270,8 @@ static func flow_factor(b: MatBody) -> float:
 
 
 static func heat01(b: MatBody) -> float:
-	if b.mat != Sim.Mat.STONE:
-		return 0.0
-	return clampf((b.temp - 250.0) / (Sim.STONE_MELT_C - 250.0), 0.0, 1.0)
+	if b.mat == Sim.Mat.STONE:
+		return clampf((b.temp - 250.0) / (Sim.STONE_MELT_C - 250.0), 0.0, 1.0)
+	if Materials.is_fusible(b.mat):
+		return clampf((b.temp - 250.0) / (Materials.melt(b.mat) - 250.0), 0.0, 1.0)
+	return 0.0

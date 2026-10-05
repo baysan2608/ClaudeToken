@@ -101,7 +101,7 @@ def _ss(x):
 
 
 def gait(name, T, v, d, s, hip_z, lift, hs_pitch, to_pitch, lane=(0.13, 0.0, 0.0), lean=3.0, bob=0.02, sway=0.02,
-         yaw_amp=5.0, arms="swing", foot_yaw=7.0, bob_phase=None, notes="", pv_heel=-0.075, pv_ball=0.135,
+         yaw_amp=5.0, arms="swing", foot_yaw=7.0, bob_phase=None, notes="", pv_heel=-0.092, pv_ball=0.135,
          arm_amp=0.13, lift_peak=0.5, stance_pitch_hold=(0.12, 0.45)):
     """Procedural in-place gait.  T cycle time (s), v ground speed (m/s), d travel direction (A-frame unit vector),
     s stance fraction.  Stance footprints move backwards at exactly v (no skating)."""
@@ -460,7 +460,7 @@ clip("stagger", 0.5, False, B_IDLE, [
 ], contact=F(3), notes="Off-balance wobble in place: arms out, knees give, foot re-plants. Light reaction.")
 
 LYING = merged(
-    dict(hp=(0, -0.30, -0.766), hips=(-90, 0, 0), spine=(0, 0, 0), chest=(0, 0, 0), neck=(8, 0, 0), head=(8, 0, 0), sl=(0, 0), sr=(0, 0)),
+    dict(hp=(0, -0.30, -0.742), hips=(-90, 0, 0), spine=(0, 0, 0), chest=(0, 0, 0), neck=(8, 0, 0), head=(8, 0, 0), sl=(0, 0), sr=(0, 0)),
     both(H((0.22, -0.06, -0.50), ((0, 1, 0.1), (-1, 0, 0)), (0.8, 0.3, -0.5))),
     dict(fl=Fd(x=0.15, y=0.52, lift=0.0, yaw=12, pitch=70, pv=-0.075, kup=1.5),
          fr=Fd(x=-0.15, y=0.52, lift=0.0, yaw=-12, pitch=70, pv=-0.075, kup=1.5)),
@@ -477,10 +477,10 @@ clip("knockdown", 0.7, False, B_IDLE, [
     (F(11), merged(dict(hp=(0, -0.30, -0.55), hips=(-62, 0, 3), spine=(-3, 0, 0), chest=(-4, 0, 0), neck=(0, 0, 0), head=(0, 0, 0),
                         fl=Fd(lift=0.38, y=0.42, pitch=-10, pv=0.0, kup=1.0), fr=Fd(lift=0.22, y=0.34, pitch=-10, pv=0.0, kup=1.0)),
                    both(H((0.36, -0.10, 0.10), ((1, 0.2, 0.3), (0, 1, 0)), (0.5, -0.8, 0)))), "in"),
-    (F(15), merged(dict(hp=(0, -0.31, -0.74), hips=(-88, 0, 0), fl=Fd(lift=0.22, y=0.42, pitch=20, pv=-0.075, kup=1.2),
+    (F(15), merged(dict(hp=(0, -0.31, -0.72), hips=(-88, 0, 0), fl=Fd(lift=0.22, y=0.42, pitch=20, pv=-0.075, kup=1.2),
                         fr=Fd(lift=0.15, y=0.42, pitch=20, pv=-0.075, kup=1.2)),
                    both(H((0.34, 0.14, 0.05), ((1, 0.2, 0.3), (0, 1, 0)), (0.6, 0.6, -0.3)))), "in"),
-    (F(17), dict(hp=(0, -0.31, -0.766), hips=(-90, 0, 0), chest=(6, 0, 0), neck=(6, 0, 0), head=(4, 0, 0),
+    (F(17), dict(hp=(0, -0.31, -0.742), hips=(-90, 0, 0), chest=(6, 0, 0), neck=(6, 0, 0), head=(4, 0, 0),
                  fl=Fd(lift=0.04, pitch=60, y=0.52, pv=-0.075, kup=1.5), fr=Fd(lift=0.02, pitch=60, y=0.52, pv=-0.075, kup=1.5),
                  **both(H((0.28, -0.04, -0.46), ((0, 1, 0.1), (-1, 0, 0)), (0.8, 0.4, -0.5)))), "in"),
     (F(21), {**{"_base": True}, **LYING}, "out"),
@@ -816,3 +816,228 @@ def _gust():
 clip("air_gust", 0.6, False, B_AIR, _gust(), contact=F(11),
      notes="Big push: coil the torso ~105 deg to the left (hips 30 + spine/chest 75, feet planted), unwind through the front "
            "into a two-palm drive; contact = palms drive forward (0.37 s). Total yaw change 105 to -10 deg, ends in air stance.")
+
+
+# ====================================================================================================
+# GENERIC MOVESET CLIPS ("mv_*")  expressive building blocks a big moveset can reuse / blend.  Same conventions as above:
+# start and end on a stance pose (the base), the contact time marks the impact / release / completion.
+# ====================================================================================================
+MV_ORDER = []
+
+
+def mv_clip(name, *a, **kw):
+    cd = clip(name, *a, **kw)
+    MV_ORDER.append(name)
+    return cd
+
+
+# --- two-hand push: wide low stance, chamber at the ribs, lunge and drive both palms out -------------------------------
+mv_clip("mv_push_two_hand", 0.5, False, B_EARTH, [
+    (0.0, {}, "lin"),
+    (F(3), dict(hp=(0, -0.03, -0.25), spine=(6, 0, 0), chest=(4, 0, 0), neck=(-4, 0, 0), sl=(3, 0), sr=(3, 0),
+                hl=H((0.14, 0.12, -0.16), PALM_FWD, (0.7, -0.4, -0.8)), hr=Hd(p=(-0.14, 0.12, -0.16), f=(0, 0.3, 1), m=(0, 1, -0.2), e=(-0.7, -0.4, -0.8))), "out"),
+    (F(6), dict(hp=(0, 0.13, -0.24), hips=(3, 0, 0), spine=(12, 0, 0), chest=(14, 0, 0), neck=(-12, 0, 0), head=(-6, 0, 0), sl=(0, 10), sr=(0, 10),
+                hl=H((0.10, 0.58, -0.03), PALM_FWD, (0.6, 0.0, -0.8)), hr=Hd(p=(-0.10, 0.58, -0.03), f=(0, 0.3, 1), m=(0, 1, -0.2), e=(-0.6, 0.0, -0.8))), "in3"),
+    (F(8), dict(hp=(0, 0.15, -0.24), chest=(15, 0, 0), hl=Hd(p=(0.10, 0.60, -0.02)), hr=Hd(p=(-0.10, 0.60, -0.02))), "out"),
+    (F(12), dict(hp=(0, 0.08, -0.22), spine=(8, 0, 0), chest=(8, 0, 0), hl=Hd(p=(0.10, 0.52, -0.04)), hr=Hd(p=(-0.10, 0.52, -0.04))), "io"),
+    (F(15), {"_base": True}, "io"),
+], contact=F(6), notes="Wide low stance: palms chambered at the ribs, then the whole body lunges forward and both palms drive out together at chest height; contact = palms land (0.2 s). Feet planted.")
+
+# --- uppercut: sink and load the rear hand, then explode upward -------------------------------------------------------------
+mv_clip("mv_uppercut_lift", 0.5, False, B_FIRE, [
+    (0.0, {}, "lin"),
+    (F(3), dict(hp=(0.01, 0.0, -0.22), hips=(6, 0, -26), spine=(12, 0, -14), chest=(8, 0, -16), neck=(-6, 0, 22), head=(-6, 0, 20),
+                hr=Hd(p=(0.0, 0.10, -0.52), f=(0, 1, 0), m=(1, 0, 0), e=(-0.5, -0.6, -0.8)), fr=Fd(pitch=-14, pv=0.135)), "out"),
+    (F(6), dict(hp=(0, 0.08, -0.04), hips=(-2, 0, 12), spine=(-6, 0, 14), chest=(-8, 0, 14), neck=(-8, 0, -14), head=(-6, 0, -16), sr=(8, 8),
+                hr=Hd(p=(0.04, 0.34, 0.14), f=(0, 0.4, 1), m=(1, 0, 0), e=(-0.4, -0.8, -0.3)),
+                hl=Hd(p=(0.0, 0.16, 0.16), f=(0, 0.3, 1), m=(-1, 0, 0)), fr=Fd(pitch=-30, pv=0.135)), "in3"),
+    (F(8), dict(hp=(0, 0.07, -0.05), hr=Hd(p=(0.04, 0.36, 0.18)), spine=(-6, 0, 12), chest=(-8, 0, 12)), "out"),
+    (F(13), dict(hp=(0, 0.02, -0.09), spine=(2, 0, 2), chest=(2, 0, 2), hr=Hd(p=(0.04, 0.24, 0.10))), "io"),
+    (F(16), dict(B_FIRE, _base=True), "io"),
+], contact=F(6), notes="Sink and coil on the rear hip, then drive the rear fist straight up from hip to chin height while the body rises; contact = fist reaches the top of the arc (0.2 s). Starts/ends in fire stance.")
+
+# --- stomp: knee up, hands lifted, slam the foot down with both palms pressing down -------------------------------------------
+mv_clip("mv_stomp", 0.55, False, B_IDLE, [
+    (0.0, {}, "lin"),
+    (F(5), dict(hp=(-0.05, 0.0, 0.0), hips=(0, -3, 0), spine=(-4, 0, 0), chest=(-6, 0, 0), neck=(2, 0, 0), sl=(6, 0), sr=(6, 0),
+                fl=Fd(x=0.15, y=0.10, lift=0.34, pitch=-12, pv=0.0, kup=0.9),
+                **both(H((0.14, 0.18, 0.18), PALM_FWD, (0.8, -0.3, -0.4)))), "out"),
+    (F(7), dict(hp=(-0.02, 0.04, -0.20), hips=(4, 0, 0), spine=(14, 0, 0), chest=(8, 0, 0), neck=(-8, 0, 0), head=(-6, 0, 0),
+                fl=Fd(x=0.15, y=0.07, lift=0.0, pitch=0, pv=0.0, kup=0.4),
+                **both(H((0.14, 0.32, -0.34), PALM_DOWN, (0.8, -0.3, -0.8)))), "in3"),
+    (F(9), dict(hp=(0.0, 0.03, -0.23), spine=(16, 0, 0), chest=(10, 0, 0), **both(H((0.14, 0.34, -0.40), PALM_DOWN, (0.8, -0.3, -0.8)))), "out"),
+    (F(16), {"_base": True}, "io"),
+], contact=F(7), notes="Lift the knee with raised hands, then slam the front foot flat while both palms press down; contact = foot lands (0.23 s). Planted on the right foot throughout.")
+
+# --- low leg sweep: crouch, whip the rear leg around along the floor ---------------------------------------------------------
+_ang = lambda deg: math.radians(deg)
+
+
+def _sweep_foot(deg, r=0.46, lift=0.04):
+    """rear foot on a circle (radius r) around the support-side hip, deg 0 = straight behind, sweeping through the left to the front"""
+    a = _ang(deg)
+    return Fd(x=0.0 + r * math.sin(a) * 0.9 - 0.10, y=-r * math.cos(a) * 0.9, lift=lift, yaw=-10 + deg * 0.55, pitch=0, pv=0.0, kup=0.2)
+
+
+mv_clip("mv_sweep_low", 0.7, False, B_IDLE, [
+    (0.0, {}, "lin"),
+    (F(4), dict(hp=(0.06, 0.0, -0.40), hips=(18, 0, 22), spine=(22, 0, 14), chest=(16, 0, 14), neck=(-16, 0, -16), head=(-10, 0, -14),
+                fr=_sweep_foot(0),
+                hl=Hd(p=(0.26, 0.16, -0.40), f=(1, 0.3, -0.2), m=(0, 0, -1), e=(0.6, -0.8, -0.5)),
+                hr=Hd(p=(-0.20, 0.10, -0.46), f=(-1, 0.2, -0.3), m=(0, 0, -1), e=(-0.6, -0.8, -0.5))), "out"),
+    (F(8), dict(hp=(0.07, 0.0, -0.41), hips=(18, 0, 0), spine=(22, 0, -6), chest=(16, 0, -4), neck=(-16, 0, 10), head=(-10, 0, 8),
+                fr=_sweep_foot(80), hr=Hd(p=(-0.25, 0.28, -0.36))), "io"),
+    (F(12), dict(hp=(0.06, 0.04, -0.40), hips=(18, 0, -26), spine=(22, 0, -18), chest=(16, 0, -14), neck=(-16, 0, 22), head=(-10, 0, 20),
+                 fr=_sweep_foot(160), hl=Hd(p=(0.20, 0.10, -0.46))), "io"),
+    (F(16), dict(hp=(0.03, 0.0, -0.30), hips=(10, 0, -10), spine=(14, 0, -6), chest=(10, 0, -4), fr=_sweep_foot(205, 0.40), neck=(-8, 0, 8), head=(-6, 0, 6)), "out"),
+    (F(21), {"_base": True}, "io"),
+], contact=F(10), notes="Drop into a crouch on the left foot, whip the right leg around along the floor in a half circle (rear to front, ankle 4 cm above the ground); contact = the leg passes through the front (0.33 s). Left foot pivots in place.")
+
+# --- spin: pivot on the left foot for a full turn, right arm trailing wide --------------------------------------------------
+def _spin():
+    keys = [(0.0, {}, "lin"), (F(1), dict(fl=Fd(pv=0.135)), "lin")]      # the pivot slides to the ball of the foot, the foot does not move
+    f0, f1 = 5, 25
+    for f in range(2, 31, 2):
+        u = min(max((f - f0) / (f1 - f0), 0.0), 1.0)
+        e = u * u * (3 - 2 * u)
+        th = 360.0 * e
+        wind = -35.0 * math.sin(math.pi * min(f / f0, 1.0)) if f <= f0 else 0.0
+        th_h = th + wind
+        vel = 6.0 * u * (1 - u) * 4          # 0..1.5 rough angular speed profile
+        lag = -18.0 * min(vel, 1.0)
+        a = math.radians(th_h)
+        # free (right) foot circles the support foot, tucked
+        rx, ry = -0.19, -0.10
+        ox = rx * math.cos(a) + ry * math.sin(a)
+        oy = -rx * math.sin(a) + ry * math.cos(a)
+        air = math.sin(math.pi * min(max((f - 3) / 24.0, 0.0), 1.0))
+        spec = dict(
+            hp=(0.0, 0.0, -0.10 * air), hips=(0, 0, th_h), spine=(4 * air, 0, lag * 0.4), chest=(2 * air, 0, lag * 0.6),
+            neck=(0, 0, -lag * 0.5), head=(0, 0, -lag * 0.5), sl=(4 * air, 0), sr=(4 * air, 0),
+            fl=Fd(yaw=7.0 + th_h, pitch=-24 * air),
+            fr=Fd(x=0.15 + ox, y=0.07 + oy, lift=0.16 * air, yaw=-7.0 + th_h + 20 * air, pv=0.0, pitch=-25 * air, kup=0.3 * air),
+            hl=Hd(p=(0.30, 0.24, -0.06 + 0.1 * air), f=(0, 1, 0.3), m=(-1, 0, 0), e=(0.7, -0.6, -0.6)),
+            hr=Hd(p=(-0.50 * air - 0.06 * (1 - air), 0.04 + 0.2 * (1 - air), 0.06 * air - 0.40 * (1 - air)), f=(-1, 0.1, 0.0), m=(0, 0, -1), e=(-0.3, -1.0, -0.4)),
+        )
+        keys.append((F(f), spec, "lin"))
+    keys[-1] = (F(30), dict(B_IDLE, hips=(0, 0, 360.0), fl=Fd(x=0.15, y=0.07, lift=0.0, yaw=367.0, pv=0.0, pitch=0),
+                            fr=Fd(x=-0.15, y=-0.06, lift=0.0, yaw=353.0, pv=0.0, pitch=0, kup=0.0), spine=(2, 0, 0), chest=(2, 0, 0)), "lin")
+    return keys
+
+
+mv_clip("mv_spin", 1.0, False, B_IDLE, _spin(), contact=F(18), pivot_hips=("L", 2, 8, 24, 30, 0.75),
+        notes="Wind up, then a full 360 degree turn on the left foot (hips over the pivot, right leg tucked and circling, right arm trailing wide, chest lags the hips); contact = arm sweeps through the front (0.6 s). Ends in the idle ready pose.")
+
+# --- single palm thrust: coil on the rear hip and fire the rear palm out ---------------------------------------------------
+mv_clip("mv_palm_thrust", 0.45, False, B_FIRE, [
+    (0.0, {}, "lin"),
+    (F(2), dict(hp=(0.0, -0.03, -0.14), hips=(0, 0, -24), spine=(8, 0, -12), chest=(5, 0, -14), neck=(-6, 0, 20), head=(-5, 0, 22),
+                hr=H((-0.04, 0.10, -0.06), ((0, 0.4, 1), (-1, 0.5, 0)), (-0.5, -0.8, -0.5)), hl=Hd(p=(0.02, 0.22, 0.02))), "out"),
+    (F(5), dict(hp=(0.0, 0.14, -0.12), hips=(2, 0, 14), spine=(8, 0, 8), chest=(10, 0, 10), neck=(-12, 0, -8), head=(-8, 0, -8), sr=(0, 12),
+                fr=Fd(pitch=-24, pv=0.135),
+                hr=H((0.06, 0.58, 0.03), ((0, 0.25, 1), (0, 1, -0.15)), (-0.5, -0.5, -0.6)), hl=Hd(p=(0.0, 0.10, -0.02), f=(0, 0.4, 1), m=(-1, 0, 0))), "in3"),
+    (F(7), dict(hp=(0.0, 0.15, -0.12), hr=Hd(p=(0.06, 0.60, 0.04))), "out"),
+    (F(10), dict(hp=(0.0, 0.08, -0.11), hr=Hd(p=(0.06, 0.50, 0.03))), "io"),
+    (F(14), dict(B_FIRE, _base=True), "io"),
+], contact=F(5), notes="Coil on the rear hip, then the rear palm thrusts straight out with a hip drive; contact = palm lands (0.17 s). Starts/ends in fire stance, feet planted.")
+
+# --- overhead slam: rise and arch with hands overhead, then crash down into a deep forward lunge -------------------------------
+mv_clip("mv_overhead_slam", 0.7, False, B_EARTH, [
+    (0.0, {}, "lin"),
+    (F(6), dict(hp=(0, -0.03, -0.10), hips=(-3, 0, 0), spine=(-8, 0, 0), chest=(-14, 0, 0), neck=(6, 0, 0), head=(4, 0, 0), sl=(10, 0), sr=(10, 0),
+                hl=H((0.08, 0.10, 0.52), ((0, 0.15, 1), (-1, 0, 0.1)), (0.9, -0.4, 0.0)), hr=Hd(p=(-0.08, 0.10, 0.52), f=(0, 0.15, 1), m=(1, 0, 0.1), e=(-0.9, -0.4, 0.0))), "io"),
+    (F(8), dict(hp=(0, 0.02, -0.14), spine=(-10, 0, 0), chest=(-18, 0, 0), hl=Hd(p=(0.08, 0.04, 0.54)), hr=Hd(p=(-0.08, 0.04, 0.54))), "out"),
+    (F(11), dict(hp=(0, 0.14, -0.31), hips=(10, 0, 0), spine=(26, 0, 0), chest=(22, 0, 0), neck=(-16, 0, 0), head=(-10, 0, 0), sl=(0, 8), sr=(0, 8),
+                 hl=H((0.10, 0.34, -0.42), ((0, 1, -0.3), (-1, 0, 0)), (0.9, -0.2, -0.5)), hr=Hd(p=(-0.10, 0.34, -0.42), f=(0, 1, -0.3), m=(1, 0, 0), e=(-0.9, -0.2, -0.5))), "in3"),
+    (F(13), dict(hp=(0, 0.15, -0.33), spine=(28, 0, 0), hl=Hd(p=(0.10, 0.35, -0.40)), hr=Hd(p=(-0.10, 0.35, -0.40))), "out"),
+    (F(21), {"_base": True}, "io"),
+], contact=F(11), notes="Rise and arch back with both hands overhead, then drop into a deep lunge and crash both fists down to thigh height; contact = fists reach the bottom (0.37 s). Starts/ends in earth stance.")
+
+# --- wide draw: arms sweep out wide, rise, and gather in front of the chest ------------------------------------------------------
+mv_clip("mv_wide_draw", 0.8, False, B_AIR, [
+    (0.0, {}, "lin"),
+    (F(3), dict(hp=(0, 0.0, -0.06), spine=(-3, 0, 0), chest=(-4, 0, 0),
+                hl=H((0.10, 0.20, -0.06), PALM_FWD, (0.8, -0.3, -0.6)), hr=Hd(p=(-0.10, 0.20, -0.06), f=(0, 0.3, 1), m=(0, 1, -0.2), e=(-0.8, -0.3, -0.6))), "out"),
+    (F(8), dict(hp=(0, 0.0, -0.08), spine=(-6, 0, 0), chest=(-8, 0, 0), neck=(2, 0, 0), sl=(8, 0), sr=(8, 0),
+                hl=H((0.54, 0.02, 0.04), ((1, 0.1, 0.1), (0, 1, 0)), (0.4, -1, -0.2)), hr=Hd(p=(-0.54, 0.02, 0.04), f=(-1, 0.1, 0.1), m=(0, 1, 0), e=(-0.4, -1, -0.2))), "io"),
+    (F(13), dict(hp=(0, 0.0, -0.05), spine=(-4, 0, 0), chest=(-6, 0, 0), sl=(12, 0), sr=(12, 0),
+                 hl=H((0.40, 0.12, 0.44), ((0.6, 0.2, 1), (0, 1, 0)), (0.7, -0.6, 0.0)), hr=Hd(p=(-0.40, 0.12, 0.44), f=(-0.6, 0.2, 1), m=(0, 1, 0), e=(-0.7, -0.6, 0.0))), "io"),
+    (F(19), dict(hp=(0, 0.03, -0.14), spine=(8, 0, 0), chest=(6, 0, 0), neck=(-4, 0, 0), sl=(2, 6), sr=(2, 6),
+                 hl=H((0.05, 0.38, 0.02), ((0.1, 1, 0.3), (-1, 0, 0.2)), (0.9, -0.2, -0.7)), hr=Hd(p=(-0.05, 0.38, 0.02), f=(-0.1, 1, 0.3), m=(1, 0, 0.2), e=(-0.9, -0.2, -0.7))), "in3"),
+    (F(22), dict(hp=(0, 0.03, -0.15), hl=Hd(p=(0.04, 0.36, 0.0)), hr=Hd(p=(-0.04, 0.36, 0.0))), "out"),
+    (F(24), {"_base": True}, "io"),
+], contact=F(19), notes="Both arms sweep wide to the sides, arc up overhead and then gather in front of the chest with a small sink; contact = hands meet (0.63 s). Starts/ends in air stance, feet planted on the balls.")
+
+# --- ground slap: drop into a crouch and slap the floor with the right palm ----------------------------------------------------
+mv_clip("mv_ground_slap", 0.7, False, B_EARTH, [
+    (0.0, {}, "lin"),
+    (F(4), dict(hp=(-0.04, -0.02, -0.34), hips=(10, 0, 0), spine=(20, 0, 0), chest=(12, 0, 0), neck=(-10, 0, 0), head=(-8, 0, 0),
+                hl=H((0.20, 0.12, -0.34), PALM_IN, (0.8, -0.4, -0.7)), hr=Hd(p=(-0.14, 0.14, 0.12), f=(0, 0.4, 1), m=(1, 0.3, 0), e=(-0.7, -0.6, -0.3))), "out"),
+    (F(8), dict(hp=(-0.03, 0.08, -0.56), hips=(24, 0, 0), spine=(36, 0, 0), chest=(24, 0, 0), neck=(-24, 0, 0), head=(-16, 0, 0), sl=(0, 8), sr=(0, 10),
+                hl=H((0.22, 0.20, -0.46), PALM_DOWN, (0.8, -0.4, -0.7)), hr=Hd(p=(-0.18, 0.42, 0.06), f=(0, 1, 0.0), m=(0, 0, -1), e=(-0.8, -0.3, -0.6), sp="rt")), "in3"),
+    (F(10), dict(hp=(-0.03, 0.09, -0.57), hr=Hd(p=(-0.18, 0.44, 0.06), sp="rt")), "out"),
+    (F(15), dict(hp=(-0.02, 0.04, -0.46), spine=(30, 0, 0), chest=(20, 0, 0), hr=Hd(p=(-0.16, 0.40, 0.25), sp="rt")), "io"),
+    (F(21), {"_base": True}, "io"),
+], contact=F(8), notes="Sink low into the stance, wind the right hand up, then slap the floor in front of the lead foot; contact = palm hits the ground (0.27 s). Both feet planted in the earth stance.")
+
+# --- rising guard: from a deep crouch, explode up with both forearms crossing in front of the face -----------------------------------
+mv_clip("mv_rising_guard", 0.5, False, B_GUARD, [
+    (0.0, {}, "lin"),
+    (F(3), dict(hp=(0, 0.0, -0.30), hips=(10, 0, 0), spine=(12, 0, 0), chest=(8, 0, 0), neck=(-10, 0, 0), head=(-8, 0, 0),
+                hl=H((0.04, 0.16, -0.46), ((0.3, 1, 0.1), (-1, 0, 0)), (0.7, -0.5, -0.8)), hr=Hd(p=(-0.04, 0.16, -0.46), f=(-0.3, 1, 0.1), m=(1, 0, 0), e=(-0.7, -0.5, -0.8))), "out"),
+    (F(6), dict(hp=(0, 0.02, -0.08), hips=(0, 0, 0), spine=(-2, 0, 0), chest=(-4, 0, 0), neck=(2, 0, 0), head=(0, 0, 0), sl=(8, 0), sr=(8, 0),
+                hl=H((-0.08, 0.26, 0.20), ((-0.5, 0.2, 1), (0.2, -1, 0)), (0.3, 0.3, -1)), hr=Hd(p=(0.08, 0.26, 0.20), f=(0.5, 0.2, 1), m=(-0.2, -1, 0), e=(-0.3, 0.3, -1))), "in3"),
+    (F(8), dict(hp=(0, 0.01, -0.06), hl=Hd(p=(-0.10, 0.24, 0.24)), hr=Hd(p=(0.10, 0.24, 0.24))), "out"),
+    (F(12), dict(hp=(0, 0.0, -0.09), sl=(4, 0), sr=(4, 0)), "io"),
+    (F(14), dict(B_GUARD, _base=True), "io"),
+], contact=F(6), notes="Start from a deep crouch with the hands low, then rise explosively with both forearms crossing up in front of the face; contact = arms lock overhead guard (0.2 s). Starts/ends in the guard pose.")
+
+# --- roundhouse: pivot on the left foot and swing the right leg around at chest height ---------------------------------------------------
+mv_clip("mv_roundhouse", 0.65, False, B_FIRE, [
+    (0.0, {}, "lin"),
+    (F(4), dict(hp=(0.02, 0.0, -0.10), hips=(0, 0, -14), spine=(2, 0, -10), chest=(0, 0, -12), neck=(-2, 0, 14), head=(-2, 0, 16),
+                fl=Fd(x=0.13, y=0.30, yaw=-3), fr=Fd(x=-0.14, y=0.10, lift=0.50, yaw=-60, pitch=-30, pv=0.0, kup=1.4),
+                hl=Hd(p=(0.0, 0.20, 0.04)), hr=Hd(p=(-0.12, 0.22, 0.02))), "out"),
+    (F(8), dict(hp=(0.04, 0.02, -0.07), hips=(0, 0, 38), spine=(-4, 0, 22), chest=(-10, 0, 22), neck=(-2, 0, -22), head=(-2, 0, -26),
+                fl=Fd(yaw=40), fr=Fd(x=0.10, y=0.62, lift=0.84, yaw=34, pitch=15, pv=0.0, kup=0.4),
+                hl=Hd(p=(0.30, 0.10, 0.18), f=(1, 0.2, 0.2), m=(0, 0, -1)), hr=Hd(p=(-0.14, 0.26, 0.16), f=(0, 0.6, 0.8), m=(1, 0, 0))), "in3"),
+    (F(10), dict(hips=(0, 0, 44), fl=Fd(yaw=44), fr=Fd(x=0.14, y=0.60, lift=0.80, yaw=40, pitch=10)), "out"),
+    (F(15), dict(hp=(0.01, 0.0, -0.10), hips=(0, 0, 6), spine=(2, 0, 0), chest=(0, 0, 0), fl=Fd(yaw=0),
+                 fr=Fd(x=-0.14, y=0.08, lift=0.30, yaw=-8, pitch=-20, kup=0.9)), "io"),
+    (F(19), dict(B_FIRE, _base=True), "io"),
+], contact=F(8), notes="Chamber the right knee across the body, pivot on the left foot and whip the right leg around to chest height; contact = shin passes through the front (0.27 s). Starts/ends in fire stance.")
+
+# --- front kick: knee drive then snap the lead leg out --------------------------------------------------------------------------
+mv_clip("mv_front_kick", 0.55, False, B_FIRE, [
+    (0.0, {}, "lin"),
+    (F(3), dict(hp=(-0.02, -0.02, -0.08), spine=(-4, 0, -4), chest=(-4, 0, -4), neck=(2, 0, 10), head=(0, 0, 10),
+                fl=Fd(x=0.13, y=0.34, lift=0.56, pitch=-24, pv=0.0, kup=1.4),
+                hl=Hd(p=(0.0, 0.20, 0.04)), hr=Hd(p=(0.0, 0.18, 0.04))), "out"),
+    (F(6), dict(hp=(-0.03, 0.01, -0.06), spine=(-10, 0, -4), chest=(-12, 0, -4), neck=(6, 0, 10), head=(4, 0, 10),
+                fl=Fd(x=0.12, y=0.72, lift=0.56, pitch=14, pv=0.0, kup=0.1),
+                hl=Hd(p=(0.02, 0.18, 0.10)), hr=Hd(p=(0.04, 0.22, 0.06))), "in3"),
+    (F(8), dict(fl=Fd(x=0.12, y=0.76, lift=0.55, pitch=18)), "out"),
+    (F(12), dict(hp=(0.0, 0.0, -0.10), spine=(4, 0, -4), chest=(2, 0, -4), fl=Fd(x=0.13, y=0.36, lift=0.30, pitch=-12, kup=0.9)), "io"),
+    (F(16), dict(B_FIRE, _base=True), "io"),
+], contact=F(6), notes="Drive the lead knee up, then snap the foot straight out at stomach height (leaning back slightly); contact = foot extension (0.2 s). Planted on the rear foot. Starts/ends in fire stance.")
+
+# grips for the mv_ clips
+import fighter_grips as _g  # noqa: E402
+
+_g.GRIPS.update({
+    "mv_push_two_hand": {"L": [(0, "fist_loose"), (F(3), "open"), (F(6), "open"), (F(12), "fist_loose")]},
+    "mv_uppercut_lift": {"L": [(0, "fist")], "R": [(0, "fist"), (F(3), "fist"), (F(8), "fist"), (F(13), "fist")]},
+    "mv_stomp": {"L": [(0, "relaxed"), (F(5), "open"), (F(7), "open"), (F(14), "relaxed")]},
+    "mv_sweep_low": {"L": [(0, "relaxed"), (F(4), "open"), (F(16), "open"), (F(21), "relaxed")]},
+    "mv_spin": {"L": [(0, "relaxed"), (F(8), "fist_loose"), (F(24), "fist_loose"), (F(30), "relaxed")],
+                "R": [(0, "relaxed"), (F(8), "blade"), (F(22), "blade"), (F(30), "relaxed")]},
+    "mv_palm_thrust": {"L": [(0, "fist"), (F(5), "fist_loose"), (F(14), "fist")],
+                       "R": [(0, "fist"), (F(2), "fist"), (F(4), "blade"), (F(8), "open"), (F(14), "fist")]},
+    "mv_overhead_slam": {"L": [(0, "fist_loose"), (F(6), "open"), (F(8), "fist"), (F(13), "fist"), (F(21), "fist_loose")]},
+    "mv_wide_draw": {"L": [(0, "open"), (F(8), "open_spread"), (F(13), "open_spread"), (F(19), "cup"), (F(24), "open")]},
+    "mv_ground_slap": {"L": [(0, "fist_loose"), (F(4), "open"), (F(15), "open"), (F(21), "fist_loose")],
+                       "R": [(0, "fist_loose"), (F(4), "open"), (F(7), "open_spread"), (F(10), "open_spread"), (F(21), "fist_loose")]},
+    "mv_rising_guard": {"L": [(0, "fist"), (F(3), "fist"), (F(6), "fist"), (F(14), "fist")]},
+    "mv_roundhouse": {"L": [(0, "fist"), (F(8), "open"), (F(15), "fist"), (F(19), "fist")]},
+    "mv_front_kick": {"L": [(0, "fist")]},
+})

@@ -110,9 +110,71 @@ def make_mesh_object(arm_ob, mb):
     return ob
 
 
-def build_scene():
+TEX_ENV = "FIGHTER_NO_TEXTURES"
+
+
+def _make_image(name, arr, colorspace, fmt):
+    import numpy as np
+    h, w = arr.shape[:2]
+    im = bpy.data.images.new(name, w, h, alpha=False, float_buffer=False)
+    rgba = np.ones((h, w, 4), np.float32)
+    rgba[..., :3] = arr
+    im.pixels.foreach_set(rgba.ravel())
+    im.file_format = fmt
+    im.pack()
+    im.colorspace_settings.name = colorspace      # (setting it before pack() would wipe the pixel buffer)
+    return im
+
+
+def apply_textures(mesh_ob, tex, albedo_fmt="JPEG"):
+    """Wire the baked images into each slot's Principled BSDF: albedo (sRGB) x slot colour, tangent normal map, and an
+    ORM image (R occlusion, G roughness, B metallic) whose channels feed the glTF exporter's occlusion/roughness/metal."""
+    grp = bpy.data.node_groups.get("glTF Material Output")
+    if grp is None:
+        grp = bpy.data.node_groups.new("glTF Material Output", "ShaderNodeTree")
+        grp.interface.new_socket("Occlusion", in_out="INPUT", socket_type="NodeSocketFloat")
+    for mat in mesh_ob.data.materials:
+        t = tex.get(mat.name)
+        if t is None:
+            continue
+        nt = mat.node_tree
+        bsdf = nt.nodes["Principled BSDF"]
+        ia = nt.nodes.new("ShaderNodeTexImage")
+        ia.image = _make_image(f"{mat.name}_albedo", t["albedo"], "sRGB", albedo_fmt)
+        ia.interpolation = "Linear"
+        mix = nt.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.blend_type = "MULTIPLY"
+        mix.inputs["Factor"].default_value = 1.0
+        mix.inputs["B"].default_value = MAT_COLORS[mat.name]
+        nt.links.new(ia.outputs["Color"], mix.inputs["A"])
+        nt.links.new(mix.outputs["Result"], bsdf.inputs["Base Color"])
+        inn = nt.nodes.new("ShaderNodeTexImage")
+        inn.image = _make_image(f"{mat.name}_normal", t["normal"], "Non-Color", "PNG")
+        nm = nt.nodes.new("ShaderNodeNormalMap")
+        nm.uv_map = "UVMap"
+        nt.links.new(inn.outputs["Color"], nm.inputs["Color"])
+        nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
+        io = nt.nodes.new("ShaderNodeTexImage")
+        io.image = _make_image(f"{mat.name}_orm", t["orm"], "Non-Color", albedo_fmt)
+        sep = nt.nodes.new("ShaderNodeSeparateColor")
+        nt.links.new(io.outputs["Color"], sep.inputs["Color"])
+        nt.links.new(sep.outputs["Green"], bsdf.inputs["Roughness"])
+        nt.links.new(sep.outputs["Blue"], bsdf.inputs["Metallic"])
+        gn = nt.nodes.new("ShaderNodeGroup")
+        gn.node_tree = grp
+        nt.links.new(sep.outputs["Red"], gn.inputs["Occlusion"])
+
+
+def build_scene(textures=None):
+    import os
     clear_scene()
     arm = make_armature()
     mb = build_character()
     mesh_ob = make_mesh_object(arm, mb)
+    if textures is None:
+        textures = not os.environ.get(TEX_ENV)
+    if textures:
+        import fighter_textures as ft
+        apply_textures(mesh_ob, ft.bake(mb, mesh_ob))
     return arm, mesh_ob, mb

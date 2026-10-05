@@ -19,8 +19,9 @@ const VENT_MIN := 40.0
 static func preview(w: CombatWorld, a: ActorState, dir: Vector3) -> Dictionary:
 	## What the fire technique would do right now: {mode, body, ok, reason}.
 	var d: Dictionary = Moves.DEFS.fire_tech
+	# Legality through the engine: draw_heat / heat_grip cells (legacy: hot stone / any stone / water).
 	var hot := w.find_body(a, dir, float(d.draw_range), 50.0, func(b: MatBody) -> bool:
-		return b.is_stone() and b.controller != a.id and (b.liquid > 0.0 or b.temp >= Sim.HOT_ROCK_C) and b.form != Sim.Form.WALL)
+		return b.controller != a.id and b.form != Sim.Form.WALL and Interactions.allows(b, &"draw_heat"))
 	if hot != null:
 		if not a.has("heat_draw"):
 			return {"mode": "DRAW", "body": hot.id, "ok": false, "reason": "technique"}
@@ -28,17 +29,17 @@ static func preview(w: CombatWorld, a: ActorState, dir: Vector3) -> Dictionary:
 			return {"mode": "DRAW", "body": hot.id, "ok": false, "reason": "sight"}
 		return {"mode": "DRAW", "body": hot.id, "ok": true, "reason": ""}
 	var stone := w.find_body(a, dir, INCOMING_RANGE, 40.0, func(b: MatBody) -> bool:
-		return b.is_stone() and b.is_projectile() and b.attack_owner != a.id and b.vel.dot(a.chest() - b.pos) > 0.0)
+		return not b.is_water() and b.is_projectile() and b.attack_owner != a.id and b.vel.dot(a.chest() - b.pos) > 0.0 and Interactions.allows(b, &"heat_grip"))
 	if stone == null:
 		stone = w.find_body(a, dir, float(d.draw_range), 55.0, func(b: MatBody) -> bool:
-			return b.is_stone() and b.form != Sim.Form.WALL and b.controller != a.id and b.phase != Sim.Phase.MOLTEN)
+			return not b.is_water() and b.form != Sim.Form.WALL and b.controller != a.id and b.phase != Sim.Phase.MOLTEN and Interactions.allows(b, &"heat_grip"))
 	if stone != null:
 		if not a.has("magma"):
 			return {"mode": "HEAT", "body": stone.id, "ok": false, "reason": "technique"}
 		# Too heavy is still attempted (the grip strains and fails); the HUD warns first.
 		return {"mode": "HEAT", "body": stone.id, "ok": true, "reason": "mass" if stone.mass > a.max_control_mass else ""}
 	var wet := w.find_body(a, dir, float(d.reach), 45.0, func(b: MatBody) -> bool:
-		return b.is_water() and b.form != Sim.Form.POOL and b.controller != a.id)
+		return b.is_water() and b.form != Sim.Form.POOL and b.controller != a.id and (Interactions.allows(b, &"heat_grip") or b.form == Sim.Form.CLOUD))
 	if wet != null:
 		return {"mode": "HEAT", "body": wet.id, "ok": true, "reason": ""}
 	if a.heat_reserve >= VENT_MIN:
@@ -349,7 +350,10 @@ static func _flare(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 	var paid := w.pay_heat(a, cost)
 	var dir: Vector3 = inst.data.face
 	w.emit("flare", {"actor": a.id, "dir": dir, "range": rng_m, "heavy": heavy, "from_reserve": a.heat_reserve > 0.0})
-	var left := paid
+	# The flame is a heat volume; flame.heat is the budget still to spend (HU). Every contact is a
+	# rule cell (CoreRules._flare / _guards): water takes 60 % first (steam), stones 50 % of what is left.
+	var flame := Agent.of_volume(w, a, inst, &"flame", a.chest(), dir, {"H": paid / Interactions.HU_PER_PU, "heat_hu": paid})
+	FxEvents.fx_for(w, a, inst, "cone", "flame", {"length": rng_m, "angle": cone, "power": paid / Interactions.HU_PER_PU})
 	# Water shields in the way take the heat first (steam), protecting their holder.
 	var shielded := {}
 	for b in w.bodies:
@@ -358,42 +362,35 @@ static func _flare(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
 		var to := b.pos - a.chest()
 		if to.length() > rng_m or (to.length() > 0.5 and Vector3(to.x, 0, to.z).normalized().dot(dir) < cos(deg_to_rad(cone + 10.0))):
 			continue
-		var share := left * 0.6
-		if b.phase == Sim.Phase.FROZEN:
-			var used := w.heat_body(b, share)
-			left -= used
+		if Interactions.is_barrier(w, b):
+			Interactions.resolve(w, flame, Agent.of_body(w, b), {"site": "flare"})
 		else:
-			w.boil_water(b, share, b.pos)
-			left -= share
-			if b.mass <= 0.05:
-				w.decay_body(b, "boiled")
+			Interactions.resolve(w, Agent.of_body(w, b, a), flame, {"site": "flare"})
 		if b.controller >= 0:
 			shielded[b.controller] = true
-		w.emit("steam_block", {"actor": a.id, "body": b.id})
 	for t in w.actors_in_cone(a, dir, rng_m, cone):
 		if shielded.has(t.id):
 			w.emit("block", {"actor": t.id, "attacker": a.id, "kind": "fire_water"})
 			continue
-		if t.guarding and w.guard_element(t) == Sim.Element.AIR:
-			w.emit("block", {"actor": t.id, "attacker": a.id, "kind": "fire_air"})
-			continue
-		var res := w.hit_actor(t, {"attacker": a.id, "attack_id": inst.attack_id,
+		var info := {"attacker": a.id, "attack_id": inst.attack_id,
 			"damage": d.heavy_damage if heavy else d.damage, "balance": d.heavy_balance if heavy else d.balance,
-			"knock": dir * (3.0 if heavy else 1.2), "kind": "fire", "from": a.chest()})
-		if res == "perfect" and w.guard_element(t) == Sim.Element.FIRE:
-			# Perfect fire guard absorbs part of the flame into the reserve.
-			var gain := minf(left * 0.5, Sim.RESERVE_MAX - t.heat_reserve)
-			t.heat_reserve += gain
-			left -= gain
+			"knock": dir * (3.0 if heavy else 1.2), "kind": "fire", "from": a.chest(), "agent": flame}
+		if t.guarding:
+			# Aura guards (wind wraps the fighter) answer regardless of facing.
+			var g := Agent.of_guard(w, t)
+			if Interactions.rule(flame.cls, g.ccls, g.tier).get("aura", false):
+				Interactions.resolve(w, flame, g, {"info": info, "target": t})
+				continue
+		# A perfect fire guard keeps half the remaining heat (rule absorb_reserve, inside hit_actor).
+		w.hit_actor(t, info)
 	# Stones in the cone warm up.
 	for b in w.bodies:
-		if not b.alive or not b.is_stone() or b.form == Sim.Form.WALL or left <= 0.0:
+		if not b.alive or not b.is_stone() or b.form == Sim.Form.WALL or flame.heat <= 0.0:
 			continue
 		var to := b.pos - a.chest()
 		if to.length() < rng_m and (to.length() < 0.5 or Vector3(to.x, 0, to.z).normalized().dot(dir) > cos(deg_to_rad(cone))):
-			var used := w.heat_body(b, left * 0.5)
-			left -= used
-	w.ledger.spent += maxf(0.0, left)
+			Interactions.resolve(w, Agent.of_body(w, b, a), flame, {"site": "flare"})
+	w.ledger.spent += maxf(0.0, flame.heat)
 
 
 static func _vent(w: CombatWorld, a: ActorState) -> void:

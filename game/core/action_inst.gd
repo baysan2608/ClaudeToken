@@ -14,8 +14,15 @@ var t := 0.0                 # time in current phase
 var total := 0.0             # time since start
 var attack_id := 0           # attack instance for hit deduplication
 var heavy := false           # charged variant
-var data := {}               # per-action scratch (target ids, mode, aim)
+var data := {}               # per-action scratch (target ids, mode, aim, tier, slot, spec)
 var interrupted := false
+var sub := 0                 # sub-element the action was started with
+var slot := ""               # input slot (strike thrust ground sweep guard push sink tech evade evade_hold)
+
+
+## Charge tier reached (0..3), see Charge.
+func tier() -> int:
+	return int(data.get("tier", 0))
 
 
 func phase_name() -> String:

@@ -28,6 +28,17 @@ static func set_global_basis(sk: Skeleton3D, bone: int, b: Basis) -> void:
 	sk.set_bone_pose_rotation(bone, nb.get_rotation_quaternion())
 
 
+const SOFT := 0.05
+
+
+static func _soft(d: float, l: float, d_anim: float) -> float:
+	var knee := minf(l - SOFT, d_anim)
+	if d <= knee:
+		return d
+	var span := maxf(l - knee, 1e-3)
+	return knee + span * (1.0 - exp(-(d - knee) / span))
+
+
 ## Moves the ankle (head of `foot`) to `target` (skeleton space) with weight w and gives the foot
 ## the global basis `foot_basis` (blended by w). Returns the remaining distance to the target
 ## (> 0 when the leg could not reach).
@@ -48,6 +59,14 @@ static func solve(sk: Skeleton3D, thigh: int, shin: int, foot: int, target: Vect
 	var new_t := gt.basis
 	var new_s := gs.basis
 	if (t - c).length_squared() > 1e-10:
+		# Soft IK: near full extension the knee angle is singular (a mm of reach = degrees of knee),
+		# so the reach is eased into the last SOFT metres. The eased zone starts at the animated
+		# ankle's own distance when that is already in it, so a target equal to it still
+		# reproduces the clip exactly.
+		var dt_ := (t - a).length()
+		var soft_d := _soft(dt_, l1 + l2, (c - a).length())
+		if dt_ > 1e-5 and absf(soft_d - dt_) > 1e-6:
+			t = a + (t - a) * (soft_d / dt_)
 		var lat := clampf((t - a).length(), absf(l1 - l2) + 1e-3, l1 + l2 - 1e-3)
 		var ba := (a - b) / l1
 		var bc := (c - b) / l2

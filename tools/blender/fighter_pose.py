@@ -20,7 +20,7 @@ import math
 import bpy
 from mathutils import Matrix, Quaternion, Vector
 
-from fighter_skeleton import BONE_ORDER, A, LEFT_REST, SIDES
+from fighter_skeleton import ANIM_BONES, BONE_ORDER, A, LEFT_REST, SIDES, hand_frame, hand_pts
 
 DEG = math.pi / 180.0
 FPS = 30
@@ -123,6 +123,21 @@ class RigModel:
                 self.hinge[b] = self.Rinv[b] @ n0
             sx = 1 if s == "L" else -1
             self.palm_local[f"hand.{s}"] = self.Rinv[f"hand.{s}"] @ Vector((-sx, 0, 0))
+        # --- finger bones (articulated hands): rest frames and the hand frame in Blender axes
+        self.fR, self.fRinv = {}, {}
+        self.hand_axes = {}
+        _W, _hd, _u, _n, _L = hand_frame()
+        for s_ in SIDES:
+            for k in ("thumb_1", "thumb_2", "finger_im_1", "finger_im_2", "finger_rp_1", "finger_rp_2"):
+                b = arm.bones[f"{k}.{s_}"]
+                self.fR[f"{k}.{s_}"] = b.matrix_local.to_3x3().copy()
+                self.fRinv[f"{k}.{s_}"] = self.fR[f"{k}.{s_}"].inverted()
+            mir = (lambda v: Vector((-v.x, v.y, v.z))) if s_ == "R" else (lambda v: v)
+            hdv, uv_, nv = blA(mir(_hd)), blA(mir(_u)), blA(mir(_n))
+            pts = hand_pts(s_)
+            t1 = (Vector(pts["thumb_1"][1]) - Vector(pts["thumb_1"][0])).normalized()
+            t2 = (Vector(pts["thumb_2"][1]) - Vector(pts["thumb_2"][0])).normalized()
+            self.hand_axes[s_] = dict(hd=hdv, u=uv_, n=nv, t1=blA(t1), t2=blA(t2))
         self.ankle_h = LEFT_REST["ankle"][2]
         self.ball_h = LEFT_REST["ball"][2]
         sh = self.tail["shoulder.L"]
@@ -155,6 +170,45 @@ class RigModel:
 
     def chest_delta(self, Rp):
         return Rp["chest"] @ self.Rinv["chest"]
+
+    # ------------------------------------------------------------------ fingers
+    def finger_quats(self, side, g):
+        """g = (thumb tuck, thumb curl, index+middle curl, ring+pinky curl, spread), each 0..1 (spread -1..1)
+        -> {bone: local quaternion} for the 6 finger bones of one hand."""
+        th, thc, im, rp, sp = g
+        ax = self.hand_axes[side]
+        hd, u, n = ax["hd"], ax["u"], ax["n"]
+        kflex = hd.cross(n).normalized()               # rotating about it turns the fingers toward the palm
+        kspr = hd.cross(u).normalized()                # rotating about it swings the fingertips toward the thumb side
+        out = {}
+
+        def rot(k, deg):
+            return Matrix.Rotation(deg * DEG, 3, k)
+
+        def put(name, Dparent, Dtot):
+            Ql = self.fRinv[name] @ (Dparent.inverted() @ Dtot) @ self.fR[name]
+            out[name] = Ql.to_quaternion()
+        for grp, c, a1, a2, sgn in (("im", im, 85.0, 105.0, 1.0), ("rp", rp, 90.0, 112.0, -1.0)):
+            c1 = c
+            sprd = rot(kspr, sgn * sp * 11.0)
+            D1 = sprd @ rot(kflex, a1 * c1)
+            D2 = sprd @ rot(kflex, a1 * c1 + a2 * c1 * (0.45 + 0.55 * c1))
+            put(f"finger_{grp}_1.{side}", Matrix.Identity(3), D1)
+            put(f"finger_{grp}_2.{side}", D1, D2)
+        # thumb: tuck across the palm / fingers (fist) with an optional extra tip curl
+        t1, t2 = ax["t1"], ax["t2"]
+        tg1 = (-u * 0.45 + n * 0.70 + hd * 0.25).normalized()
+        tg2 = (-u * 0.85 + n * 0.35 + hd * 0.10).normalized()
+        q1 = Quaternion().slerp(t1.rotation_difference(tg1), th)
+        D1 = q1.to_matrix()
+        q2 = Quaternion().slerp(t2.rotation_difference(tg2), th)
+        kt = t2.cross(n).normalized()
+        D2 = rot(kt, thc * 45.0) @ q2.to_matrix()
+        # abduction with spread (thumb swings away from the index finger)
+        D1 = rot(kspr, sp * 8.0) @ D1
+        put(f"thumb_1.{side}", Matrix.Identity(3), D1)
+        put(f"thumb_2.{side}", D1, D2)
+        return out
 
     # ------------------------------------------------------------------ full solve
     def solve(self, st, ctx=None):
@@ -269,6 +323,10 @@ class RigModel:
             ql[ton] = Qt.to_quaternion()
             diag[f"reach_{s}_leg"] = miss
             diag[f"ankle_{s}"] = Cact.copy()
+        for s in SIDES:
+            g = st.get("gl" if s == "L" else "gr")
+            if g is not None:
+                ql.update(self.finger_quats(s, g))
         return ql, hips_loc, diag
 
 
@@ -318,7 +376,7 @@ def mirror_state_value(ch, v):
         return (-v[0], v[1], v[2])
     if ch in ROT_CHANNELS:
         return (v[0], -v[1], -v[2])
-    if ch in ("sl", "sr"):
+    if ch in ("sl", "sr", "gl", "gr"):
         return tuple(v)
     if ch in ("hl", "hr"):
         t = list(v)
@@ -335,7 +393,7 @@ def mirror_state_value(ch, v):
     raise KeyError(ch)
 
 
-SWAP = {"hl": "hr", "hr": "hl", "fl": "fr", "fr": "fl", "sl": "sr", "sr": "sl"}
+SWAP = {"hl": "hr", "hr": "hl", "fl": "fr", "fr": "fl", "sl": "sr", "sr": "sl", "gl": "gr", "gr": "gl"}
 
 
 def mirror_state(st):
@@ -478,10 +536,10 @@ def bake_action(arm_ob, name, frames, fps=FPS):
     arm_ob.animation_data.action = act
     prev = {}
     for f, (ql, hips_loc) in enumerate(frames):
-        for bone in BONE_ORDER:
+        for bone in ANIM_BONES:
             if bone == "root":
                 continue
-            q = ql[bone].copy()
+            q = ql[bone].copy() if bone in ql else Quaternion()
             pq = prev.get(bone)
             if pq is not None and q.dot(pq) < 0:
                 q.negate()

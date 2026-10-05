@@ -1,6 +1,9 @@
 class_name ActCommon
 extends RefCounted
 ## Evade, air dash and guard (with the Earth wall and Water shield variants).
+## Guards keep the action id "guard"; a sub-element guard spec (inst.data.spec, resolved from the
+## (element, sub, "guard") binding) is forwarded to its module (verbs / kit_*); sub 0 keeps the legacy
+## wall / water shield code below.
 
 const WALL_COST := 8.0
 const WALL_DIST := 1.25
@@ -38,7 +41,10 @@ static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorI
 			if since < Moves.GUARD_MASH_LOCK:
 				inst.data["mashed"] = true   # mashing guard never opens a perfect window
 			a.guard_tick = w.tick
-			if a.element == Sim.Element.EARTH and a.grounded:
+			if _has_spec(inst):
+				a.wall_body = -1   # a sub-element barrier replaces the legacy wall: the old wall sinks
+				w.module_start(String(inst.data.spec_module), a, inst, it)
+			elif a.element == Sim.Element.EARTH and a.grounded:
 				_raise_wall(w, a, inst)
 			else:
 				a.wall_body = -1   # only a grounded Earth guard keeps a wall: the previous one sinks
@@ -48,7 +54,8 @@ static func on_start(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorI
 			# shield is dropped, like any interrupted action's material.
 			if w.held(a) != null and not inst.data.get("shield", false):
 				w.release_body(a, Vector3(0, -1, 0), false)
-			w.emit("guard", {"actor": a.id, "element": a.element, "wall": a.wall_body})
+			w.emit("guard", {"actor": a.id, "element": a.element, "wall": a.wall_body, "sub": inst.sub,
+				"spec": String(inst.data.get("spec", "guard"))})
 
 
 static func after_startup(_w: CombatWorld, _a: ActorState, inst: ActionInst, _it: ActorIntent) -> int:
@@ -57,7 +64,15 @@ static func after_startup(_w: CombatWorld, _a: ActorState, inst: ActionInst, _it
 	return ActionInst.P.ACTIVE
 
 
+## True when the running guard uses a sub-element spec (not the legacy "guard").
+static func _has_spec(inst: ActionInst) -> bool:
+	var sp := String(inst.data.get("spec", "guard"))
+	return sp != "" and sp != "guard" and not inst.data.get("spec_def", {}).is_empty()
+
+
 static func on_phase(w: CombatWorld, a: ActorState, inst: ActionInst, p: int) -> void:
+	if inst.id == "guard" and _has_spec(inst):
+		w.module_phase(String(inst.data.spec_module), a, inst, p)
 	if inst.id == "guard" and p == ActionInst.P.RECOVERY:
 		_end_guard(w, a, inst)
 	if (inst.id == "evade" or inst.id == "air_dash") and p == ActionInst.P.RECOVERY:
@@ -77,6 +92,10 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 				a.vel.x = dir.x * spd
 				a.vel.z = dir.z * spd
 		"guard":
+			if _has_spec(inst):
+				w.module_tick(String(inst.data.spec_module), a, inst, it)
+				if a.action != inst:
+					return
 			if inst.phase == ActionInst.P.CHANNEL:
 				var shield := w.held(a)
 				if shield != null:
@@ -85,13 +104,27 @@ static func on_tick(w: CombatWorld, a: ActorState, inst: ActionInst, it: ActorIn
 					w.set_phase(a, inst, ActionInst.P.RECOVERY)
 
 
-static func on_interrupt(w: CombatWorld, a: ActorState, inst: ActionInst, _reason: String) -> void:
+static func on_interrupt(w: CombatWorld, a: ActorState, inst: ActionInst, reason: String) -> void:
 	if inst.id == "guard":
-		_end_guard(w, a, inst)
+		if _has_spec(inst):
+			w.module_interrupt(String(inst.data.spec_module), a, inst, reason)
+		# A guard flick (push / sink) hands the guard's material on to the new move.
+		_end_guard(w, a, inst, reason == "push" or reason == "sink")
 
 
-static func _end_guard(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
+## Public helpers for kits that extend the legacy barriers.
+static func raise_wall(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
+	_raise_wall(w, a, inst)
+
+
+static func water_shield(w: CombatWorld, a: ActorState, inst: ActionInst) -> void:
+	_water_shield(w, a, inst)
+
+
+static func _end_guard(w: CombatWorld, a: ActorState, inst: ActionInst, keep_material: bool = false) -> void:
 	a.guarding = false
+	if keep_material:
+		return
 	if inst.data.get("shield", false):
 		var b := w.held(a)
 		if b != null and b.is_water():
