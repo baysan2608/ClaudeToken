@@ -547,6 +547,16 @@ func _station_wall(o: Vector3) -> Dictionary:
 		w2.set_rise(1.0)
 		w2.set_damage([0.0, 0.5, 1.0][i])
 		_label("damage %.1f" % [0.0, 0.5, 1.0][i], w2.position + Vector3(0, 1.5, 0))
+	# heated by a lance / scorch (Thermal.heat01 of the wall)
+	for i in 3:
+		var w3 := EarthWallView.new()
+		add_child(w3)
+		w3.position = o + Vector3(-3.7 + i * 3.0, 0.0, -2.8)
+		w3.setup(21 + i)
+		w3.dust = false
+		w3.set_rise(1.0)
+		w3.set_heat([0.3, 0.6, 1.0][i])
+		_label("heat %.1f" % [0.3, 0.6, 1.0][i], w3.position + Vector3(0, 1.5, 0))
 	# scorch / wet decals
 	if not _only.has("nodecal"):
 		var sd := ScorchDecal.new()

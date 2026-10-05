@@ -12,8 +12,8 @@ extends VfxEffect
 const STYLES := {
 	"null_bubble": {"mat": "vacuum", "rim": 2.2, "streak": 0.55, "op": 0.75, "refract": 0.045},
 	"vacuum_well": {"mat": "vacuum", "rim": 1.8, "streak": 0.9, "op": 0.55, "refract": 0.03, "spiral": true},
-	"corona": {"mat": "blue", "col": Color(0.22, 0.46, 1.0), "rim": 2.4, "crackle": 0.4, "op": 0.6, "glow": 1.5, "pulse": 0.2, "absorb": 0.55},
-	"static_field": {"mat": "lightning", "col": Color(0.5, 0.56, 1.0), "rim": 3.0, "crackle": 0.55, "op": 0.3, "arcs": true, "glow": 1.3, "absorb": 0.35},
+	"corona": {"mat": "blue", "col": Color(0.16, 0.38, 1.0), "rim": 2.2, "crackle": 0.45, "op": 0.65, "glow": 1.0, "pulse": 0.2, "absorb": 0.95},
+	"static_field": {"mat": "lightning", "col": Color(0.46, 0.5, 1.0), "rim": 3.0, "crackle": 0.6, "op": 0.32, "arcs": true, "glow": 1.05, "absorb": 0.6},
 	"wind_guard": {"mat": "wind", "rim": 2.4, "streak": -0.35, "op": 0.32},
 	"sound_barrier": {"mat": "sound", "rim": 1.6, "streak": -1.2, "op": 0.42},
 	"aura": {"mat": "", "rim": 3.0, "op": 0.22, "pulse": 0.15, "glow": 1.1},

@@ -14,7 +14,7 @@ uniform float burn : hint_range(0.0, 1.0) = 0.0;
 uniform float frozen : hint_range(0.0, 1.0) = 0.0;
 uniform float sway = 0.03;
 uniform float phase = 0.0;
-uniform vec3 green : source_color = vec3(0.10, 0.30, 0.07);
+uniform vec3 green : source_color = vec3(0.15, 0.40, 0.09);
 uniform vec3 bark : source_color = vec3(0.20, 0.13, 0.07);
 
 varying float v_s;
@@ -49,5 +49,7 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = mix(0.55, 0.9, charred);
 	SPECULAR = 0.35 + 0.3 * frozen;
-	EMISSION = emis;
+	// a soft living-green rim keeps thin vines readable against dark flagstones at phone size
+	float rim = pow(1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), 3.0);
+	EMISSION = emis + green * rim * 0.35 * (1.0 - charred) * (1.0 - frozen);
 }

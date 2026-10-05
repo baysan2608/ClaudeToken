@@ -111,7 +111,8 @@ are capped and unreliable on Mobile; 1 draw call, 2 tris). Fades in 0.08 s, out 
 
 ### EarthWallView
 `setup(seed, width = 2.4, height = 1.0, thickness = 0.55)`, `set_rise(t01)` (centre block first, cubic ease-out, buried
-below y = 0 at 0 so the ground hides it), `set_damage(t01)` (unlit cracks widen). 5 chamfered blocks, 200 tris. Same stone shader as
+below y = 0 at 0 so the ground hides it), `set_damage(t01)` (unlit cracks widen), `set_heat(t01)` (`Thermal.heat01` of the wall:
+cracks glow red -> orange -> yellow as a Molten Lance / Scorch / White Core heats it toward a slump). 5 chamfered blocks, 200 tris. Same stone shader as
 StoneView with `u_detail = 2.2` (finer plates). Dust puffs at the base while rising (`dust` export).
 
 ### VfxPool (extends Node)
@@ -144,7 +145,7 @@ no screen reads (vacuum shells drop the refraction), fewer cloud puffs / flames 
 | body (mat / form / tag) | view | driven by |
 |---|---|---|
 | stone CHUNK (spear rubble crag block glob bomb ember) | StoneView (spear stretched point-first, others tumble from velocity: axis up x v, rate v / r) | heat, liquid (melt), crust |
-| stone WALL `obsidian` / sand WALL / `mud` | EarthWallView + `set_material_style` (obsidian black glass, sandstone, mud) | rise, damage |
+| stone WALL `obsidian` / sand WALL / `mud` | EarthWallView + `set_material_style` (obsidian black glass, sandstone, mud) | rise, damage, heat |
 | stone / ice / glass `spikes`, WAVE `spike_line` | SpikesView (row / ring / path, 1 MultiMesh) | rise, heat |
 | stone WAVE `tremor`, air `tremor`, ZONE `flight_field` | travelling ground rings (RingFX one-shots; no kept node) + dust; the sound flight field pulses small rings under the hovering fighter every 0.3 s | position |
 | metal (disc lance rod plate orb), WALL plate, ZONE `caltrops`, ZONE `rod` (planted mast) | MetalView (disc spin + blur ring, red-hot heat, caltrop MultiMesh; a planted rod stands 2.2 m and crackles at its tip when charged) | spin, heat, velocity, charge |
@@ -322,7 +323,7 @@ opaque-framebuffer copy triggered once per frame as soon as any visible water/ai
 * `tools/scripts/godot.sh --headless -s res://tests/vfx/vfx_smoke_test.gd`: API, determinism, triangle budget, pool cap/recycle/release, prewarm.
 * Moveset stations: `mv_earth mv_water mv_fire mv_air mv_cues`, cost: `-- mv_cost`.
 * Stations: `stones` (heat 0/.5/1, melt .35/.65/1, crust .45/.8/1, cooled rock/blob, seeds), `lava` (crust 0/.5/1, solid ridge, 0.5 m ledge step),
-  `water` (whip + orb at frozen 0/.5/1), `particles`, `fire`, `lightning` (+ aim line), `air` (+ glide trail), `wall` (rise, damage, scorch/wet),
+  `water` (whip + orb at frozen 0/.5/1), `particles`, `fire`, `lightning` (+ aim line), `air` (+ glide trail), `wall` (rise, damage, heat, scorch/wet),
   `arena` (flagstones dry/wet, metal, ledge, pool), `hero` (composite).
 
 ## Known limitations

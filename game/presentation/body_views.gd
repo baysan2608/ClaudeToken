@@ -128,6 +128,8 @@ func render(alpha: float) -> void:
 				n.rotation.y = b.wall_yaw
 				n.call("set_rise", b.wall_rise)
 				n.call("set_damage", b.wall_damage)
+				if n.has_method("set_heat"):
+					n.call("set_heat", Thermal.heat01(b))
 			"blob":
 				n.position = p
 				# Drawn water grows from a first sip to 12 kg (and a shield shrinks as it boils off).

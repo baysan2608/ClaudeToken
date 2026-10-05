@@ -7,6 +7,7 @@ extends VfxEffect
 ##   set_rise(t01)       0 = buried (fully hidden under the ground), 1 = standing; centre blocks
 ##                       rise first, with a cubic ease-out; dust puffs at the base while rising
 ##   set_damage(t01)     0 = intact, 1 = heavily cracked (unlit cracks widen, darker, rubble tone)
+##   set_heat(t01)       Thermal.heat01 of the wall: 0 = cold, 1 = at its melting point (cracks glow, as stones)
 ##
 ## The wall is hidden by the ground plane while buried (no clipping shader needed as long as the
 ## ground is opaque). Set `dust = false` to disable the base dust.
@@ -20,6 +21,7 @@ var _height: float = 1.0
 var _thick: float = 0.55
 var _rise: float = 0.0
 var _damage: float = 0.0
+var _heat: float = 0.0
 var _dust_a: DustPuffFX
 var _dust_b: DustPuffFX
 var _dust_stage: int = 0
@@ -86,6 +88,15 @@ func set_damage(t01: float) -> void:
 	_apply()
 
 
+## A wall heated by a lance / scorch / white core glows through its cracks like a heated stone.
+func set_heat(t01: float) -> void:
+	var h := clampf(t01, 0.0, 1.0)
+	if absf(h - _heat) < 0.002:
+		return
+	_heat = h
+	_mat.set_shader_parameter("u_heat", _heat)
+
+
 func get_rise() -> float:
 	return _rise
 
@@ -101,6 +112,8 @@ func on_acquire() -> void:
 func reset() -> void:
 	_rise = 0.0
 	_damage = 0.0
+	_heat = 0.0
+	_mat.set_shader_parameter("u_heat", 0.0)
 	_dust_stage = 0
 	set_material_style("")
 	_apply()

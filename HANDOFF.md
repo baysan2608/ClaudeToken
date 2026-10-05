@@ -17,7 +17,7 @@ exports to Xcode on a Mac.
 | Controls | Touch: ATTACK tap/hold/flick (thrust/ground/sweep), GUARD + push/sink flicks, TECHNIQUE + second-finger shape tap, EVADE tap/hold, element chips + sub-element ring; keyboard and gamepad mirror it (`docs/CONTROLS.md`). |
 | Lab | Lab scenario + dev panel (` / F2): spawner (39 threats, inert or thrown by the rival), move list with **Try** (every move through the real input path), 28 combos with live detection, counter-matrix viewer, live tuning. |
 | Presentation | Rigged fighter (42 bones, 59 clips incl. 12 `mv_*` move clips, foot IK / planting), VFX for every body family and outcome (`docs/VFX.md` moveset layer), 116 SFX, HUD with tier ring, statuses, resources. |
-| Verified here | **528 sim tests + 95 UI tests pass**, 182 scripts load, 16 animation tests, VFX smoke test; 5-min soak (all elements / subs / slots / gestures): 0 errors, sim p95 0.50 ms, memory 192 → 200 MB. |
+| Verified here | **532 sim tests + 95 UI tests pass**, 182 scripts load, 16 animation tests, VFX smoke test; 5-min soak (all elements / subs / slots / gestures): 0 errors, sim p95 0.29 ms (worst second 0.62 ms), memory 192 → 200 MB. |
 | **Not verified** | Anything on a real iPhone/iPad or the iOS simulator: GPU frame time, thermals, touch feel, haptics, Metal shader quirks, audio by ear. |
 
 ## Build / run
@@ -27,7 +27,7 @@ exports to Xcode on a Mac.
 | Play on desktop | Open `game/project.godot` in Godot ▸ Play, or `tools/scripts/godot.sh` (finds `/Applications/Godot.app` on macOS; `GODOT_BIN` overrides) |
 | Touch overlay on desktop | `tools/scripts/godot.sh -- --touchui` |
 | Pick a scenario | `-- --scenario=<id>` (ids in `game/scenarios/scenarios.gd`); in game: Esc ▸ Practice |
-| Sim tests | `tools/scripts/godot.sh --headless -s res://tests/run_tests.gd` (528; `-- test_kit_fire` runs a subset) |
+| Sim tests | `tools/scripts/godot.sh --headless -s res://tests/run_tests.gd` (532; `-- test_kit_fire` runs a subset) |
 | UI tests | `tools/scripts/godot.sh --headless -s res://tests/ui/run_ui_tests.gd` (95) |
 | Script check | `tools/scripts/godot.sh --headless -s res://tests/check_scripts.gd` (182) |
 | Animation / VFX | `... -s res://tests/anim/run_anim_tests.gd` (16) · `... -s res://tests/vfx/vfx_smoke_test.gd` |
