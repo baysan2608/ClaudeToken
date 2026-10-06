@@ -60,7 +60,16 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
+	// ---------------------------------------------------------------- additive API (stream `game`)
+	/** Adaptive quality (auto mode only): sustained slow frames step the auto tier down once per call (never up
+	 *  mid-session, as the Godot build). Returns true when the tier changed. */
+	bool StepDownAutoQuality();
+
 protected:
 	UPROPERTY() FFourfoldSettings Settings;
 	int32 AutoQuality = 2;
+	/** Engine-facing values last applied (scalability / frame cap are only touched when they change). */
+	int32 AppliedQualityLevel = -100;
+	int32 AppliedFrameRate = -1;
+	void ApplyEngineSettings();
 };

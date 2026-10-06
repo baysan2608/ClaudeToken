@@ -17,6 +17,7 @@
 #include "FourfoldSimSubsystem.generated.h"
 
 class AFourfoldFighter;
+struct FFourfoldSimImpl;   // private state (Private/FourfoldSimSubsystem.cpp)
 
 /** One rendered frame of simulation output. Pointers are valid only during the OnFrame broadcast. */
 struct FFourfoldFrame
@@ -37,6 +38,9 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnFourfoldScenarioLoaded, const FString& /*
 /** UI sound cue requested by the game's Slate UI (FourfoldAudio plays it): ui_tap ui_select ui_back ui_open ui_close
  *  ui_toggle ui_ring_open ui_ring_pick ui_error ui_pause ui_resume ui_toast. */
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnFourfoldUiCue, FName /*CueName*/);
+/** (additive, game) Fills the local player's input for ONE 60 Hz tick and the camera yaw in sim radians (the camera
+ *  looks along (sin yaw, 0, cos yaw)). Bound by AFourfoldPlayerController; unbound = idle input. */
+DECLARE_DELEGATE_TwoParams(FFourfoldPollInput, ff::InputFrame& /*OutInput*/, float& /*InOutCameraYawSim*/);
 
 UCLASS()
 class FOURFOLD_API UFourfoldSimSubsystem : public UTickableWorldSubsystem
@@ -70,6 +74,29 @@ public:
 	FOnFourfoldScenarioLoaded OnScenarioLoaded;
 	FOnFourfoldUiCue OnUiCue;
 
+	// ---------------------------------------------------------------- additive API (stream `game`)
+	/** Polled once per sim tick for the player's input (see FFourfoldPollInput). */
+	FFourfoldPollInput PollInput;
+	/** True once a scenario is loaded (GetSession() is always valid after Initialize). */
+	bool HasScenario() const;
+	/** Options the current scenario was loaded with (RestartScenario reuses them). */
+	const ff::ScenarioOptions& GetScenarioOptions() const;
+	/** Reloads the current scenario with the same options. */
+	bool RestartScenario();
+	/** The sim arena (sim space), valid after LoadScenario. */
+	const ff::ArenaView& GetArena() const;
+	uint64 GetFrameIndex() const;
+	/** Global time dilation the hit-stop / slow-motion assist applies right now (1 = none). */
+	float GetCurrentTimeDilation() const;
+	/** Slow-motion assist (perfect deflect, settings): 0.55x for `RealSeconds`. */
+	void RequestSlowmo(float RealSeconds);
+	/** Reduced motion caps one hit-stop request at 3 frames (set by the feel director from the settings). */
+	void SetReducedMotion(bool bReduced);
+	/** Persistence under Saved/Fourfold/ (progress.json, lab_tuning.json). */
+	void SaveProgress();
+	bool SaveLabTuning();
+	bool LoadLabTuning();
+
 	// USubsystem / FTickableGameObject
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
@@ -77,4 +104,11 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual TStatId GetStatId() const override;
 	virtual bool IsTickableWhenPaused() const override { return true; }
+
+private:
+	void StepOnce();
+	void SyncFighters(bool bRespawnAll);
+	void ApplyTimeDilation(float Dilation);
+
+	TSharedPtr<FFourfoldSimImpl> Impl;
 };

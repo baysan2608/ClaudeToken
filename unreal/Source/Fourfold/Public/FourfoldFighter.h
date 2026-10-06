@@ -6,7 +6,15 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "ff/Snapshot.h"
 #include "FourfoldFighter.generated.h"
+
+struct FFourfoldFrame;
+struct FFourfoldFighterImpl;   // private state (anim director, smoothing): Private/FourfoldFighter.cpp
+class UMaterialInstanceDynamic;
+class UStaticMeshComponent;
+class UStaticMesh;
+class UMaterialInterface;
 
 UCLASS()
 class FOURFOLD_API AFourfoldFighter : public AActor
@@ -23,7 +31,42 @@ public:
 	/** World position of a bone (falls back to the actor location). */
 	FVector GetBoneLocation(FName Bone) const;
 
+	// ---------------------------------------------------------------- additive API (stream `game`)
+	/** Called once by UFourfoldSimSubsystem right after spawning: binds OnFrame, loads the mesh, palette, anim runtime. */
+	void InitFromSim(const ff::ActorView& Actor, const ff::Snapshot& Snapshot);
+	/** "player" | "rival" | "dummy" (palette role). */
+	const FString& GetRole() const { return Role; }
+	/** True while the engine-shape stand-in is shown (SK_Fighter not imported yet). */
+	bool UsesFallbackBody() const { return bFallbackBody; }
+	/** One line describing what the anim runtime plays (debug overlay). */
+	FString GetAnimDebug() const;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	/** Yaw (degrees) between the actor's forward and the mesh asset's forward (UE5 Manny faces +Y: -90). */
+	UPROPERTY(EditAnywhere, Category = "Fourfold") double MeshYawOffset = -90.0;
+
 protected:
+	void OnSimFrame(const FFourfoldFrame& Frame);
+	void SetupBody();
+	void BuildFallbackBody();
+	void UpdateFallbackPose(const ff::ActorView& Actor, float Dt);
+	void UpdateMaterials(const ff::ActorView& Actor, float Dt);
+	void DriveAnimation(const FFourfoldFrame& Frame, const ff::ActorView& Cur, const ff::ActorView& Prev, float AnimDt);
+
+	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USceneComponent> Root;
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USkeletalMeshComponent> BodyMesh;
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") int32 SimActorId = -1;
+	UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> BodyMaterials;
+	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> FallbackParts;
+	UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> FallbackMaterials;
+	UPROPERTY(Transient) TObjectPtr<UStaticMesh> ShapeCylinder;
+	UPROPERTY(Transient) TObjectPtr<UStaticMesh> ShapeSphere;
+	UPROPERTY(Transient) TObjectPtr<UStaticMesh> ShapeCube;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> ShapeMaterial;
+
+	FString Role = TEXT("dummy");
+	bool bFallbackBody = false;
+	FDelegateHandle FrameHandle;
+	TSharedPtr<FFourfoldFighterImpl> Impl;
 };
