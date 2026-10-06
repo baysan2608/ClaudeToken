@@ -54,7 +54,9 @@ func test_skybreak_strikes_from_above_over_a_wall_and_deafens() -> void:
 	check(h.has_event("thunder"), "thunder event")
 
 
-func test_static_ward_absorbs_half_and_static_burst_returns_it() -> void:
+func test_static_ward_stores_the_bolt_and_static_burst_returns_it() -> void:
+	# The dedicated electric answer: a T0 ward (CP 12) drinks up to 2.5 x 12 = 30 of a bolt, so a T1 Bolt (E 24) is
+	# stored whole - better than any plain guard (MOVESET §8.6).
 	var pr := duel(2, Sim.Element.FIRE, 5, 3.5)
 	var p: ActorState = pr[0]
 	var r: ActorState = pr[1]
@@ -63,16 +65,18 @@ func test_static_ward_absorbs_half_and_static_burst_returns_it() -> void:
 	h.step(20)                       # not perfect
 	_hold_strike(r, 42)              # the rival's Bolt (E 24)
 	check(h.has_event("static_absorb"), "the ward stores the bolt")
-	near(p.static_charge, 12.0, 1e-6, "50 % stored as static")
-	near(100.0 - p.health, 12.0, 0.01, "50 % taken")
+	near(p.static_charge, 24.0, 1e-6, "the whole bolt stored as static")
+	near(100.0 - p.health, 0.0, 0.01, "nothing taken")
+	check(p.guarding, "the ward stays up")
 	h.release(p, "guard")
 	h.until(func(): return p.stun <= 0.0, 60)
+	h.until(func(): return p.action == null, 40)   # the guard's recovery ends
 	h.press(p, "guard")
 	h.step(6)
 	h.flick(p, "guard", Sim.Gesture.UP)
 	h.step(30)
 	var sb := h.last_event("static_burst")
-	check(not sb.is_empty() and absf(float(sb.e) - 12.0) < 1e-6, "Static Burst releases it (%s)" % [sb.get("e")])
+	check(not sb.is_empty() and absf(float(sb.e) - 24.0) < 1e-6, "Static Burst releases it (%s)" % [sb.get("e")])
 	check(r.health < 100.0 and p.static_charge == 0.0, "back at the rival (%.1f)" % r.health)
 	h.release(p, "guard")
 

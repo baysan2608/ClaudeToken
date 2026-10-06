@@ -25,6 +25,14 @@ const DUST := {
 }
 
 
+## Charge-tier accent (trails, rims, release rings): T0 plain, T1 warm gold, T2 hot orange, T3 white-hot.
+const TIER := [Color(0.85, 0.85, 0.85), Color(1.00, 0.84, 0.42), Color(1.00, 0.56, 0.20), Color(1.00, 0.96, 0.88)]
+
+
+static func tier_color(tier: int) -> Color:
+	return TIER[clampi(tier, 0, 3)]
+
+
 static func color(mat: String) -> Color:
 	return MAT.get(mat, Color(0.9, 0.9, 0.9))
 

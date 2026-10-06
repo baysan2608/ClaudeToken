@@ -225,6 +225,10 @@ func test_puddle_mark_follows_the_live_radius() -> void:
 ## signature, which the audio stream owns). `enabled = false` keeps AudioDirector.play silent.
 class SfxProbe extends AudioDirector:
 	var on := {}
+	var played: Array[String] = []
+
+	func play(nm: String, _pos: Vector3, _vol_db: float = 0.0, _pitch_var: float = 0.04, _pitch: float = 1.0) -> void:
+		played.append(nm)
 
 	func loop(key: String, _nm: String, on_now: bool, _pos: Vector3, _vol_db: float = 0.0) -> void:
 		on[key] = on_now
@@ -693,3 +697,42 @@ func test_bridge_leaves_legacy_actions_to_fighter_view() -> void:
 	check(p.action != null and p.action.id == "earth_attack", "setup: legacy attack")
 	check(br.issued == 0 and fv._one_shot_t <= 0.0, "legacy earth_attack is FighterView's own")
 	fv.free()
+
+
+## Ice's Hoarfrost freezes a soaked fighter: its `transform` event names an actor, not a body. The director
+## used to read `e.body` for the position and threw (seen in the show_water_ice render).
+func test_actor_transform_without_a_body_plays_its_cue() -> void:
+	var h := SimHarness.new(1)
+	var a := h.actor("A", Vector3.ZERO, 0, {}, Sim.Element.WATER)
+	var o := h.actor("O", Vector3(0, 0, 4), 1, {}, Sim.Element.EARTH)
+	var bv := _tree_views(h)
+	var fx := _director(h, bv)
+	fx.player_id = a.id
+	fx.handle([{"type": "transform", "actor": o.id, "at": o.pos, "from": "wet", "to": "frozen", "why": "frost"},
+		{"type": "transform", "body": 9999, "from": "stone", "to": "molten", "why": "heated"}] as Array[Dictionary])
+	var played: Array[String] = (fx.audio as SfxProbe).played
+	check(played.has("freeze"), "the frost plays its freeze cue (%s)" % [played])
+	check(played.has("melt_rise"), "a transform of a body already gone still plays at its last position")
+	_drop(fx, bv)
+
+
+## A Molten Lance pours heat into a stone wall's face: the wall view glows before the face slumps (it used to
+## stay cold-grey until the collapse), and a cold wall does not glow.
+func test_wall_glows_as_its_face_is_heated() -> void:
+	var h := SimHarness.new(1)
+	var bv := _tree_views(h)
+	var wl := h.w.spawn_body(Sim.Mat.STONE, Sim.Form.WALL, 120.0, Vector3(0, 0, 4), "test")
+	wl.wall_rise = 1.0
+	bv.push_state()
+	bv.render(1.0)
+	var v: Node = bv.view_of(wl.id)
+	check(v is EarthWallView, "a stone wall is an earth wall view")
+	check(float(v.call("get_heat")) == 0.0, "a cold wall does not glow")
+	wl.props["face_hu"] = 300.0   # one T3 lance (EarthMagma.pour_face)
+	bv.render(1.0)
+	check(float(v.call("get_heat")) > 0.9, "a lanced face glows near melting (%.2f)" % float(v.call("get_heat")))
+	wl.props.erase("face_hu")
+	h.w.heat_body(wl, 120.0 * Sim.STONE_C * 600.0)   # the whole wall at ~620 °C
+	bv.render(1.0)
+	check(absf(float(v.call("get_heat")) - Thermal.heat01(wl)) < 0.01 and Thermal.heat01(wl) > 0.4, "a hot wall glows by its temperature")
+	_free_tree_views(bv)

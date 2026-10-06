@@ -56,6 +56,40 @@ static func _left(res: Dictionary, absorb: float) -> float:
 	return clampf((tp - absorb * float(res.cp_eff)) / tp, 0.0, 1.0)
 
 
+## Takes up to `hu` of heat from a source agent and returns what it gave: a body source loses it from its
+## real thermal energy (Thermal), a volume from its heat budget. Callers must place or book the result.
+static func draw_heat(src: Agent, hu: float) -> float:
+	if src == null or hu <= 0.0:
+		return 0.0
+	if src.body != null and src.body.alive:
+		var take := minf(hu, maxf(0.0, src.body.thermal_energy()))
+		var got := -Thermal.heat(src.body, -take)
+		src.heat = maxf(0.0, src.heat - got)
+		return got
+	var g := minf(hu, maxf(0.0, src.heat))
+	src.heat -= g
+	return g
+
+
+## Moves up to `hu` of heat from `src` into body `dst` through the ledgers; whatever `dst` cannot take
+## goes back to the source (or is booked as spent). Returns HU that reached `dst`.
+static func move_heat(w: CombatWorld, src: Agent, dst: MatBody, hu: float) -> float:
+	var got := draw_heat(src, hu)
+	if got <= 0.0:
+		return 0.0
+	var used := w.heat_body(dst, got)
+	var left := got - used
+	if left > 1e-9:
+		if src.body != null and src.body.alive:
+			left -= Thermal.heat(src.body, left)
+		else:
+			src.heat += left
+			left = 0.0
+		if left > 1e-9:
+			w.ledger.spent += left
+	return used
+
+
 static func _pass(_w: CombatWorld, _t: Agent, _c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
 	res.pass_scale = 1.0
 	return true
@@ -68,7 +102,7 @@ static func block(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictio
 	res.pass_scale = 0.0
 	if c.kind == "guard":
 		var info: Dictionary = ctx.get("info", {})
-		res.result = w.guard_chip(c.actor, info, r, t)
+		res.result = w.guard_chip(c.actor, info, r, t, float(res.ratio))
 		return true
 	if c.kind == "stance":
 		res.stopped = false
@@ -327,6 +361,9 @@ static func absorb(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dicti
 	res.pass_scale = 0.0
 	if t.kind == "body" and t.body != null and t.body.alive:
 		var b := t.body
+		if b.mass <= 1e-9:
+			w.decay_body(b, "absorbed")   # massless (wind blade, spent vapour): nothing to merge
+			return true
 		if c.body != null and c.body.alive and c.body != b and c.body.mat == b.mat and b.form != Sim.Form.POOL:
 			if c.body.form == Sim.Form.PUDDLE or c.body.form == Sim.Form.POOL or c.body.controller >= 0 or r.get("merge", true):
 				w.merge_bodies(c.body, b)
@@ -393,14 +430,12 @@ static func transform(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Di
 				return false
 			var share := hu
 			if b.phase == Sim.Phase.FROZEN:
-				var used := w.heat_body(b, share)
-				if src != null:
-					src.heat -= used
+				var used := move_heat(w, src, b, share) if src != null else w.heat_body(b, share)
 				res.heat_used = float(res.heat_used) + used
 			else:
-				w.boil_water(b, share, b.pos)
 				if src != null:
-					src.heat -= share
+					share = draw_heat(src, share)
+				w.boil_water(b, share, b.pos)
 				res.heat_used = float(res.heat_used) + share
 				if b.mass <= 0.05:
 					w.decay_body(b, "boiled")
@@ -411,9 +446,7 @@ static func transform(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Di
 		"water":
 			if not b.is_water():
 				return false
-			var used2 := w.heat_body(b, hu)
-			if src != null:
-				src.heat -= used2
+			var used2 := move_heat(w, src, b, hu) if src != null else w.heat_body(b, hu)
 			res.heat_used = float(res.heat_used) + used2
 		"rock", "obsidian", "hot_rock":
 			if r.get("requires", "") == "liquid" and b.liquid <= 0.0:
@@ -431,10 +464,11 @@ static func transform(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Di
 			if to == "obsidian" and b.liquid <= 0.0:
 				b.tag = &"obsidian"
 		"lava", "molten_metal":
-			var used3 := w.heat_body(b, hu)
+			var used3 := 0.0
 			if src != null:
-				src.heat -= used3
+				used3 = move_heat(w, src, b, hu)
 			else:
+				used3 = w.heat_body(b, hu)
 				w.ledger.generated += used3   # counter-driven heat with no paid source (rule.energy): booked as created
 			res.heat_used = float(res.heat_used) + used3
 		"ice", "snow":
@@ -498,8 +532,7 @@ static func heat(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Diction
 	var src := _heat_src(t, c, b)
 	if src == null or src.heat <= 0.0:
 		return true
-	var used := w.heat_body(b, src.heat * float(r.get("share", 0.5)))
-	src.heat -= used
+	var used := move_heat(w, src, b, src.heat * float(r.get("share", 0.5)))
 	res.heat_used = float(res.heat_used) + used
 	return true
 
@@ -581,7 +614,10 @@ static func extinguish(w: CombatWorld, t: Agent, _c: Agent, res: Dictionary, _r:
 	if t.body != null and t.body.alive and (t.body.mat == Sim.Mat.FIRE or t.cls == &"fire_field"):
 		w.emit("extinguish", {"body": t.body.id})
 		w.decay_body(t.body, "extinguished")
-	else:
+	elif t.body == null and t.heat > 0.0:
+		# A heat volume put out: its unspent heat is lost to the air (booked, so the ledger stays exact).
+		# (A body's heat stays in the body - zeroing the agent's copy changes nothing.)
+		w.ledger.spent += t.heat
 		t.heat = 0.0
 	return true
 
@@ -597,6 +633,7 @@ static func weaken(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dicti
 		return true
 	if t.body != null and t.body.alive:
 		var b := t.body
+		scale_damage(b, f)
 		# Every channel keeps the fraction f, so TP' = TP - CP_eff (K is linear in speed).
 		var w_r: Dictionary = r.get("w", {})
 		if float(t.ch.K) > 0.0 and float(w_r.get("K", 1.0)) > 0.0:
@@ -605,6 +642,8 @@ static func weaken(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dicti
 				b.wave_budget *= lerpf(1.0, f, 0.5)
 		if float(t.ch.H) > 0.0 and float(w_r.get("H", 1.0)) > 0.0 and b.thermal_energy() > 0.0:
 			var take := minf((1.0 - f) * float(t.ch.H) * Interactions.HU_PER_PU * float(r.get("heat_mult", 1.0)), b.thermal_energy())
+			# A counter cannot take more heat than its own mass can hold (2 kg of fog cannot quench 80 kg of lava).
+			take = minf(take, heat_capacity(c.body))
 			if c.body != null and c.body.is_water() and c.body.mass > 0.0:
 				var got := -Thermal.heat(b, -take)
 				w.boil_water(c.body, got, b.pos)
@@ -612,6 +651,36 @@ static func weaken(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dicti
 				var got2 := -Thermal.heat(b, -take)
 				w.ledger.ambient -= got2
 	return true
+
+
+## Remaining hit strength of a body after partial counters (MOVESET §5.3: a crusted / slowed threat hits
+## softer). Multiplied into props.dmg_scale; contact hits read it (CombatWorld.hit_scale).
+static func scale_damage(b: MatBody, f: float) -> void:
+	if b == null:
+		return
+	b.props["dmg_scale"] = clampf(float(b.props.get("dmg_scale", 1.0)) * f, 0.0, 1.0)
+
+
+## HU a counter body can soak (water boils, solids heat to their melt point, plants scorch). Wind and fire
+## counters (no mass / no limit to the air they move) are unbounded.
+static func heat_capacity(b: MatBody) -> float:
+	if b == null or not b.alive or b.mass <= 0.0:
+		return INF
+	match b.mat:
+		Sim.Mat.WATER, Sim.Mat.STEAM:
+			var per := Sim.WATER_LATENT_VAPOR + Sim.WATER_C * maxf(0.0, Sim.WATER_BOIL_C - minf(b.temp, Sim.WATER_BOIL_C))
+			if b.mat == Sim.Mat.WATER and b.liquid < 1.0:
+				per += Sim.WATER_LATENT_FUSION * (1.0 - b.liquid)
+			return b.mass * per
+		Sim.Mat.AIR, Sim.Mat.FIRE:
+			return INF
+		Sim.Mat.PLANT:
+			return b.mass * Materials.c(b.mat) * 200.0
+		Sim.Mat.STONE:
+			return b.mass * Sim.STONE_C * maxf(0.0, Sim.STONE_MELT_C - b.temp) + b.mass * Sim.STONE_LATENT * (1.0 - b.liquid)
+	if Materials.is_fusible(b.mat):
+		return b.mass * Materials.c(b.mat) * maxf(0.0, Materials.melt(b.mat) - b.temp)
+	return INF
 
 
 static func bend(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictionary, _ctx: Dictionary) -> bool:
@@ -636,6 +705,7 @@ static func slow(_w: CombatWorld, t: Agent, _c: Agent, res: Dictionary, r: Dicti
 	var k := float(r.get("factor", 0.6))
 	res.pass_scale = k
 	if t.body != null and t.body.alive:
+		scale_damage(t.body, k)
 		t.body.vel *= k
 		if t.body.form == Sim.Form.WAVE:
 			t.body.props["speed"] = float(t.body.props.get("speed", 7.5)) * k
@@ -673,6 +743,7 @@ static func overwhelm(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Di
 		_break_counter(w, c, res)
 	if t.body != null and t.body.alive:
 		t.body.vel *= f
+		scale_damage(t.body, f)
 	w.emit("overwhelm", {"threat": String(t.cls), "counter": String(c.ccls), "left": f})
 	return true
 
@@ -715,13 +786,25 @@ static func clash(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictio
 	return true
 
 
+## Sound can break a CHARGE (MOVESET §4) or a technique CHANNEL; a held guard (a channel too) is a
+## counter: the sound meets its rule cell instead (Null Bubble neutralizes, Sound Barrier reflects, a plain
+## guard blocks), so it is never disrupted.
+static func disruptable(who: ActorState) -> bool:
+	var inst := who.action
+	if inst == null:
+		return false
+	if inst.id == "guard" or who.guarding:
+		return false
+	return inst.phase == ActionInst.P.CHARGE or inst.phase == ActionInst.P.CHANNEL
+
+
 ## The counter (sound) breaks the threat actor's charge or channel when P >= cohesion 6 + 4·tier.
 static func disrupt(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
 	var who := t.actor
 	if who == null or who.action == null:
 		return false
 	var inst := who.action
-	if inst.phase != ActionInst.P.CHARGE and inst.phase != ActionInst.P.CHANNEL:
+	if not disruptable(who):
 		return false
 	var p := float(res.cp_eff)
 	if p < Interactions.disrupt_threshold(inst.tier()):
@@ -741,7 +824,8 @@ static func neutralize(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: 
 			w.close_zone(t.body, "neutralized")
 		else:
 			w.decay_body(t.body, "neutralized")
-	else:
+	elif t.body == null and t.heat > 0.0:
+		w.ledger.spent += t.heat   # the volume's unspent heat leaves with it (booked)
 		t.heat = 0.0
 	if c.body != null and c.body.alive and (c.body.form == Sim.Form.ZONE or c.body.form == Sim.Form.CLOUD):
 		w.close_zone(c.body, "neutralized")
@@ -762,6 +846,14 @@ static func push(_w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dictio
 
 ## Legacy gust on a cloud: blown along and dispersed within 0.6 s.
 static func disperse(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
+	if t.body == null and t.kind == "volume":
+		# A vapour / grit volume (steam jet, sand spray) blown apart before it lands; its heat is lost to the air.
+		w.ledger.spent += maxf(0.0, t.heat)
+		t.heat = 0.0
+		w.emit("disperse", {"actor": _id(c), "body": -1, "cls": String(t.cls)})
+		res.stopped = true
+		res.pass_scale = 0.0
+		return true
 	if t.body == null or not t.body.alive:
 		return false
 	var b := t.body

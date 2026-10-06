@@ -191,7 +191,7 @@ func aim_at(g: Game, f: InputFrame, dir: Vector3) -> void:
 	if dir.length() < 0.01:
 		return
 	dir = dir.normalized()
-	var yaw := g.cam.yaw - f.cam_delta.x
+	var yaw := g.cam.view_yaw() - f.cam_delta.x
 	var fwd := Vector3(sin(yaw), 0.0, cos(yaw))
 	var right := fwd.cross(Vector3.UP)
 	f.tech_aim = Vector2(dir.dot(right), dir.dot(fwd)).limit_length(1.0)
@@ -205,7 +205,7 @@ func stick_toward(g: Game, f: InputFrame, dir: Vector3, amount: float = 1.0) -> 
 		f.move = Vector2.ZERO
 		return
 	dir = dir.normalized()
-	var yaw := g.cam.yaw
+	var yaw := g.cam.view_yaw()
 	var fwd := Vector3(sin(yaw), 0.0, cos(yaw))
 	var right := fwd.cross(Vector3.UP)
 	f.move = Vector2(dir.dot(right), dir.dot(fwd)) * amount

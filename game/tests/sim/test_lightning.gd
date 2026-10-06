@@ -438,8 +438,10 @@ func test_late_guard_does_not_redirect() -> void:
 		_redirect_trial(lead)
 		check(not h.has_event("lightning_redirect"), "lead %d: no redirect" % lead)
 		check(c.health == 100.0, "lead %d: the caster is unharmed" % lead)
-		check(t.health < 100.0 and t.health > 100.0 - DMG * 0.5, "lead %d: T just blocks a normal guard (health %.2f)" % [lead, t.health])
-		check(h.has_event("block"), "lead %d: block reported" % lead)
+		# A normal (late) guard is no answer to lightning: the bolt goes through the raised arm minus the guard's
+		# CP 10 (24 -> 14; CoreRules.plain_guard_electric - the grounded stance, the Static Ward and walls are the answers).
+		check(t.health < 100.0 - DMG * 0.5 and t.health > 100.0 - DMG * 0.7, "lead %d: E - CP through a normal guard (health %.2f)" % [lead, t.health])
+		check(not h.has_event("block"), "lead %d: no clean block" % lead)
 
 
 func test_no_redirect_without_the_technique_or_the_fire_element() -> void:

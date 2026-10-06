@@ -97,6 +97,10 @@ func set_heat(t01: float) -> void:
 	_mat.set_shader_parameter("u_heat", _heat)
 
 
+func get_heat() -> float:
+	return _heat
+
+
 func get_rise() -> float:
 	return _rise
 

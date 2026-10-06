@@ -94,12 +94,15 @@ func test_counter_strength_scales_with_the_threat() -> void:
 	if check(lt != null, "light blob is a threat"):
 		var t3l := Interactions.predict(dl.h.w, lt, Agent.of_move(dl.h.w, dl.o, "air_attack", 3, false))
 		check(String(t3l.outcome) == "transform" and String(t3l.to) == "rock", "hurricane sets 8 kg of lava to rock (%s/%s r%.2f)" % [t3l.outcome, t3l.band, t3l.ratio])
-	# The same palm gust still turns a light thrown stone (legacy redirect).
+	# A palm gust (7 x2 = 14) only bends a 20 kg thrown stone (TP 17, MOVESET §5.4); the cyclone push (11 x2 = 22)
+	# sends it back.
 	var d2 := _setup(Sim.Element.AIR, 0)
 	var st := _thrown_agent(d2, "stone_20")
 	if check(st != null, "stone is a threat"):
 		var r0 := Interactions.predict(d2.h.w, st, Agent.of_move(d2.h.w, d2.o, "air_attack", 0, false))
-		check(String(r0.outcome) == "redirect", "palm gust sends a 20 kg stone back (%s)" % r0.outcome)
+		var r1c := Interactions.predict(d2.h.w, st, Agent.of_move(d2.h.w, d2.o, "air_attack", 1, false))
+		check(String(r0.outcome) != "redirect" and String(r1c.outcome) == "redirect",
+			"palm gust bends a 20 kg stone (%s r%.2f), cyclone sends it back (%s r%.2f)" % [r0.outcome, r0.ratio, r1c.outcome, r1c.ratio])
 	# A heavier stone needs more: 80 kg is only bent by the same gust.
 	var d3 := _setup(Sim.Element.AIR, 0)
 	var hv := _thrown_agent(d3, "stone_80")

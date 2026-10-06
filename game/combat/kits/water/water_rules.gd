@@ -201,6 +201,7 @@ static func o_skin(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, _r: Dict
 		if t.kind == "volume":
 			res.stopped = true
 			res.pass_scale = 0.0
+			w.ledger.spent += maxf(0.0, t.heat)   # the volume's heat leaves with it (booked)
 			t.heat = 0.0
 			_report(res, "absorb")
 			return true
@@ -411,7 +412,9 @@ static func o_burn(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dicti
 			b.heat_payload -= lost
 			w.ledger.ambient -= lost
 	elif t.heat > 0.0:
-		t.heat *= 1.0 - float(r.get("k", 0.15))
+		var lost2 := t.heat * float(r.get("k", 0.15))
+		t.heat -= lost2
+		w.ledger.ambient -= lost2   # heat spent burning the lattice (booked like the body branch)
 	res.pass_scale = float(r.get("pass", 0.8))
 	res.stopped = false
 	_report(res, "transform", "ash")

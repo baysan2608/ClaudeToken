@@ -82,9 +82,12 @@ static func for_move(element: int, sub: int, slot: String, tier: int = 0) -> Lab
 			s._at(t0)["guard_pressed"] = true
 			s._hold(t0, t0 + gh, "guard_held")
 		"push", "sink":
+			# The push / sink tier comes from how long the guard was held before the flick (KitEarth.guard_tier):
+			# hold the guard for the tier's hold time, flick, then keep it held while the move plays.
+			var gh2 := maxi(10, ceili(hold_seconds(def, tier) / Sim.DT)) if tier > 0 else 10
 			s._at(t0)["guard_pressed"] = true
-			s._hold(t0, t0 + 42, "guard_held")
-			s._at(t0 + 10)["guard_gesture"] = Sim.Gesture.UP if slot == "push" else Sim.Gesture.DOWN
+			s._hold(t0, t0 + gh2 + 32, "guard_held")
+			s._at(t0 + gh2)["guard_gesture"] = Sim.Gesture.UP if slot == "push" else Sim.Gesture.DOWN
 		"tech":
 			var th := maxi(40, ceili(hold_seconds(def, tier) / Sim.DT) + 4)
 			s._at(t0)["tech_pressed"] = true

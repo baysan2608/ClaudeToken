@@ -134,7 +134,7 @@ static func _ground() -> void:
 		"desc": "A ground wave of water. It carries loose or incoming solids back at the rival, quenches lava into rock, douses fire fields and leaves puddles. Held: bigger, a Breaker, then the Deluge from the pool.",
 		"module": "verbs", "verb": "ground_line",
 		"startup": _s(16), "active": _s(6), "recovery": _s(22), "cancel": 0.6, "chain": 0.25,
-		"cost": 8.0, "source": "none", "mat": "water", "mass": 8.0, "tag": "water_wave", "speed": 9.0, "budget": 10.0,
+		"cost": 8.0, "source": "none", "mat": "water", "mass": 6.0, "tag": "water_wave", "speed": 9.0, "budget": 10.0,
 		"width": 2.0, "power": 18.0, "channel": "K", "damage": 12.0, "balance": 40.0, "knock": 6.0, "lift": 3.0,
 		"take_reach": 3.0, "kind": "water", "steer": 18.0,
 		"tiers": {
@@ -144,10 +144,24 @@ static func _ground() -> void:
 				"cost_add": 7.0, "damage": 20.0, "balance": 55.0},
 		},
 		"hook_execute": Callable(WaterWater, "tidal_execute"),
+		"counter_scale": Callable(WaterWater, "tidal_scale"),
 		"counter": {"cls": "wave_water", "power": [18.0, 24.0, 32.0, 45.0]}, "threat": {"cls": "water_wave"},
 		"anim": "mv_uppercut_lift", "anim_active": "water_whip", "fx": {"mat": "water", "shape": "ground"},
 		"ai": {"role": "counter", "range": [3.0, 12.0], "tags": ["carry_back", "quench", "douse", "knockdown"]},
 	})
+
+
+## The fraction of its tier power a Tidal Rush would have right now (the water the fighter can reach vs what the tier
+## asks for, as tidal_execute scales it). Agent.of_move uses it, so the AI planner, the Lab matrix and predictions
+## match the wave the sim really makes.
+static func tidal_scale(w: CombatWorld, a: ActorState, tier: int) -> float:
+	var d: Dictionary = Moves.DEFS.tidal_rush
+	var want := float(Charge.pget(d, tier, "mass", 6.0))
+	var reach := float(Charge.pget(d, tier, "take_reach", 3.0))
+	var have := WaterUtil.available(w, a, reach)
+	if have < 3.0:
+		return 0.0
+	return clampf(have / maxf(want, 0.1), 0.35, 1.0)
 
 
 static func tidal_execute(w: CombatWorld, a: ActorState, inst: ActionInst) -> bool:

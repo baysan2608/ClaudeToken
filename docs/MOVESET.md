@@ -126,7 +126,12 @@ A charged projectile also carries **cohesion** = residual authority `0.6 + 0.1·
   glass 0.30, ice 0.44 (50 kg from ambient moisture → **22**; 70 kg next to the pool or a puddle → 30), sand 0.25 (100 kg → 25),
   metal 3.3 per kg of plate (6 kg Aegis → **20**), vine 0.4 (40 kg → 16), held water 1.0 per kg (6 kg shield → **6**).
 * **Active counters** (gust, wave, blast, sound, swallow, beams…): the move's `power` per tier (tables in §7).
-* **Plain guard** (any element, no barrier): CP 10, outcome always "block with chip" (legacy: 12 % damage, 55 % balance).
+* **Plain guard** (any element, no barrier): CP 10, "block with chip" (legacy: 12 % damage, 55 % balance) while TP <= 2·CP_eff;
+  past that chip / balance / knock grow ×TP/(2·CP_eff), and past 4·CP_eff (a 200 kg boulder, a 45 kg lava wave) the guard is
+  **overwhelmed** (guard break, TP − ½CP lands). A perfect press deflects only a threat the guard could hold (ratio ≥ 0.5).
+  Lightning through a plain guard: the guard takes only its own CP off the bolt (weaken; block from ratio 0.5). Molten threats
+  meet the wind / fire / static / blast guards at eff 0.35; lightning **passes** a Wind Guard and **conducts** ×1.5 through a
+  held water shield; the Earth grounded stance (40 %) replaces the guard's cell. (Review round 3, `CoreRules.plain_guard`.)
 * **Perfect timing** (guard pressed ≤ 0.18 s before contact, not mashed): CP × **1.5** and the rule's `perfect` outcome.
 * **Efficacy** `eff` per (threat class, counter class) encodes material physics: water vs fire 2.5, sand vs fire 2.0, wind vs light solids 1.5–2.0,
   wind vs heavy solids 0.6, magma vs ice 3.0, sound vs ice/glass 2.5, vacuum vs fire 2.0, etc. `CP_eff = CP · eff`.
@@ -141,6 +146,11 @@ A charged projectile also carries **cohesion** = residual authority `0.6 + 0.1·
 | **partial** `0.5 ≤ ratio < 1` | rule `partial` (default **WEAKEN**) | the counter removes `CP_eff` from the threat (subtractive: K → speed scaled, H → heat removed through the ledger, E/P reduced); special partials: **BEND** (deflect angle `60°·f`, f = (ratio−0.5)/0.5), **SLOW**, **partial transform** (crust/soften/partly melted) |
 | **fail** `ratio < 0.5` | rule `fail` (default **OVERWHELM**) | the counter breaks (wall crumbles, shield boils away, guard-break balance damage); the threat continues with `TP − absorb_on_fail · CP_eff` (default absorb 0.5) |
 | **special bands** | per rule | e.g. wind vs fire: `< 1` **AMP** (fanned: +30 % heat, +1 m), `1–2` **DEF** (blown aside; perfect: back), `≥ 2` **EXT**. Lightning vs barriers: `≥ 1` **GND**, `< 1` **SHT** the barrier and pass with `E − 0.5·CP` |
+
+**Partials apply once per contact** (a body staying in a zone or grinding through a wall is not re-weakened, nor caught by the
+same counter afterwards), a counter body cannot soak more heat than its own mass holds (2 kg of fog cannot quench 80 kg of lava),
+and what a partial leaves also **hits softer**: contact damage / balance × the remaining fraction (`props.dmg_scale`; a lava wave
+also by the melt it keeps below 60 %).
 
 **Stacking is physical.** Several counters on one threat subtract in order: a 200 kg boulder (110) survives a Swallow T3 (−55) but a Ram Wall clash (54)
 then stops it. Big threats are answered by combos, small ones by single moves.

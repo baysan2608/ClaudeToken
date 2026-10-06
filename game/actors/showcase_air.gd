@@ -313,7 +313,7 @@ func _duel_yaw(g: Game) -> float:
 ## World-space direction -> camera-relative stick (x right, y forward), using the yaw the
 ## game will have after applying this tick's cam_delta.
 func _stick(g: Game, f: InputFrame, dir: Vector3) -> Vector2:
-	var yaw := g.cam.yaw - f.cam_delta.x
+	var yaw := g.cam.view_yaw() - f.cam_delta.x
 	var fwd := Vector3(sin(yaw), 0.0, cos(yaw))
 	var right := fwd.cross(Vector3.UP)
 	return Vector2(dir.dot(right), dir.dot(fwd)).limit_length(1.0)

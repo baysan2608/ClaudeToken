@@ -187,6 +187,10 @@ static func of_move(w: CombatWorld, a: ActorState, move_id: String, tier: int, p
 	var cp := Charge.counter_power(g.def, tier)
 	if cp >= 0.0:
 		g.power = cp
+		# Moves whose power depends on the fighter's situation (Tidal Rush: the water in reach) scale it here.
+		var sc: Variant = g.def.get("counter_scale")
+		if sc is Callable and (sc as Callable).is_valid() and w != null and a != null:
+			g.power = cp * float((sc as Callable).call(w, a, tier))
 	elif String(g.def.get("verb", "")) == "barrier":
 		var m := float(Charge.pget(g.def, tier, "mass", 0.0))
 		var hard := float(Charge.pget(g.def, tier, "hardness", Materials.prop(_def_mat(g.def), "hardness", 0.25)))

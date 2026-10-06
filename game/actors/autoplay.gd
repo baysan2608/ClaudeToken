@@ -257,7 +257,7 @@ func _duel(g: Game) -> void:
 	if g.ai != null and not g.ai.planner:
 		g.ai.configure({"preset": "master", "elements": [0, 1, 2, 3]})
 	var it := duel_ai.think(Sim.DT)
-	var yaw: float = g.cam.yaw
+	var yaw: float = g.cam.view_yaw()
 	var fwd := Vector3(sin(yaw), 0.0, cos(yaw))
 	var right := fwd.cross(Vector3.UP)
 	f.move = Vector2(it.move.dot(right), it.move.dot(fwd)).limit_length(1.0)

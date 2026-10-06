@@ -601,8 +601,8 @@ static func _o_glassify(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: 
 	res.stopped = true
 	res.pass_scale = 0.0
 	if t.heat > 0.0:
-		var used := w.heat_body(c.body, t.heat * float(r.get("heat_share", 0.5)))
-		t.heat -= used
+		# Outcomes.move_heat takes the heat from the threat body's real energy (or a volume's budget).
+		var used := Outcomes.move_heat(w, t, c.body, t.heat * float(r.get("heat_share", 0.5)))
 		res.heat_used = float(res.heat_used) + used
 	_to_glass(w, c.body, "blue_fire")
 	return true

@@ -38,6 +38,8 @@ const ALL_ROWS := ["stone", "stone_heavy", "boulder", "hot_rock", "magma", "lava
 static func _cell(t: String, c: String, rule: Dictionary, ref: Dictionary = {}) -> void:
 	var r := rule.duplicate(true)
 	r["owner"] = "fire"
+	if r.get("chip_scale", false) and ["magma", "lava_wave", "molten_metal"].has(t) and not r.has("eff"):
+		r["eff"] = 0.35   # a plain guard of fire / blast / static is no wall against molten rock (a perfect press blocks)
 	if not r.has("id"):
 		r["id"] = "fire_%s_%s" % [c, t]
 	var key := "%s|%s%s" % [t, c, "|" + str(r.tiers) if r.has("tiers") else ""]
@@ -47,11 +49,10 @@ static func _cell(t: String, c: String, rule: Dictionary, ref: Dictionary = {}) 
 		CELLS[key] = {"id": r.id, "threat": t, "counter": c, "ref": ref, "tiers": r.get("tiers", [])}
 
 
+## The core plain guard (CoreRules.plain_guard: chip grows past 2x CP, overwhelmed past 4x, perfect only when the
+## guard could hold it). Molten threats meet a fire / blast / static guard at half its power (no wall against lava).
 static func _plain_guard(extra: Dictionary = {}) -> Dictionary:
-	var r := {"bands": [[0.0, "block"]], "full_at": 0.0, "perfect": "deflect", "chip": 0.12, "bal": 0.55, "knock": 0.35,
-		"perfect_balance": 18.0, "perfect_range": 3.0}
-	r.merge(extra, true)
-	return r
+	return CoreRules.plain_guard(extra)
 
 
 static func register() -> void:
@@ -220,6 +221,7 @@ static func o_snuffed(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Di
 			break
 	if f == null:
 		if t.kind == "volume":
+			w.ledger.spent += maxf(0.0, t.heat)   # the volume's unspent heat is lost to the air (booked)
 			t.heat = 0.0
 			res.stopped = true
 			res.pass_scale = 0.0
@@ -379,13 +381,18 @@ static func o_static(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dic
 	if not ctx.has("info"):
 		res.pass_scale = 1.0
 		return true
+	# The dedicated electric answer (MOVESET §8.6): the ward drinks up to `store_x` x its power of the bolt (a T0 ward,
+	# CP 12, takes a whole T1 bolt of 24 and most of a Storm Bolt); static over the 60 cap is bled into the ground.
+	# What it cannot take lands. Better than any plain guard at every bolt tier.
 	var e := float(t.ch.E)
-	var share := float(r.get("share", 0.5))
-	var store := minf(e * share, FireLightning.STATIC_MAX - c.actor.static_charge)
+	var took := minf(e, float(res.cp_eff) * float(r.get("store_x", 2.5)))
+	var share := took / e if e > 1e-6 else 1.0
+	var store := minf(took, FireLightning.STATIC_MAX - c.actor.static_charge)
 	c.actor.static_charge += maxf(0.0, store)
 	res.absorbed = store
-	res.pass_scale = 1.0 - share
-	res.knock_scale = 1.0 - share
+	res.pass_scale = clampf(1.0 - share, 0.0, 1.0)
+	res.knock_scale = res.pass_scale
+	res.stopped = res.pass_scale <= 0.0
 	w.emit("static_absorb", {"actor": c.actor.id, "stored": store, "static": c.actor.static_charge, "perfect": false})
 	FxEvents.fx(w, "aura", "lightning", {"actor": c.actor.id, "pos": c.actor.chest(), "power": c.actor.static_charge, "on": true, "shape": "small"})
 	_report(res, "absorb")
@@ -422,7 +429,7 @@ static func o_reactive(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: D
 	var info: Dictionary = ctx.get("info", {})
 	if not w.spend_focus(c.actor, FireCombustion.REACTIVE_COST):
 		w.emit("insufficient", {"actor": c.actor.id, "what": "focus", "move": "reactive_blast"})
-		res.result = w.guard_chip(c.actor, info, _plain_guard(), t)
+		res.result = w.guard_chip(c.actor, info, _plain_guard(), t, float(res.ratio))
 		res.stopped = true
 		res.pass_scale = 0.0
 		_report(res, "block")
@@ -441,6 +448,7 @@ static func o_reactive(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: D
 		_report(res, "deflect")
 		return true
 	# A volume: flames lose their oxygen, gusts and blasts are met by the counter-blast.
+	w.ledger.spent += maxf(0.0, t.heat)   # its unspent heat is lost to the air (booked)
 	t.heat = 0.0
 	_guard_clean(w, c, info, res, t)
 	_report(res, "extinguish" if ["flame", "blue_fire"].has(String(t.cls)) else "block")
@@ -532,7 +540,7 @@ static func o_fill_void(w: CombatWorld, t: Agent, _c: Agent, res: Dictionary, _r
 
 ## No air, no blast: the detonation inside a vacuum is suppressed.
 static func o_suppressed(_w: CombatWorld, _t: Agent, c: Agent, res: Dictionary, _r: Dictionary, _ctx: Dictionary) -> bool:
-	c.heat = 0.0
+	c.heat = 0.0   # the blast site books the heat it paid (FireCombustion), so nothing is booked here
 	res.stopped = true
 	res.pass_scale = 0.0
 	_report(res, "extinguish")
@@ -588,7 +596,7 @@ static func _flame_column() -> void:
 	# guard, except blue fire (Heat Sink x0.7) and new fire bodies.
 	for t in ["metal", "molten_metal", "sand", "sand_cloud", "sand_surge", "water_wave", "mist", "steam", "vine", "blast",
 			"tornado", "vacuum", "sound", "glass", "ember", "fire_field"]:
-		_cell(t, "aura_flame", _plain_guard(), {"move": "flame_guard", "tier": 0, "expect": "block"})
+		_cell(t, "aura_flame", _plain_guard(), {"move": "flame_guard", "tier": 0, "expect": "overwhelm" if t == "molten_metal" else "block"})
 	_cell("blue_fire", "aura_flame", _plain_guard({"perfect": "fire_guard_absorb", "share": 0.35, "perfect_share": 1.0}),
 		{"move": "flame_guard", "tier": 0, "perfect": true, "expect": "fire_guard_absorb"})
 	# --- flame (flare, blaze, Fire Column, Inferno, Fire Fan / Nova volumes) meeting loose bodies.
@@ -684,7 +692,10 @@ static func _blue_column() -> void:
 	_cell("*", c, _plain_guard({"aura": true}))
 	for t in ["stone", "stone_heavy", "boulder", "magma", "lava_wave", "sand", "sand_surge", "water", "water_wave", "lightning",
 			"blast", "gust", "tornado", "vacuum", "sound", "steam", "glass"]:
-		_cell(t, c, _plain_guard({"aura": true}), {"move": "blue_aegis", "tier": 0, "expect": "block"})
+		# A plain guard: too heavy / molten threats overwhelm it (CoreRules.plain_guard fail band).
+		var pg := _plain_guard({"aura": true}) if t != "lightning" else CoreRules.plain_guard_electric({"aura": true})
+		_cell(t, c, pg, {"move": "blue_aegis", "tier": 0,
+			"expect": "overwhelm" if ["boulder", "magma", "lava_wave"].has(t) else "block"})
 	# Stones arrive as hot rock (partial: they lose speed, gain heat) - the guard still blocks.
 	_cell("hot_rock", c, _plain_guard({"aura": true}), {"move": "blue_aegis", "tier": 0, "expect": "block"})
 	for t in ["metal", "ice"]:
@@ -734,10 +745,11 @@ static func _lightning_column() -> void:
 	_cell("*", c, _plain_guard())
 	for t in ["stone", "stone_heavy", "boulder", "hot_rock", "magma", "lava_wave", "sand", "sand_surge", "water", "water_wave",
 			"ice", "mist", "steam", "vine", "flame", "blue_fire", "blast", "gust", "tornado", "vacuum", "sound", "glass"]:
-		_cell(t, c, _plain_guard(), {"move": "static_ward", "tier": 0, "expect": "block"})
+		_cell(t, c, _plain_guard(), {"move": "static_ward", "tier": 0,
+			"expect": "overwhelm" if ["boulder", "magma", "lava_wave"].has(t) else "block"})
 	_cell("metal", c, {"outcome": "deflect", "perfect": "reflect", "partial": "block", "fail": "block", "eff": 1.5,
 		"chip": 0.12, "bal": 0.55, "knock": 0.35}, {"move": "static_ward", "tier": 0, "expect": "deflect"})
-	_cell("lightning", c, {"bands": [[0.0, "fire_static"]], "full_at": 0.0, "share": 0.5, "perfect": "redirect",
+	_cell("lightning", c, {"bands": [[0.0, "fire_static"]], "full_at": 0.0, "store_x": 2.5, "perfect": "redirect",
 		"requires": "redirect_current", "factor": 0.8, "fallback": "fire_static_full", "aura": true},
 		{"move": "static_ward", "tier": 0, "expect": "fire_static"})
 	# --- lightning (bolts, sparks, arcs) meeting bodies on their path.
@@ -784,7 +796,8 @@ static func _combustion_column() -> void:
 		_cell(t, c, {"outcome": "fire_reactive", "partial": "block", "fail": "block", "fallback": "block", "eff": 2.0 if t == "sand" else 1.0,
 			"chip": 0.12, "bal": 0.55, "knock": 0.35}, {"move": "reactive_blast", "tier": 0, "expect": "block" if t == "hot_rock" else "fire_reactive"})
 	for t in ["stone_heavy", "boulder", "magma", "lava_wave", "sand_surge", "water_wave", "lightning", "vine"]:
-		_cell(t, c, _plain_guard(), {"move": "reactive_blast", "tier": 0, "expect": "block"})
+		var pgb := _plain_guard() if t != "lightning" else CoreRules.plain_guard_electric()
+		_cell(t, c, pgb, {"move": "reactive_blast", "tier": 0, "expect": "overwhelm" if ["boulder", "magma", "lava_wave"].has(t) else "block"})
 	_cell("flame", c, {"outcome": "fire_reactive", "partial": "block", "fail": "block", "eff": 1.5, "chip": 0.12, "bal": 0.55, "knock": 0.35},
 		{"move": "reactive_blast", "tier": 0, "expect": "fire_reactive"})
 	_cell("blue_fire", c, {"outcome": "fire_reactive", "partial": "weaken", "fail": "block", "eff": 1.0, "chip": 0.12, "bal": 0.55, "knock": 0.35},

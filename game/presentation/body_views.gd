@@ -92,6 +92,7 @@ func push_state() -> void:
 		if not alive.has(id):
 			_release(id)
 			_views.erase(id)
+			tier_hint.erase(id)
 
 
 func render(alpha: float) -> void:
@@ -121,6 +122,7 @@ func render(alpha: float) -> void:
 					n.rotate_y(0.02)
 				else:
 					_tumble(b, n, v, dt)
+				_stone_tier(b, n, v, p)
 			"wave":
 				_update_wave(b, n, p, v)
 			"wall":
@@ -129,7 +131,7 @@ func render(alpha: float) -> void:
 				n.call("set_rise", b.wall_rise)
 				n.call("set_damage", b.wall_damage)
 				if n.has_method("set_heat"):
-					n.call("set_heat", Thermal.heat01(b))
+					n.call("set_heat", _wall_heat01(b))
 			"blob":
 				n.position = p
 				# Drawn water grows from a first sip to 12 kg (and a shield shrinks as it boils off).
@@ -160,6 +162,36 @@ func render(alpha: float) -> void:
 			_:
 				_render_moveset(b, n, p, v, dt)
 		_render_aux(b, v, p, dt)
+
+
+## Charge tier reads on the stone itself (MOVESET §11.2): a charged throw is drawn bigger (x1.25 / 1.5 / 1.8 at
+## T1-T3, on top of its mass) and, while it flies, leaves a tier-tinted streak whose length and strength grow
+## with the tier (T3 a long white-hot one). One pooled ribbon per charged shot in flight.
+const STONE_TIER_SCALE := [1.0, 1.25, 1.5, 1.8]
+## body id -> charge tier of its launch (FxDirector sets it from `launch` events; a T1 heave keeps body.tier 0).
+var tier_hint := {}
+
+
+func _stone_tier(b: MatBody, n: Node3D, v: Dictionary, p: Vector3) -> void:
+	var tier := clampi(maxi(b.tier, int(tier_hint.get(b.id, 0))), 0, 3)
+	if tier > 0 and b.tag != &"spear":
+		var sc: float = STONE_TIER_SCALE[tier]
+		n.basis = n.basis.orthonormalized() * sc
+	var flying := tier > 0 and b.attack_id != 0 and b.controller < 0 and b.vel.length() > 4.0
+	var tr: Node3D = v.get("tier_trail")
+	if flying and tr == null:
+		tr = acquire("glide_trail")
+		if tr:
+			tr.call("set_width", b.radius * (1.3 + 0.35 * tier))
+			tr.call("set_look", VfxPalette.tier_color(tier), 0.28 + 0.14 * tier, 0.18 + 0.12 * tier)
+			tr.call("begin", null)
+			v.tier_trail = tr
+	if tr != null:
+		if flying:
+			tr.call("push", p)
+		else:
+			tr.call("end")   # fades out and releases itself (VfxEffect._finish)
+			v.erase("tier_trail")
 
 
 func _crust(b: MatBody) -> float:
@@ -402,6 +434,9 @@ func acquire(key: String) -> Node3D:
 
 func _release(id: int) -> void:
 	var v: Dictionary = _views.get(id, {})
+	if v.get("tier_trail") != null:
+		(v.tier_trail as Node).call("end")   # let the streak fade; it releases itself
+		v.erase("tier_trail")
 	if v.get("aux") != null:
 		pool.release(v.aux)
 		v.aux = null
@@ -934,3 +969,14 @@ func _tumble(b: MatBody, n: Node3D, v: Dictionary, dt: float) -> void:
 		return
 	var w := spd / maxf(b.radius, 0.08) * (0.55 if b.tag == &"crag" else 0.8)
 	n.basis = Basis(axis.normalized(), w * dt) * n.basis.orthonormalized()
+
+
+## Glow of a wall: its own temperature, or (Molten Lance) the heat poured into its face shell (25 % of the
+## mass, EarthMagma.pour_face) when that runs hotter - the face reaches melting well before the wall slumps.
+static func _wall_heat01(b: MatBody) -> float:
+	var h := Thermal.heat01(b)
+	var fh := float(b.props.get("face_hu", 0.0))
+	if fh > 0.0 and b.mat == Sim.Mat.STONE:
+		var ft := Sim.AMBIENT_C + fh / maxf(b.mass * 0.25 * Sim.STONE_C, 1e-3)
+		h = maxf(h, clampf((ft - 250.0) / (Sim.STONE_MELT_C - 250.0), 0.0, 1.0))
+	return h

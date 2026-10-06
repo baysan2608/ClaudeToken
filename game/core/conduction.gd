@@ -99,14 +99,20 @@ static func discharge(w: CombatWorld, caster: ActorState, aim: Vector3, def: Dic
 				if String(rres.result) == "redirected":
 					return out
 		# Grounded stance (legacy cell lightning x ground): Earth guard on stone takes 40 %.
+		# The stance REPLACES the guard's cell (it does not stack with the plain-guard chip): the grounded 40 %
+		# lands as an unblockable hit.
 		var gscale := 1.0
-		if target.guarding and w.guard_element(target) == Sim.Element.EARTH and target.surface == "stone" and target.grounded:
+		var grounded := false
+		# Only the plain Earth guard grounds this way; a kit guard with its own cell (Aegis plate...) answers itself.
+		if target.guarding and w.guard_element(target) == Sim.Element.EARTH and target.surface == "stone" and target.grounded \
+				and Agent.of_guard(w, target).ccls == &"guard_earth":
 			var gres := Interactions.resolve(w, bolt, Agent.of_env(w, "ground", target.pos, target), {"site": "bolt"})
 			gscale = float(gres.pass_scale)
+			grounded = true
 		var dmg := base_dmg * gscale
 		w.hit_actor(target, {"attacker": caster.id, "attack_id": attack_id, "damage": dmg,
 			"balance": float(def.balance) * gscale, "knock": (end - start).normalized() * 2.0,
-			"kind": "lightning", "from": start, "agent": bolt, "power": e_val})
+			"kind": "lightning", "from": start, "agent": bolt, "power": e_val, "unblockable": grounded})
 		out.hits.append(target.id)
 		var tn := actor_surface_node(w, target)
 		if tn != "":

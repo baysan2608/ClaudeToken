@@ -27,6 +27,10 @@ const WIND_GUARD_CP := 12.0
 const ENV_CP := 1.0e6
 const HU_PER_PU := 20.0                 # 1 PU of H or C is 20 HU
 const IX_EVENT_TICKS := 30              # continuous contacts emit `interaction` at most every 0.5 s per pair
+## A partial (weaken / slow) is a one-time subtraction per contact (MOVESET §5.3): a body staying in a zone or
+## grinding a wall is not re-weakened every resolve. A contact ends after this many ticks without a resolve.
+const CONTACT_TICKS := 30
+const PARTIAL_ONCE := ["weaken", "slow"]
 
 const THREAT_CLASSES := ["stone", "stone_heavy", "boulder", "hot_rock", "magma", "lava_wave", "metal", "molten_metal",
 	"sand", "sand_cloud", "sand_surge", "glass", "water", "water_wave", "ice", "mist", "steam", "vine", "flame",
@@ -531,6 +535,18 @@ static func resolve(w: CombatWorld, threat: Agent, counter: Agent, ctx: Dictiona
 	res["heat_used"] = 0.0
 	res["absorbed"] = 0.0
 	var r: Dictionary = res.rule
+	if threat.body != null and counter.body != null \
+			and (ctx.get("continuous", false) or ["wall", "wave_wall"].has(String(ctx.get("site", "")))):
+		var key := "%d>%d" % [threat.body.id, counter.body.id]
+		if w._partial_pairs.has(key) and w.tick - int(w._partial_pairs[key]) <= CONTACT_TICKS:
+			# A partial already applied during this contact: what is left passes on (it is not re-weakened, nor
+			# caught once the first weaken made it small enough).
+			w._partial_pairs[key] = w.tick
+			res.outcome = "pass"
+			res.band = "contact"
+			return res
+		if PARTIAL_ONCE.has(String(res.outcome)):
+			w._partial_pairs[key] = w.tick
 	var ok := Outcomes.apply(w, String(res.outcome), threat, counter, res, r, ctx)
 	if not ok and r.has("fallback"):
 		res.outcome = String(r.fallback)

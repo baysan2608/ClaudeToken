@@ -150,7 +150,9 @@ static func _gust_column() -> void:
 	_cell("blast", "gust", {"outcome": "weaken", "partial": "weaken", "fail": "weaken", "eff": 0.8}, {"move": "air_attack", "tier": 2, "expect": "weaken"})
 	# Fire bands (MOVESET §8.4): below 1 the wind fans it (+30 % heat), 1-2 blows it aside, >= 2 puts it out.
 	# Blue fire needs more wind (x0.7). The legacy air guard still blocks the flare cleanly (legacy cell).
-	var fire := {"bands": [[0.0, "amplify"], [1.0, "deflect"], [2.0, "extinguish"]], "amp": 1.3, "side": 0.5, "up": 1.5, "tiers": t23}
+	# These fire cells apply at EVERY tier (the legacy gust cell leaves fire to them): a weak palm gust fans a big
+	# fireball, a strong one blows it aside, a gale snuffs a flare.
+	var fire := {"bands": [[0.0, "amplify"], [1.0, "deflect"], [2.0, "extinguish"]], "amp": 1.3, "side": 0.5, "up": 1.5}
 	_cell("flame", "gust", fire, {"move": "air_attack", "tier": 2, "expect": "extinguish", "tp": 8.0})
 	var blue := fire.duplicate(true)
 	blue["eff"] = 0.7

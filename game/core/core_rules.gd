@@ -34,11 +34,30 @@ static func _add(t: String, c: String, r: Dictionary) -> void:
 	Interactions.add_rule(t, c, r)
 
 
-## Plain guard: always a block with chip 12 % damage / 55 % balance / 35 % knock (guard break at 0
-## balance); perfect (pressed <= 0.18 s before contact) deflects, and an attacker within 3 m loses 18 balance.
+## Plain guard (CP 10): a block with chip 12 % damage / 55 % balance / 35 % knock while the threat is within
+## 2x the guard's power; past that the chip and balance grow with TP / (2 CP_eff) (Interactions "chip_scale"),
+## and a threat over 4x CP_eff (ratio < 0.25: a 200 kg boulder, a 45 kg lava wave) overwhelms the guard - it
+## breaks and the rest lands (MOVESET §5.3 fail band). Perfect (pressed <= 0.18 s before contact, CP x1.5)
+## deflects only a threat the guard could hold (ratio >= 0.5), and an attacker within 3 m loses 18 balance.
+static func plain_guard(extra: Dictionary = {}) -> Dictionary:
+	var r := {"bands": [[0.0, "overwhelm"], [0.25, "block"]], "full_at": 0.5, "partial_at": 0.25, "perfect": "deflect",
+		"chip": 0.12, "bal": 0.55, "knock": 0.35, "chip_scale": true, "perfect_balance": 18.0, "perfect_range": 3.0}
+	r.merge(extra, true)
+	return r
+
+
 static func _plain_guard() -> Dictionary:
-	return {"bands": [[0.0, "block"]], "full_at": 0.0, "perfect": "deflect", "chip": 0.12, "bal": 0.55, "knock": 0.35,
-		"perfect_balance": 18.0, "perfect_range": 3.0}
+	return plain_guard()
+
+
+## A plain guard against lightning: the current goes through a raised forearm - the guard only takes its own power
+## off the bolt (weaken: E - CP lands, ~60 % of a T1 bolt through CP 10, no guard break), unless it is at least half
+## the bolt's power (a perfect press, a strong aegis): then a chip block. The grounded stance (40 %), the Static Ward
+## (stores it) and walls (ground it) are the real answers.
+static func plain_guard_electric(extra: Dictionary = {}) -> Dictionary:
+	var r := plain_guard({"bands": [[0.0, "weaken"], [0.5, "block"]]})
+	r.merge(extra, true)
+	return r
 
 
 static func _guards() -> void:
@@ -46,9 +65,12 @@ static func _guards() -> void:
 		for t in LEGACY_THREATS + ["*"]:
 			if g == "shield_water" and t == "flame":
 				continue   # the shield steams the flame away (CoreRules._flare)
-			if g == "guard_wind" and ["stone", "stone_heavy", "boulder", "hot_rock", "ice", "water"].has(t):
-				continue   # Wind Guard power rule below
-			var r := _plain_guard()
+			if g == "guard_wind" and ["stone", "stone_heavy", "boulder", "hot_rock", "ice", "water", "magma", "lava_wave",
+					"lightning"].has(t):
+				continue   # Wind Guard power rules below
+			if g == "shield_water" and t == "lightning":
+				continue   # the held water conducts the bolt into its holder (below)
+			var r := _plain_guard() if t != "lightning" else plain_guard_electric()
 			r["id"] = "legacy_guard"
 			if g == "guard_earth":
 				# Perfect Earth guard vs a stone it could control: ballistic return at the thrower (x1.05, >= 12 m/s).
@@ -68,10 +90,13 @@ static func _guards() -> void:
 				r["requires"] = "redirect_current"
 				r["factor"] = 0.8
 				r["id"] = "legacy_redirect_current"
+			if g == "aura_flame" and (t == "magma" or t == "lava_wave"):
+				r["eff"] = 0.35                # a fire aura is no wall against molten rock
 			if g == "guard_wind" and t == "flame":
-				# Air guard vs flare: blocked, no chip, regardless of facing (wind wraps the fighter).
-				r = {"bands": [[0.0, "block"]], "full_at": 0.0, "chip": 0.0, "bal": 0.0, "knock": 0.0, "kind": "fire_air",
-					"aura": true, "id": "legacy_air_vs_flare"}
+				# Air guard vs flare: blocked, no chip, regardless of facing (wind wraps the fighter) - while the wind is
+				# at least half the fire's power; a big fireball against the plain wind wrap is fanned (MOVESET §8.4).
+				r = {"bands": [[0.0, "amplify"], [0.5, "block"]], "full_at": 0.5, "chip": 0.0, "bal": 0.0, "knock": 0.0,
+					"kind": "fire_air", "aura": true, "amp": 1.3, "id": "legacy_air_vs_flare"}
 			_add(t, g, r)
 	# Wind Guard (sub-0 Air guard) vs light solids and streams: CP 12 x eff 1.5 deflects, perfect sends it
 	# back to the thrower; too heavy = a plain guard block. Replaces the old "< 30 kg deflect" rule
@@ -79,10 +104,20 @@ static func _guards() -> void:
 	for t in ["stone", "hot_rock", "ice", "metal", "glass", "sand", "water"]:
 		var eff := 1.0 if t == "water" else (2.0 if t == "metal" else 1.5)
 		_add(t, "guard_wind", {"eff": eff, "outcome": "deflect", "perfect": "reflect", "partial": "block", "fail": "block",
-			"chip": 0.12, "bal": 0.55, "knock": 0.35, "id": "wind_guard_light"})
+			"chip": 0.12, "bal": 0.55, "knock": 0.35, "chip_scale": true, "id": "wind_guard_light"})
+	# Dense threats (MOVESET §8.6: Wind Guard is weak to boulders and lava): too heavy for the wind, the guard
+	# is overwhelmed and what is left lands; near the guard's power it still blocks with chip.
 	for t in ["stone_heavy", "boulder"]:
-		_add(t, "guard_wind", {"eff": 0.6, "outcome": "deflect", "perfect": "reflect", "partial": "block", "fail": "block",
-			"chip": 0.12, "bal": 0.55, "knock": 0.35, "id": "wind_guard_heavy"})
+		_add(t, "guard_wind", {"eff": 0.6, "outcome": "deflect", "perfect": "reflect", "partial": "block", "fail": "overwhelm",
+			"chip": 0.12, "bal": 0.55, "knock": 0.35, "chip_scale": true, "id": "wind_guard_heavy"})
+	# Lava: a plain wind wrap cannot stop molten rock (the owner's rule; it takes a charged gale / tornado).
+	for t in ["magma", "lava_wave"]:
+		_add(t, "guard_wind", {"eff": 0.35, "outcome": "block", "partial": "block", "fail": "overwhelm", "chip": 0.12, "bal": 0.55,
+			"knock": 0.35, "chip_scale": true, "id": "wind_guard_molten"})
+	# Lightning ignores a wind guard (§8.4 / §8.6: PASS).
+	_add("lightning", "guard_wind", {"bands": [[0.0, "pass"]], "full_at": 0.0, "id": "wind_guard_bolt"})
+	# A held water shield conducts the bolt into its holder x1.5 (§8.2 / §8.6).
+	_add("lightning", "shield_water", {"bands": [[0.0, "conduct"]], "full_at": 0.0, "factor": 1.5, "id": "shield_conducts_bolt"})
 
 
 ## Earth wall (Bulwark, WALL body tag ""): blocks every legacy threat whatever its power (wall_damage +=
@@ -99,16 +134,25 @@ static func _walls() -> void:
 		"id": "legacy_wall_bolt"})
 
 
-## Palm gust / cyclone push (counter class "gust", tiers 0-1): hostile light (< 30 kg) projectiles are
-## turned along the push (x0.8, +1.5 up) and change owner; heavy ones bend (60 / m); loose light bodies are
-## pushed (knock x 12 / m); clouds disperse; waves, puddles, walls and the pool are untouched.
+## Palm gust / cyclone push (counter class "gust", tiers 0-1): hostile light (< 30 kg) projectiles meet the
+## counter rule (MOVESET §5.4): CP_eff (palm 7 / cyclone 11, x2 vs light solids) >= TP turns them along the push
+## (x0.8, +1.5 up) and they change owner; >= 0.5 bends them; below, the gust is too weak (pass). Heavy ones
+## bend (60 / m); loose light bodies are pushed (knock x 12 / m); clouds disperse; waves, puddles, walls and
+## the pool are untouched. Fire is not here: the Air kit's fire bands (fan / blow aside / put out) answer it
+## at every tier.
 static func _gust() -> void:
-	var r := {"bands": [[0.0, "redirect"]], "full_at": 0.0, "when": {"mass_lt": 30.0}, "else": "bend",
-		"inert": "push", "inert_else": "pass", "aim": "dir", "speed_mult": 0.8, "up": 1.5, "verb": "gust",
+	var r := {"bands": [[0.0, "pass"], [0.5, "bend"], [1.0, "redirect"]], "full_at": 1.0, "when": {"mass_lt": 30.0},
+		"else": "bend", "inert": "push", "inert_else": "pass", "aim": "dir", "speed_mult": 0.8, "up": 1.5, "verb": "gust",
 		"bend_impulse": 60.0, "push_mult": 12.0, "tiers": [0, 1], "id": "legacy_gust",
 		"by_form": {"cloud": "disperse", "wave": "pass", "puddle": "pass", "wall": "pass", "pool": "pass"}}
 	for t in LEGACY_THREATS + ["steam", "mist", "*"]:
+		if t == "flame":
+			continue
 		var rt := r.duplicate(true)
+		if LIGHT_SOLIDS.has(t):
+			rt["eff"] = 2.0          # wind vs light solids (MOVESET §5.2)
+		elif t == "stone_heavy" or t == "boulder":
+			rt["eff"] = 0.6
 		if t == "magma":
 			# Molten rock is lava: a palm gust only bends it (MOVESET §5.4; the owner's rule "a simple air
 			# attack cannot stop lava"). Gale / Hurricane (T2 / T3, Air kit cells) cool it to rock.

@@ -171,20 +171,32 @@ func test_wind_guard_deflects_a_20_kg_stone_and_a_perfect_one_returns_it() -> vo
 	check(s2.attack_owner == a.id and s2.vel.dot(r.pos - s2.pos) > 0.0, "now A's stone, flying at R")
 
 
-func test_palm_gust_t0_only_turns_a_stone_it_does_not_stop_it() -> void:
+func test_palm_gust_t0_only_bends_a_stone_a_cyclone_turns_it() -> void:
+	# The legacy gust cell follows the counter rule (MOVESET §5.4): Palm Gust 7 x2 = 14 vs a 20 kg stone at 17 m/s
+	# (TP 17, ratio 0.82) only bends it; Cyclone 11 x2 = 22 (ratio 1.29) turns it back along the push.
+	var th := threat(h.w, "stone", 17.0, 20.0, "K")
+	var s0 := _a_vs_r(12.0)
+	var a0: ActorState = s0[0]
+	var p0 := Interactions.predict(h.w, th, Agent.of_move(h.w, a0, "air_attack", 0, false))
+	check(p0.outcome == "bend", "palm gust T0 vs TP 17: bend (%s r%.2f)" % [p0.outcome, p0.ratio])
+	var p1 := Interactions.predict(h.w, th, Agent.of_move(h.w, a0, "air_attack", 1, false))
+	check(p1.outcome == "redirect", "cyclone T1 vs TP 17: redirect (%s r%.2f)" % [p1.outcome, p1.ratio])
+	var fast := threat(h.w, "stone", 43.4, 29.0, "K")
+	var pf := Interactions.predict(h.w, fast, Agent.of_move(h.w, a0, "air_attack", 0, false))
+	check(pf.outcome == "pass", "a 29 kg stone at 30 m/s (TP 43) ignores a palm gust (%s r%.2f)" % [pf.outcome, pf.ratio])
+	# In play: the cyclone push turns the stone and re-owns it.
 	var s := _a_vs_r(12.0)
 	var a: ActorState = s[0]
 	var r: ActorState = s[1]
-	var stone := h.launch_at(a, "stone", 20.0, 17.0, Sim.AMBIENT_C, "", r, 4.0)
-	var v0 := stone.vel
-	h.press(a, "attack")
-	h.step()
-	h.release(a, "attack")
-	h.until(func(): return h.has_event("deflect"), 30)
+	var holder := {}
+	var spawn := func() -> void:
+		holder["stone"] = h.launch_at(a, "stone", 20.0, 17.0, Sim.AMBIENT_C, "", r, 4.0)
+		holder["v0"] = holder.stone.vel
+	run_when(a, "air_attack", 1, spawn, 28, 30)
+	var stone: MatBody = holder.stone
 	var ix := h.events("deflect")
-	check(not ix.is_empty() and ix[0].get("verb", "") == "gust", "the legacy gust cell turned it")
-	check(stone.alive and stone.attack_id != 0 and stone.attack_owner == a.id, "turned and re-owned, not stopped")
-	check(stone.vel.length() > 5.0 and stone.vel.length() < v0.length(), "slower (x0.8) but flying (%.1f m/s)" % stone.vel.length())
+	check(not ix.is_empty() and ix[0].get("verb", "") == "gust", "the cyclone turned it")
+	check(stone.alive and stone.attack_owner == a.id, "turned and re-owned, not stopped")
 	check(a.health == 100.0, "it never reached A")
 
 
@@ -212,7 +224,7 @@ func test_gale_and_hurricane_deflect_a_stone_heavy_stones_only_bend() -> void:
 
 
 func test_a_gale_puts_out_a_flame_a_palm_gust_only_turns_it() -> void:
-	# fire bands (flame x gust): T0/T1 are the legacy cells; T2/T3 follow < 1 fan, 1-2 blow aside, >= 2 extinguish.
+	# fire bands (flame x gust) at every tier: < 1 fan, 1-2 blow aside, >= 2 extinguish.
 	var s := _a_vs_r(12.0)
 	var a: ActorState = s[0]
 	var th := threat(h.w, "flame", 8.0, 0.0, "H")
@@ -226,9 +238,16 @@ func test_a_gale_puts_out_a_flame_a_palm_gust_only_turns_it() -> void:
 	pr = Interactions.predict(h.w, mid, cp)
 	check(pr.outcome == "deflect", "ratio 1.5: blown aside (%s)" % pr.outcome)
 	var t0 := Agent.of_move(h.w, a, "air_attack", 0, false)
-	check(Interactions.rule(&"flame", &"gust", 0).get("legacy", false), "T0 flame x gust is the legacy cell")
+	# The fire bands apply at every tier (weak wind feeds fire): a palm gust (7) fans a Sunfall-size fireball (19).
+	check(not Interactions.rule(&"flame", &"gust", 0).get("legacy", false), "T0 flame x gust is the kit's fire band too")
 	check(not Interactions.rule(&"flame", &"gust", 2).get("legacy", false), "T2 is the kit's")
 	check(t0.power == 7.0, "palm gust CP 7")
+	var big := threat(h.w, "flame", 19.0, 0.0, "H")
+	pr = Interactions.predict(h.w, big, t0)
+	check(pr.outcome == "amplify", "palm gust vs a 19 PU fireball: fanned (%s r%.2f)" % [pr.outcome, pr.ratio])
+	var flare := threat(h.w, "flame", 3.0, 0.0, "H")
+	pr = Interactions.predict(h.w, flare, t0)
+	check(pr.outcome == "extinguish", "palm gust vs a flare (3): put out (%s)" % pr.outcome)
 
 
 # ---------------------------------------------------------------- the new moves, T0-T3

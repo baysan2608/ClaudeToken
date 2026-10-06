@@ -86,6 +86,21 @@ func _hold(key: String) -> Node:
 	return views.acquire(key) if views and views.pool else null
 
 
+## A charged throw announces its tier on release (MOVESET §11.2): T2 a ground shockwave ring at the thrower's
+## feet, T3 a double white-hot ring, a dust burst and a small shake.
+func _launch_tier(a: int, tier: int, at: Vector3) -> void:
+	if tier < 2:
+		return
+	var ac := world.get_actor(a)
+	var feet := ac.pos if ac else at
+	var col := VfxPalette.tier_color(tier)
+	_call(_fx("ring"), "play", [feet + Vector3(0, 0.05, 0), Vector3.UP, 0.4, 1.6 + 0.9 * float(tier - 2), 0.35 + 0.1 * float(tier - 2), col,
+		{"count": 2 if tier >= 3 else 1, "width": 0.09, "cover": 0.5, "glow": 1.6 + 0.6 * float(tier - 2)}])
+	if tier >= 3:
+		_call(_fx("dust_puff"), "play", [feet, Vector3.UP, 1.3])
+		_shake(0.18)
+
+
 func _hand(actor_id: int) -> Vector3:
 	var fv: FighterView = fighters.get(actor_id, null)
 	if fv:
@@ -277,6 +292,9 @@ func _event(e: Dictionary) -> void:
 			else:
 				audio.play("stone_launch", _bpos(e.body))
 				audio.play("whoosh_heavy" if e.get("heavy", false) else "whoosh_light", _bpos(e.body), -3.0)
+			if views and int(e.get("tier", 0)) > 0:
+				views.tier_hint[int(e.body)] = int(e.tier)
+			_launch_tier(a, int(e.get("tier", 0)), _bpos(e.body))
 		"impact":
 			if float(e.get("speed", 0.0)) > 3.0:
 				audio.play("stone_impact_%d" % (1 + randi() % 2), _bpos(e.body))
@@ -291,11 +309,13 @@ func _event(e: Dictionary) -> void:
 			_call(_fx("dust_puff"), "play", [_bpos(e.body), Vector3.UP, 1.4])
 		"transform":
 			var to := String(e.get("to", ""))
-			var p: Vector3 = e.get("at", _bpos(e.body))   # the body may already be merged away
+			# The body may already be merged away; actor transforms (Ice's frost: wet -> frozen) carry no body.
+			var tb := int(e.get("body", -1))
+			var p: Vector3 = e["at"] if e.has("at") else _bpos(tb)
 			match to:
 				"molten":
 					audio.play("melt_rise", p)
-					_haptic("transform", world.get_body(e.body).controller if world.get_body(e.body) else -1)
+					_haptic("transform", world.get_body(tb).controller if world.get_body(tb) else -1)
 					_zoom(p)
 				"wave":
 					audio.play("lava_splat", p)
@@ -308,6 +328,8 @@ func _event(e: Dictionary) -> void:
 				"ice":
 					audio.play("freeze", p)
 					_zoom(p)
+				"frozen":
+					audio.play("freeze", p, -3.0)   # a soaked fighter frosts over (the status cue draws the rime)
 				"water":
 					audio.play("ice_melt_drip", p)
 					# The melted ice slumps into a puddle (often merging into one nearby).

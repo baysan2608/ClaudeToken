@@ -64,7 +64,8 @@ static func clap_execute(w: CombatWorld, a: ActorState, inst: ActionInst) -> boo
 	var dir: Vector3 = inst.data.get("face", a.forward())
 	var drain := float(Charge.param(inst, "drain", 0.0))
 	var foes := w.actors_in_cone(a, dir, rng_m, half)
-	# The pulse reaches a charge or channel before it lands as a hit (the hit would stagger it anyway): P >= 6 + 4 x tier disrupts.
+	# The pulse reaches a charge (or a non-guard channel) before it lands as a hit: P >= 6 + 4 x tier disrupts.
+	# A held guard is not disrupted - the pulse meets the guard's counter cell through the cone hit instead.
 	var vd := Agent.of_volume(w, a, inst, &"sound", a.chest(), dir, {"P": float(Charge.param(inst, "power", 8.0))})
 	for t in foes:
 		if t.health > 0.0:
@@ -81,7 +82,7 @@ static func clap_execute(w: CombatWorld, a: ActorState, inst: ActionInst) -> boo
 
 ## Sound against a charge / channel: the core `disrupt` outcome decides (P >= 6 + 4 x the charge's tier).
 static func disrupt(w: CombatWorld, a: ActorState, t: ActorState, v: Agent) -> bool:
-	if t.action == null or (t.action.phase != ActionInst.P.CHARGE and t.action.phase != ActionInst.P.CHANNEL):
+	if t.action == null or not Outcomes.disruptable(t):
 		return false
 	var th := Agent.new()
 	th.kind = "volume"

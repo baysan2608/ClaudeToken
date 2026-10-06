@@ -107,35 +107,37 @@ func advance(dt: float) -> void:
 	_t += dt
 	var tier := maxi(_tier, 0)
 	var grow := float(tier) + _frac * 0.6
-	# hand ring: T1 small, T2 larger + pulse, T3 full
-	var rr := 0.12 + 0.07 * grow
+	# hand ring: T1 small, T2 larger + pulse, T3 full - sized to read from the default camera (~5.6 m)
+	var rr := 0.14 + 0.12 * grow
 	var pulse := 1.0 + (0.12 * sin(_t * 14.0) if tier >= 2 else 0.0)
 	_ring.position = _hands
 	_ring.scale = Vector3.ONE * rr * pulse / 0.8
-	_ring_mat.set_shader_parameter("alpha", 0.45 + 0.1 * float(tier))
-	_ring_mat.set_shader_parameter("width", 0.08)
+	_ring_mat.set_shader_parameter("alpha", 0.5 + 0.12 * float(tier))
+	_ring_mat.set_shader_parameter("width", 0.08 + 0.02 * float(tier))
 	_ring_mat.set_shader_parameter("glow", 1.0 + 0.3 * float(tier) + (5.0 if _glint > 0 else 0.0))
 	_ring_mat.set_shader_parameter("phase", _t)
-	# ground ripple (T2+): an expanding ring repeating under the feet
-	_ripple.visible = tier >= 2
+	# ground ripple (T1+, wider and faster each tier): an expanding ring repeating under the feet
+	_ripple.visible = tier >= 1
 	if _ripple.visible:
-		var rp := fposmod(_t * 0.9, 1.0)
-		var r2 := 0.3 + 0.9 * rp
+		var rp := fposmod(_t * (0.7 + 0.25 * float(tier)), 1.0)
+		var r2 := (0.3 + 0.9 * rp) * (0.6 + 0.4 * float(tier))
 		_ripple.position = _feet + Vector3(0, 0.03, 0)
 		_ripple.scale = Vector3(r2 / 0.8, 1.0, r2 / 0.8)
-		_ripple_mat.set_shader_parameter("alpha", (1.0 - rp) * 0.45)
-		_ripple_mat.set_shader_parameter("width", 0.035)
+		_ripple_mat.set_shader_parameter("alpha", (1.0 - rp) * (0.25 + 0.12 * float(tier)))
+		_ripple_mat.set_shader_parameter("width", 0.03 + 0.012 * float(tier))
 		_ripple_mat.set_shader_parameter("phase", _t)
-	# T3: aura shell + one light pulse + the 2-frame ready glint
-	_aura.visible = tier >= 3
+	# T2: a faint aura shell; T3: a full, bigger one + a steady glow light + the pulse and 2-frame ready glint
+	_aura.visible = tier >= 2
 	if _aura.visible:
+		var big := 1.0 if tier >= 3 else 0.82
 		_aura.position = _feet + Vector3(0, 0.95, 0)
-		_aura.scale = Vector3(0.62, 1.05, 0.62)
+		_aura.scale = Vector3(0.66, 1.08, 0.66) * big * (1.0 + 0.04 * sin(_t * 9.0))
 		_aura_mat.set_shader_parameter("phase", _t)
-		_aura_mat.set_shader_parameter("opacity", 0.28 + 0.5 * _pulse)
+		_aura_mat.set_shader_parameter("opacity", (0.34 if tier >= 3 else 0.14) + 0.5 * _pulse)
 	_pulse = maxf(0.0, _pulse - dt * 2.5)
-	_light.visible = _pulse > 0.02
+	var steady := 0.55 + 0.2 * sin(_t * 9.0) if tier >= 3 else 0.0
+	_light.visible = _pulse > 0.02 or steady > 0.0
 	_light.position = _hands
-	_light.light_energy = 1.6 * _pulse
+	_light.light_energy = 1.6 * _pulse + steady
 	if _glint > 0:
 		_glint -= 1

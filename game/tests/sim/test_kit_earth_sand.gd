@@ -55,7 +55,9 @@ func test_sand_surge_carries_a_stone_back_and_crusts_a_lava_wave() -> void:
 	var a: ActorState = s[0]
 	var t: ActorState = s[1]
 	var em0 := h.w.earth_mass()
-	var stone := h.launch_at(a, "stone", 20.0, 12.0, Sim.AMBIENT_C, "", t, 7.0)
+	# A stone the T0 surge can hold (TP 7 <= CP 7.5): a faster one (TP 12) is only slowed once and hits softer
+	# (partials apply once per contact - review round 3).
+	var stone := h.launch_at(a, "stone", 20.0, 7.0, Sim.AMBIENT_C, "", t, 7.0)
 	stone.pos.y = 0.6
 	stone.vel.y = 0.0
 	U.perform(h, a, "ground", 0)
@@ -63,7 +65,7 @@ func test_sand_surge_carries_a_stone_back_and_crusts_a_lava_wave() -> void:
 	check(h.has_event("capture", "body", stone.id), "Sand Surge captures the incoming stone")
 	check(a.health == 100.0, "it never reaches the caster")
 	h.until(func(): return h.has_event("release_captured", "body", stone.id), 120)
-	check(stone.attack_owner == a.id and stone.attack_id != 0, "carried back and released as A's attack")
+	check(stone.attack_owner == a.id and (stone.attack_id != 0 or h.has_event("hit", "body", stone.id)), "carried back and released as A's attack")
 	# Lava wave vs sand surge: the lava crusts (x1.5) and stalls.
 	var s2 := _duel(12.0)
 	var a2: ActorState = s2[0]

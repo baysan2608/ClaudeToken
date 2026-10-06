@@ -63,6 +63,7 @@ static var _zone_effects := {}     # tag -> Callable(w, zone, dt)
 static var _tech_previews := {}    # "e/s" -> Callable(w, a, dir) -> Dictionary
 var _ix_last := {}                 # interaction event rate limiter (continuous contacts)
 var _zone_pairs := {}              # "zone|body" -> last tick (body <-> zone interactions, rate-limited)
+var _partial_pairs := {}           # "threat>counter" body ids -> last tick a partial applied (once per contact)
 
 var _next_body := 1
 var _next_attack := 1
@@ -163,8 +164,11 @@ func split_body(parent: MatBody, mass: float, p: Vector3) -> MatBody:
 func merge_bodies(into: MatBody, other: MatBody) -> void:
 	var e := into.thermal_energy() + other.thermal_energy()
 	var m := into.mass + other.mass
-	into.vel = (into.vel * into.mass + other.vel * other.mass) / m
-	into.liquid = (into.liquid * into.mass + other.liquid * other.mass) / m
+	if m > 1e-9:
+		into.vel = (into.vel * into.mass + other.vel * other.mass) / m
+		into.liquid = (into.liquid * into.mass + other.liquid * other.mass) / m
+	# Massless bodies (air zones, wind blades, spent vapour): keep `into`'s velocity and liquid fraction;
+	# only the merge (payload, absorbed list) is booked.
 	if into.mat != other.mat:
 		push_warning("merge_bodies: %s into %s (different materials)" % [other.describe(), into.describe()])
 	into.heat_payload += other.heat_payload
@@ -183,6 +187,8 @@ func _set_energy(b: MatBody, e: float) -> void:
 	if b.mat == Sim.Mat.FIRE:
 		b.heat_payload = maxf(0.0, e)
 		return
+	if b.mass <= 1e-9:
+		return   # massless (air zone / spent vapour): no temperature to derive
 	e -= b.heat_payload
 	if Materials.is_fusible(b.mat) and b.mat != Sim.Mat.STONE:
 		var sc := Materials.c(b.mat)
@@ -1204,6 +1210,14 @@ func hit_actor(t: ActorState, info: Dictionary) -> String:
 			var res := Interactions.resolve(self, agent, counter, {"info": info, "target": t})
 			if String(res.result) != "":
 				return String(res.result)
+			if bool(res.stopped) and float(res.pass_scale) <= 0.0:
+				# The guard stopped the threat outright (absorb, extinguish, capture, disperse, neutralize...):
+				# a clean block - no damage, balance or stagger, the guard stays up.
+				var bev := {"actor": t.id, "attacker": info.get("attacker", -1), "kind": String(res.outcome), "clean": true}
+				bev.merge(_hit_meta(info, agent, t), false)
+				emit("block", bev)
+				t.last_result = "block"
+				return "block"
 			# pass / weaken / overwhelm: what is left of the threat lands.
 			dmg *= float(res.pass_scale)
 			bal *= float(res.pass_scale)
@@ -1291,11 +1305,18 @@ func _mark_contact(info: Dictionary) -> void:
 
 ## Plain guard block (legacy numbers from the rule: chip 12 % damage, 55 % balance, 35 % knock);
 ## guard break at 0 balance. A rule with chip/bal/knock all 0 is a clean block (e.g. air guard vs flare).
-func guard_chip(t: ActorState, info: Dictionary, rule: Dictionary, threat: Agent = null) -> String:
+func guard_chip(t: ActorState, info: Dictionary, rule: Dictionary, threat: Agent = null, ratio: float = -1.0) -> String:
 	var kind := String(rule.get("kind", info.get("kind", "")))
 	var chip := float(rule.get("chip", 0.12))
 	var balm := float(rule.get("bal", 0.55))
 	var kn := float(rule.get("knock", 0.35))
+	if bool(rule.get("chip_scale", false)) and ratio > 0.0:
+		# Counter strength scales with the threat (MOVESET §5): past 2x the guard's power (ratio < 0.5) the chip,
+		# balance and knock grow with TP / (2 CP_eff) - a heavy stone hurts through a plain guard, a pebble does not.
+		var mult := maxf(1.0, 0.5 / ratio)
+		chip = minf(chip * mult, 0.9)
+		balm *= mult
+		kn = minf(kn * mult, 1.0)
 	var ev := {"actor": t.id, "attacker": info.get("attacker", -1), "kind": kind}
 	ev.merge(_hit_meta(info, threat, t), false)
 	if chip == 0.0 and balm == 0.0 and kn == 0.0:
@@ -1664,6 +1685,9 @@ func _on_phase_changed(b: MatBody, old_phase: int) -> void:
 			emit("transform", {"body": b.id, "at": b.pos, "from": "water", "to": "ice", "why": "frozen"})
 
 
+const WALL_THROUGH := ["weaken", "slow", "pass", "overwhelm", "bend"]
+
+
 func _update_ballistic(b: MatBody, dt: float) -> void:
 	if b.static_body:
 		return
@@ -1690,9 +1714,15 @@ func _update_ballistic(b: MatBody, dt: float) -> void:
 			np = _push_out_obb(np, b.radius, w)
 	if hit_wall_body != null:
 		var wres := _body_hits_wall(b, hit_wall_body)
-		if not b.alive or b.attack_id == 0 or not wres.get("counter_broken", false):
+		if not b.alive or b.attack_id == 0:
 			return
-		np = b.pos + b.vel * dt   # the wall broke (overwhelm / shatter): the shot carries on
+		# The wall broke (overwhelm / shatter), or only weakened the shot (a partial applies once per contact,
+		# MOVESET §5.3): what is left of the shot carries on through.
+		var through: bool = wres.get("counter_broken", false) or (not bool(wres.get("stopped", true)) \
+				and float(wres.get("pass_scale", 0.0)) > 0.0 and WALL_THROUGH.has(String(wres.get("outcome", ""))))
+		if not through:
+			return
+		np = b.pos + b.vel * dt
 	if t >= 0.0:
 		np = b.pos.lerp(np, maxf(0.0, t - 0.02))
 		if b.attack_id != 0 and int(b.props.get("ricochet", 0)) > 0:
@@ -1871,6 +1901,8 @@ func _update_wall(w: MatBody, dt: float) -> void:
 
 
 func _update_wave(b: MatBody, dt: float) -> void:
+	if b.mat == Sim.Mat.STONE and not b.props.has("liquid0"):
+		b.props["liquid0"] = maxf(b.liquid, 0.01)   # molten fraction at launch (hit_scale)
 	var speed := 0.0
 	if b.tag != &"" and b.props.has("speed"):
 		speed = float(b.props.speed) * (Thermal.flow_factor(b) if b.props.get("viscous", false) else 1.0)
@@ -2297,6 +2329,12 @@ func _zone_pass() -> void:
 				break
 	if tick % 120 == 0 and _zone_pairs.size() > 256:
 		_zone_pairs.clear()
+	if tick % 120 == 0 and _partial_pairs.size() > 64:
+		var keep := {}
+		for k in _partial_pairs:
+			if tick - int(_partial_pairs[k]) <= Interactions.CONTACT_TICKS:
+				keep[k] = _partial_pairs[k]
+		_partial_pairs = keep
 
 
 func _in_zone(z: MatBody, p: Vector3, r: float) -> bool:
@@ -2351,8 +2389,9 @@ func _contacts() -> void:
 					if b.tag != &"":
 						kn = b.wave_dir * float(b.props.get("knock", 4.0)) + Vector3(0, float(b.props.get("lift", 3.0)), 0)
 						kind = String(b.props.get("kind", FxEvents.mat_of(b)))
-					hit_actor(a, {"attacker": b.attack_owner, "attack_id": b.attack_id, "damage": b.damage,
-						"balance": b.balance_damage, "knock": kn, "kind": kind, "from": b.pos - b.wave_dir, "body": b.id,
+					var hs := hit_scale(b)
+					hit_actor(a, {"attacker": b.attack_owner, "attack_id": b.attack_id, "damage": b.damage * hs,
+						"balance": b.balance_damage * hs, "knock": kn * maxf(hs, 0.4), "kind": kind, "from": b.pos - b.wave_dir, "body": b.id,
 						"src_attack": int(b.props.get("src_attack", -1))})
 					if b.tag != &"" and b.props.has("hit_status"):
 						Status.apply(self, a, String(b.props.hit_status), float(b.props.get("hit_status_t", 1.0)), 1.0, b.attack_owner)
@@ -2395,6 +2434,19 @@ func _clash_pass() -> void:
 			Interactions.resolve(self, ta, tb, {"site": "clash"}, Interactions.CLASH_RULE)
 
 
+## What is left of a body's launch damage after partial counters (MOVESET §5.3): props.dmg_scale from
+## weaken / slow / overwhelm, and for a lava wave the molten fraction it still has (a crusted, half-set wave
+## hits softer; floor 30 %).
+func hit_scale(b: MatBody) -> float:
+	var sc := clampf(float(b.props.get("dmg_scale", 1.0)), 0.0, 1.0)
+	if b.form == Sim.Form.WAVE and b.mat == Sim.Mat.STONE and b.tag == &"":
+		# Travel cooling (a wave keeps > 60 % of its melt over its run) costs nothing; a wave a counter crusted /
+		# half-set (DRAW, Cool & Set, fog...) hits in proportion, down to 30 %.
+		var l0 := float(b.props.get("liquid0", maxf(b.liquid, 0.01)))
+		sc *= clampf(b.liquid / l0 / 0.6, 0.3, 1.0)
+	return sc
+
+
 func _touches_actor(b: MatBody, a: ActorState, pad: float) -> bool:
 	var lo := a.pos.y + 0.2
 	var hi := a.pos.y + Sim.ACTOR_HEIGHT
@@ -2413,8 +2465,9 @@ func _projectile_hits_actor(b: MatBody, a: ActorState) -> void:
 	var to_src := -b.vel
 	to_src.y = 0
 	var facing_vel := a.forward().dot(to_src.normalized()) > -0.15 if to_src.length() > 0.01 else true
-	var res := hit_actor(a, {"attacker": b.attack_owner, "attack_id": b.attack_id, "damage": b.damage, "facing_vel": facing_vel,
-		"balance": b.balance_damage, "knock": b.vel.normalized() * minf(b.mass * b.vel.length() / 70.0, 9.0),
+	var hs := hit_scale(b)
+	var res := hit_actor(a, {"attacker": b.attack_owner, "attack_id": b.attack_id, "damage": b.damage * hs, "facing_vel": facing_vel,
+		"balance": b.balance_damage * hs, "knock": b.vel.normalized() * minf(b.mass * b.vel.length() / 70.0, 9.0),
 		"kind": "stone" if b.is_stone() else ("water" if b.is_water() else FxEvents.mat_of(b)), "from": b.pos - b.vel.normalized(), "body": b.id,
 		"agent": Agent.of_body(self, b, a), "src_attack": int(b.props.get("src_attack", -1))})
 	if res == "perfect" or res == "deflect" or res == "redirected":

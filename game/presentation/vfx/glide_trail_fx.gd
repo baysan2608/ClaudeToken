@@ -75,6 +75,13 @@ func set_width(w: float) -> void:
 	width = maxf(w, 0.02)
 
 
+## Colour / strength / length of the ribbon (charged projectiles use a tier tint); reset() restores the wind look.
+func set_look(tint: Color, opacity: float, age: float = 0.7) -> void:
+	_mat.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
+	_mat.set_shader_parameter("opacity", opacity)
+	max_age = maxf(age, 0.1)
+
+
 func is_playing() -> bool:
 	return _emitting or _count > 0
 
@@ -95,6 +102,11 @@ func reset() -> void:
 	_emitting = false
 	_follow = null
 	_count = 0
+	max_age = 0.7
+	width = 0.5
+	if _mat:
+		_mat.set_shader_parameter("tint", Vector3(0.86, 0.90, 0.95))
+		_mat.set_shader_parameter("opacity", 0.32)
 	_clock = 0.0
 	_mesh.clear_surfaces()
 	visible = false

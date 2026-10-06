@@ -179,6 +179,7 @@ func load_scenario(id: String) -> void:
 	hud.objective = String(scen_def.get("objective", ""))
 	_update_challenge_text()
 	cam.arena = world.arena
+	cam.arena_view = arena_view
 	var look := opponent.pos if opponent else player.pos + Vector3(0, 0, -5)
 	if world.actors.size() > 1 and opponent == null:
 		look = world.actors[1].pos
@@ -303,7 +304,7 @@ func _physics_process(_dt: float) -> void:
 		LabScript.apply_dict(f, _player_script.next())
 		if _player_script.is_done():
 			_player_script = null
-	intents[player.id] = pc.build(f, cam.yaw)
+	intents[player.id] = pc.build(f, cam.view_yaw())
 	if opponent:
 		intents[opponent.id] = _rival_intent()
 	_scenario_tick()

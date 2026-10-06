@@ -17,7 +17,7 @@ exports to Xcode on a Mac.
 | Controls | Touch: ATTACK tap/hold/flick (thrust/ground/sweep), GUARD + push/sink flicks, TECHNIQUE + second-finger shape tap, EVADE tap/hold, element chips + sub-element ring; keyboard and gamepad mirror it (`docs/CONTROLS.md`). |
 | Lab | Lab scenario + dev panel (` / F2): spawner (39 threats, inert or thrown by the rival), move list with **Try** (every move through the real input path), 28 combos with live detection, counter-matrix viewer, live tuning. |
 | Presentation | Rigged fighter (42 bones, 59 clips incl. 12 `mv_*` move clips, foot IK / planting), VFX for every body family and outcome (`docs/VFX.md` moveset layer), 116 SFX, HUD with tier ring, statuses, resources. |
-| Verified here | **532 sim tests + 95 UI tests pass**, 182 scripts load, 16 animation tests, VFX smoke test; 5-min soak (all elements / subs / slots / gestures): 0 errors, sim p95 0.29 ms (worst second 0.62 ms), memory 192 → 200 MB. |
+| Verified here | **546 sim tests + 96 UI tests pass**, 182 scripts load, 16 animation tests, VFX smoke test; 5-min soak (all elements / subs / slots / gestures): 0 errors, sim p95 0.29–0.44 ms (worst second 0.62 ms; two runs), memory 192 → 200 MB. |
 | **Not verified** | Anything on a real iPhone/iPad or the iOS simulator: GPU frame time, thermals, touch feel, haptics, Metal shader quirks, audio by ear. |
 
 ## Build / run
@@ -27,15 +27,15 @@ exports to Xcode on a Mac.
 | Play on desktop | Open `game/project.godot` in Godot ▸ Play, or `tools/scripts/godot.sh` (finds `/Applications/Godot.app` on macOS; `GODOT_BIN` overrides) |
 | Touch overlay on desktop | `tools/scripts/godot.sh -- --touchui` |
 | Pick a scenario | `-- --scenario=<id>` (ids in `game/scenarios/scenarios.gd`); in game: Esc ▸ Practice |
-| Sim tests | `tools/scripts/godot.sh --headless -s res://tests/run_tests.gd` (532; `-- test_kit_fire` runs a subset) |
-| UI tests | `tools/scripts/godot.sh --headless -s res://tests/ui/run_ui_tests.gd` (95) |
+| Sim tests | `tools/scripts/godot.sh --headless -s res://tests/run_tests.gd` (546; `-- test_kit_fire` runs a subset) |
+| UI tests | `tools/scripts/godot.sh --headless -s res://tests/ui/run_ui_tests.gd` (96) |
 | Script check | `tools/scripts/godot.sh --headless -s res://tests/check_scripts.gd` (182) |
 | Animation / VFX | `... -s res://tests/anim/run_anim_tests.gd` (16) · `... -s res://tests/vfx/vfx_smoke_test.gd` |
 | Xcode project | `tools/scripts/export_ios.sh <APPLE_TEAM_ID>` → `build/ios/Fourfold.xcodeproj` → Signing & Capabilities ▸ your team ▸ Run |
 | Record evidence | `tools/scripts/godot.sh --render --resolution 1280x592 --write-movie out.avi --fixed-fps 30 -- --autoplay=<flagship\|show_owner\|show_<element>[_<sub>]\|duel>:<s> --quality=2 [--shots=<dir>]` |
 | Soak | `tools/scripts/godot.sh --headless --fixed-fps 60 -- --autoplay=soak:300 --perf=<file.json>` (random play over every element, sub-element, slot and gesture) |
 
-Evidence (real renders from this build): `docs/media/` — flagship + four element videos and stills.
+Evidence (real renders from this build): `docs/media/` — flagship + four element videos and stills, and `owner_examples.mp4` (the owner's examples, `show_owner`) with stills.
 
 ## Working locally on a Mac
 1. Get the repo: `git clone -b claude/kind-noether-t8enqd https://github.com/baysan2608/ClaudeToken.git Fourfold` (or GitHub ▸ branch ▸ Code ▸ Download ZIP).
@@ -86,7 +86,33 @@ Per-element move lists, numbers and deviations: `docs/kits/{earth,water,fire,air
    `show_fire_blue|lightning|combustion`, `show_air`, `show_air_vortex|vacuum|sound`; AI vs AI: `--autoplay=duel:60`.
    `SHOWCASE_TRACE=1` prints the key sim events (interactions, hits) of a showcase.
 
+### Integration check (2026-10-05, final pass)
+All suites green after the last VFX edits (534 sim · 95 UI · 182 scripts · 16 anim · VFX smoke). Every showcase was played
+headless with 0 script errors and rendered at 1280×720 / 30 fps (contact sheets checked frame by frame), plus a 5-min soak and a
+120 s AI-vs-AI duel with 0 errors. Fixes from this pass:
+- `FxDirector`: Ice's Hoarfrost freezing a soaked fighter emits an actor `transform` (no `body`); the director threw on it
+  (seen only in the `show_water_ice` render). Now plays a freeze cue; regression `test_actor_transform_without_a_body_plays_its_cue`.
+- Walls glow as they heat: `EarthWallView.set_heat` from the wall's temperature or, for a Molten Lance, the heat poured into
+  its face shell (`props.face_hu`), so a lanced Bulwark glows before it slumps (before, it stayed cold-grey until it collapsed).
+  Regression `test_wall_glows_as_its_face_is_heated`; gallery station `wall` shows heat 0.3 / 0.6 / 1.0.
+`show_owner` beats verified by trace: T0→T3 stones hit for 12 / 20 / 26 dmg, Crag Breaker splits; split & spike back, swallow
+(sink/full), Tidal Rush capture, melt → lava wave → rock, Wind Guard reflect; palm gust vs lava wave = `pass` (you are hit),
+Cyclone Fortress = `transform/full` (rock); lance ×2 → face slumps → Magma Surge knocks the builder down; Bolt grounded by the
+wall, Storm Bolt shatters it and hits.
+
+### Review round 3 (2026-10-06): counter coherence, bugs, camera, charge tiers
+17 findings fixed and verified (`docs/REVIEW.md` "Round 3"): plain guards scale with the threat (overwhelmed past 4x CP,
+perfect only on a holdable threat), lightning conducts through a held water shield and passes a Wind Guard, the Static Ward
+stores whole bolts, partials apply once per contact and soften the hit, palm gusts follow the counter rule, sound no longer
+disrupts held guards, guards that absorb a threat stay up, ledger leaks / NaN merges closed, the Lab plays push / sink at the
+requested tier, the camera never collapses near a wall, and charge tiers read on the stone and the aura. Regression tests:
+`game/tests/sim/test_review_fixes.gd`.
+
 ### Known gaps (moveset)
+- Presentation: the first frame of a small detonation is a pale white flash (the fireball turns orange right after); the
+  Searing Beam reads as a thin white line rather than blue; Flame in the plain-floor gallery looks pale (orange in the arena).
+- Soak: live node count creeps from ~960 to ~1370 over 5 min (pools filling as new view kinds appear; growth flattens after
+  ~2 min, memory 192 → 200 MB). Re-check on device over a longer session.
 - Feel and balance are untested by humans: Magma is strong in the open, the 12 kg metal satchel runs dry fast, Flame T2/T3 sit
   at 1.4 / 2.2 s (a core test pins a 1.33 s blaze), Earth T2 at 1.1 s.
 - Some sim hooks are approximations: Bulwark thickening applies when the wall is hit; Veil's +20 % balance bonus has no hook;

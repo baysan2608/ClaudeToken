@@ -64,8 +64,10 @@ anim (existing clips only), fx {mat, shape}, ai {role, range, tags}` and is boun
   (`inst.data.jet`). The conduction graph treats a held conductive body as part of the holder, so a bolt that strikes the jet
   hurts its caster. The jet's water is booked (waterskin / pool) and falls as a puddle when it ends.
 * **Tidal Rush**: a `water_wave` ground line (9 m/s, 2 m wide, 10 m budget; T1 12 m, T2 3.2 m wide, T3 the 22 kg Deluge from
-  the pool). Counter power = the tier power **scaled by the water actually in it** (a 6 kg waterskin wave is weaker than an
-  8 kg one: 18 -> 13.5). It carries solids (`water_carry`: captured, then thrown at the first rival it reaches as the caster's
+  the pool). T0 takes 6 kg (a full waterskin makes a full T0 wave, CP 18); T1-T3 take 10 / 14 / 22 kg. Counter power = the
+  tier power **scaled by the water actually in it** (away from water a T3 is 6 / 22 of 45, floor 35 %). `Agent.of_move`
+  applies the same scale (`counter_scale` hook, `WaterWater.tidal_scale`), so the AI planner, the Lab matrix and predictions
+  match the wave the sim makes. It carries solids (`water_carry`: captured, then thrown at the first rival it reaches as the caster's
   attack: "make a wave back"), quenches lava (`water_quench`: heat moves from the lava into the wave through `heat_body`; a
   small wave cannot quench a big lava wave), douses fire fields and drowns tornado zones; it leaves puddles.
 * **Draw & Shape (tech)**: besides the pool and puddles it now **condenses vapour** (steam clouds, mist, fog zones: the mass
@@ -200,8 +202,8 @@ Custom outcomes (`Interactions.register_outcome`; the `interaction` event report
 
 ### Headline interactions, worked through
 
-* **"Someone throws a stone at me: make a wave back"**: stone TP 17 vs Tidal Rush T0 CP 18 (8 kg of water): `water_carry`.
-  With only the 6 kg waterskin the wave is 13.5 PU: the stone is *slowed* (partial), not carried: counter strength follows mass.
+* **"Someone throws a stone at me: make a wave back"**: stone TP 17 vs Tidal Rush T0 CP 18 (6 kg: the waterskin): `water_carry`.
+  T1-T3 away from water are partial (the skin cannot fill them): the stone is *slowed* and hits softer (x the slow factor).
 * **Water wave vs Ice Wall / Rime Path**: the wall always stops a wave (the legacy wall rule); a perfect guard (Flash Freeze) or a
   Rime Path turns it into a ridge.
 * **Lava wave (TP 27.3)**: Tidal Rush T0 18 x 1.5 = 27 (0.99: partial), T1 24 x 1.5 = 36 (full); Rime Path T2 20 x 1.2 = 24

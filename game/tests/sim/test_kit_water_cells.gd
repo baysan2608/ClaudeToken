@@ -39,7 +39,8 @@ func _counter_for(ref: Dictionary, ccls: String, actor: ActorState) -> Agent:
 
 func test_every_reference_cell_gives_its_documented_outcome() -> void:
 	h = SimHarness.new(3)
-	var w := h.actor("W", Vector3(0, 0, 4), 0, {}, Sim.Element.WATER)
+	# Beside the pool: the documented powers are those of a full-water wave (Tidal Rush scales with the water in reach).
+	var w := h.actor("W", Vector3(6.0, 0, -1.0), 0, {}, Sim.Element.WATER)
 	var n := 0
 	var bad := []
 	for key in WaterRules.CELLS:
@@ -168,7 +169,7 @@ func test_a_thrown_stone_is_blocked_by_an_ice_wall_at_cp_22() -> void:
 
 func test_a_steam_screen_never_stops_a_boulder_and_a_big_wave_beats_a_small_screen() -> void:
 	h = SimHarness.new(3)
-	var w := h.actor("W", Vector3(0, 0, 4), 0, {}, Sim.Element.WATER)
+	var w := h.actor("W", Vector3(6.0, 0, -1.0), 0, {}, Sim.Element.WATER)   # beside the pool (full-water waves)
 	# Counter strength scales with the threat: a boulder (TP 110) against a Steam Screen (CP 10-18) fails or passes.
 	var boulder := threat(h.w, "boulder", 110.0, 200.0)
 	var sc := Interactions.predict(h.w, boulder, Agent.of_move(h.w, w, "steam_screen", 3, false))
@@ -180,3 +181,9 @@ func test_a_steam_screen_never_stops_a_boulder_and_a_big_wave_beats_a_small_scre
 	var t0 := Interactions.predict(h.w, lava, Agent.of_move(h.w, w, "tidal_rush", 0, false))
 	var t1 := Interactions.predict(h.w, lava, Agent.of_move(h.w, w, "tidal_rush", 1, false))
 	check(t0.band == "partial" and t1.band == "full", "Tidal Rush T0 partial (%.2f), T1 full (%.2f) vs a 20 kg lava wave" % [t0.ratio, t1.ratio])
+	# Away from water, the prediction follows the waterskin (6 kg): a full T0 wave, a T3 at 6 / 22 of its power.
+	var dry := h.actor("D", Vector3(0, 0, 8), 1, {}, Sim.Element.WATER)
+	var t0d := Agent.of_move(h.w, dry, "tidal_rush", 0, false)
+	var t3d := Agent.of_move(h.w, dry, "tidal_rush", 3, false)
+	near(t0d.power, 18.0, 1e-6, "dry T0 keeps CP 18 (6 kg skin = a full T0 wave)")
+	check(t3d.power < 45.0 * 0.4, "dry T3 predicts the weak wave the sim makes (%.1f)" % t3d.power)

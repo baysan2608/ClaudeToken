@@ -567,7 +567,8 @@ static func o_snuff(w: CombatWorld, t: Agent, _c: Agent, res: Dictionary, _r: Di
 		else:
 			w.emit("extinguish", {"body": b.id})
 			w.decay_body(b, "extinguished")
-	else:
+	elif t.body == null:
+		w.ledger.spent += maxf(0.0, t.heat)   # the snuffed volume's heat is booked as spent
 		t.heat = 0.0
 	AirOutcomes.report(res, "extinguish")
 	return true

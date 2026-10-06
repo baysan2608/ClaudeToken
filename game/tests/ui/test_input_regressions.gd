@@ -103,6 +103,57 @@ func _cam_drag(h: PlayerInputHub, cam: CameraRig, px: Vector2) -> Array[float]:
 	return [cam.yaw - y0, cam.pitch - p0, look0, -cam.cam.global_transform.basis.z.y]
 
 
+## Whether a world point projects inside the camera's view (vertical FOV, viewport aspect).
+func _in_view(rig: CameraRig, p: Vector3) -> bool:
+	var c := rig.cam
+	var lp := c.global_transform.affine_inverse() * p
+	if lp.z >= -0.05:
+		return false
+	var vs := c.get_viewport().get_visible_rect().size
+	var aspect := vs.x / maxf(vs.y, 1.0)
+	var tv := tan(deg_to_rad(c.fov) * 0.5)
+	return absf(lp.y / -lp.z) <= tv and absf(lp.x / -lp.z) <= tv * aspect
+
+
+## A fighter backed against an arena wall (or into a corner) facing the rival: the camera swings / lifts but never
+## collapses onto their back (>= 3 m), never looks down steeper than ~0.9 rad, and keeps the rival on screen.
+func test_camera_near_a_wall_keeps_its_distance_and_the_rival_in_frame() -> void:
+	var win := host.root
+	var size0 := win.size
+	win.size = Vector2i(1280, 592)   # the phone landscape aspect the game runs at
+	var cases := [[Vector3(3, 0, 14), Vector3(3, 0, 4)], [Vector3(14, 0, 14), Vector3(4, 0, 4)], [Vector3(0, 0, 15.2), Vector3(0, 0, 6)],
+		[Vector3(-14.5, 0, 0), Vector3(-4, 0, 0)]]
+	for c in cases:
+		var pp: Vector3 = c[0]
+		var tp: Vector3 = c[1]
+		var cam := CameraRig.new()
+		host.root.add_child(cam)
+		track(cam)
+		cam.arena = ArenaMap.make_lab()
+		cam.snap_to(pp, tp)
+		for k in 180:
+			cam.update_rig(1.0 / 60.0, pp, tp, null)
+		var pivot := pp + Vector3(0, cam.height, 0)
+		var d := cam.global_position.distance_to(pivot)
+		check(d >= 2.95, "%s: camera stays >= 3 m from the fighter (%.2f)" % [str(pp), d])
+		var look := -cam.cam.global_transform.basis.z
+		var down := asin(clampf(-look.y, -1.0, 1.0))
+		check(down <= 0.95, "%s: not an overhead view (looks down %.2f rad)" % [str(pp), down])
+		check(_in_view(cam, tp + Vector3(0, 1.0, 0)), "%s: the rival is on screen (orbit %.2f)" % [str(pp), float(cam.rig_state()[1])])
+		check(_in_view(cam, pp + Vector3(0, 1.0, 0)), "%s: the fighter is on screen" % str(pp))
+	# In the open the rig does not swing at all.
+	var cam2 := CameraRig.new()
+	host.root.add_child(cam2)
+	track(cam2)
+	cam2.arena = ArenaMap.make_lab()
+	cam2.snap_to(Vector3(0, 0, 7), Vector3(0, 0, -7))
+	for k in 120:
+		cam2.update_rig(1.0 / 60.0, Vector3(0, 0, 7), Vector3(0, 0, -7), null)
+	check(absf(float(cam2.rig_state()[1])) < 0.01, "no swing in the open (%.3f)" % float(cam2.rig_state()[1]))
+	check_near(cam2.global_position.distance_to(Vector3(0, 0, 7) + Vector3(0, cam2.height, 0)), float(cam2.rig_state()[0]), 0.05, "full distance in the open")
+	win.size = size0
+
+
 func test_camera_finger_up_looks_up_and_settings_apply_once() -> void:
 	var h := _hub()
 	var cam := _cam_rig()

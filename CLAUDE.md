@@ -5,8 +5,8 @@ Original elemental martial-arts combat lab for iPhone/iPad, Godot 4.7.2 (GDScrip
 - Godot project: `game/` (source of truth). iOS: `tools/scripts/export_ios.sh <APPLE_TEAM_ID>` → `build/ios/Fourfold.xcodeproj`.
 - Run: `tools/scripts/godot.sh` (finds /Applications/Godot.app on macOS; override with `GODOT_BIN`).
 - Before committing sim/gameplay changes, all must pass:
-  `tools/scripts/godot.sh --headless -s res://tests/run_tests.gd` (532; `-- <filter>` runs a subset) ·
-  `tools/scripts/godot.sh --headless -s res://tests/ui/run_ui_tests.gd` (95) ·
+  `tools/scripts/godot.sh --headless -s res://tests/run_tests.gd` (546; `-- <filter>` runs a subset) ·
+  `tools/scripts/godot.sh --headless -s res://tests/ui/run_ui_tests.gd` (96) ·
   `tools/scripts/godot.sh --headless -s res://tests/check_scripts.gd` (182 scripts).
   Also: `res://tests/anim/run_anim_tests.gd` (16), `res://tests/vfx/vfx_smoke_test.gd`. After adding `class_name` scripts or assets run
   `tools/scripts/godot.sh --headless --import` once.
