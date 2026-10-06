@@ -1,0 +1,54 @@
+// Fourfold FX - faceted transparent solids (stream `fx`): ice and glass walls, needles, shards, ridges (M_FX_Crystal).
+// Unlit translucent with a fake-lit model matching the arena sun: fresnel sky reflection, sun glints on the flat facets,
+// bright facet edges, inner scattering faked by a face-on in-tint glow (ice reads blue on any ground), frost haze /
+// rime by noise, crack lines that brighten before a shatter, molten-glass incandescence with Heat.
+// Port + upgrade of game/presentation/vfx/shaders/crystal.gdshader.
+// Mesh contract (FxMeshLib Crystal, Tools/vfx/meshes.py crystals): flat shaded, uv0 = (across the facet 0..1, along the
+// crystal 0..1), uv1 = (crystal random, crystal base height). Portability rules: FFCommon.ush.
+#ifndef FF_CRYSTAL_USH
+#define FF_CRYSTAL_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+#ifndef FF_LIGHTING_USH
+#include "/Fourfold/Common/FFLighting.ush"
+#endif
+
+// Local offset (cm): crystals grow out of the ground with a per-crystal stagger (Rise 0..1, RiseHeight local metres).
+float3 FFCrystalOffset(float2 uv1, float rise, float riseHeight)
+{
+	float r = saturate(rise * 1.4 - uv1.x * 0.4);
+	r = FFEaseOutCubic(r);
+	return float3(0.0, 0.0, -(1.0 - r) * riseHeight * 100.0);
+}
+
+// Premultiplied emissive (rgb) + opacity (a). n = flat facet normal (world), v = toward the camera (world),
+// noise = noise texture sample at the crystal's facet coordinates (see the node code).
+float4 FFCrystalShade(float2 uv0, float2 uv1, float3 n, float3 v, float4 noise, float3 tint, float frost, float heat,
+	float opacity, float edgeGlow, float shatter, float fade)
+{
+	const float ndv = saturate(dot(n, v));
+	const float fres = FFFresnel(ndv, 0.04, 3.0);
+	const float edge = 1.0 - FFSmooth(0.0, 0.07, min(uv0.x, 1.0 - uv0.x));
+	const float tipEdge = FFSmooth(0.9, 1.0, uv0.y) * 0.5;
+	const float fr = saturate(frost * (0.55 + 0.9 * noise.x));
+	const float crack = FFSmooth(0.86, 0.95, noise.z) * shatter;
+
+	const float3 r = n * (2.0 * dot(n, v)) - v;
+	const float3 sky = FFSky(r.z);
+	const float sun = pow(saturate(dot(r, FFKeyDir())), lerp(260.0, 30.0, fr)) * lerp(6.0, 1.2, fr);
+	const float lit = FFWrapDiffuse(dot(n, FFKeyDir()), 0.7);
+
+	// body: tinted transmission (inner scatter) + frosted diffuse
+	const float3 body = tint * (0.10 + 0.40 * fr) * (0.55 + 0.6 * lit);
+	const float3 scatter = tint * tint * (0.30 * (1.0 - fres) * (0.6 + 0.4 * noise.x));
+	const float3 edges = tint * ((edge + tipEdge) * edgeGlow * (0.35 + 0.65 * fres) + crack * 1.6) * 0.7;
+	const float3 heatGlow = FFHeatGlow(heat, noise.y);
+	const float3 c = body + scatter + edges + sky * (fres * 0.6) + FFV3(sun) + heatGlow;
+	const float a = saturate(opacity * (0.35 + 0.55 * fres + 0.45 * fr) + edge * 0.35 + heat * 0.5 + crack * 0.4);
+	const float f = saturate(fade);
+	return float4(c * (a * f), a * f);
+}
+
+#endif  // FF_CRYSTAL_USH

@@ -1,0 +1,238 @@
+// Fourfold FX - the stone <-> molten <-> crusted rock continuum (stream `fx`). One material model, four state knobs,
+// used by M_FX_Rock (chunks, spears, crags, bombs, globs, walls, spikes, debris) and M_FX_LavaStrip (lava waves, pools).
+//   Heat   0..1  a glowing crack network propagates through solid rock
+//   Melt   0..1  fissures widen into bright lava between dark crust plates; the mesh slumps into a viscous blob
+//   Crust  0..1  plates close the fissures, emission dims, the surface turns rough basalt (cooling)
+//   Damage 0..1  unlit cracks (wall damage)
+// Port + upgrade of game/presentation/shaders/vfx_rock.gdshaderinc, stone.gdshader, lava_wave.gdshader.
+//
+// Unreal conventions (all Custom-node inputs): local positions / offsets in centimetres (UE local axes, Z up), world
+// vectors from the graph (VertexNormalWS, TransformVector local -> world of the unit axes AX / AY / AZ).
+// Mesh contract (FxMesh.h / Tools/vfx/meshes.py): uv1 = blob offset (X, Y) and uv2 = (blob offset Z, per-vertex random),
+// metres of mesh units (x 100 = local cm); vertex colour R = rise delay (walls: 0 centre .. 1 outer), G = block random.
+// Portability rules: FFCommon.ush.
+#ifndef FF_ROCK_USH
+#define FF_ROCK_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+#ifndef FF_NOISE_USH
+#include "/Fourfold/Common/FFNoise.ush"
+#endif
+
+// ------------------------------------------------------------------------------------------------ vertex stage
+// Local offset (cm) for a rock vertex: melt relaxes the vertex toward the smooth blob at a per-vertex time (uneven
+// slump), the blob sags (flatter bottom, wider belly) and wobbles viscously until the crust stills it; Rise lifts walls
+// / spikes out of the ground with a per-block delay; Fade shrinks a vanishing chunk toward its centre.
+//   pos      pre-skinned local position (cm)        blobOff  local blob offset (cm)
+//   rnd      per-vertex random (uv2.y)              delay    rise delay 0..1 (vertex colour R)
+float3 FFRockOffset(float3 pos, float3 blobOff, float rnd, float delay, float time, float melt, float crust, float seed,
+	float rise, float riseHeight, float fade)
+{
+	const float mv = FFSmooth(0.08, 0.9, melt * 1.3 - rnd * 0.3);
+	float3 p = pos + blobOff * mv;
+	const float3 blob = pos + blobOff;
+	const float3 dir = FFSafeNormalize(blob, float3(0.0, 0.0, 1.0));
+	const float radius = max(length(blob), 1.0);
+	// viscous slump: flatten the bottom, bulge the belly
+	const float sag = FFSmooth(0.3, 1.0, melt);
+	p = float3(p.x * (1.0 + 0.07 * sag), p.y * (1.0 + 0.07 * sag), p.z * (1.0 - 0.16 * sag));
+	// slow wobble along the blob normal (stills as the crust forms); amplitude 4 % of the radius
+	const float calm = 1.0 - 0.9 * crust;
+	const float wob = (sin(time * 1.15 + dir.x * 3.7 + seed) + sin(time * 0.83 + dir.z * 4.3 + seed * 1.7)
+		+ sin(time * 1.37 + dir.y * 3.1 + seed * 0.6)) * (0.04 / 3.0) * radius;
+	p += dir * (wob * FFSmooth(0.25, 1.0, melt) * calm);
+	// rise out of the ground (ease-out cubic), per-block stagger
+	float r = saturate(rise * 1.5 - delay * 0.5);
+	r = FFEaseOutCubic(r);
+	p = float3(p.x, p.y, p.z - (1.0 - r) * riseHeight);
+	// fade: shrink toward the centre
+	const float k = 0.15 + 0.85 * saturate(fade);
+	p = p * k;
+	return p - pos;
+}
+
+// ------------------------------------------------------------------------------------------------ surface model
+// One crack-network sample. ed = Voronoi edge distance (0 on a plate border), eid = per-border random, lowf = low
+// frequency tonal noise 0..1, grain = fine noise 0..1, up = world normal Z, flick = 0.9..1 flicker,
+// wmax = fissure width at full melt (cell units). Outputs: albedo, roughness, emission, dh = slope of the plate profile
+// w.r.t. ed (multiply by the Voronoi gradient for relief), fissure mask.
+struct FFRockSample
+{
+	float3 albedo;
+	float3 emissive;
+	float rough;
+	float dh;
+	float fissure;
+	float dark;
+};
+
+FFRockSample FFRockModel(float ed, float eid, float lowf, float grain, float up, float flick, float heat, float melt,
+	float crust, float damage, float wmax)
+{
+	FFRockSample o;
+	const float kMelt = FFSmooth(0.0, 1.0, melt);
+	// only some cell borders crack in cold rock; heat / melt / crust / damage recruit the rest, so the crack network
+	// visibly propagates as the stone heats up
+	const float drive = saturate(heat * 1.25 + melt * 2.0 + crust * 1.5 + damage * 0.9);
+	const float thr = lerp(0.58, -0.25, drive);
+	const float act = FFSmooth(thr, thr + 0.16, eid);
+
+	// cold stone: tonal variation, grain, pale dust on upward faces, cavity darkening along cracks
+	float3 rock = lerp(float3(0.032, 0.030, 0.029), float3(0.115, 0.104, 0.092), FFSmooth(0.25, 0.75, lowf));
+	rock = rock * (0.72 + 0.56 * grain);
+	const float dust = FFSmooth(0.40, 0.95, up) * FFSmooth(0.25, 0.75, grain * 0.7 + lowf * 0.5);
+	rock = lerp(rock, float3(0.15, 0.135, 0.115), dust * 0.3);
+	rock = rock * lerp(1.0, 0.55 + 0.45 * FFSmooth(0.0, 0.2, ed), act);
+
+	// cooled crust (basalt / glassy slag)
+	float3 basalt = lerp(float3(0.0055, 0.0050, 0.0050), float3(0.026, 0.021, 0.019), grain);
+	basalt = basalt * lerp(0.75, 1.25, lowf);
+	const float dark = FFSmooth(0.06, 0.55, max(kMelt, crust));
+	const float3 base = lerp(rock * (1.0 - 0.38 * heat), basalt, dark);
+
+	// fissure network: width grows with heat / melt and closes with the crust
+	const float wCold = 0.022 + 0.07 * heat + 0.045 * damage;
+	const float wMelt = lerp(wCold, wmax, FFSmooth(0.08, 1.0, melt));
+	const float w = max(wMelt * (1.0 - 0.84 * crust), 0.010) * act * (0.75 + 0.5 * lowf);
+	const float en = ed + (grain - 0.5) * 0.07;
+	const float fm = (1.0 - FFSmooth(w * 0.40, w + 1e-4, en)) * (w > 0.001 ? 1.0 : 0.0);
+	o.fissure = fm;
+
+	// temperature inside the fissure: hottest at its floor, dimmed by the crust; black-body emission
+	const float tcore = saturate(0.75 * heat + 0.45 * kMelt) * (1.0 - 0.74 * crust);
+	const float depth = 1.0 - saturate(en / max(w, 1e-4));
+	const float T = min(tcore * (0.36 + 0.64 * depth) * (0.80 + 0.30 * lowf) * flick, 0.88);
+	const float amp = 1.5 + 0.9 * kMelt;
+	float3 e = FFBlackbody(T) * (amp * fm * FFSmooth(0.015, 0.2, T));
+	// heat-affected zone: plate rims glow faintly around the fissure
+	const float rim = exp(-max(en - w, 0.0) * 13.0) * (1.0 - fm);
+	e += FFBlackbody(T * 0.6) * (rim * 0.45 * FFSmooth(0.1, 0.5, tcore) * act);
+	o.emissive = e;
+
+	const float3 floorCol = lerp(float3(0.006, 0.004, 0.004), float3(0.03, 0.006, 0.002), tcore);
+	o.albedo = lerp(base, floorCol, fm);
+
+	// relief: plates stand proud of the fissures (slope of the plate profile w.r.t. ed)
+	const float wp = 0.14 + 0.12 * kMelt;
+	const float tp = saturate(en / wp);
+	o.dh = 6.0 * tp * (1.0 - tp) / wp * (0.35 + 0.65 * max(dark, damage)) * act * (tp < 0.9999 ? 1.0 : 0.0);
+
+	// roughness: dusty rock -> glassy molten sheen -> rough crust
+	const float rRock = 0.80 + 0.18 * grain;
+	const float rHot = lerp(0.46, 0.86, FFSmooth(0.0, 0.8, crust));
+	o.rough = lerp(lerp(rRock, rHot, dark), 0.55, fm);
+	o.dark = dark;
+	return o;
+}
+
+// ------------------------------------------------------------------------------------------------ M_FX_Rock
+// Pixel surface of a rock / wall / spike. World-space normal output (the material sets Tangent Space Normal off).
+//   pos      local position (cm, pre-WPO, interpolated)     blobOff  local blob offset (cm)
+//   nWS      interpolated vertex normal (world)             bakedWS  baked normal map in world space (or nWS)
+//   ax ay az local unit axes in world space (carry scale)   tint     colour multiplier (obsidian / sandstone / mud)
+//   glass    0 stone .. 1 glossy obsidian
+FFSurf FFRockSurface(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float3 pos, float3 blobOff, float3 nWS, float3 bakedWS,
+	float3 ax, float3 ay, float3 az, float time, float heat, float melt, float crust, float damage, float frost,
+	float seed, float detail, float glass, float3 tint)
+{
+	FFSurf s = FFSurfDefault(nWS);
+	const float3 off = float3(frac(seed * 0.1371), frac(seed * 0.2913), frac(seed * 0.4573)) * 2.0;
+	const float3 pm = pos * (0.01 * max(detail, 0.25));          // metres x detail
+	const float3 blob = pos + blobOff;
+	const float3 dirL = FFSafeNormalize(blob, float3(0.0, 0.0, 1.0));
+	// noise: triplanar over the smooth radial direction (no seams across facets)
+	const float4 n1 = FFTriplanar(Noise, NoiseSampler, pm * 0.26 + off, dirL);
+	const float4 n2 = FFTriplanar(Noise, NoiseSampler, pm * 0.93 + off * 1.7 + float3(0.31, 0.17, 0.43), dirL);
+	const float lowf = n1.x;
+	const float grain = lerp(n2.w, n1.w, 0.35);
+	// organic crack network: analytic Voronoi, domain-warped by the smooth noise
+	const float plate = 2.3;
+	float3 vgrad = float3(0.0, 0.0, 0.0);
+	const float3 vp = pm * plate + off * 3.0 + float3(n1.y - 0.5, n1.z - 0.5, n2.y - 0.5) * 0.55;
+	const float4 vr = FFVoronoi3(vp, vgrad);
+	const float flick = 0.93 + 0.07 * sin(time * 2.3 + lowf * 12.0 + seed);
+
+	// melted normal: toward the smooth blob direction
+	const float3 dirW = FFSafeNormalize(FFLocalToWorld(dirL, ax, ay, az), nWS);
+	float3 n = FFSafeNormalize(lerp(bakedWS, dirW, FFSmooth(0.08, 0.75, melt)), nWS);
+
+	const FFRockSample r = FFRockModel(vr.y, vr.w, lowf, grain, n.z, flick, heat, melt, crust, damage, 0.165);
+
+	// derivative-free relief: tilt the normal by the analytic plate-profile gradient (local -> world)
+	const float relief = lerp(0.055, 0.085, FFSmooth(0.0, 0.7, max(melt, crust)));
+	float3 g = FFLocalToWorld(vgrad, ax, ay, az) / max(length(ax), 1e-4);
+	g = g * (r.dh * plate * relief);
+	g = g - n * dot(g, n);
+	n = FFSafeNormalize(n - g, n);
+
+	// frost: rime on the upper faces, glassy blue-white, rougher
+	const float rime = saturate(frost) * FFSmooth(0.2, 0.9, n.z * 0.6 + grain * 0.5 + 0.2);
+	float3 albedo = r.albedo * tint;
+	albedo = lerp(albedo, float3(0.62, 0.72, 0.80), rime * 0.85);
+
+	s.albedo = albedo;
+	s.emissive = r.emissive * (1.0 - rime);
+	s.normal = n;
+	s.rough = lerp(lerp(r.rough, 0.06 + 0.1 * grain, glass), 0.55, rime);
+	s.spec = lerp(lerp(0.28, 0.5, FFSmooth(0.0, 0.6, melt) * (1.0 - crust)), 0.75, glass);
+	s.metal = 0.0;
+	return s;
+}
+
+// ------------------------------------------------------------------------------------------------ M_FX_LavaStrip
+// Vertex offset (local cm) of a lava wave / sheet: slow viscous undulation of the crest that stills as it crusts.
+//   uv0 = (metres along, metres across)   uv2 = (metres to the front, height fraction 0 edge .. 1 crest)
+float3 FFLavaStripOffset(float2 uv0, float2 uv2, float3 nLocal, float melt, float crust, float boil)
+{
+	const float live = melt * (1.0 - crust);
+	const float h = sin(uv0.x * 4.2 - boil * 2.1) * 1.2 * uv2.y * live;   // cm
+	return nLocal * h;
+}
+
+// Pixel surface of a lava strip / pool. Tangent-space normal output (along the flow = tangent X).
+//   uv0 = (metres along, metres across), uv2 = (metres to the front, height fraction), Flow = accumulated flow distance
+//   (m), Boil = slow evolution time.
+FFSurf FFLavaStripSurface(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float2 uv0, float2 uv2, float upWS, float melt,
+	float crust, float flow, float boil, float seed, float glowScale)
+{
+	FFSurf s = FFSurfDefault(float3(0.0, 0.0, 1.0));
+	const float u = sqrt(max(1.0 - uv2.y * uv2.y, 0.0));          // |across| 0 centre .. 1 edge
+	const float3 off = float3(frac(seed * 0.137), frac(seed * 0.291), frac(seed * 0.457)) * 3.0;
+	const float plateSize = 0.34;
+	const float2 q = float2((uv0.x - flow) * 0.78 / plateSize, uv0.y / plateSize);   // cells elongated along the flow
+	const float4 n1 = Noise.Sample(NoiseSampler, float2(q.x * 0.05 + off.x + boil * 0.004, q.y * 0.05 + off.y));
+	const float4 n2 = Noise.Sample(NoiseSampler, float2(q.x * 0.16 + 0.3 + off.z, q.y * 0.16 + boil * 0.006 + 0.2));
+	float2 vgrad = float2(0.0, 0.0);
+	const float4 vr = FFVoronoi2(float2(q.x + (n1.y - 0.5) * 0.7, q.y + (n1.z - 0.5) * 0.7 + boil * 0.04), vgrad);
+	const float lowf = n1.x;
+	const float grain = n2.w;
+
+	// thermal profile: banks cool and crust first, the front is fresh and hot
+	const float bank = FFSmooth(0.45, 0.98, u);
+	const float frontHot = (1.0 - FFSmooth(0.0, 0.9, uv2.x)) * FFSmooth(0.3, 0.8, melt);
+	const float crustEff = saturate(crust + bank * (1.0 - crust) * 0.55 * (1.0 - frontHot));
+	const float heatEff = saturate(melt * (1.0 - 0.35 * bank) + frontHot * 0.2);
+	const float meltEff = saturate(melt * (1.0 - 0.1 * bank));
+	const float flick = 0.94 + 0.06 * sin(boil * 3.0 + lowf * 12.0);
+	const FFRockSample r = FFRockModel(vr.y, vr.w, lowf, grain, upWS, flick, heatEff, meltEff, crustEff, 0.0,
+		lerp(0.26, 0.15, bank));
+
+	// residual glow of a fully cooled ridge: deep red hairlines
+	const float resid = crust * (1.0 - melt);
+	float3 e = r.emissive + FFBlackbody(0.18 + 0.1 * lowf) * (0.9 * r.fissure * resid);
+	s.emissive = e * glowScale;
+
+	// relief in tangent space (plates proud of the fissures) + fine grain
+	const float2 gq = vgrad * (r.dh * 0.07);
+	const float gx = gq.x * 0.78 + (grain - 0.5) * 0.15;
+	const float gy = gq.y + (n2.z - 0.5) * 0.15;
+	s.normal = normalize(float3(-gx, -gy, 1.0));
+	s.albedo = r.albedo;
+	s.rough = r.rough;
+	s.spec = lerp(0.28, 0.5, melt * (1.0 - crust));
+	return s;
+}
+
+#endif  // FF_ROCK_USH

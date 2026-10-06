@@ -136,7 +136,8 @@ struct OneShots::RingFx final : OneShot {
 			it.params.Set(P::Glow, o.glow);
 			it.params.Set(P::Style, o.style);
 			it.params.Set(P::Opacity, fade * o.alpha * (i == 0 ? 1.0f : 0.7f));
-			it.params.Set(P::Width, o.width * 0.8f * (1.0f + 0.5f * t));
+			// the band width is relative to the quad: cap it in metres so big shock rings stay crisp bands
+			it.params.Set(P::Width, MinF(o.width * 0.8f * (1.0f + 0.5f * t), 0.22f / MaxF(sq, 1e-3f)));
 			it.params.Set(P::Radius, 0.8f);
 			it.params.Set(P::Phase, age);
 			it.params.Set(P::Seed, seed + fi * 1.7f);

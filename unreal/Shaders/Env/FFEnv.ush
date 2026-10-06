@@ -1,0 +1,170 @@
+// FFEnv.ush - courtyard material helpers (stream world_audio).
+// Included from material Custom nodes as  /Fourfold/Env/FFEnv.ush  (the /Fourfold virtual path is mapped to unreal/Shaders by the
+// FourfoldShaders module).  Portable HLSL only: no wave ops, no SM6 features, no texture access (textures are sampled by normal
+// material nodes and passed in), so it compiles for Metal (mobile ES3.1 and desktop SM6) and is checked with DXC here
+// (Tools/world/check_hlsl.py wraps every Custom-node body of Content/Python/fourfold/world/materials.py).
+// Conventions: Unreal world units are centimetres, +Z up; exposure is fixed so that a diffuse white under 3.14 lux shows as 1.0.
+#pragma once
+
+float FFEnvLuma(float3 C)
+{
+	return dot(C, float3(0.299, 0.587, 0.114));
+}
+
+// Surface grade for every textured courtyard material (stone, plaster, timber, tile, metal plate, ground).
+//  Base      sampled base colour (linear)           Rough / AO   from the ORM texture (G, R)
+//  Grime     vertex colour G (damp / dirt gradient)  GrimeAmount, GrimeColor   artist controls
+//  Wet       0..1 wetness (instance value / MPC / splash mask) * Porosity
+//  Sat, Tint, Bright, Macro  grade + the macro tint variation (1 = none)
+//  Halo      0..1 rust / stain halo around the metal plate (floor only)
+float3 FFEnvSurface(float3 Base, float Rough, float AO, float Grime, float GrimeAmount, float3 GrimeColor,
+	float Wet, float Porosity, float Sat, float3 Tint, float Bright, float Macro, float Halo,
+	out float OutRough, out float OutAO)
+{
+	float l = FFEnvLuma(Base);
+	float3 c = lerp(float3(l, l, l), Base, Sat) * Tint * (Bright * Macro);
+	float g = saturate(Grime * GrimeAmount);
+	c = lerp(c, c * GrimeColor, g);
+	c = lerp(c, c * float3(0.92, 0.72, 0.56), saturate(Halo) * 0.45);
+	float w = saturate(Wet) * saturate(Porosity);
+	c *= lerp(1.0, 0.55, w);
+	OutRough = saturate(lerp(lerp(Rough, 0.95, g * 0.5), 0.1, w * 0.85));
+	OutAO = saturate(AO * lerp(1.0, 0.78, g));
+	return c;
+}
+
+// Tangent-space normal strength (N is already unpacked to -1..1).
+float3 FFEnvNormal(float3 N, float Strength)
+{
+	return normalize(float3(N.xy * Strength, max(N.z, 0.05)));
+}
+
+// Arena mask UV: the (square) mask covers Rect = (x0, z0, size) in SIM metres; Unreal world X = sim x, Y = sim z (centimetres).
+float2 FFArenaMaskUV(float3 WorldPosCm, float3 Rect)
+{
+	return float2((WorldPosCm.x * 0.01 - Rect.x) / Rect.z, (WorldPosCm.y * 0.01 - Rect.y) / Rect.z);
+}
+
+// Large-scale tint variation from a low-frequency noise sample (0..1): 1 +- Strength.
+float FFEnvMacro(float Noise, float Strength)
+{
+	return 1.0 + (Noise - 0.5) * 2.0 * Strength;
+}
+
+// World position -> noise UV for the macro variation (one repeat per TileCm).
+float2 FFEnvWorldUV(float3 WorldPosCm, float TileCm)
+{
+	return WorldPosCm.xy / TileCm;
+}
+
+// ---------------------------------------------------------------------------------------------------------------- water
+float2 FFWaterUV(float3 WorldPosCm, float T, float2 Dir, float Speed, float TileCm)
+{
+	return WorldPosCm.xy / TileCm + Dir * (T * Speed);
+}
+
+float3 FFWaterNormal(float3 N1, float3 N2, float Strength)
+{
+	float2 xy = (N1.xy + N2.xy) * Strength;
+	return normalize(float3(xy, max(N1.z * N2.z, 0.05)));
+}
+
+// Colour / opacity of the pool surface.  Deep -> Shallow by view angle (fake depth); the fresnel term drives the opacity and the
+// sky reflection (emissive, added in the graph).
+float3 FFWaterColor(float3 Deep, float3 Shallow, float NoV, float F0, float OpacityMin, float OpacityMax,
+	out float OutOpacity, out float OutFresnel)
+{
+	float nv = saturate(NoV);
+	float fres = F0 + (1.0 - F0) * pow(1.0 - nv, 5.0);
+	OutOpacity = saturate(lerp(OpacityMin, OpacityMax, saturate(fres * 1.6 + (1.0 - nv) * 0.3)));
+	OutFresnel = fres;
+	return lerp(Deep, Shallow, pow(nv, 1.5));
+}
+
+// ------------------------------------------------------------------------------------------------------------- cloth / foliage
+// World-space offset (cm) of a hanging banner: it only ever pushes along its own outward normal.
+//  Hang 0 at the rod .. 1 at the hem (vertex colour R); Flutter 0..1 scales the amplitude (vertex colour G: banners 0, pennants 1)
+float3 FFBannerSway(float3 NormalWS, float Hang, float Flutter, float T, float3 WorldPosCm, float Amp, float AmpFlutter, float Speed)
+{
+	float ph = WorldPosCm.x * 0.0037 + WorldPosCm.y * 0.0053;
+	float w = 0.5 + 0.5 * sin(T * Speed + ph + Hang * 2.4);
+	float w2 = 0.5 + 0.5 * sin(T * Speed * 1.7 + ph * 1.3 + Hang * 5.0);
+	float a = lerp(Amp, AmpFlutter, saturate(Flutter));
+	float k = Hang * Hang;
+	float3 n = normalize(NormalWS);
+	return n * (a * k * (0.35 + 0.65 * w) + a * 0.25 * k * w2) + float3(0.0, 0.0, -a * 0.04 * k * w);
+}
+
+float3 FFFoliageWind(float Sway, float3 WorldPosCm, float T, float Amp)
+{
+	float w = sin(T * 1.3 + WorldPosCm.x * 0.007 + WorldPosCm.y * 0.005) + 0.5 * sin(T * 2.9 + WorldPosCm.x * 0.019 + WorldPosCm.y * 0.013);
+	return float3(w * 0.5, w * 0.35, 0.0) * (Amp * saturate(Sway));
+}
+
+// Leaf colour: texture x per-tree tint x darker toward the bottom of the crown; Fill = cheap translucency / sky fill emissive.
+float3 FFFoliageColor(float3 Tex, float TreeTint, float Grad, float3 Tone, float FillAmount, out float3 OutFill)
+{
+	float v = lerp(0.72, 1.28, TreeTint);
+	float3 c = Tex * Tone * v * lerp(0.55, 1.0, saturate(Grad));
+	OutFill = c * FillAmount * lerp(0.6, 1.0, saturate(Grad));
+	return c;
+}
+
+// Flickering glow factor (lantern paper, windows, coals): phase from the world position so every light breathes differently.
+float FFFlicker(float T, float3 WorldPosCm, float Amount)
+{
+	float ph = WorldPosCm.x * 0.017 + WorldPosCm.y * 0.023;
+	return 1.0 - Amount * (0.5 + 0.5 * sin(T * 7.0 + ph) * sin(T * 3.1 + ph * 0.7));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------- sky
+float3 FFSkyDir(float3 WorldPosCm, float3 CenterCm)
+{
+	return normalize(WorldPosCm - CenterCm);
+}
+
+// UV for the cloud texture (Dir.z is up): planar projection of the dome with perspective compression toward the horizon.
+float2 FFSkyCloudUV(float3 Dir, float Scale, float2 Drift, float T)
+{
+	return Dir.xy / (Dir.z + 0.22) * Scale + float2(3.0, 1.7) + Drift * T;
+}
+
+// Same UV nudged toward the sun: comparing the two density samples gives sun-lit edges.
+float2 FFSkyCloudUVSun(float3 Dir, float Scale, float2 Drift, float T, float3 SunToward)
+{
+	return FFSkyCloudUV(Dir, Scale, Drift, T) + SunToward.xy * 0.045;
+}
+
+//  A = cloud texture at the cloud UV (R cumulus, G cirrus, B detail), B = the same at the sun-nudged UV.
+float3 FFSkyShade(float3 Dir, float3 SunToward, float3 SunColor, float3 Zenith, float3 Horizon, float3 GroundHorizon, float3 GroundBottom,
+	float3 CloudLit, float3 CloudShade, float3 CloudA, float3 CloudB, float Cover, float CirrusAmount)
+{
+	float up = Dir.z;
+	float3 col;
+	if (up >= 0.0)
+	{
+		col = lerp(Horizon, Zenith, smoothstep(0.0, 1.0, pow(up, 0.42)));
+	}
+	else
+	{
+		col = lerp(GroundHorizon, GroundBottom, smoothstep(0.0, 0.6, -up));
+	}
+	float sun = saturate(dot(Dir, SunToward));
+	col += SunColor * (pow(sun, 6.0) * 0.16 + pow(sun, 48.0) * 0.30);
+	if (up > 0.0)
+	{
+		float n = CloudA.r * 0.7 + CloudA.b * 0.3;
+		float nS = CloudB.r * 0.7 + CloudB.b * 0.3;
+		float dens = smoothstep(1.0 - Cover, 1.0 - Cover + 0.28, n);
+		dens *= smoothstep(0.02, 0.22, up) * (1.0 - 0.55 * smoothstep(0.55, 1.0, up));
+		float lit = saturate((n - nS) * 4.0 + 0.5);
+		float3 cc = lerp(CloudShade, CloudLit, lit);
+		cc = lerp(cc, Horizon * 1.05, 1.0 - smoothstep(0.02, 0.3, up));
+		cc += SunColor * pow(sun, 5.0) * 0.35;
+		col = lerp(col, cc, dens * 0.92);
+		float cir = smoothstep(0.55, 0.9, CloudA.g) * CirrusAmount * smoothstep(0.05, 0.4, up);
+		col = lerp(col, col + SunColor * 0.10 + 0.05, cir * 0.5);
+		col += SunColor * smoothstep(0.9993, 0.9998, sun) * 3.0 * (1.0 - dens);
+	}
+	return col;
+}

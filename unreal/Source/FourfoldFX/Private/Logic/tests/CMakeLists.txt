@@ -47,15 +47,6 @@ target_link_libraries(ffx_logic_tests PRIVATE ffx_logic)
 target_compile_definitions(ffx_logic_tests PRIVATE FF_LOGIC_TESTS=1 FFX_UNREAL_DIR="${UNREAL_DIR}")
 target_compile_options(ffx_logic_tests PRIVATE ${FFX_OPTIONS})
 
-# Offline preview: runs the director on synthetic scenes and writes OBJ / PLY + JSON for the Blender preview renderer
-# (unreal/Tools/vfx/preview_scene.py).
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/fx_preview.cpp")
-  add_executable(ffx_preview fx_preview.cpp)
-  target_link_libraries(ffx_preview PRIVATE ffx_logic)
-  target_compile_definitions(ffx_preview PRIVATE FF_LOGIC_TESTS=1 FFX_UNREAL_DIR="${UNREAL_DIR}")
-  target_compile_options(ffx_preview PRIVATE ${FFX_OPTIONS})
-endif()
-
 # Integration soak: the real engine-free sim (FourfoldCore sources) plays every move of every sub-element (tap and
 # T3) through the Lab input path plus an AI duel, and every frame goes through the FX director (no unmapped body, no
 # invalid mesh, budgets). Off with -DFFX_WITH_CORE=OFF.
@@ -73,4 +64,24 @@ if(FFX_WITH_CORE AND EXISTS "${SOURCE_DIR}/FourfoldCore/Private")
   target_link_libraries(ffx_core_soak PRIVATE ffx_logic ffx_core_sim)
   target_compile_definitions(ffx_core_soak PRIVATE FF_LOGIC_TESTS=1 FFX_UNREAL_DIR="${UNREAL_DIR}")
   target_compile_options(ffx_core_soak PRIVATE -fno-exceptions -fno-rtti -Wall -Wextra -Werror)
+
+  # Offline preview renderer: the Lab plays moves, the director draws, a software rasteriser shades every item with
+  # the material code of Content/Python/fourfold/fx/spec.py (generated C++) over the shared HLSL (hlsl_shim.h).
+  find_package(Python3 COMPONENTS Interpreter)
+  if(Python3_Interpreter_FOUND)
+    set(FFX_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/gen")
+    file(GLOB FFX_USH "${UNREAL_DIR}/Shaders/Common/*.ush" "${UNREAL_DIR}/Shaders/FX/*.ush")
+    set(FFX_GEN_SCRIPT "${UNREAL_DIR}/Tools/vfx/shader_check/gen_preview_nodes.py")
+    add_custom_command(OUTPUT "${FFX_GEN_DIR}/fx_nodes.gen.h"
+      COMMAND ${Python3_EXECUTABLE} "${FFX_GEN_SCRIPT}" "${FFX_GEN_DIR}/fx_nodes.gen.h"
+      DEPENDS "${FFX_GEN_SCRIPT}" "${UNREAL_DIR}/Content/Python/fourfold/fx/spec.py" ${FFX_USH}
+      COMMENT "Generating fx_nodes.gen.h from the FX material spec")
+    add_executable(ffx_preview fx_preview.cpp "${FFX_GEN_DIR}/fx_nodes.gen.h")
+    target_include_directories(ffx_preview PRIVATE "${FFX_GEN_DIR}")
+    target_link_libraries(ffx_preview PRIVATE ffx_logic ffx_core_sim)
+    target_compile_definitions(ffx_preview PRIVATE FF_LOGIC_TESTS=1 FFX_UNREAL_DIR="${UNREAL_DIR}")
+    # the shared HLSL mixes float / double literals like HLSL does: no -Wconversion here
+    target_compile_options(ffx_preview PRIVATE -fno-exceptions -fno-rtti -O2 -Wall -Wno-unused-parameter
+      -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable)
+  endif()
 endif()

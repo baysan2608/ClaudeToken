@@ -303,6 +303,9 @@ public:
 		key_ = c.keys.New();
 		keyMark_ = c.keys.New();
 		radius_ = MaxF(f.b.radius, 0.02f);
+		// a held pressure jet: the body sits mid-jet with radius = half its length (conduction); draw a water tube
+		// from the caster's chest through it instead of a giant orb
+		jet_ = f.b.tag == "jet";
 	}
 	void Update(const BodyFrame& f, Ctx& c) override {
 		const ff::BodyView& b = f.b;
@@ -310,6 +313,28 @@ public:
 		radius_ = Lerp(radius_, MaxF(b.radius, 0.02f), Sat(c.dt * 12.0f));
 		frozen_ = Sat(1.0f - b.liquid);
 		flow_ += c.dt * (1.0f - frozen_);
+		if (jet_ && b.controller >= 0) {
+			const Vec3 chest = c.ActorPos(b.controller) + Vec3(0.0f, 1.3f, 0.0f);
+			const Vec3 d = f.p - chest;
+			const float half = d.length();
+			if (half > 0.05f) {
+				const Vec3 dir = d / half;
+				const Vec3 side = Perp(dir);
+				std::vector<Vec3> pts;
+				std::vector<float> rad;
+				const int n = 12;
+				for (int k = 0; k < n; ++k) {
+					const float t = static_cast<float>(k) / static_cast<float>(n - 1);
+					const float wob = std::sin(t * 9.0f - flow_ * 22.0f) * 0.025f * t;
+					pts.push_back(chest + dir * (0.35f + t * (2.0f * half - 0.35f)) + side * wob);
+					rad.push_back(Lerp(0.055f, 0.11f, t));
+				}
+				mesh_.Clear();
+				AppendTube(mesh_, pts, rad, 10, true, true, 2);
+				mesh_.Commit();
+			}
+			return;
+		}
 		if (sel.kind == ViewKind::Ribbon) {
 			std::vector<Vec3> pts(trail.begin(), trail.end());
 			pts.push_back(f.p);
@@ -351,7 +376,7 @@ public:
 			lens.sortPriority = -2;
 			return;
 		}
-		if (sel.kind == ViewKind::Ribbon) {
+		if (sel.kind == ViewKind::Ribbon || jet_) {
 			if (mesh_.Empty()) return;
 			DrawItem& it = c.out.Add(key_, MatSlot::Water, &mesh_);
 			it.params.Set(P::Shape, 0.0f);
@@ -376,6 +401,7 @@ private:
 	uint32_t key_ = 0, keyMark_ = 0;
 	Vec3 pos_;
 	float radius_ = 0.3f, frozen_ = 0.0f, flow_ = 0.0f;
+	bool jet_ = false;
 	MeshData mesh_;
 };
 

@@ -1,0 +1,116 @@
+// Fourfold FX - air (stream `fx`): wind blades, sheets, pressure cones, dust streaks, trails (M_FX_Wind) and vortex
+// funnel layers (M_FX_Vortex). Both unlit AlphaComposite (premultiplied: Cover 0 = additive .. 1 = covering), two-sided,
+// no depth write; air is drawn as barely visible white speed streaks with a dust tint so fighters stay readable.
+// Port + upgrade of game/presentation/vfx/shaders/crescent.gdshader, vortex.gdshader, shaders/air_push_core.gdshaderinc
+// (lite path: no scene-colour read on mobile) and air_streak.gdshader.
+// M_FX_Wind styles (parameter Style):
+//   0 crescent / sheet  uv0 = (along the arc 0..1, across: 0 leading edge .. 1 trailing edge)
+//   1 pressure band     Cone mesh (apex at local Z 0, radius 100 cm at Z 100), uv0 = (angle, along 0..1), Age 0..1
+//   2 dust streaks      CPU ribbons: uv0 = (across 0..1, metres along), uv1 = (along 0..1, strand), vertex colour
+//   3 trail             CPU ribbon (glide / dash trail): uv0 = (across 0..1, metres along), uv1.x = along, vertex colour
+// M_FX_Vortex: CPU lathe funnels (uv0 = (angle 0..1, height 0..1)); Phase = accumulated revolutions, Scroll = rise
+// phase, Height / Radius in metres, Color (low) / Color2 (high) tints, Glow > 1 for fire infusion.
+// Portability rules: FFCommon.ush.
+#ifndef FF_WIND_USH
+#define FF_WIND_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+
+// ------------------------------------------------------------------------------------------------ M_FX_Wind
+// Local offset (cm): the pressure cone widens slightly as the push travels.
+float3 FFWindOffset(float3 pos, float style, float age)
+{
+	if (style > 0.5 && style < 1.5)
+	{
+		const float grow = 0.12 * saturate(age);
+		return float3(pos.x * grow, pos.y * grow, 0.0);
+	}
+	return float3(0.0, 0.0, 0.0);
+}
+
+// Premultiplied emissive (rgb) + opacity (a). n1 / n2 = noise samples at the style's coordinates (node code), ndv =
+// |dot(normal, view)|, dust = Color (dust tint), vc = vertex colour.
+float4 FFWindShade(float2 uv0, float2 uv1, float4 vc, float4 n1, float4 n2, float ndv, float style, float age,
+	float opacity, float cover, float dusty, float flow, float3 dust)
+{
+	const float3 white = float3(0.92, 0.95, 1.0);
+	if (style < 0.5)
+	{
+		// blade / sheet: a bright leading edge, speed streaks trailing behind, soft tips
+		const float x = uv0.x;
+		const float y = uv0.y;
+		const float lead = exp(-(y / 0.22) * (y / 0.22));
+		const float trail = (1.0 - FFSmooth(0.0, 1.0, y)) * FFSmooth(0.62, 0.9, n2.y);
+		const float ends = FFSmooth(0.0, 0.12, x) * (1.0 - FFSmooth(0.88, 1.0, x));
+		const float life = FFSmooth(0.0, 0.1, age) * (1.0 - FFSmooth(0.7, 1.0, age));
+		const float k = (lead * (0.6 + 0.6 * n1.x) + trail * 0.8) * ends * life * opacity;
+		const float3 c = lerp(white, dust, dusty * (0.5 + 0.5 * n1.x));
+		return float4(c * k, saturate(k * cover));
+	}
+	if (style < 1.5)
+	{
+		// pressure band: a travelling soft band + three thin crests; soft toward the cone silhouette
+		const float y = uv0.y;
+		const float front = saturate(age * 1.5);
+		const float fade = 1.0 - FFSmooth(0.55, 1.0, age);
+		const float base = FFSmooth(0.0, 0.1, y) * (1.0 - FFSmooth(0.92, 1.0, y));
+		const float soft = FFSmooth(0.04, 0.55, ndv);
+		const float band = FFSmooth(front - 0.5, front - 0.03, y) * (1.0 - FFSmooth(front - 0.03, front + 0.04, y));
+		const float d1 = (y - front) * 13.0;
+		const float d2 = (y - front + 0.17) * 13.0;
+		const float d3 = (y - front + 0.34) * 13.0;
+		const float rings = exp(-d1 * d1) + exp(-d2 * d2) * 0.6 + exp(-d3 * d3) * 0.35;
+		const float shimmer = 0.6 + 0.8 * n1.x;
+		const float mask = (0.25 * band + rings) * fade * base * soft * shimmer;
+		const float a = saturate(mask * opacity * 0.5);
+		const float3 c = float3(0.80, 0.85, 0.90) * (a * 0.3) + float3(0.10, 0.11, 0.12) * (rings * soft * fade * base * shimmer);
+		return float4(c, saturate(a * cover * 0.3));
+	}
+	if (style < 2.5)
+	{
+		// dust streaks: thin soft lines, tapered ends
+		const float across = abs(uv0.x * 2.0 - 1.0);
+		const float along = uv1.x;
+		float shape = (1.0 - across) * FFSmooth(0.0, 0.25, along) * (1.0 - FFSmooth(0.6, 1.0, along));
+		shape = pow(saturate(shape), 1.5);
+		const float k = shape * saturate(vc.w) * opacity;
+		return float4(FFRGB(vc) * dust * k, saturate(k * cover));
+	}
+	// trail: a soft ribbon that thins toward its tail, faint streaks flowing backwards
+	const float across = abs(uv0.x * 2.0 - 1.0);
+	const float along = uv1.x;
+	const float streaks = 0.6 + 0.4 * FFSmooth(0.35, 0.8, n1.y);
+	const float shape = (1.0 - FFSmooth(0.3, 1.0, across)) * FFSmooth(0.0, 0.6, along) * streaks;
+	const float k = shape * saturate(vc.w) * opacity;
+	return float4(FFRGB(vc) * dust * k, saturate(k * cover));
+}
+
+// ------------------------------------------------------------------------------------------------ M_FX_Vortex
+// Local offset (cm): lobed wobble that turns with the spin, the top of the axis wanders (sway grows with height^2).
+float3 FFVortexOffset(float3 pos, float2 uv0, float phase, float scroll, float height, float seed)
+{
+	const float h = uv0.y;
+	const float ang = uv0.x * FF_TAU;
+	const float wob = 0.08 * sin(ang * 3.0 + h * 7.0 - phase * FF_PI + seed);
+	const float sway = (8.0 + 6.0 * height) * h * h;   // cm
+	return float3(pos.x * wob + sin(h * 2.6 + scroll * 0.9 + seed) * sway,
+		pos.y * wob + cos(h * 2.1 + scroll * 0.7 + seed * 1.3) * sway, 0.0);
+}
+
+// Premultiplied emissive (rgb) + opacity (a). n1 / n2 = noise samples (node code), ndv = |dot(normal, view)|.
+float4 FFVortexShade(float2 uv0, float4 n1, float4 n2, float ndv, float scroll, float opacity, float cover, float glow,
+	float3 tintA, float3 tintB)
+{
+	const float h = uv0.y;
+	const float streak = FFSmooth(0.45, 0.85, n1.x * 0.6 + n2.y * 0.55);
+	const float band = 0.55 + 0.45 * sin(h * 18.0 - scroll * 4.0 + n1.x * 3.0);
+	const float sil = 0.45 + 0.55 * pow(1.0 - saturate(ndv), 1.2);   // denser at the silhouette, like a real funnel
+	const float fade = FFSmooth(0.0, 0.06, h) * (1.0 - FFSmooth(0.78, 1.0, h));
+	const float k = streak * band * sil * fade * opacity;
+	const float3 c = lerp(tintA, tintB, saturate(h * 0.9 + n2.y * 0.3));
+	return float4(c * (glow * k), saturate(k * cover));
+}
+
+#endif  // FF_WIND_USH

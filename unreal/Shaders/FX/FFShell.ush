@@ -1,0 +1,99 @@
+// Fourfold FX - fresnel shells and flat rings (stream `fx`; unlit AlphaComposite, no depth write).
+//   M_FX_Shell (sphere, uv0 = (around, up)): null bubbles, vacuum wells, coronas, static fields, wind guards, sound
+//     barriers, mines, T3 charge auras, status shells (frost shell, armor aura, mist veil ...). Rim = fresnel power,
+//     Streak = lines running from the rim toward the centre (vacuum inflow; negative = outward), Crackle = thin
+//     flickering bright ridges (static, corona), Core = fill of the face-on centre (mines, fireball cores),
+//     Pulse = breathing, Absorb = extra coverage so saturated tints survive over bright ground.
+//   M_FX_Ring (GroundQuad / FaceQuad, uv0 0..1): Style 0 shock / cast band, 1 spiral inflow, 2 sound ripple (concentric
+//     pressure waves), 3 spin-blur arc ring, 4 filled soft glow dot. Radius / Width as fractions of the quad half size.
+// Port + upgrade of game/presentation/vfx/shaders/shell_core.gdshaderinc and ring.gdshader.
+// Portability rules: FFCommon.ush.
+#ifndef FF_SHELL_USH
+#define FF_SHELL_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+
+// ------------------------------------------------------------------------------------------------ M_FX_Shell
+// Premultiplied emissive (rgb) + opacity (a). ndv = saturate(dot(normal, view)); n1 / n2 / nc = noise samples at the
+// shell coordinates, the stepped crackle coordinates (node code).
+float4 FFShellShade(float ndv, float4 n1, float4 n2, float4 nc, float3 col, float3 coreCol, float opacity, float rimPow,
+	float streak, float crackle, float core, float pulse, float phase, float glow, float absorb, float cover)
+{
+	const float rim = pow(saturate(1.0 - ndv), max(rimPow, 0.2));
+	const float n = n1.x;
+	const float nb = n2.y;
+	float lines = 0.0;
+	if (abs(streak) > 0.001)
+	{
+		const float s = frac((1.0 - ndv) * 3.0 + phase * streak + n * 0.35);
+		lines = FFSmooth(0.75, 1.0, s) * (0.4 + 0.6 * nb) * FFSmooth(0.05, 0.6, 1.0 - ndv);
+	}
+	float crk = 0.0;
+	if (crackle > 0.001)
+	{
+		const float c = 1.0 - abs(nc.z * 2.0 - 1.0);
+		crk = pow(saturate(c), 14.0) * crackle;
+	}
+	const float pl = 1.0 + pulse * sin(phase * 9.0);
+	const float k = (rim * (0.7 + 0.5 * n) + lines * 0.9 + crk) * opacity * pl;
+	const float fill = core * (0.55 + 0.45 * pow(max(ndv, 1e-3), 0.7)) * (0.8 + 0.4 * nb) * pl;
+	const float3 e = col * (glow * k) + coreCol * (glow * fill);
+	const float a = saturate(k * (cover * 0.7 + absorb) + fill * 0.85);
+	return float4(e, a);
+}
+
+// ------------------------------------------------------------------------------------------------ M_FX_Ring
+// Premultiplied emissive (rgb) + opacity (a). nA = noise at (angle x 0.477 + seed, d x 0.8 - phase x 0.3), nB = noise at
+// (angle x 1.2 + seed x 3, phase x 0.5) (node code).
+float4 FFRingShade(float2 uv0, float4 nA, float4 nB, float style, float radius, float width, float phase, float opacity,
+	float cover, float glow, float3 col)
+{
+	const float2 p = float2(uv0.x * 2.0 - 1.0, uv0.y * 2.0 - 1.0);
+	const float d = length(p);
+	const float ang = atan2(p.y, p.x);
+	const float n = nA.x;
+	const float w = max(width, 1e-3);
+	float k = 0.0;
+	if (style < 0.5)
+	{
+		const float x = (d - radius + (n - 0.5) * 0.35 * w * 2.0) / w;
+		k = exp(-x * x * 3.0) * (0.75 + 0.5 * nB.x);
+	}
+	else if (style < 1.5)
+	{
+		const float s = sin(ang * 3.0 + d * 9.0 + phase * 6.0 + (n - 0.5) * 2.0);
+		const float dc = (d - 0.12) / 0.08;
+		k = FFSmooth(0.35, 1.0, s) * (1.0 - FFSmooth(0.55, 1.0, d)) * FFSmooth(0.04, 0.3, d) + exp(-dc * dc) * 0.6;
+	}
+	else if (style < 2.5)
+	{
+		// sound: three concentric pressure waves behind the leading one, compression bright / rarefaction dark
+		float acc = 0.0;
+		FF_UNROLL
+		for (int i = 0; i < 3; i++)
+		{
+			const float fi = float(i);
+			const float x = (d - radius * (1.0 - 0.18 * fi)) / (w * (1.0 + 0.4 * fi));
+			acc += exp(-x * x * 2.0) * (1.0 - 0.3 * fi);
+		}
+		k = acc * (0.8 + 0.4 * n) * (1.0 - FFSmooth(0.92, 1.0, d));
+	}
+	else if (style < 3.5)
+	{
+		const float x = (d - radius) / w;
+		const float band = exp(-x * x * 2.0);
+		const float streak = 0.55 + 0.45 * sin(ang * 2.0 - phase * 30.0);
+		k = band * streak * (0.7 + 0.6 * n);
+	}
+	else
+	{
+		const float dd = d / max(radius, 1e-3);
+		k = exp(-dd * dd * 3.0) + exp(-dd * dd * 18.0) * 0.8;
+	}
+	k = saturate(k * opacity);
+	return float4(col * (glow * k), saturate(k * cover));
+}
+
+#endif  // FF_SHELL_USH

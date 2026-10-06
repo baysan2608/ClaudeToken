@@ -1,0 +1,139 @@
+// Fourfold FX - flames (stream `fx`): mesh flames (M_FX_Flame) and fire / explosion flipbook sprites (M_FX_FireSprite).
+// Port + upgrade of game/presentation/shaders/flame.gdshader and vfx/shaders/flame_field.gdshader.
+//
+// M_FX_Flame is unlit AlphaComposite (premultiplied: Emissive = colour x coverage, Opacity = coverage x Cover, so
+// Cover 0 = pure additive glow, ~0.8 = a flame body that also darkens the background and stays readable on bright
+// ground), two-sided, no depth write. Styles (parameter Style):
+//   0 burst   unit Flame mesh (open cylinder along local +Z, 100 cm long, radius 100 cm, uv0 = (angle, t)), reshaped in
+//             the vertex stage into a widening jet whose head races out and whose tail follows (Age 0..1)
+//   1 loop    same mesh, steady flame (Shape 1 = teardrop), Scroll = accumulated time
+//   2 tongues FlameTongues mesh: many small teardrops at rest shape; uv0 = (angle, y), uv2 = rest (height, width) in m,
+//             vertex colour = (random, -, -, life); every tongue flickers on its own clock
+// Colour: Color..Color4 = deep / mid / hot / white ramp (linear), Core 1 = the inner hotter thinner layer.
+// Portability rules: FFCommon.ush.
+#ifndef FF_FLAME_USH
+#define FF_FLAME_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+#ifndef FF_NOISE_USH
+#include "/Fourfold/Common/FFNoise.ush"
+#endif
+#ifndef FF_FLIPBOOK_USH
+#include "/Fourfold/Common/FFFlipbook.ush"
+#endif
+
+// ------------------------------------------------------------------------------------------------ vertex stage
+// Local offset (cm) of a flame vertex. pos = pre-skinned local position (cm); uv0 = (angle 0..1, y 0..1);
+// rest = uv2 (tongues: rest height / width in m); vc = vertex colour (tongues: random, -, -, life).
+float3 FFFlameOffset(float3 pos, float2 uv0, float2 rest, float4 vc, float style, float shape, float age, float scroll,
+	float core, float seed)
+{
+	const float y = uv0.y;
+	const float ang = uv0.x * FF_TAU;
+	if (style > 1.5)
+	{
+		// tongues: lobes around the rest teardrop, height flicker, licking sway; each tongue on its own clock
+		const float sd = vc.x;
+		const float t = scroll * (0.85 + 0.3 * sd) + sd * 7.0;
+		const float lobes = 0.42 * sin(ang * 3.0 + y * 3.5 + sd * 6.28 + t * 5.0) + 0.24 * sin(ang * 5.0 - y * 6.0 + sd * 3.0 + t * 8.0);
+		const float hgt = rest.x * 100.0;
+		const float wid = rest.y * 100.0;
+		const float tear = (sin(saturate(y * 1.1) * FF_PI) * 0.9 + 0.1 * (1.0 - y)) * (1.0 - 0.3 * y);
+		const float2 dir = float2(cos(ang), -sin(ang));
+		const float flick = 0.15 * sin(t * 3.1 + sd * 11.0) - 0.075;
+		float3 o = float3(dir.x * tear * wid * lobes, dir.y * tear * wid * lobes, y * hgt * flick);
+		o += float3(sin(y * 6.0 + t * 6.0) * 0.07 * y * hgt, cos(y * 5.0 + t * 5.0) * 0.06 * y * hgt, 0.0);
+		return o;
+	}
+	// burst / loop: the whole profile comes from the UVs (one mesh serves every flame)
+	const bool looping = style > 0.5;
+	const float t = looping ? scroll : age;
+	const float spd = looping ? 1.0 : 1.7;
+	const float trumpet = 0.05 + 0.95 * pow(max(y, 0.0), 0.8);
+	const float tear = (sin(saturate(y * 1.1) * FF_PI) * 0.9 + 0.1 * (1.0 - y)) * (1.0 - 0.25 * y);
+	const float prof = lerp(trumpet, tear, saturate(shape));
+	const float lobes = 1.0 + 0.42 * sin(ang * 3.0 + y * 3.5 + seed * 6.28 + t * 5.0 * spd)
+		+ 0.24 * sin(ang * 5.0 - y * 6.0 + seed * 3.0 + t * 8.0 * spd);
+	const float r = prof * lobes * lerp(1.0, 0.5, core) * 100.0;
+	float lenScale = 1.0;
+	if (!looping)
+	{
+		const float head = 1.0 - pow(1.0 - saturate(age * 2.2), 2.0);
+		lenScale = 0.15 + 0.85 * head;
+	}
+	const float2 dir = float2(pos.x, pos.y) / max(length(float2(pos.x, pos.y)), 1e-3);
+	float3 p = float3(dir.x * r, dir.y * r, y * lenScale * 100.0);
+	p += float3(sin(y * 6.0 + t * 6.0 * spd + seed * 9.0) * 7.0 * y, cos(y * 5.0 + t * 5.0 * spd + seed * 4.0) * 6.0 * y, 0.0);
+	return p - pos;
+}
+
+// ------------------------------------------------------------------------------------------------ pixel stage
+// Emissive (premultiplied) in rgb, opacity in a. ndv = |dot(normal, view)|.
+float4 FFFlameShade(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float2 uv0, float4 vc, float ndv, float style, float age,
+	float scroll, float intensity, float core, float cover, float seed, float3 deep, float3 mid, float3 hot,
+	float3 white, float emissiveScale)
+{
+	const float y = uv0.y;
+	const bool tongues = style > 1.5;
+	const bool looping = style > 0.5;
+	const float sd = tongues ? vc.x * 5.0 : seed;
+	const float tt = tongues ? scroll * (0.85 + 0.06 * sd) : (looping ? scroll : age * 2.4);
+	// vertical streaks (ridged channel) + soft billows (fbm channel), both scrolling outward along the axis
+	const float2 uvA = float2(uv0.x * 3.0 + sd, y * 0.5 - tt * 1.3 * (1.0 + 0.5 * core));
+	const float2 uvB = float2(uv0.x * 2.0 + sd * 2.0 + 0.3, y * 1.2 - tt * 0.9);
+	const float streak = Noise.Sample(NoiseSampler, uvA).y;
+	const float blob = Noise.Sample(NoiseSampler, uvB).x;
+	const float n = lerp(blob, streak, 0.4);
+
+	// burst envelope: the tail trails behind the head, the whole flame fades at the end
+	float tail = 0.0;
+	float fade = 1.0;
+	if (!looping)
+	{
+		tail = FFSmooth(0.3, 1.0, age) * 0.85;
+		fade = 1.0 - FFSmooth(0.62, 1.0, age);
+	}
+	const float body = FFSmooth(tail - 0.02, tail + 0.22, y) * (tongues ? FFSmooth(0.0, 0.08, y) : 1.0);
+	const float taper = 1.0 - FFSmooth(tongues ? 0.7 : 0.78, 1.0, y + (n - 0.5) * (tongues ? 0.3 : 0.25));
+	// ragged tongues: the erosion threshold grows toward the tip, so the silhouette breaks into licks
+	const float thr = 0.10 + 0.62 * y * y;
+	const float licks = FFSmooth(thr, thr + 0.1, n + 0.2 * (1.0 - y) * (1.0 - core * 0.35));
+	// soft silhouette so the surface reads volumetric rather than a hard shell
+	const float rimfade = FFSmooth(0.02, 0.55, ndv + (n - 0.5) * 0.45);
+	const float life = tongues ? vc.w : 1.0;
+	const float a = body * taper * licks * rimfade * fade * intensity * life;
+
+	// colour: hot at the base, cooling to deep red at the ragged tip
+	const float heat = tongues ? saturate((1.0 - y) * 0.6 + n * 0.30)
+		: saturate((1.0 - y) * 0.62 + n * 0.30 - tail * 0.2 + core * 0.25 - (1.0 - fade) * 0.3);
+	const float3 c = FFFlameRamp(heat, deep, mid, hot, white);
+	const float k = a * (tongues ? 0.85 : (0.55 + 0.2 * core));
+	const float3 e = c * (k * (1.0 + core * 0.35) * emissiveScale);
+	return float4(e, saturate(k * cover));
+}
+
+// ------------------------------------------------------------------------------------------------ M_FX_FireSprite
+// Fire / explosion flipbook quads (unlit AlphaComposite). Atlas channels (Tools/vfx/flipbooks.py): R = lit smoke
+// shade, G = optical thickness, B = emission temperature (0 cold .. 1 white-hot), A = coverage. uv0 = quad corner,
+// uv1.x = frame (blended with the next), uv1.y = per-particle heat bias, vc = colour / alpha over life.
+// Returns premultiplied emissive in rgb and opacity in a.
+// deep / mid / hot / white = the flame ramp of the burst (Color..Color4; blue fire for blue blasts), tint multiplies.
+float4 FFFireSpriteShade(float4 a, float4 b, float blend, float4 vc, float heatBias, float intensity, float3 tint,
+	float3 deep, float3 mid, float3 hot, float3 white, float emissiveScale)
+{
+	const float4 s = lerp(a, b, blend);
+	const float cov = saturate(s.w) * saturate(vc.w);
+	const float T = saturate(s.z * (0.85 + 0.3 * heatBias));
+	// fire: the flame ramp by temperature (white at the hottest cores), brighter as it gets hotter; smoke: lit grey by R
+	const float3 fire = FFFlameRamp(T, deep, mid, hot, white) * (0.9 + 1.8 * T * T) * tint;
+	const float3 smoke = lerp(float3(0.05, 0.045, 0.042), float3(0.32, 0.30, 0.28), saturate(s.x)) * FFRGB(vc);
+	const float fireK = FFSmooth(0.08, 0.35, T);
+	const float3 e = (fire * fireK * emissiveScale + smoke * (1.0 - fireK)) * cov * intensity;
+	// glowing fire covers less than smoke (additive-ish core, opaque-ish smoke)
+	const float opa = cov * lerp(0.92, 0.35, fireK) * intensity;
+	return float4(e, saturate(opa));
+}
+
+#endif  // FF_FLAME_USH

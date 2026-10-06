@@ -86,3 +86,24 @@ UE 5.8.2 public-header mirror (for API verification, read-only, made by the game
 
 ## RUN 3 LOG
 - [r3] read ARCHITECTURE/MAC_SETUP/Godot env sources; check_audio.sh warning pass of run 2: exit=0 (clean). Next: re-run logic tests, write docs/audio.
+- [r3] A5 DONE: docs/audio/{README,API_NOTES}.md written. TODO later: set iOS AudioMaxChannels in Config (verify key) and mention in docs/audio. Next: W1 environment art (Tools/world).
+- [r3] W1.a DONE: Tools/world/{texgen_common,gen_env_textures,gen_env_textures2}.py -> SourceArt/Environment/Textures/T_Env_<Set>_{BC,N,ORM}.png (flagstone wall ledge_cap pool_tile metal_plate plaster timber roof_tile ground rock)
+  + T_Env_{WaterN,Noise,Clouds,Foliage_BC,Banners_BC,ArenaMask}.png (+ArenaMask.json). Normals are DirectX (green down). All 1024^2. Run: bpyenv python gen_env_textures.py ; gen_env_textures2.py.
+  Looked at: flagstone/wall/pool/plaster/timber/roof/banners/foliage OK; rock is paving-like (acceptable, low visibility); roof_tile flat albedo (detail in normal).
+  DESIGN DECISIONS (W1.b meshes): author in SIM coords (x, y-up, z) with world-projected UV0 (tile metres), convert to Blender by rotation (x,-z,y) -> FBX import gives UE=(x,z,y)*100.
+  FBX export: Blender default axes + FBX_SCALE_ALL like the frozen character export; mesh_smooth_type EDGE; vertex colours R=-, G=grime gradient.
+  Meshes are authored AT the real arena size (from sim.json) with pivot at box centre; builder also scales actor by expected/actual bounds (auto scale fix).
+  Walls: plinth stone + plaster body + timber pilasters (symmetrical both faces, orientation-risk free) + tie beam + gabled tile cap; hanging lanterns at pilasters; banners separate mesh.
+  Sun (UE): Rotator(pitch=-34,yaw=38) = Godot (-34,-128): backlit courtyard from NW. Camera: vfov 62, pitch 18deg, dist 5.6, height 1.45.
+  NEXT: Tools/world/meshkit.py (pure numpy mesh builder, lightmap shelf packer) -> build_arena.py -> build_scenery.py -> mockup_render.py (Cycles) -> LOOK.
+- [r3] W1.b DONE (arena + scenery meshes): Tools/world/{env_spec,meshkit,build_arena,build_scenery,bpy_io,export_env,mockup_render}.py ; export_env.py writes
+  SourceArt/Environment/Meshes/*.fbx (25 meshes, ~43k tris total) + meshes.json + level_layout.json. Mock-up renders (Cycles) LOOKED at: arena + scenery OK
+  (walls/banners/lanterns/pool/plate/pillars; pines, hall roofs, tower, pennants, snow-capped ridges). Roundtrip FBX in Blender verified (dims, slots, UV0/UVLight, Col).
+  Mock-up: bpyenv python Tools/world/mockup_render.py --view default,south,wall,pool,overview,ledge,east,high --out DIR
+  Vertex colours: R hang(banner)/tint(foliage)/1, G grime (walls) / flutter (pennants), B sway (foliage). Default (1,0,0,1).
+  Material slot -> MI_Env_<Slot> (slots: Floor StoneWall StoneCap Plaster Timber RoofTile PoolTile Metal Iron Bronze Ground Rock Glow Banner Foliage Bark Ridge Water Sky).
+  UE LIGHTING DECISIONS: fixed exposure EV100 = -0.263 (PPV auto_exposure_min=max=-0.263, project ExtendDefaultLuminanceRange=1) so exposure scale = 1 (emissive 1 = display 1;
+  sun ~3.2 lux warm; sky light 1.0 captured from the dome). Point lights candelas (3 cd lanterns). Sun Rotator(pitch -34, yaw 38).
+  AXIS INSURANCE: world builder checks PoolBasin bounds centre to detect a mirrored FBX import (Y sign) and mirrors actors (scale Y -1) if so.
+  NEXT (W2): Shaders/Env/FFEnv.ush DONE (written; DXC check pending) -> Content/Python/fourfold/world/{common,textures,materials,meshes,level,__init__}.py ->
+  Tools/world/check_hlsl.py (DXC at scratchpad/ue/character/dxc/bin/dxc) -> Tools/world/verify_props.py (property names vs UE header mirror) -> mock dry run.

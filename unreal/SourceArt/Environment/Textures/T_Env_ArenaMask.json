@@ -1,0 +1,15 @@
+{
+ "rect": [
+  -18.0,
+  -18.0,
+  36.0,
+  36.0
+ ],
+ "res": 512,
+ "channels": {
+  "R": "contact AO",
+  "G": "wall-edge dirt",
+  "B": "pool splash band",
+  "A": "metal plate halo"
+ }
+}

@@ -81,6 +81,32 @@ void PrintSlots(const Totals& t) {
 	}
 }
 
+// {slot: [parameter names set by the logic (+ "Flipbook")]} for Tools/vfx/shader_check/check_shaders.py --params.
+bool DumpParams(const Totals& t, const char* path) {
+	FILE* f = std::fopen(path, "w");
+	if (!f) return false;
+	std::fprintf(f, "{\n");
+	bool firstSlot = true;
+	for (int s = 0; s < kNumMatSlots; ++s) {
+		const Totals::SlotUse& u = t.slots[static_cast<size_t>(s)];
+		if (u.items == 0) continue;
+		std::fprintf(f, "%s  \"%s\": [", firstSlot ? "" : ",\n", std::string(kMatSlotNames[static_cast<size_t>(s)]).c_str());
+		firstSlot = false;
+		bool first = true;
+		auto put = [&](std::string_view n) {
+			std::fprintf(f, "%s\"%s\"", first ? "" : ", ", std::string(n).c_str());
+			first = false;
+		};
+		for (const auto& kv : u.ranges) put(kParamNames[static_cast<size_t>(kv.first)]);
+		for (int v : u.vparams) put(kVParamNames[static_cast<size_t>(v)]);
+		if (!u.flipbooks.empty()) put("Flipbook");
+		std::fprintf(f, "]");
+	}
+	std::fprintf(f, "\n}\n");
+	std::fclose(f);
+	return true;
+}
+
 bool Finite(float v) { return v == v && std::fabs(v) < 1e8f; }
 
 void Check(const DrawList& dl, Totals& t, const char* where) {
@@ -181,9 +207,11 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	bool quick = false, params = false;
+	const char* dumpPath = nullptr;
 	for (int a = 1; a < argc; ++a) {
 		quick = quick || std::strcmp(argv[a], "--quick") == 0;
 		params = params || std::strcmp(argv[a], "--params") == 0;
+		if (std::strcmp(argv[a], "--dump-params") == 0 && a + 1 < argc) dumpPath = argv[++a];
 	}
 	Totals t;
 	FxDirector dir;
@@ -238,6 +266,10 @@ int main(int argc, char** argv) {
 		++t.failures;
 	}
 	if (params) PrintSlots(t);
+	if (dumpPath && !DumpParams(t, dumpPath)) {
+		std::printf("could not write %s\n", dumpPath);
+		++t.failures;
+	}
 	std::printf("%s (%d failures)\n", t.failures == 0 ? "OK" : "FAILED", t.failures);
 	return t.failures == 0 ? 0 : 1;
 }

@@ -68,8 +68,32 @@ _Read this first when resuming. Update after every completed sub-step._
   Private/Logic/tests/hlsl_shim.h (namespace hlsl, float2/3/4, intrinsics; Texture2D::Sample declared only - the
   shader test defines it).
 
+- Run 3 (resumed 2026-10-06): DXC found (copied from the character stream's scratch: $SCR/dxc, run with
+  LD_LIBRARY_PATH=$SCR/dxc/lib); slangpy wheel also has libslang (unused). Common: FFSurf struct, FFV3/FFRGB,
+  FFLocalToWorld, FFSafeNormalize, FFTriplanar added. Shaders/FX written: FFRock (rock WPO + surface, lava strip),
+  FFFlame (flame WPO styles 0/1/2 + shade, fire sprite), FFWater, FFCrystal, FFMetal (+FFShrinkOffset), FFVine,
+  FFGround (ground strip + decals 0..8), FFLightning (bolt, beam WPO + shade, spark).
+
+- Shaders/FX complete: + FFWind (wind styles 0..3 + vortex), FFShell (shell + ring styles 0..4), FFSmoke (smoke /
+  puffs / splash). Content/Python/fourfold/fx/spec.py = PURE DATA material spec (19 masters: blend, lit, includes,
+  params, Custom-node code + typed inputs/outputs, outputs; textures; meshes). Tools/vfx/shader_check/check_shaders.py:
+  lint (swizzles, single-arg ctors, ddx, reserved words like `line`) + param cross-check vs FxTypes.h + soak dump +
+  DXC vs/ps_6_0 DXIL + SPIR-V, HLSL 2018/2021 of every node wrapped like UE: 116 compiles OK.
+  Run: ffx_core_soak --quick --dump-params $SCR/params.json; python3 Tools/vfx/shader_check/check_shaders.py
+  --dxc $SCR/dxc/bin/dxc --params $SCR/params.json   -> OK.
+
+- Tools/vfx/noise_textures.py -> SourceArt/VFX/Textures/T_FX_Noise.png (R fbm, G ridged, B cellular, A grain; run
+  with /home/user/tools/bpyenv/bin/python, --raw $SCR/prev/noise.rgba8 for the preview).
+- CPU preview renderer DONE: tests/fx_preview.cpp (target ffx_preview; Tools/vfx/shader_check/gen_preview_nodes.py
+  generates fx_nodes.gen.h from spec.py so the preview runs the exact node code over the .ush via hlsl_shim).
+  Modes: Lab shots (every element/sub/slot at T0 + T3) and --gallery (g01..g10 material rows). Contact sheets:
+  Tools/vfx/preview_sheet.py. Run: $SCR/lt_gcc/ffx_preview --noise $SCR/prev/noise.rgba8 --out <dir> [--gallery]
+  [--only earth0_slot] [--size 960 540]. NOTE: never `rm` relative globs (blocked); write to new dirs.
+- Look pass 1 done (flame licks/colour, lightning core+glow (BuildBoltMesh widthScale 2.4 default), pressure cone
+  subtle, water foam lip, ground decal edges, ring band).
+
 ## Current item
-- Shaders/FX/*.ush (one per material family, Godot shader ports) + ffx_shader_tests (C++ shim, finite/range checks).
+- Reviewing Lab sheets $SCR/prev/lab_<el><sub>.png (f4) for every family; then flipbooks (Blender), meshes, builder.
 
 ## Next steps
 1. Logic tests dir Private/Logic/tests/ (FF_LOGIC_TESTS guard) + CMake/script build here (g++ + clang).

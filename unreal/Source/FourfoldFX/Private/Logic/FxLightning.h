@@ -36,8 +36,9 @@ struct BoltLine {
 // Generates the bolt into `out` (cleared). Returns the total number of points.
 int GenerateBolt(const std::vector<Vec3>& nodes, uint32_t seed, const BoltParams& p, std::vector<BoltLine>& out);
 
-// Builds camera-facing ribbons for the lines: uv0 = (across 0..1, metres along), uv1 = (along 0..1, life),
-// col = (1, 1, 1, brightness variation).
-void BuildBoltMesh(MeshData& m, const std::vector<BoltLine>& lines, const Vec3& camPos, float widthScale = 1.0f);
+// Builds camera-facing ribbons for the lines: uv0 = (across 0..1, metres along), uv1 = (along 0..1, strand),
+// col = (1, life, 1, brightness variation). The ribbon is `widthScale` x the line width: the material draws a thin
+// white-hot core in the middle and the coloured glow over the rest.
+void BuildBoltMesh(MeshData& m, const std::vector<BoltLine>& lines, const Vec3& camPos, float widthScale = 2.4f);
 
 }  // namespace ffx

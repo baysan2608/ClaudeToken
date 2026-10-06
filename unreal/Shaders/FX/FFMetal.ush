@@ -1,0 +1,46 @@
+// Fourfold FX - blue steel (stream `fx`): discs, lances, rods, plates, caltrops, metal spikes and shards (M_FX_Metal,
+// opaque Default Lit). Brushed streaks along the lathe angle, sharp specular, a thin edge glint, temper colours then a
+// cherry-red-hot body with Heat, a radial motion smear when spinning fast.
+// Port + upgrade of game/presentation/vfx/shaders/metal.gdshader. Mesh contract: uv0 = (angle 0..1, t along) for the
+// lathe pieces (Tools/vfx/meshes.py writes the same for the hero meshes). Portability rules: FFCommon.ush.
+#ifndef FF_METAL_USH
+#define FF_METAL_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+
+// Local offset (cm): a vanishing piece shrinks toward its origin (opaque materials cannot fade).
+float3 FFShrinkOffset(float3 pos, float fade)
+{
+	return pos * ((0.15 + 0.85 * saturate(fade)) - 1.0);
+}
+
+// Lit surface (tangent-space normal). n1 = noise at the brushed coordinates (the node stretches them along the angle
+// as the spin grows: motion smear), n2 = noise at the general coordinates, ndv = saturate(dot(normal, view)),
+// spin = angular speed (rad/s).
+FFSurf FFMetalSurface(float2 uv0, float4 n1, float4 n2, float ndv, float heat, float spin)
+{
+	FFSurf s = FFSurfDefault(float3(0.0, 0.0, 1.0));
+	const float smear = saturate(abs(spin) / 40.0);
+	const float st = n1.x;
+	const float s2 = n2.y;
+	const float3 baseCol = float3(0.56, 0.62, 0.70);
+	float3 col = baseCol * (0.78 + 0.34 * st) * (0.9 + 0.2 * s2);
+	// heat: straw -> blue temper colours give way to a dark body that glows cherry -> orange
+	const float hk = FFSmooth(0.05, 0.6, heat);
+	const float temper = FFSmooth(0.0, 0.25, heat) * (1.0 - hk);
+	col = lerp(col, lerp(float3(0.62, 0.48, 0.22), float3(0.25, 0.30, 0.62), FFSmooth(0.08, 0.2, heat)), temper * 0.5);
+	col = lerp(col, float3(0.22, 0.08, 0.05), hk * 0.75);
+	const float rim = pow(1.0 - saturate(ndv), 5.0);
+	s.albedo = col;
+	s.metal = lerp(0.95, 0.4, hk);
+	s.rough = lerp(0.24 + 0.16 * st, 0.6, hk);
+	s.spec = 0.6;
+	s.emissive = FFHeatGlow(heat, s2) * (0.5 + 0.25 * st) + float3(0.8, 0.9, 1.0) * (rim * 0.35 * (1.0 - hk));
+	// brushed micro-relief across the streaks
+	s.normal = normalize(float3(0.0, (st - 0.5) * 0.12 * (1.0 - smear), 1.0));
+	return s;
+}
+
+#endif  // FF_METAL_USH

@@ -1,6 +1,6 @@
 // Fourfold FX - procedural noise (stream `fx`): value / gradient / simplex noise 2D-3D, fbm, ridged, curl, analytic
 // Voronoi with gradient, and the noise-texture lookup used by most effects (T_FX_Noise: RGBA tileable noise, R low /
-// G streaky / B ridged / A grain - Tools/vfx/noise_textures.py). Portability rules: FFCommon.ush.
+// G ridged streaks / B cellular distance / A fine grain - Tools/vfx/noise_textures.py). Portability rules: FFCommon.ush.
 #ifndef FF_NOISE_USH
 #define FF_NOISE_USH
 
@@ -16,6 +16,21 @@ float4 FFSample(FF_TEX2D Tex, FF_SAMPLER Samp, float2 uv)
 float4 FFSampleLevel(FF_TEX2D Tex, FF_SAMPLER Samp, float2 uv)
 {
 	return Tex.SampleLevel(Samp, uv, 0.0);
+}
+
+
+// Triplanar lookup of the noise texture at position p (texture tiles per unit) with blend weights from direction n
+// (sharpened, normalised). Three samples.
+float4 FFTriplanar(FF_TEX2D Tex, FF_SAMPLER Samp, float3 p, float3 n)
+{
+	float3 w = abs(n);
+	w = w * w;
+	w = w * w;
+	w = w / max(w.x + w.y + w.z, 1e-4);
+	const float4 a = Tex.Sample(Samp, float2(p.y, p.z));
+	const float4 b = Tex.Sample(Samp, float2(p.x + 0.37, p.z + 0.11));
+	const float4 c = Tex.Sample(Samp, float2(p.x + 0.71, p.y + 0.53));
+	return a * w.x + b * w.y + c * w.z;
 }
 
 // ---------------------------------------------------------------------------------------------------- value noise

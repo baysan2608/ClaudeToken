@@ -1,0 +1,142 @@
+// Fourfold FX - water -> ice (stream `fx`): streams / ribbons (tubes), held orbs and puddle lenses (spheres), travelling
+// water waves with a foam lip (path strips), wet trails. M_FX_Water: unlit AlphaComposite, back faces culled, no scene
+// colour read (refraction is limited on mobile Metal): the look is built from a fake-lit model that matches the
+// arena sun (FFKeyDir) - sky reflection by fresnel, a sun glint, blue-green in-scatter that grows with the thickness
+// seen through the volume, a darkened silhouette (what refraction does to a water column), bright flow streaks.
+// Frozen water turns pale frosted faceted ice with internal fractures.
+// Port + upgrade of game/presentation/shaders/water_core.gdshaderinc and vfx/shaders/strip_water.gdshader.
+//   Shape 0 tube    uv0 = (around 0..1, metres along)
+//   Shape 1 sphere  uv0 = (around, up 0..1); Detail = wobble amount (1 held orb, 0.2 calm puddle lens)
+//   Shape 2 strip   uv0 = (metres along, metres across), uv2 = (metres to the front, height fraction 0 edge .. 1 crest)
+// Portability rules: FFCommon.ush.
+#ifndef FF_WATER_USH
+#define FF_WATER_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+#ifndef FF_NOISE_USH
+#include "/Fourfold/Common/FFNoise.ush"
+#endif
+#ifndef FF_LIGHTING_USH
+#include "/Fourfold/Common/FFLighting.ush"
+#endif
+
+// ------------------------------------------------------------------------------------------------ vertex stage
+// Local offset (cm). pos = pre-skinned local position (cm), nLocal = local vertex normal.
+float3 FFWaterOffset(float3 pos, float3 nLocal, float2 uv0, float2 uv2, float shape, float time, float flow,
+	float frozen, float wobble)
+{
+	if (shape < 0.5)
+	{
+		// stream: swells travel along the tube; frozen -> blocky crystal facets
+		const float swell = sin(uv0.y * 7.0 - flow * 5.0) * 1.6 * (1.0 - frozen);
+		const float h = FFHash2i(floor(uv0.x * 10.0), floor(uv0.y * 4.0));
+		return nLocal * (swell + (h - 0.4) * 2.4 * frozen);
+	}
+	if (shape < 1.5)
+	{
+		// orb (unit sphere, 100 cm): viscous wobble whose lobes drift, freezing into a rigid crystal
+		const float3 p = pos * 0.01;
+		const float w = sin(p.x * 5.0 + time * 2.3) + sin(p.z * 6.0 - time * 1.9) + sin(p.y * 4.5 + time * 2.7);
+		const float3 d = FFSafeNormalize(p, float3(0.0, 0.0, 1.0));
+		const float h = FFHash3i(floor(d.x * 2.2 + 0.5), floor(d.y * 2.2 + 0.5), floor(d.z * 2.2 + 0.5));
+		return nLocal * (w * 3.5 * wobble * (1.0 - frozen * 0.85) + (h - 0.4) * 16.0 * frozen);
+	}
+	// wave strip: the crest bobs and the top of the front leans forward
+	const float crest = uv2.y;
+	const float nearFront = 1.0 - FFSmooth(0.0, 1.4, uv2.x);
+	const float live = 1.0 - frozen;
+	return nLocal * (sin(uv0.x * 5.0 - flow * 3.0) * 3.0 * crest * live) + float3(0.0, 0.0, nearFront * crest * 8.0 * live);
+}
+
+// ------------------------------------------------------------------------------------------------ pixel stage
+// Premultiplied emissive in rgb, opacity in a.
+//   nWS = interpolated vertex normal (world), facetWS = flat facet normal (world, from screen derivatives in the node),
+//   v = unit vector toward the camera (world), pos = local position (cm), fade = 0..1.
+float4 FFWaterShade(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float2 uv0, float2 uv2, float3 pos, float3 nWS,
+	float3 facetWS, float3 v, float shape, float time, float flow, float frozen, float seed, float fade)
+{
+	float2 uvA;
+	float2 uvB;
+	if (shape < 0.5)
+	{
+		uvA = float2(uv0.y * 0.7 - flow * 0.55, uv0.x * 2.0);
+		uvB = float2(uvA.x * 2.3 + 0.37, uvA.y * 2.3 + 0.11 - flow * 0.13);
+	}
+	else if (shape < 1.5)
+	{
+		const float3 d = FFSafeNormalize(pos, float3(0.0, 0.0, 1.0));
+		uvA = float2(d.x * 0.42 + 0.5 + flow * 0.03, d.y * 0.42 + d.z * 0.3 + 0.5);
+		uvB = float2(d.x * 0.97 + 0.37 + d.z * 0.2, d.y * 0.97 + 0.11 - flow * 0.05);
+	}
+	else
+	{
+		uvA = float2(uv0.x * 0.8 - flow * 0.9 + seed, uv0.y * 0.9 + seed);
+		uvB = float2(uvA.x * 2.7 + 0.3, uvA.y * 2.7 + flow * 0.2);
+	}
+	const float4 n1 = Noise.Sample(NoiseSampler, uvA);
+	const float4 n2 = Noise.Sample(NoiseSampler, uvB);
+	const float fr = saturate(frozen);
+
+	const float3 ng = FFSafeNormalize(nWS, float3(0.0, 0.0, 1.0));
+	const float ndv0 = saturate(dot(ng, v));
+	// ripples on the surface; faceted ice swaps them for the flat facet normal
+	const float rip = (1.0 - fr) * 0.32 + fr * 0.03;
+	float3 n = FFSafeNormalize(ng + float3(n1.y - 0.5, n2.y - 0.5, (n1.x - 0.5) * 0.5) * (rip * (0.3 + 0.7 * (1.0 - ndv0))), ng);
+	float3 fn = FFSafeNormalize(facetWS, n);
+	fn = dot(fn, v) < 0.0 ? -fn : fn;
+	n = FFSafeNormalize(lerp(n, fn, FFSmooth(0.15, 0.7, fr)), n);
+
+	const float ndv = saturate(dot(n, v));
+	const float thick = pow(max(ndv0, 1e-3), 0.55);
+	const float fres = FFFresnel(ndv, 0.02, 4.0);
+	const float3 r = n * (2.0 * dot(n, v)) - v;   // reflection of the view ray
+	const float3 sky = FFSky(r.z);
+	const float sun = pow(saturate(dot(r, FFKeyDir())), lerp(220.0, 60.0, fr)) * lerp(5.0, 1.5, fr);
+	const float frost = FFSmooth(0.50, 0.85, n1.x * 0.75 + n1.z * 0.35) * fr;
+
+	// ---- water: in-scatter by thickness, bright flow streaks, sky by fresnel, darkened silhouette
+	const float3 shallow = float3(0.30, 0.62, 0.66);
+	const float3 deep = float3(0.035, 0.16, 0.22);
+	const float streak = FFSmooth(0.74, 0.94, n2.z) * FFSmooth(0.1, 0.8, thick);
+	const float rimDark = pow(1.0 - ndv0, 2.2);
+	float3 wCol = lerp(deep, shallow, 0.25 + 0.5 * thick) * (0.30 + 0.30 * thick) * (0.8 + 0.4 * n1.x);
+	wCol += float3(0.7, 0.92, 1.0) * (streak * 0.20);
+	wCol += sky * (fres * 0.85) + FFV3(sun * (1.0 - frost));
+	float wA = 0.34 + 0.30 * thick + 0.5 * fres + 0.35 * rimDark;
+
+	// ---- strip wave: deep / shallow body by crest height, white foam along the crest and the front
+	if (shape > 1.5)
+	{
+		const float crest = uv2.y;
+		// foam: a broken lip along the crest and a churning band at the leading front, streaked along the flow
+		const float lace = FFSmooth(0.3, 0.75, n1.z * 0.55 + n2.x * 0.45 + 0.1);
+		float foam = FFSmooth(0.86, 0.99, crest + (n2.y - 0.5) * 0.1) * 0.85
+			+ (1.0 - FFSmooth(0.0, 0.45, uv2.x + (n1.z - 0.5) * 0.3)) * 0.95;
+		foam = saturate(foam * lace) * (1.0 - fr);
+		const float3 body = lerp(float3(0.015, 0.09, 0.13), float3(0.07, 0.30, 0.38), FFSmooth(0.1, 0.9, crest) * 0.8 + n1.x * 0.2);
+		const float3 lit = body * FFWrapDiffuse(dot(n, FFKeyDir()), 0.6) * 1.4;
+		// light through the thin crest (sub-surface glow toward the sun side)
+		const float thinGlow = FFSmooth(0.6, 1.0, crest) * pow(saturate(dot(-v, FFKeyDir()) * 0.5 + 0.5), 3.0);
+		wCol = lit + float3(0.10, 0.42, 0.40) * (thinGlow * 0.35) + sky * (fres * 0.55) + FFV3(sun);
+		wCol = lerp(wCol, float3(0.80, 0.86, 0.88) * (0.75 + 0.35 * FFWrapDiffuse(dot(n, FFKeyDir()), 0.5)), foam);
+		wA = saturate(0.78 + 0.2 * fres + foam * 0.5);
+	}
+
+	// ---- ice: pale blue body, frost haze, internal fractures, glinting facets
+	float2 vg = float2(0.0, 0.0);
+	const float crack = FFVoronoi2(float2(uvA.x * 3.0 + 0.5, uvA.y * 3.0), vg).y;
+	const float fracture = (1.0 - FFSmooth(0.0, 0.03, crack)) * FFSmooth(0.05, 0.6, thick);
+	float3 iCol = lerp(float3(0.30, 0.46, 0.55), float3(0.80, 0.90, 0.97), 0.30 + 0.45 * frost);
+	iCol = iCol * FFWrapDiffuse(dot(n, FFKeyDir()), 0.8) + float3(0.7, 0.88, 1.0) * (fracture * 0.25);
+	iCol += sky * (fres * 0.5) + FFV3(sun);
+	const float iA = 0.70 + 0.2 * frost + 0.25 * fres;
+
+	const float3 c = lerp(wCol, iCol, fr);
+	const float a = saturate(lerp(wA, iA, fr)) * saturate(fade);
+	// premultiplied: the in-scatter / reflection already carries the coverage
+	return float4(c * saturate(fade), a);
+}
+
+#endif  // FF_WATER_USH

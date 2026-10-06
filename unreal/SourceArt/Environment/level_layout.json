@@ -1,0 +1,857 @@
+{
+ "schema": "fourfold.env.layout/1",
+ "sun": {
+  "pitch": -34.0,
+  "yaw": 38.0,
+  "color": [
+   1.0,
+   0.84,
+   0.66
+  ]
+ },
+ "actors": [
+  {
+   "actor": "FFArena_north_wall",
+   "mesh": "SM_Env_WallN",
+   "location": [
+    0.0,
+    -1650.0,
+    175.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_north_wall"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    3400.0,
+    180.0,
+    412.0
+   ],
+   "lightmap_res": 512,
+   "solid": "north_wall",
+   "size_cm": [
+    3400.0,
+    100.0,
+    350.0
+   ]
+  },
+  {
+   "actor": "FFArena_south_wall",
+   "mesh": "SM_Env_WallS",
+   "location": [
+    0.0,
+    1650.0,
+    175.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_south_wall"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    3400.0,
+    180.0,
+    412.0
+   ],
+   "lightmap_res": 512,
+   "solid": "south_wall",
+   "size_cm": [
+    3400.0,
+    100.0,
+    350.0
+   ]
+  },
+  {
+   "actor": "FFArena_west_wall",
+   "mesh": "SM_Env_WallW",
+   "location": [
+    -1650.0,
+    0.0,
+    175.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_west_wall"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    180.0,
+    3200.0,
+    412.0
+   ],
+   "lightmap_res": 512,
+   "solid": "west_wall",
+   "size_cm": [
+    100.0,
+    3200.0,
+    350.0
+   ]
+  },
+  {
+   "actor": "FFArena_east_wall",
+   "mesh": "SM_Env_WallE",
+   "location": [
+    1650.0,
+    0.0,
+    175.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_east_wall"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    180.0,
+    3200.0,
+    412.0
+   ],
+   "lightmap_res": 512,
+   "solid": "east_wall",
+   "size_cm": [
+    100.0,
+    3200.0,
+    350.0
+   ]
+  },
+  {
+   "actor": "FFArena_cover_wall",
+   "mesh": "SM_Env_CoverWall",
+   "location": [
+    -375.0,
+    -100.0,
+    85.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_cover_wall"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    250.0,
+    50.0,
+    170.0
+   ],
+   "lightmap_res": 256,
+   "solid": "cover_wall",
+   "size_cm": [
+    250.0,
+    50.0,
+    170.0
+   ]
+  },
+  {
+   "actor": "FFArena_terrace",
+   "mesh": "SM_Env_Terrace",
+   "location": [
+    0.0,
+    1200.0,
+    30.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_terrace"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    800.0,
+    400.0,
+    60.0
+   ],
+   "lightmap_res": 256,
+   "solid": "terrace",
+   "size_cm": [
+    800.0,
+    400.0,
+    60.0
+   ]
+  },
+  {
+   "actor": "FFArena_step_block",
+   "mesh": "SM_Env_StepBlock",
+   "location": [
+    1050.0,
+    1050.0,
+    17.5
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_step_block"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    300.0,
+    300.0,
+    35.0
+   ],
+   "lightmap_res": 128,
+   "solid": "step_block",
+   "size_cm": [
+    300.0,
+    300.0,
+    35.0
+   ]
+  },
+  {
+   "actor": "FFArena_high_ledge",
+   "mesh": "SM_Env_HighLedge",
+   "location": [
+    -1275.0,
+    -1275.0,
+    90.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_high_ledge"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    450.0,
+    450.0,
+    180.0
+   ],
+   "lightmap_res": 256,
+   "solid": "high_ledge",
+   "size_cm": [
+    450.0,
+    450.0,
+    180.0
+   ]
+  },
+  {
+   "actor": "FFArena_pillar_ne",
+   "mesh": "SM_Env_Pillar",
+   "location": [
+    1300.0,
+    -1300.0,
+    160.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_pillar_ne"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    100.0,
+    100.0,
+    356.0
+   ],
+   "lightmap_res": 256,
+   "solid": "pillar_ne",
+   "size_cm": [
+    100.0,
+    100.0,
+    320.0
+   ]
+  },
+  {
+   "actor": "FFArena_pillar_sw",
+   "mesh": "SM_Env_Pillar",
+   "location": [
+    -1300.0,
+    1300.0,
+    160.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [
+    "FFSolid_pillar_sw"
+   ],
+   "group": "solid",
+   "mobility": "static",
+   "cast_shadow": true,
+   "expected_size_cm": [
+    100.0,
+    100.0,
+    356.0
+   ],
+   "lightmap_res": 256,
+   "solid": "pillar_sw",
+   "size_cm": [
+    100.0,
+    100.0,
+    320.0
+   ]
+  },
+  {
+   "actor": "FFArena_Floor",
+   "mesh": "SM_Env_Floor",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "arena",
+   "mobility": "static",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    3400.0,
+    3400.0,
+    0.0
+   ],
+   "lightmap_res": 1024
+  },
+  {
+   "actor": "FFArena_PoolBasin",
+   "mesh": "SM_Env_PoolBasin",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "arena",
+   "mobility": "static",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    656.0,
+    856.0,
+    33.5
+   ],
+   "lightmap_res": 256
+  },
+  {
+   "actor": "FFArena_PoolWater",
+   "mesh": "SM_Env_PoolWater",
+   "location": [
+    1000.0,
+    -100.0,
+    -5.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "arena",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    600.0,
+    800.0,
+    0.0
+   ],
+   "lightmap_res": null
+  },
+  {
+   "actor": "FFArena_MetalPlate",
+   "mesh": "SM_Env_MetalPlate",
+   "location": [
+    -900.0,
+    -100.0,
+    -0.5
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "arena",
+   "mobility": "static",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    600.0,
+    600.0,
+    5.0
+   ],
+   "lightmap_res": 256
+  },
+  {
+   "actor": "FFArena_Banners",
+   "mesh": "SM_Env_Banners",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "arena",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    3176.0,
+    3176.0,
+    190.0
+   ],
+   "lightmap_res": null
+  },
+  {
+   "actor": "FFArena_Lanterns",
+   "mesh": "SM_Env_Lanterns",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "arena",
+   "mobility": "static",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    3360.0,
+    3360.0,
+    252.0
+   ],
+   "lightmap_res": null
+  },
+  {
+   "actor": "FFArena_Rings",
+   "mesh": "SM_Env_Rings",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "arena",
+   "mobility": "static",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    1610.0,
+    1610.0,
+    0.2
+   ],
+   "lightmap_res": null
+  },
+  {
+   "actor": "FFScenery_Ground",
+   "mesh": "SM_Env_Ground",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    84000.0,
+    84000.0,
+    3196.57
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Ridges",
+   "mesh": "SM_Env_Ridges",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    160000.0,
+    160000.0,
+    37124.66
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": true
+  },
+  {
+   "actor": "FFScenery_Sky",
+   "mesh": "SM_Env_Sky",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    300000.0,
+    300000.0,
+    300000.0
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": true
+  },
+  {
+   "actor": "FFScenery_Halls",
+   "mesh": "SM_Env_Halls",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    11789.21,
+    12145.79,
+    895.75
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Pavilions",
+   "mesh": "SM_Env_Pavilions",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    7095.21,
+    9595.21,
+    813.9
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Tower",
+   "mesh": "SM_Env_Tower",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    1319.99,
+    1319.99,
+    2170.0
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Trees",
+   "mesh": "SM_Env_Trees",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    14736.82,
+    15288.03,
+    1657.25
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Rocks",
+   "mesh": "SM_Env_Rocks",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    19604.56,
+    17270.09,
+    793.24
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Pennants",
+   "mesh": "SM_Env_Pennants",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    6044.75,
+    5677.63,
+    1252.16
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  }
+ ]
+}

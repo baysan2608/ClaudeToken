@@ -151,4 +151,57 @@ float3 FFFlameRamp(float heat, float3 deep, float3 mid, float3 hot, float3 white
 	return lerp(c, white, FFSmooth(0.93, 1.0, heat) * 0.6);
 }
 
+
+// ---------------------------------------------------------------------------------------------------- surface
+// Result of a surface function: the material's Custom node returns one field and assigns the others to its additional
+// outputs (one evaluation per pixel). Lit materials use albedo / rough / metal / spec / normal (world space unless the
+// function says otherwise) + emissive; unlit materials use emissive (premultiplied for AlphaComposite) + opacity.
+struct FFSurf
+{
+	float3 albedo;
+	float3 emissive;
+	float3 normal;
+	float rough;
+	float metal;
+	float spec;
+	float opacity;
+};
+
+FFSurf FFSurfDefault(float3 n)
+{
+	FFSurf s;
+	s.albedo = float3(0.5, 0.5, 0.5);
+	s.emissive = float3(0.0, 0.0, 0.0);
+	s.normal = n;
+	s.rough = 0.8;
+	s.metal = 0.0;
+	s.spec = 0.5;
+	s.opacity = 1.0;
+	return s;
+}
+
+// Vector helpers that read the same in HLSL and in the C++ test shim.
+float3 FFV3(float s)
+{
+	return float3(s, s, s);
+}
+
+float3 FFRGB(float4 c)
+{
+	return float3(c.x, c.y, c.z);
+}
+
+// Local direction -> world through the three transformed local axes (columns of the local-to-world matrix; they carry
+// the object scale, so the result is normalised by the caller when only the direction matters).
+float3 FFLocalToWorld(float3 v, float3 ax, float3 ay, float3 az)
+{
+	return ax * v.x + ay * v.y + az * v.z;
+}
+
+float3 FFSafeNormalize(float3 v, float3 fallback)
+{
+	const float l2 = dot(v, v);
+	return l2 > 1e-10 ? v * rsqrt(l2) : fallback;
+}
+
 #endif  // FF_COMMON_USH

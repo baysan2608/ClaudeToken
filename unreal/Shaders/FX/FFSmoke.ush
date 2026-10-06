@@ -1,0 +1,64 @@
+// Fourfold FX - smoke, steam, dust, sand, mist and splashes (stream `fx`; unlit translucent, two-sided, no depth write).
+//   M_FX_Smoke  Style 0: one-shot flipbook particles (Flipbook = smoke / steam / dust / sand atlas, uv1.x = frame,
+//               uv2 = (age 0..1, random)); Style 1: persistent cloud puffs from the 2 x 2 PuffAtlas (uv1 = (quadrant,
+//               height fraction), uv2 = (height fraction, random)) eroded by scrolling noise (Phase)
+//   M_FX_Splash water splash / spray flipbook particles
+// Atlas channels (Tools/vfx/flipbooks.py, linear): R = shade under the arena key light (rendered), G = optical thickness,
+// B = emission / foam (fire temperature, splash foam), A = coverage. vertex colour = tint x alpha over life.
+// Lighting is fake (unlit + baked shade): sky ambient + key light by the baked shade, a forward-scatter glow through thin
+// edges when looking toward the sun, colour from Color x vertex colour. Portability rules: FFCommon.ush.
+#ifndef FF_SMOKE_USH
+#define FF_SMOKE_USH
+
+#ifndef FF_COMMON_USH
+#include "/Fourfold/Common/FFCommon.ush"
+#endif
+#ifndef FF_LIGHTING_USH
+#include "/Fourfold/Common/FFLighting.ush"
+#endif
+
+// Light reaching a smoke texel: ambient sky + key light through the baked shade, plus forward scattering through thin
+// parts when the view faces the sun (vdotl = dot(-view, key dir)).
+float3 FFSmokeLight(float shade, float thickness, float vdotl)
+{
+	const float3 sky = float3(0.42, 0.50, 0.60);
+	const float3 sun = float3(1.0, 0.95, 0.86);
+	const float fwd = pow(saturate(vdotl), 6.0) * (1.0 - saturate(thickness)) * 0.8;
+	return sky * 0.55 + sun * (saturate(shade) * 0.85 + fwd);
+}
+
+// Premultiplied colour (rgb) + opacity (a) (M_FX_Smoke / M_FX_Splash blend AlphaComposite like the other FX).
+//   a, b = the two flipbook samples, blend = frame blend; noise = noise sample for erosion; age = uv2.x
+float4 FFSmokeShade(float4 a, float4 b, float blend, float4 vc, float4 noise, float style, float age, float opacity,
+	float erosion, float3 col, float vdotl)
+{
+	const float4 s = lerp(a, b, blend);
+	float cov = saturate(s.w);
+	if (style > 0.5)
+	{
+		// persistent puffs: ragged, slowly boiling edges
+		cov = saturate((cov - (noise.x - 0.5) * erosion * 0.9 - 0.08) * 1.6);
+	}
+	else
+	{
+		// one-shot puffs: dissolve into wisps over life
+		cov = saturate((cov - age * erosion * (0.35 + 0.65 * noise.x)) / max(1.0 - age * erosion * 0.5, 0.2));
+	}
+	const float k = cov * saturate(vc.w) * opacity;
+	const float3 c = col * FFRGB(vc) * FFSmokeLight(s.x, s.y, vdotl);
+	return float4(c * k, saturate(k));
+}
+
+// Splash: water droplets / sheets; foam (B) whitens, thin parts glint.
+float4 FFSplashShade(float4 a, float4 b, float blend, float4 vc, float3 col, float vdotl)
+{
+	const float4 s = lerp(a, b, blend);
+	const float k = saturate(s.w) * saturate(vc.w);
+	const float3 water = col * FFSmokeLight(s.x, s.y, vdotl) * 0.85;
+	const float3 foam = float3(0.92, 0.96, 1.0) * (0.6 + 0.5 * saturate(s.x));
+	const float3 c = lerp(water, foam, saturate(s.z)) * FFRGB(vc);
+	const float spark = FFSmooth(0.85, 1.0, s.x) * 0.6;
+	return float4((c + FFV3(spark)) * k, saturate(k * (0.55 + 0.45 * saturate(s.z))));
+}
+
+#endif  // FF_SMOKE_USH
