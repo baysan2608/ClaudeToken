@@ -94,7 +94,8 @@ bool fireball_tick(CombatWorld& w, MatBody& b, double dt) {
 		w.decay_body(b, "snuffed");
 		return true;
 	}
-	for (MatBody* tor : FireUtil::zones_at(w, b.pos, {"tornado"}, b.radius)) {
+	if (const std::vector<MatBody*> tornadoes = FireUtil::zones_at(w, b.pos, {"tornado"}, b.radius); !tornadoes.empty()) {
+		MatBody* tor = tornadoes.front();
 		MatBody* f = FireUtil::spawn_field(w, b.attack_owner, tor->pos, maxf(1.5, tor->zone_radius * 0.8),
 		                                   maxf(2.5, tor->max_life > 0.0 ? tor->max_life - tor->age : 4.0), b.heat_payload, b.tag == "comet", b.tier);
 		b.heat_payload = 0.0;

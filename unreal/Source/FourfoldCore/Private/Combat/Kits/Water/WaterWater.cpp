@@ -76,7 +76,8 @@ void _pulse(CombatWorld& w, ActorState& a, ActionInst& inst, MatBody& jet) {
 	std::stable_sort(hits.begin(), hits.end(), [](const auto& x, const auto& y) {
 		return x.first < y.first || (x.first == y.first && x.second->id < y.second->id);
 	});
-	for (const auto& h : hits) {
+	if (!hits.empty()) {
+		const auto& h = hits.front();
 		ActorState& tgt = *h.second;
 		const std::string res = w.hit_actor(tgt,
 		                                    D({{"attacker", a.id}, {"attack_id", inst.attack_id}, {"damage", Charge::paramf(inst, "jet_dmg", 2.5)},
@@ -86,7 +87,6 @@ void _pulse(CombatWorld& w, ActorState& a, ActionInst& inst, MatBody& jet) {
 		                                    v);
 		if (res == "hit" || res == "knockdown" || res == "block") tgt.wetness = 1.0;
 		end = start + dir * h.first;
-		break;
 	}
 	inst.data.set("jet_end", end);
 	jet.hold_point = (start + end) * 0.5;

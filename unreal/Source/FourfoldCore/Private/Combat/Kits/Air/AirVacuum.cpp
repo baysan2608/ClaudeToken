@@ -143,11 +143,11 @@ bool suction_execute(CombatWorld& w, ActorState& a, ActionInst& inst) {
 	double stop_t = 1.0;
 	Vec3 anchor;
 	bool has_anchor = false;
-	for (const Conduction::BarrierHit& hb : Conduction::barriers_on(w, start, end)) {
+	if (const std::vector<Conduction::BarrierHit> barrier_hits = Conduction::barriers_on(w, start, end); !barrier_hits.empty()) {
+		const Conduction::BarrierHit& hb = barrier_hits.front();
 		stop_t = hb.t;
 		anchor = start.lerp(end, f32(stop_t));
 		has_anchor = true;
-		break;
 	}
 	const double seg_len = rng_m * stop_t;
 	double best_t = kInf;

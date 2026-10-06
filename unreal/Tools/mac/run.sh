@@ -26,8 +26,8 @@ echo "== Building (first time takes several minutes)"
 "$UE/Engine/Build/BatchFiles/Mac/Build.sh" FourfoldEditor Mac Development -project="$UPROJ" -waitmutex 2>&1 | tee "$LOG"
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
   echo "== Build FAILED. Sending the log to Claude via GitHub..."
-  git add -f "$LOG" && git commit -qm "Mac build log (failed)" && git pull -q --rebase --autostash origin "$BRANCH" && git push -q origin "$BRANCH" \
-    && echo "   Sent. Tell Claude: 'build log pushed'." || echo "   Could not push. Paste the output of: grep -m 40 error $LOG"
+  export GIT_TERMINAL_PROMPT=0; git add -f "$LOG" && git commit -qm "Mac build log (failed)" && git pull -q --rebase --autostash origin "$BRANCH" && git push -q origin "$BRANCH" \
+    && echo "   Sent. Tell Claude: 'build log pushed'." || echo "   Could not push (no GitHub login here). Errors: grep -m 40 error: $LOG"
   exit 1
 fi
 

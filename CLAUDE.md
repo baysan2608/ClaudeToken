@@ -2,6 +2,8 @@
 
 Original elemental martial-arts combat lab for iPhone/iPad, Godot 4.7.2 (GDScript, Mobile renderer). Read `HANDOFF.md` first.
 
+**ACTIVE WORK: the Unreal 5.8 rebuild in `unreal/`. Start with `NEXT_SESSION.md` (full context, Mac app paths, build/test commands, priorities).**
+
 - Godot project: `game/` (source of truth). iOS: `tools/scripts/export_ios.sh <APPLE_TEAM_ID>` → `build/ios/Fourfold.xcodeproj`.
 - Run: `tools/scripts/godot.sh` (finds /Applications/Godot.app on macOS; override with `GODOT_BIN`).
 - Before committing sim/gameplay changes, all must pass:

@@ -189,7 +189,8 @@ Dict detonate(CombatWorld& w, ActorState* a, ActionInst* inst, Vec3 p, const Dic
 	vol->power = power;
 	vol->tier = tier;
 	// 1 vacuum: no air, no blast.
-	for (MatBody* z : zones_at(w, p, {"vacuum"})) {
+	if (const std::vector<MatBody*> vacuums = zones_at(w, p, {"vacuum"}); !vacuums.empty()) {
+		MatBody* z = vacuums.front();
 		AgentRef th = Agent::of_body(w, *z);
 		IxCtx ctx;
 		ctx.site = "detonation";
