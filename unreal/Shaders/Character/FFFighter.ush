@@ -1,0 +1,70 @@
+// Fourfold fighter materials - shared HLSL helpers (stream `character`).
+// Included from material Custom nodes as "/Fourfold/Character/FFFighter.ush" (the FourfoldShaders module maps
+// unreal/Shaders to /Fourfold). Portable HLSL only (mobile ES3.1 / Metal and SM6): no wave ops, no SM6 features.
+//
+// Status looks driven by the game from the sim snapshot (ARCHITECTURE.md 8.2):
+//   FF_Wet          0..1  wetness: darker (fabric more than skin), glossier
+//   FF_Frost        0..1  rime crystals grow over the surface (noise-thresholded), pale blue, a few glints
+//   FF_Burn         0..1  char spreads (noise-thresholded), glowing ember edge that flickers
+//   FF_ElementGlow  0..1  charge rim: fresnel rim in FF_ElementColor
+#pragma once
+
+// Whiteout blend of a detail normal onto the base normal (both unpacked, tangent space).
+float3 FFBlendDetailNormal(float3 BaseN, float3 DetailN, float Strength)
+{
+	float3 d = lerp(float3(0.0, 0.0, 1.0), DetailN, saturate(Strength));
+	return normalize(float3(BaseN.xy + d.xy, BaseN.z * d.z));
+}
+
+// Palette tint: BaseColor holds a neutral value texture, alpha = tint mask (0 = untinted, e.g. contrast stitching).
+float3 FFTint(float3 Neutral, float Mask, float3 Main, float3 Accent, float3 Trim, float3 Select, float Gain)
+{
+	float3 tint = Main * Select.x + Accent * Select.y + Trim * Select.z;
+	return lerp(Neutral, Neutral * tint * Gain, saturate(Mask));
+}
+
+// Cloth sheen without a light vector (mobile forward): fuzz brightens the base colour toward grazing angles.
+float3 FFClothSheen(float3 Base, float Rim, float Strength)
+{
+	return Base * (1.0 + Strength * Rim * Rim * 2.5);
+}
+
+// Mobile-friendly fake subsurface: warm back-scatter at the silhouette and in thin parts (ears, nose, fingers),
+// added as a small emissive term so shadowed skin never goes grey-dead. Mask = BaseColor.a of the skin texture.
+float3 FFSkinScatter(float3 Base, float Mask, float Rim, float3 ScatterColor, float Strength)
+{
+	float thin = saturate(Mask);
+	return ScatterColor * Base * Strength * (0.35 * thin + Rim * (0.4 + 0.6 * thin));
+}
+
+// All status layers in one place. Noise: tiling RGB noise (r = frost crystals, g = char pattern, b = sparkle).
+// Porosity: 1 = fabric (darkens a lot when wet), 0.3 = skin, 0.6 = hair.
+float3 FFFighterStatus(float3 Base, float Rough, float Rim, float Wet, float Frost, float Burn, float Glow,
+                       float3 ElementColor, float3 Noise, float Time, float Porosity,
+                       out float OutRough, out float3 OutEmissive)
+{
+	float w = saturate(Wet);
+	float3 b = Base * lerp(1.0, 1.0 - 0.55 * Porosity, w);
+	float r = lerp(Rough, lerp(0.10, 0.25, Porosity), w * 0.85);
+
+	float fr = saturate(Frost);
+	float rime = smoothstep(0.62 - 0.55 * fr, 0.80 - 0.55 * fr, Noise.r) * fr;
+	b = lerp(b, float3(0.74, 0.84, 0.95), saturate(rime + 0.30 * fr * Rim));
+	r = lerp(r, 0.55, rime);
+
+	float bu = saturate(Burn);
+	float edgeLo = 1.0 - bu;
+	float charMask = smoothstep(edgeLo, edgeLo + 0.12, Noise.g) * step(0.001, bu);
+	b = lerp(b, float3(0.022, 0.018, 0.016), charMask * 0.92);
+	r = lerp(r, 0.92, charMask);
+	float ember = charMask * (1.0 - smoothstep(edgeLo + 0.05, edgeLo + 0.20, Noise.g));
+	float flicker = 0.65 + 0.35 * sin(Time * 9.0 + Noise.b * 31.0);
+
+	float3 em = float3(4.0, 1.25, 0.25) * ember * bu * flicker;
+	em += ElementColor * saturate(Glow) * (Rim * Rim * 3.0 + 0.12 * Rim);
+	em += float3(0.55, 0.75, 1.0) * rime * pow(saturate(Noise.b), 24.0) * 2.0;
+
+	OutRough = saturate(r);
+	OutEmissive = em;
+	return b;
+}

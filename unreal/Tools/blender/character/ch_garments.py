@@ -148,7 +148,8 @@ def neckline_field(v):
     x, y, z = v[:, 0], v[:, 1], v[:, 2]
     f_front = (R.NECK_V_Z + R.NECK_V_SLOPE * np.abs(x)) - z
     f_back = R.COLLAR_BACK_Z - z
-    w = np.clip((0.035 - y) / 0.05, 0, 1)        # 1 at the front of the chest, 0 at the back
+    w = np.clip((0.045 - y) / 0.07, 0, 1)        # 1 at the front of the chest, 0 at the back
+    w = w * w * (3 - 2 * w)                        # smooth blend: rounded corners on the shoulders
     return w * f_front + (1 - w) * f_back
 
 
@@ -219,7 +220,7 @@ def smooth_normals_at(points, part, sigma=0.015):
     return out / (np.linalg.norm(out, axis=1, keepdims=True) + 1e-12)
 
 
-def band(name, curve, bvh, src_part, d_hint, profile, closed, mat, n_override=None, sigma=0.015):
+def band(name, curve, bvh, src_part, d_hint, profile, closed, mat, n_override=None, sigma=0.015, conform=True):
     """Sweep a 2D profile [(d, n), ...] along a curve lying on a surface. d = in-surface direction (hint function
     gives the side), n = surface normal (smoothed). Returns a Part (weights sampled from src_part)."""
     c, _fn = surface_frame(curve, bvh)
@@ -248,6 +249,23 @@ def band(name, curve, bvh, src_part, d_hint, profile, closed, mat, n_override=No
         for a, b in profile:
             verts.append(c[i] + d[i] * a + nrm[i] * b)
     verts = np.array(verts)
+    if conform:
+        # the flat part of the band follows the garment surface (a straight sweep in the tangent plane dips under
+        # it where the surface is concave, e.g. where the shoulder meets the neck -> ragged intersection line)
+        pa = np.array([a for a, _b in profile])
+        pb = np.array([b for _a, b in profile])
+        tk = np.clip((pa - 0.002) / 0.008, 0, 1)
+        tk = tk * tk * (3 - 2 * tk)
+        tk[: int(np.argmin(pa)) + 1] = 0.0          # only the outer face (after the fold), not the tucked flap
+        if tk.max() > 0:
+            ks = np.nonzero(tk > 0)[0]
+            q = np.array([c[i] + d[i] * pa[k] for i in range(N) for k in ks])
+            loc = np.array([bvh.find_nearest(Vector(x), 0.1)[0] or Vector(x) for x in q])
+            ns = smooth_normals_at(loc, src_part, 0.008)
+            conf = loc + ns * np.tile(pb[ks], N)[:, None]
+            rows = np.array([i * K + k for i in range(N) for k in ks])
+            w = np.tile(tk[ks], N)[:, None]
+            verts[rows] = (1 - w) * verts[rows] + w * conf
     faces = []
     rng = range(N) if closed else range(N - 1)
     for i in rng:
@@ -288,17 +306,17 @@ def loops_of(part):
 # ------------------------------------------------------------------------------------------------ collar + cuffs
 COLLAR_W = 0.034
 COLLAR_PROFILE = [(0.010, -0.012), (0.004, -0.006), (-0.0015, -0.0012), (-0.003, 0.0012), (-0.0005, 0.0036), (COLLAR_W * 0.5, 0.0040),
-                  (COLLAR_W, 0.0034), (COLLAR_W + 0.0025, 0.0004)]
+                  (COLLAR_W, 0.0034), (COLLAR_W + 0.0025, 0.0007)]
 CUFF_W = 0.045
 CUFF_PROFILE = [(0.008, -0.004), (-0.001, -0.0018), (-0.0035, 0.0015), (-0.001, 0.0045), (CUFF_W * 0.5, 0.0050),
-                (CUFF_W, 0.0042), (CUFF_W + 0.003, 0.0006)]
+                (CUFF_W, 0.0042), (CUFF_W + 0.003, 0.0008)]
 
 
 def build_collar_and_cuffs(tunic):
     bvh = bvh_of(tunic)
     loops = loops_of(tunic)
     neck = max(loops, key=lambda l: tunic.v[l, 2].mean())
-    cpts = smooth_polyline(resample_polyline(tunic.v[neck], 84, True), 2, True)
+    cpts = smooth_polyline(resample_polyline(tunic.v[neck], 84, True), 5, True)
     cen = cpts.mean(axis=0)
     collar = band("collar", cpts, bvh, tunic, lambda c: c - cen, COLLAR_PROFILE, True, "cloth_accent")
     # diagonal edge of the outer (left) panel, from the crossing point down to the right hip (under the sash)

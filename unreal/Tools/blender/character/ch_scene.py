@@ -117,3 +117,18 @@ def clean_weights(obj, k=4):
             obj.vertex_groups.remove(g)
     cw.to_vertex_groups(obj, W)
     return W
+
+
+def triangulate_ngons(obj):
+    """Split polygons with more than 4 corners (FBX tangents need tris / quads; Unreal triangulates anyway)."""
+    import bmesh
+    me = obj.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    ng = [f for f in bm.faces if len(f.verts) > 4]
+    if ng:
+        bmesh.ops.triangulate(bm, faces=ng, quad_method="BEAUTY", ngon_method="BEAUTY")
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    return len(ng)

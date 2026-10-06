@@ -76,6 +76,49 @@ class Part:
         return sum(len(f) - 2 for f in self.f)
 
 
+def subdivide(part, name=None):
+    """One step of linear quad subdivision (every n-gon -> n quads through edge midpoints and the centroid).
+    Weights and per-loop UVs are interpolated; positions stay on the original facets (smooth afterwards)."""
+    V = list(part.v)
+    W = list(part.W)
+    emid = {}
+    faces, mats, uvs = [], [], ([] if part.uv is not None else None)
+    for fi, f in enumerate(part.f):
+        n = len(f)
+        ci = len(V)
+        V.append(part.v[f].mean(axis=0))
+        W.append(part.W[f].mean(axis=0))
+        mids = []
+        for k in range(n):
+            a, b = f[k], f[(k + 1) % n]
+            key = (min(a, b), max(a, b))
+            if key not in emid:
+                emid[key] = len(V)
+                V.append(0.5 * (part.v[a] + part.v[b]))
+                W.append(0.5 * (part.W[a] + part.W[b]))
+            mids.append(emid[key])
+        if uvs is not None:
+            u = np.asarray(part.uv[fi], float)
+            uc = tuple(u.mean(axis=0))
+            um = [tuple(0.5 * (u[k] + u[(k + 1) % n])) for k in range(n)]
+        for k in range(n):
+            faces.append([f[k], mids[k], ci, mids[k - 1]])
+            mats.append(part.m[fi])
+            if uvs is not None:
+                uvs.append([tuple(u[k]), um[k], uc, um[k - 1]])
+    return Part(name or part.name, np.array(V), faces, mats, np.array(W), uvs)
+
+
+def boundary_distance(part):
+    """Euclidean distance of every vertex to the nearest open-boundary vertex (inf if the part is closed)."""
+    from scipy.spatial import cKDTree
+    b = sorted({v for e in part.edges_boundary() for v in e})
+    if not b:
+        return np.full(len(part.v), np.inf)
+    d, _ = cKDTree(part.v[b]).query(part.v)
+    return d
+
+
 def merge(parts, name):
     vs, fs, ms, Ws, uvs = [], [], [], [], []
     off = 0

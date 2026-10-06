@@ -1,0 +1,114 @@
+{
+ "detail": {
+  "size": 512,
+  "skin_tile_m": 0.02,
+  "weave_tile_m": 0.029
+ },
+ "lod0_parts": {
+  "body": 15242,
+  "collar": 1176,
+  "collar_diag": 406,
+  "cuff_l": 480,
+  "cuff_r": 480,
+  "eye_l": 432,
+  "eye_r": 432,
+  "hair_bun": 238,
+  "hair_cap": 2000,
+  "hair_tail": 310,
+  "hair_tie": 56,
+  "hem": 994,
+  "lash_l": 156,
+  "lash_r": 156,
+  "sash_band": 1008,
+  "sash_knot": 216,
+  "sash_tail_l": 106,
+  "sash_tail_r": 106,
+  "shoes": 832,
+  "trousers": 2260,
+  "tunic": 2212
+ },
+ "ngons_split": {
+  "LOD0": 150,
+  "LOD1": 21,
+  "LOD2": 0
+ },
+ "seconds": 516.6,
+ "textures": {
+  "ao_bake_s": 76.9,
+  "cloth_accent": {
+   "seconds": 1.8,
+   "size": 1024,
+   "texels": 141435
+  },
+  "cloth_main": {
+   "seconds": 23.4,
+   "size": 2048,
+   "texels": 1810052
+  },
+  "eyes": {
+   "seconds": 1.8,
+   "size": 1024,
+   "texels": 387496
+  },
+  "hair": {
+   "seconds": 3.7,
+   "size": 1024,
+   "texels": 331879
+  },
+  "sash": {
+   "seconds": 1.8,
+   "size": 1024,
+   "texels": 183318
+  },
+  "shoes": {
+   "seconds": 4.2,
+   "size": 1024,
+   "texels": 438661
+  },
+  "skin": {
+   "seconds": 36.4,
+   "size": 2048,
+   "texels": 1700739
+  },
+  "wraps": {
+   "seconds": 5.2,
+   "size": 1024,
+   "texels": 802582
+  }
+ },
+ "tris": {
+  "LOD0": 29298,
+  "LOD1": 14576,
+  "LOD2": 5789
+ },
+ "uv": {
+  "cloth_accent": {
+   "islands": 8,
+   "px_per_m": 822.9
+  },
+  "cloth_main": {
+   "islands": 6,
+   "px_per_m": 935.2
+  },
+  "hair": {
+   "islands": 7,
+   "px_per_m": 2025.0
+  },
+  "sash": {
+   "islands": 7,
+   "px_per_m": 927.8
+  },
+  "shoes": {
+   "islands": 6,
+   "px_per_m": 1691.6
+  },
+  "skin": {
+   "islands": 13,
+   "px_per_m": 2258.1
+  },
+  "wraps": {
+   "islands": 4,
+   "px_per_m": 1482.3
+  }
+ }
+}

@@ -2,6 +2,8 @@
 palette tint where BC.alpha = 1, DirectX normal maps flipped back for Blender, ORM roughness, mild AO)."""
 import math
 import os
+import shutil
+import tempfile
 
 import bpy
 from mathutils import Vector
@@ -143,8 +145,8 @@ def _hide(objs, hide=True):
 def render_all(arm, lods, out_dir, quick=False):
     """Writes previews/*.jpg contact sheets into out_dir/previews."""
     pv = os.path.join(out_dir, "previews")
-    tmp = os.path.join(pv, "_frames")
-    os.makedirs(tmp, exist_ok=True)
+    os.makedirs(pv, exist_ok=True)
+    tmp = tempfile.mkdtemp(prefix="ff_preview_frames_")      # single frames: only the sheets are kept
     lod0 = lods[0]
     others = [o for k, o in lods.items() if k != 0]
     _hide(others)
@@ -177,13 +179,23 @@ def render_all(arm, lods, out_dir, quick=False):
     for pname, lab in (("rest", "hand relaxed"), ("horse stance", "fist"), ("arms overhead", "sword fingers / tiger claw")):
         lib[pname].apply(arm)
         bpy.context.view_layer.update()
-        hb = arm.matrix_world @ arm.pose.bones["middle_metacarpal_l"].head
-        hr = arm.matrix_world @ arm.pose.bones["middle_metacarpal_r"].head
-        for hh, tag in ((hb, "L"), (hr, "R")):
+        for tag in ("L", "R"):
             if pname == "rest" and tag == "R":
                 continue
-            yaw = 60 if tag == "L" else -60
-            ch_render.look_at(cam, hh, yaw, 0.45, hh.z + 0.08)
+            sd = tag.lower()
+            mw = arm.matrix_world
+
+            def bp(n, end="head"):
+                return mw @ getattr(arm.pose.bones[f"{n}_{sd}"], end)
+            tip = bp("middle_03", "tail")
+            wrist = bp("hand")
+            # per pose, a world direction that shows the fingers and keeps the head / other hand out of the way
+            sx = 1.0 if tag == "L" else -1.0
+            d = {"rest": Vector((0.75 * sx, -0.62, 0.12)),
+                 "horse stance": Vector((0.30 * sx, -0.92, 0.10)),
+                 "arms overhead": Vector((0.35 * sx, -0.90, -0.12))}[pname]
+            target = wrist.lerp(tip, 0.55)
+            ch_render.look_dir(cam, target, d, 0.55)
             paths.append(ch_render.render(os.path.join(tmp, f"hand_{len(paths)}.png")))
             labels.append(f"{lab} {tag}")
     out["hands"] = ch_render.contact_sheet(paths, labels, os.path.join(pv, "hands_closeup.jpg"), len(paths))
@@ -233,6 +245,7 @@ def render_all(arm, lods, out_dir, quick=False):
     for o in ruler:
         bpy.data.objects.remove(o)
     _hide(others, False)
+    shutil.rmtree(tmp, ignore_errors=True)
     return out
 
 

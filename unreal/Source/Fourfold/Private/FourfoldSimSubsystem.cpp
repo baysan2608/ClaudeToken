@@ -5,6 +5,7 @@
 // frames (<= 12 per rolling second). Fighters (one AFourfoldFighter per sim actor) are spawned / destroyed here.
 #include "FourfoldSimSubsystem.h"
 
+#include "FourfoldCoords.h"
 #include "FourfoldFighter.h"
 #include "FourfoldLog.h"
 #include "FourfoldSettings.h"

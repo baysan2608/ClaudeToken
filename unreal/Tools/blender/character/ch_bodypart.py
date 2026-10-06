@@ -52,8 +52,7 @@ def build_body(st, W_all, lm):
     dom = R.dominant_bones(body.W)
     ap = R.arm_params(v)
     la = np.where(v[:, 0] > 0, ap["la_l"], ap["la_r"])
-    az, z = R.head_polar(v, lm)
-    deep_scalp = (z > R.hairline_z(az, lm) + 0.016) & (v[:, 2] > lm["jaw"][2])
+    deep_scalp = (R.hair_field(v, lm) > 0.016) & (v[:, 2] > lm["jaw"][2])
     torso = np.isin(dom, ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "clavicle_l",
                           "clavicle_r"])
     import ch_garments as G

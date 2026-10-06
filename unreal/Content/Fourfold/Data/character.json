@@ -1,0 +1,373 @@
+{
+ "schema": "fourfold.character/1",
+ "rig": "ff-manny-1.0",
+ "mesh": "/Game/Fourfold/Characters/Fighter/SK_Fighter",
+ "skeleton": "/Game/Fourfold/Characters/Fighter/SKEL_Fighter",
+ "physics_asset": "/Game/Fourfold/Characters/Fighter/PA_Fighter",
+ "mesh_yaw_offset_deg": -90.0,
+ "height_m": 1.79,
+ "slots": [
+  "skin",
+  "hair",
+  "eyes",
+  "cloth_main",
+  "cloth_accent",
+  "wraps",
+  "sash",
+  "shoes"
+ ],
+ "palettes": {
+  "player": {
+   "FF_Main": [
+    0.09,
+    0.12,
+    0.23,
+    1.0
+   ],
+   "FF_Accent": [
+    0.56,
+    0.35,
+    0.11,
+    1.0
+   ],
+   "FF_Trim": [
+    0.8,
+    0.74,
+    0.62,
+    1.0
+   ]
+  },
+  "rival": {
+   "FF_Main": [
+    0.33,
+    0.085,
+    0.06,
+    1.0
+   ],
+   "FF_Accent": [
+    0.76,
+    0.56,
+    0.2,
+    1.0
+   ],
+   "FF_Trim": [
+    0.19,
+    0.17,
+    0.16,
+    1.0
+   ]
+  },
+  "dummy": {
+   "FF_Main": [
+    0.52,
+    0.47,
+    0.38,
+    1.0
+   ],
+   "FF_Accent": [
+    0.36,
+    0.33,
+    0.28,
+    1.0
+   ],
+   "FF_Trim": [
+    0.68,
+    0.64,
+    0.56,
+    1.0
+   ]
+  }
+ },
+ "materials": {
+  "skin": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_skin",
+  "hair": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_hair",
+  "eyes": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_eyes",
+  "cloth_main": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_cloth_main",
+  "cloth_accent": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_cloth_accent",
+  "wraps": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_wraps",
+  "sash": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_sash",
+  "shoes": "/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_shoes"
+ },
+ "slot_tint": {
+  "cloth_main": "FF_Main",
+  "shoes": "FF_Main",
+  "cloth_accent": "FF_Accent",
+  "sash": "FF_Accent",
+  "wraps": "FF_Trim"
+ },
+ "slot_tint_select": {
+  "cloth_main": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "shoes": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "cloth_accent": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "sash": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "wraps": [
+   0.0,
+   0.0,
+   1.0
+  ]
+ },
+ "slot_params": {
+  "skin": {
+   "ScatterStrength": 0.22
+  },
+  "cloth_main": {
+   "SheenStrength": 0.25
+  },
+  "cloth_accent": {
+   "SheenStrength": 0.2
+  },
+  "sash": {
+   "SheenStrength": 0.35
+  },
+  "wraps": {
+   "SheenStrength": 0.15,
+   "Porosity": 1.0
+  },
+  "shoes": {
+   "SheenStrength": 0.1
+  }
+ },
+ "status_params": {
+  "vectors": [
+   "FF_Main",
+   "FF_Accent",
+   "FF_Trim",
+   "FF_ElementColor"
+  ],
+  "scalars": [
+   "FF_Wet",
+   "FF_Frost",
+   "FF_Burn",
+   "FF_ElementGlow"
+  ]
+ },
+ "detail_tiling": {
+  "skin": 45.35,
+  "cloth_main": 75.51,
+  "cloth_accent": 42.91,
+  "hair": 17.44,
+  "wraps": 23.82,
+  "sash": 38.06,
+  "shoes": 20.87
+ },
+ "textures": {
+  "skin": {
+   "size": 2048,
+   "maps": [
+    "T_Fighter_skin_BC",
+    "T_Fighter_skin_N",
+    "T_Fighter_skin_ORM"
+   ]
+  },
+  "hair": {
+   "size": 1024,
+   "maps": [
+    "T_Fighter_hair_BC",
+    "T_Fighter_hair_N",
+    "T_Fighter_hair_ORM"
+   ]
+  },
+  "eyes": {
+   "size": 1024,
+   "maps": [
+    "T_Fighter_eyes_BC",
+    "T_Fighter_eyes_N",
+    "T_Fighter_eyes_ORM"
+   ]
+  },
+  "cloth_main": {
+   "size": 2048,
+   "maps": [
+    "T_Fighter_cloth_main_BC",
+    "T_Fighter_cloth_main_N",
+    "T_Fighter_cloth_main_ORM"
+   ]
+  },
+  "cloth_accent": {
+   "size": 1024,
+   "maps": [
+    "T_Fighter_cloth_accent_BC",
+    "T_Fighter_cloth_accent_N",
+    "T_Fighter_cloth_accent_ORM"
+   ]
+  },
+  "wraps": {
+   "size": 1024,
+   "maps": [
+    "T_Fighter_wraps_BC",
+    "T_Fighter_wraps_N",
+    "T_Fighter_wraps_ORM"
+   ]
+  },
+  "sash": {
+   "size": 1024,
+   "maps": [
+    "T_Fighter_sash_BC",
+    "T_Fighter_sash_N",
+    "T_Fighter_sash_ORM"
+   ]
+  },
+  "shoes": {
+   "size": 1024,
+   "maps": [
+    "T_Fighter_shoes_BC",
+    "T_Fighter_shoes_N",
+    "T_Fighter_shoes_ORM"
+   ]
+  }
+ },
+ "lods": {
+  "count": 3,
+  "screen_sizes": [
+   1.0,
+   0.3,
+   0.12
+  ],
+  "triangles": [
+   29298,
+   14576,
+   5789
+  ],
+  "sources": [
+   "SK_Fighter.fbx",
+   "SK_Fighter_LOD1.fbx",
+   "SK_Fighter_LOD2.fbx"
+  ]
+ },
+ "bones": {
+  "count": 104,
+  "manny": [
+   "root",
+   "pelvis",
+   "spine_01",
+   "spine_02",
+   "spine_03",
+   "spine_04",
+   "spine_05",
+   "neck_01",
+   "neck_02",
+   "head",
+   "clavicle_l",
+   "upperarm_l",
+   "lowerarm_l",
+   "hand_l",
+   "upperarm_twist_01_l",
+   "upperarm_twist_02_l",
+   "lowerarm_twist_01_l",
+   "lowerarm_twist_02_l",
+   "index_metacarpal_l",
+   "index_01_l",
+   "index_02_l",
+   "index_03_l",
+   "middle_metacarpal_l",
+   "middle_01_l",
+   "middle_02_l",
+   "middle_03_l",
+   "ring_metacarpal_l",
+   "ring_01_l",
+   "ring_02_l",
+   "ring_03_l",
+   "pinky_metacarpal_l",
+   "pinky_01_l",
+   "pinky_02_l",
+   "pinky_03_l",
+   "thumb_01_l",
+   "thumb_02_l",
+   "thumb_03_l",
+   "thigh_l",
+   "calf_l",
+   "foot_l",
+   "ball_l",
+   "thigh_twist_01_l",
+   "thigh_twist_02_l",
+   "calf_twist_01_l",
+   "calf_twist_02_l",
+   "clavicle_r",
+   "upperarm_r",
+   "lowerarm_r",
+   "hand_r",
+   "upperarm_twist_01_r",
+   "upperarm_twist_02_r",
+   "lowerarm_twist_01_r",
+   "lowerarm_twist_02_r",
+   "index_metacarpal_r",
+   "index_01_r",
+   "index_02_r",
+   "index_03_r",
+   "middle_metacarpal_r",
+   "middle_01_r",
+   "middle_02_r",
+   "middle_03_r",
+   "ring_metacarpal_r",
+   "ring_01_r",
+   "ring_02_r",
+   "ring_03_r",
+   "pinky_metacarpal_r",
+   "pinky_01_r",
+   "pinky_02_r",
+   "pinky_03_r",
+   "thumb_01_r",
+   "thumb_02_r",
+   "thumb_03_r",
+   "thigh_r",
+   "calf_r",
+   "foot_r",
+   "ball_r",
+   "thigh_twist_01_r",
+   "thigh_twist_02_r",
+   "calf_twist_01_r",
+   "calf_twist_02_r",
+   "ik_foot_root",
+   "ik_foot_l",
+   "ik_foot_r",
+   "ik_hand_root",
+   "ik_hand_gun",
+   "ik_hand_l",
+   "ik_hand_r",
+   "interaction",
+   "center_of_mass"
+  ],
+  "secondary": [
+   "ff_hair_01",
+   "ff_hair_02",
+   "ff_hair_03",
+   "ff_sash_l_01",
+   "ff_sash_l_02",
+   "ff_sash_r_01",
+   "ff_sash_r_02",
+   "ff_hem_fl_01",
+   "ff_hem_fl_02",
+   "ff_hem_fr_01",
+   "ff_hem_fr_02",
+   "ff_hem_bl_01",
+   "ff_hem_bl_02",
+   "ff_hem_br_01",
+   "ff_hem_br_02"
+  ]
+ },
+ "sockets_hint": {
+  "hand_l": "hand_l",
+  "hand_r": "hand_r",
+  "foot_l": "foot_l",
+  "foot_r": "foot_r",
+  "head": "head",
+  "chest": "spine_05",
+  "pelvis": "pelvis"
+ }
+}

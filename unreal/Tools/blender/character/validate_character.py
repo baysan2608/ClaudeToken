@@ -56,12 +56,15 @@ def uv_overlap_fraction(me, slot_index, res=512):
         xs, ys = np.meshgrid(np.arange(lo[0], hi[0]) + 0.5, np.arange(lo[1], hi[1]) + 0.5)
         if xs.size == 0:
             continue
-        p = np.stack([xs.ravel(), ys.ravel()], axis=1)
+        # sample points slightly off the texel centres and strict inside test: a texel centre lying exactly on an
+        # edge shared by two triangles (grid-aligned quads after packing) must not count as an overlap
+        p = np.stack([xs.ravel() + 0.0137, ys.ravel() + 0.0071], axis=1)
         a, b, c = uv
+
         def edge(p0, p1, q):
             return (p1[0] - p0[0]) * (q[:, 1] - p0[1]) - (p1[1] - p0[1]) * (q[:, 0] - p0[0])
         w0, w1, w2 = edge(b, c, p), edge(c, a, p), edge(a, b, p)
-        inside = ((w0 >= 0) & (w1 >= 0) & (w2 >= 0)) | ((w0 <= 0) & (w1 <= 0) & (w2 <= 0))
+        inside = ((w0 > 0) & (w1 > 0) & (w2 > 0)) | ((w0 < 0) & (w1 < 0) & (w2 < 0))
         q = p[inside].astype(int)
         np.add.at(cover, (q[:, 1], q[:, 0]), 1)
     covered = (cover > 0).sum()
@@ -207,6 +210,23 @@ def main(argv):
             tex[os.path.basename(p)] = list(im.size)
             if im.size != (size, size):
                 fails.append(f"{os.path.basename(p)} is {im.size}, expected {size}x{size}")
+    for name in ("T_Fighter_Detail_Weave_N", "T_Fighter_Detail_Skin_N", "T_Fighter_Detail_Noise"):
+        p = os.path.join(art, name + ".png")
+        if not os.path.exists(p):
+            fails.append(f"missing texture {name}.png")
+            continue
+        im = Image.open(p)
+        tex[name + ".png"] = list(im.size)
+        if im.size != (512, 512):
+            fails.append(f"{name}.png is {im.size}, expected 512x512")
+    # normal maps must be DirectX (green = down): on average the green channel of a well-formed map is ~0.5 and
+    # its z (blue) channel dominant; a quick sanity check that nothing came out empty / inverted.
+    for slot in TEX:
+        p = os.path.join(art, f"T_Fighter_{slot}_N.png")
+        if os.path.exists(p):
+            a = np.asarray(Image.open(p)).astype(np.float32) / 255.0
+            if a[..., 2].mean() < 0.85:
+                fails.append(f"{os.path.basename(p)}: blue channel mean {a[..., 2].mean():.2f} (not a tangent-space map?)")
     rep["textures"] = tex
     rep["failures"] = fails
     print(json.dumps({k: v for k, v in rep.items() if k != "textures"}, indent=1))

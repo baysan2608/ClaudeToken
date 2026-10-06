@@ -62,14 +62,19 @@ class Ctx:
 
 
 # ================================================================================================ skin
-SKIN = np.array([0.33, 0.205, 0.145])          # linear base tone (warm medium tan)
-LIP = np.array([0.245, 0.125, 0.105])
-BROW = np.array([0.020, 0.014, 0.011])
+SKIN = np.array([0.262, 0.157, 0.104])          # linear base tone (warm medium tan)
+LIP = np.array([0.165, 0.066, 0.056])
+BROW = np.array([0.012, 0.0085, 0.007])
 HAIR_DARK = np.array([0.018, 0.013, 0.010])
 
 
 def _blob(P, c, r):
     return np.exp(-np.sum((P - np.asarray(c)) ** 2, axis=1) / (r * r))
+
+
+def _tint(col, w, rgb):
+    """Multiply-blend a colour zone: col * lerp(1, rgb, w)."""
+    return col * (1 + w[:, None] * (np.asarray(rgb) - 1))
 
 
 def gen_skin(c):
@@ -78,22 +83,26 @@ def gen_skin(c):
     ax = np.abs(x)
     col = np.tile(SKIN, (c.n, 1))
     h = np.zeros(c.n)
-    rough = np.full(c.n, 0.52)
+    rough = np.full(c.n, 0.58)
     alpha = np.full(c.n, 0.30)                     # subsurface / translucency mask
     lf = N.fbm3(P, 22.0, 4, seed=3)
-    col *= (1.0 + 0.07 * lf)[:, None]
+    col *= (1.0 + 0.06 * lf)[:, None]
     mot = N.fbm3(P, 120.0, 2, seed=9)               # mottling
-    col *= (1.0 + 0.035 * mot)[:, None]
+    col *= (1.0 + 0.03 * mot)[:, None]
     head = z > lm["jaw"][2] - 0.04
     face = head & (y < lm["skull_c"][1] - 0.02)
-    eye_z = lm["eye_c_l"][2]
-    # warmth zones: cheeks, nose, ears, chin; forehead a touch yellower; fingers' knuckles and tips redder
+    blot = N.fbm3(P, 60.0, 3, seed=14)
+    col = _tint(col, np.clip(blot, 0, 1) * 0.5, (1.05, 0.95, 0.93))
+    col = _tint(col, np.clip(-blot, 0, 1) * 0.4, (0.96, 0.97, 0.99))
+    # --- painted colour zones: forehead / temples warm-yellow, mid-face red, lower face cool -------------------
+    fore = face & (z > lm["brow_z"] - 0.004)
+    col = _tint(col, _ss(lm["brow_z"] - 0.004, lm["brow_z"] + 0.02, z) * face, (1.04, 1.00, 0.90))
     red = np.zeros(c.n)
     for sx in (1, -1):
-        red += 0.8 * _blob(P, (0.046 * sx, -0.128, 1.628), 0.022)
-        red += 0.9 * _blob(P, (0.072 * sx, -0.03, 1.655), 0.028) * (ax > 0.06)
-    red += 0.9 * _blob(P, (0.0, -0.168, 1.628), 0.013)
-    red += 0.4 * _blob(P, (0.0, -0.150, 1.565), 0.016)
+        red += 0.9 * _blob(P, (0.044 * sx, -0.130, 1.630), 0.020)
+        red += 1.0 * _blob(P, (0.073 * sx, -0.03, 1.655), 0.026) * (ax > 0.058)
+    red += 1.0 * _blob(P, (0.0, -0.168, 1.627), 0.012)
+    red += 0.5 * _blob(P, (0.0, -0.152, 1.565), 0.015)
     knuckles = []
     for s in ("l", "r"):
         for f in ("index", "middle", "ring", "pinky"):
@@ -101,77 +110,86 @@ def gen_skin(c):
                 knuckles.append(cw.bone_head(f"{f}_{j}_{s}"))
             knuckles.append(cw.bone_tail(f"{f}_03_{s}"))
         knuckles += [cw.bone_head(f"thumb_0{j}_{s}") for j in (2, 3)] + [cw.bone_tail(f"thumb_03_{s}")]
-    K = np.array(knuckles)
     hand = z < 1.1
     if hand.any():
         from scipy.spatial import cKDTree
-        d, _ = cKDTree(K).query(P[hand])
-        red[hand] += 0.7 * np.exp(-(d / 0.008) ** 2)
-    red = np.clip(red, 0, 1)
-    col *= (1 + red[:, None] * np.array([0.10, -0.06, -0.05]))
-    fore = head & (z > lm["brow_z"]) & face
-    col[fore] *= np.array([1.02, 1.0, 0.95])
-    # beard shadow (clean-shaven, subtle): jaw, chin, upper lip; never on the lips
-    lips = lip_mask(P)
-    beard = face & (z < 1.618) & (z > 1.52) & (ax < 0.068)
-    beard_w = beard * _ss(0.068, 0.05, ax) * (1 - lips) * _ss(1.52, 1.545, z)
+        d, _ = cKDTree(np.array(knuckles)).query(P[hand])
+        red[hand] += 0.8 * np.exp(-(d / 0.008) ** 2)
+    col = _tint(col, np.clip(red, 0, 1), (1.10, 0.90, 0.88))
+    lips = lip_mask(P, lm)
+    lower_face = face & (z < 1.622) & (z > 1.53) & (ax < 0.07)
+    beard_w = lower_face * _ss(0.070, 0.045, ax) * (1 - lips) * _ss(1.53, 1.555, z) * _ss(lm["nose_tip"][2] - 0.004,
+                                                                                         lm["mouth_z"] + 0.004, z)
     speck = np.clip(N.noise2(P[:, 0] * 700 + P[:, 1] * 300, P[:, 2] * 700, seed=5), 0, 1) * bl(700, c.mpt)
-    col *= (1 - beard_w[:, None] * (0.10 + 0.10 * speck[:, None]) * np.array([1.0, 0.92, 0.80]))
-    # eyelids / under-eye
+    col = _tint(col, beard_w * (0.9 + 0.3 * speck), (0.88, 0.89, 0.93))
+    # temples / sides of the forehead slightly darker (form), cheek-bone light catch
+    for sx in (1, -1):
+        col = _tint(col, 0.6 * _blob(P, (0.062 * sx, -0.09, 1.70), 0.022) * face, (0.93, 0.92, 0.94))
+    # --- eyes: socket shadow, upper-lid crease, lid margin (lash line), under-eye ---------------------------
     for s, sx in (("l", 1), ("r", -1)):
         ec = lm[f"eye_c_{s}"]
         er = lm[f"eye_r_{s}"]
         rel = P - ec
         dd = np.linalg.norm(rel, axis=1) - er
-        front = rel[:, 1] < -0.004
-        lid_up = front & (rel[:, 2] > 0.002) & (dd < 0.012)
-        col[lid_up] *= np.array([0.93, 0.86, 0.86]) ** (1 - np.clip(dd[lid_up] / 0.012, 0, 1))[:, None]
-        under = front & (rel[:, 2] < -0.004) & (rel[:, 2] > -0.016) & (np.abs(rel[:, 0]) < 0.016)
-        col[under] *= np.array([0.95, 0.93, 0.95])
-        # lid margin: lash line on the top, a wet pink line under
-        margin = front & (dd < 0.0024)
-        top = margin & (rel[:, 2] > -0.001)
-        col[top] *= (0.25 + 0.75 * _ss(0.0006, 0.0024, dd[top]))[:, None]
+        front = rel[:, 1] < -0.002
+        sock = front & face
+        col = _tint(col, sock * np.exp(-(np.linalg.norm(rel - np.array([0, -0.012, 0.004]), axis=1) / 0.020) ** 2) * 0.9,
+                    (0.86, 0.80, 0.80))
+        crease = front & (rel[:, 2] > 0.006) & (np.abs(rel[:, 2] - (0.0105 - 0.004 * (rel[:, 0] * sx / 0.02) ** 2)) < 0.0035)
+        col = _tint(col, crease * 0.8 * _ss(0.022, 0.008, np.abs(rel[:, 0] * sx)), (0.82, 0.74, 0.74))
+        h -= crease * 0.00012
+        margin = front & (dd < 0.0026)
+        top = margin & (rel[:, 2] > -0.0015)
+        col[top] *= (0.12 + 0.88 * _ss(0.0005, 0.0026, dd[top]))[:, None]
         bot = margin & ~top
-        col[bot] = col[bot] * 0.7 + np.array([0.30, 0.12, 0.11]) * 0.3
-        rough[margin] = 0.3
+        col[bot] = col[bot] * 0.65 + np.array([0.26, 0.11, 0.10]) * 0.35
+        rough[margin] = 0.30
+        under = front & (rel[:, 2] < -0.004) & (rel[:, 2] > -0.017) & (np.abs(rel[:, 0]) < 0.018)
+        col = _tint(col, under * 0.7, (0.92, 0.88, 0.92))
         # brows
         bm, along = brow_mask(P, ec, sx, lm)
         hairs = _brow_hairs(P, along, sx)
-        a = np.clip(bm * (0.55 + 0.45 * hairs), 0, 1)
+        core = bm ** 1.3
+        a = np.clip(core * 0.80 + bm * hairs * 0.45, 0, 0.97) * (1.0 - 0.25 * np.clip(along, 0, 1))
         col = col * (1 - a[:, None]) + BROW * a[:, None]
-        h += a * 0.00012 * hairs
+        h += a * 0.00010 * hairs
         rough = rough * (1 - a) + 0.65 * a
-    # lips
-    col = col * (1 - lips[:, None]) + (LIP * (1 + 0.06 * mot[:, None])) * lips[:, None]
-    lower = lips * (z < 1.6035)
-    col *= (1 + 0.05 * lower)[:, None]
-    rough = rough * (1 - lips) + 0.44 * lips
-    line = _ss(0.0011, 0.0, np.abs(z - (1.6035 + 0.06 * x * x / 0.024))) * _ss(0.025, 0.019, ax) * face * (y < -0.14)
-    col *= (1 - 0.65 * line)[:, None]
+    # --- lips: vermilion, darker border, mouth line, highlight on the lower lip, shadow under it -------------
+    lip_col = LIP * (1 + 0.08 * mot[:, None])
+    col = col * (1 - lips[:, None]) + lip_col * lips[:, None]
+    border = lips * (1 - lips) * 4
+    col = _tint(col, border * 0.6, (0.85, 0.80, 0.80))
+    lower = lips * (z < mouth_z(x, lm))
+    col = _tint(col, lower * _blob(P, (0.0, lm['nose_tip'][1] + 0.010, lm['lower_lip_z'] + 0.001), 0.006), (1.08, 1.04, 1.03))
+    rough = rough * (1 - lips) + 0.50 * lips
+    line = _ss(0.0010, 0.0, np.abs(z - mouth_z(x, lm))) * _ss(0.026, 0.020, ax) * face * (y < lm['nose_tip'][1] + 0.032)
+    col *= (1 - 0.75 * line)[:, None]
     h -= 0.0003 * line
-    # vertical lip lines
-    h += lips * 0.00004 * np.sin(x * 2 * np.pi / 0.0016 + 3 * N.noise2(x * 400, z * 400, seed=11))
-    # hairline: dark under the cap edge and fine strokes just below it
+    corners = sum(_blob(P, (0.0235 * sx, lm['nose_tip'][1] + 0.022, float(mouth_z(0.0235, lm))), 0.0035) for sx in (1, -1))
+    col = _tint(col, np.clip(corners, 0, 1) * 0.7, (0.75, 0.68, 0.68))
+    sulcus = face * _blob(P, (0.0, lm['nose_tip'][1] + 0.015, lm['lower_lip_z'] - 0.0075), 0.007) * (1 - lips)
+    col = _tint(col, sulcus * 0.6, (0.85, 0.80, 0.80))
+    h += lips * 0.00004 * np.sin(x * 2 * np.pi / 0.0016 + 3 * N.noise2(x * 400, z * 400, seed=11)) * bl(625, c.mpt)
+    # --- hairline: dark under the cap edge and fine strokes just below it ------------------------------------
     hf = hair_field(P, lm)
     fuzz = head & (hf > -0.010)
     if fuzz.any():
         az, _zz = R.head_polar(P[fuzz], lm)
         strokes = 0.5 + 0.5 * N.noise2(az * 9.0, hf[fuzz] * 900, seed=13)
         dens = _ss(-0.010, 0.002, hf[fuzz])
-        a = np.clip(dens * (0.35 + 0.65 * strokes ** 2), 0, 1)
+        a = np.clip(dens ** 1.6 * (0.25 + 0.75 * strokes ** 2), 0, 1)
         col[fuzz] = col[fuzz] * (1 - a[:, None]) + HAIR_DARK * a[:, None]
         rough[fuzz] = rough[fuzz] * (1 - a) + 0.5 * a
     # T-zone shine
-    tz = face & (((ax < 0.022) & (z > 1.61)) | ((z > lm["brow_z"] + 0.005) & (ax < 0.04)))
-    rough[tz] -= 0.08
+    tz = face & (((ax < 0.022) & (z > 1.61) & (z < 1.70)) | ((z > lm["brow_z"] + 0.005) & (ax < 0.04)))
+    rough[tz] -= 0.07
     # nails + knuckle creases
     nails, crease = finger_details(P, c.Nn)
-    col = col * (1 - nails[:, None]) + np.array([0.42, 0.28, 0.25]) * nails[:, None]
+    col = col * (1 - nails[:, None]) + np.array([0.36, 0.24, 0.21]) * nails[:, None]
     rough = rough * (1 - nails) + 0.25 * nails
     h += nails * 0.00015 + crease * -0.00012
-    col *= (1 - 0.18 * crease)[:, None]
-    # pores + fine skin texture (face denser, hands finer)
+    col *= (1 - 0.20 * crease)[:, None]
+    # pores + fine skin texture (face denser, hands finer); finer pores come from the material's detail map
     pore = N.cellular2(P[:, 0] * 900 + P[:, 2] * 150, P[:, 1] * 900 + P[:, 2] * 800, seed=2)
     h += np.where(face, 1.0, 0.6) * 0.00004 * _ss(0.0, 0.35, pore) * bl(900, c.mpt)
     h += 0.000012 * N.noise2(P[:, 0] * 400, P[:, 2] * 400 + P[:, 1] * 250, seed=4) * bl(400, c.mpt)
@@ -180,27 +198,32 @@ def gen_skin(c):
     alpha += 0.7 * np.clip(_blob(P, (0.072, -0.03, 1.655), 0.03) * (x > 0.06) + _blob(P, (-0.072, -0.03, 1.655), 0.03) * (x < -0.06), 0, 1)
     alpha += 0.3 * _blob(P, (0.0, -0.165, 1.63), 0.015) + 0.4 * lips
     alpha[hand] += 0.25
+    del fore
     return col, np.clip(alpha, 0, 1), h, np.clip(rough, 0.2, 0.9), np.ones(c.n)
 
 
 def hair_field(P, lm):
-    az, z = R.head_polar(P, lm)
-    return z - R.hairline_z(az, lm)
+    return R.hair_field(P, lm)
 
 
-def lip_mask(P):
-    """Soft lip shapes (rig space): lower lip ellipse + upper lip with a cupid's bow."""
+def mouth_z(x, lm):
+    return lm["mouth_z"] - 0.0016 * (np.asarray(x) / 0.024) ** 2
+
+
+def lip_mask(P, lm):
+    """Soft lip shapes (rig space) from the measured lip line: lower lip below the contact line, upper lip with a
+    cupid's bow above it."""
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
     ax = np.abs(x)
-    front = y < -0.135
-    lo = ((ax / 0.0228) ** 2 + ((z - 1.5958) / 0.0082) ** 2)
-    bow = 0.0016 * np.exp(-(x / 0.004) ** 2) - 0.0006 * np.exp(-((ax - 0.0065) / 0.004) ** 2)
-    top_edge = 1.6092 - bow - 0.0040 * (ax / 0.024) ** 2
-    up = (ax < 0.0245) & (z >= 1.6030) & (z <= top_edge)
-    up_soft = _ss(0.0245, 0.020, ax) * _ss(top_edge + 0.0006, top_edge - 0.0006, z) * (z >= 1.6025)
-    m = np.maximum(_ss(1.15, 0.85, lo) * (z < 1.6040), up_soft)
-    del up
-    return m * front
+    front = y < lm["nose_tip"][1] + 0.037
+    zs = mouth_z(x, lm)
+    lo_c = 0.5 * (lm["lower_lip_z"] + lm["mouth_z"]) - 0.0026
+    lo = (ax / 0.0225) ** 2 + ((z - lo_c) / 0.0070) ** 2
+    lower = _ss(1.15, 0.85, lo) * (z <= zs + 0.0004)
+    bow = 0.0012 * np.exp(-(x / 0.0035) ** 2) - 0.0005 * np.exp(-((ax - 0.0060) / 0.0035) ** 2)
+    top_edge = lm["upper_lip_z"] + 0.0022 - bow - 0.0060 * (ax / 0.024) ** 2
+    upper = _ss(0.0245, 0.0205, ax) * _ss(top_edge + 0.0006, top_edge - 0.0006, z) * (z >= zs - 0.0004)
+    return np.maximum(lower, upper) * front
 
 
 def brow_mask(P, ec, sx, lm):
@@ -210,9 +233,9 @@ def brow_mask(P, ec, sx, lm):
     zz = rel[:, 2]
     along = (xx + 0.018) / 0.040
     t = np.clip(along, 0, 1)
-    centre = 0.0215 + 0.006 * np.sin(np.pi * np.clip(t * 1.1, 0, 1)) - 0.004 * t
-    half = 0.0042 * (1 - t) + 0.0016 * t
-    m = _ss(half + 0.001, half - 0.001, np.abs(zz - centre)) * _ss(-0.05, 0.02, along) * _ss(1.08, 0.95, along)
+    centre = 0.0185 + 0.0055 * np.sin(np.pi * np.clip(t * 1.15, 0, 1)) - 0.0045 * t
+    half = 0.0042 * (1 - t) ** 0.8 + 0.0013 * t
+    m = _ss(half + 0.0018, half - 0.0012, np.abs(zz - centre)) * _ss(-0.05, 0.05, along) * _ss(1.08, 0.90, along)
     m *= (rel[:, 1] < 0.0) & (P[:, 1] < -0.10)
     return m, t
 
@@ -313,7 +336,7 @@ def gen_eyes(c):
         d = _n(rel[sel])
         th = np.degrees(np.arccos(np.clip(-d[:, 1], -1, 1)))
         ph = np.arctan2(d[:, 2], d[:, 0])
-        sclera = np.array([0.62, 0.58, 0.54]) * (1 + 0.04 * N.noise2(ph * 3, th * 0.2, seed=41))[:, None]
+        sclera = np.array([0.50, 0.46, 0.42]) * (1 + 0.04 * N.noise2(ph * 3, th * 0.2, seed=41))[:, None]
         corner = _ss(40, 75, th) * (0.5 + 0.5 * np.abs(np.cos(ph)))
         sclera = sclera * (1 - 0.15 * corner[:, None]) + np.array([0.45, 0.25, 0.22]) * 0.15 * corner[:, None]
         veins = np.clip(N.noise2(ph * 14, th * 0.5, seed=42) - 0.55, 0, 1) * _ss(35, 70, th)
@@ -352,7 +375,7 @@ def weave(U, mpt, scale=1.0, seed=0):
     return val, 0.5 * (warp + weft) + 0.5 * fine
 
 
-def stitches(c, dist=0.005, period=0.0042, width=0.0011):
+def stitches(c, dist=0.005, period=0.0038, width=0.0008):
     """Dashed stitch line at `dist` from every island border (seams, hems). Returns 0..1 mask, groove height."""
     e = c.edge
     line = _ss(width, width * 0.4, np.abs(e - dist))
@@ -362,20 +385,26 @@ def stitches(c, dist=0.005, period=0.0042, width=0.0011):
     return line * dash, line, seam
 
 
+def ridged(a, b, seed):
+    """Organic fold ridges: anisotropic gradient noise turned into soft ridges (0..1)."""
+    n = N.noise2(a, b, seed=seed) + 0.5 * N.noise2(a * 2.1, b * 1.7, seed=seed + 1)
+    return 1.0 - np.abs(np.clip(n, -1, 1)) ** 0.8
+
+
 def folds_field(c, garment):
-    """Large fold height (metres) by garment region, oriented in the grain-aligned pattern space."""
+    """Large fold height (metres) by garment region, in the grain-aligned pattern space (u around, v up)."""
     P, U = c.P, c.U
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
     u, v = U[:, 0], U[:, 1]
     h = np.zeros(c.n)
-    wob = N.fbm2(u * 6, v * 6, 3, seed=51)
+    wu = u + 0.02 * N.noise2(u * 9, v * 9, seed=50)
+    wv = v + 0.02 * N.noise2(u * 9 + 3.1, v * 9, seed=51)
     if garment == "tunic":
         torso = np.abs(x) < 0.20
-        drape = _ss(1.30, 1.08, z) * torso
-        h += 0.0030 * drape * np.sin(2 * np.pi * u / 0.075 + 2.5 * wob)
-        bunch = _ss(1.12, 1.04, z) * torso
-        h += 0.0022 * bunch * np.sin(2 * np.pi * v / 0.016 + 4 * N.noise2(u * 18, v * 4, seed=52))
-        # sleeves: rings near the elbow / cuff, diagonal pulls from the armpit
+        drape = _ss(1.30, 1.06, z) * torso
+        h += 0.0040 * drape * (ridged(wu / 0.060, wv / 0.22, 52) - 0.5)
+        bunch = _ss(1.13, 1.04, z) * torso
+        h += 0.0030 * bunch * (ridged(wu / 0.10, wv / 0.020, 53) - 0.5)
         sleeve = np.abs(x) > 0.20
         for s, sg in (("l", 1), ("r", -1)):
             m = sleeve & (x * sg > 0)
@@ -383,25 +412,26 @@ def folds_field(c, garment):
             sh = cw.bone_head("upperarm_" + s)
             ax = _n(el - sh)
             t = (P[m] - el) @ ax
-            ring = np.exp(-(t / 0.07) ** 2)
-            h[m] += 0.0025 * ring * np.sin(2 * np.pi * t / 0.022 + 3 * N.noise2(u[m] * 25, v[m] * 25, seed=53))
-            pit = np.exp(-(((P[m] - sh) @ ax) / 0.06) ** 2)
-            h[m] += 0.0016 * pit * np.sin(2 * np.pi * (u[m] + v[m]) / 0.04 + 2 * wob[m])
+            ring = np.exp(-(t / 0.08) ** 2)
+            h[m] += 0.0030 * ring * (ridged(wu[m] / 0.06, t / 0.024, 54) - 0.5)
+            pit = np.exp(-(((P[m] - sh) @ ax) / 0.07) ** 2)
+            h[m] += 0.0020 * pit * (ridged((wu[m] + wv[m]) / 0.035, (wu[m] - wv[m]) / 0.12, 55) - 0.5)
+        h += 0.0010 * (ridged(wu / 0.09, wv / 0.09, 56) - 0.5)
     elif garment == "hem":
         hang = _ss(0.95, 0.60, z)
-        h += 0.0045 * hang * np.sin(2 * np.pi * u / 0.10 + 2.2 * N.noise2(u * 3, v * 2, seed=54) + 0.5 * wob)
-        h += 0.0012 * np.sin(2 * np.pi * u / 0.031 + 3 * wob) * hang
+        h += 0.0060 * hang * (ridged(wu / 0.11, wv / 0.6, 57) - 0.5)
+        h += 0.0015 * hang * (ridged(wu / 0.035, wv / 0.25, 58) - 0.5)
     elif garment == "trousers":
-        blouse = _ss(R.SHIN_WRAP_TOP - 0.005, R.SHIN_WRAP_TOP + 0.02, z) * _ss(0.52, 0.42, z)
-        h += 0.0035 * blouse * np.sin(2 * np.pi * v / 0.018 + 5 * N.noise2(u * 14, v * 6, seed=55))
+        blouse = _ss(R.SHIN_WRAP_TOP - 0.005, R.SHIN_WRAP_TOP + 0.02, z) * _ss(0.53, 0.42, z)
+        h += 0.0045 * blouse * (ridged(wu / 0.09, wv / 0.020, 59) - 0.5)
         for s in ("l", "r"):
             kn = cw.bone_head("calf_" + s)
             d = np.linalg.norm(P - kn, axis=1)
             back = (y - kn[1]) > 0.0
-            h += 0.002 * np.exp(-(d / 0.07) ** 2) * np.sin(2 * np.pi * (z - kn[2]) / 0.02 + 2 * wob) * np.where(back, 1.0, 0.4)
-        crotch = _ss(0.93, 0.80, z) * _ss(0.70, 0.80, z) * _ss(0.09, 0.03, np.abs(x))
-        h += 0.0018 * crotch * np.sin(2 * np.pi * (u - v * np.sign(x)) / 0.035 + 2 * wob)
-        h += 0.0015 * _ss(0.85, 0.5, z) * np.sin(2 * np.pi * u / 0.06 + 2.5 * wob)
+            h += 0.0030 * np.exp(-(d / 0.075) ** 2) * np.where(back, 1.0, 0.5) * (ridged(wu / 0.08, wv / 0.022, 60) - 0.5)
+        crotch = _ss(0.93, 0.80, z) * _ss(0.70, 0.80, z) * _ss(0.10, 0.03, np.abs(x))
+        h += 0.0025 * crotch * (ridged((wu - wv * np.sign(x)) / 0.03, (wu + wv * np.sign(x)) / 0.10, 61) - 0.5)
+        h += 0.0018 * _ss(0.85, 0.5, z) * (ridged(wu / 0.07, wv / 0.30, 62) - 0.5)
     return h
 
 
@@ -429,8 +459,8 @@ def gen_cloth_main(c):
             sub = _Sub(c, m)
             h[m] += folds_field(sub, name)
     st, line, seam = stitches(c)
-    col = col * (1 - st[:, None]) + np.array([0.62, 0.60, 0.55]) * st[:, None]
-    alpha = alpha * (1 - st)
+    col = col * (1 - 0.6 * st[:, None]) + np.array([0.50, 0.48, 0.44]) * 0.6 * st[:, None]
+    alpha = alpha * (1 - 0.55 * st)
     h += -0.0004 * line * (1 - st) + 0.0005 * seam + 0.0001 * st
     # wear: lighter at edges, elbows / knees; darker dust at the trouser bottoms
     wear = _ss(0.02, 0.0, c.edge) * np.clip(0.5 + N.noise2(c.U[:, 0] * 90, c.U[:, 1] * 90, seed=62), 0, 1)
@@ -472,8 +502,8 @@ def gen_cloth_accent(c):
         s2, line, seam = stitches(c, dist=0.006)
         st[hb] = s2[hb]
         h[hb] += -0.0003 * line[hb] + 0.0004 * seam[hb]
-    col = col * (1 - st[:, None]) + np.array([0.60, 0.58, 0.53]) * st[:, None]
-    alpha *= (1 - st)
+    col = col * (1 - 0.6 * st[:, None]) + np.array([0.52, 0.50, 0.46]) * 0.6 * st[:, None]
+    alpha *= (1 - 0.55 * st)
     wear = _ss(0.012, 0.0, c.edge) * 0.5
     col *= (1 + 0.08 * wear)[:, None]
     rough = np.clip(0.74 + 0.05 * w_val, 0.5, 0.95)
@@ -612,13 +642,22 @@ NORMAL_STRENGTH = {"skin": 1.0, "hair": 1.0, "eyes": 1.0, "cloth_main": 1.0, "cl
                    "sash": 1.0, "shoes": 1.0}
 
 
-def build_all(obj, parts, lm, out_dir, quick=False, slots=None):
+def build_all(obj, parts, lm, out_dir, quick=False, slots=None, ao_cache=None):
     """Rasterise the LOD0 object, bake AO, generate and save every texture. Returns a report dict."""
     import time
     part_names = [p.name for p in parts]
     sizes = {k: (v // 4 if quick else v) for k, v in TEX_SIZE.items()}
     t0 = time.time()
-    ao = TM.bake_ao(obj, sizes, samples=8 if quick else 32)
+    ao = None
+    if ao_cache and os.path.exists(ao_cache):
+        z = np.load(ao_cache)
+        ao = {k: z[k] for k in z.files}
+        if any(ao.get(k) is None or ao[k].shape[0] != sizes[k] for k in sizes):
+            ao = None
+    if ao is None:
+        ao = TM.bake_ao(obj, sizes, samples=8 if quick else 32)
+        if ao_cache:
+            np.savez_compressed(ao_cache, **ao)
     rep = {"ao_bake_s": round(time.time() - t0, 1)}
     T = TM.mesh_tables(obj)
     for si, slot in enumerate(SLOTS):
@@ -658,3 +697,73 @@ def build_all(obj, parts, lm, out_dir, quick=False, slots=None):
         rep[slot] = {"size": S, "texels": int(maps.mask.sum()), "seconds": round(time.time() - t1, 1)}
         print("[character] texture", slot, rep[slot])
     return rep
+
+
+# ================================================================================================ tiling details
+DETAIL_SIZE = 512
+WEAVE_THREADS = 32          # threads per tile edge
+WEAVE_TILE_M = 0.029        # one weave tile covers ~29 mm (0.9 mm threads)
+SKIN_TILE_M = 0.020         # one pore tile covers 20 mm
+
+
+def _tile_normal(h, strength):
+    """Height (texels) -> DirectX normal of a tiling texture (wrap-around differences)."""
+    dhdx = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) * 0.5 * strength
+    dhdy = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) * 0.5 * strength
+    nx, ny, nz = -dhdx, -dhdy, np.ones_like(h)
+    l = np.sqrt(nx * nx + ny * ny + nz * nz)
+    return np.stack([nx / l, -ny / l, nz / l], axis=-1) * 0.5 + 0.5
+
+
+def build_detail_textures(out_dir, size=DETAIL_SIZE):
+    """Tiling detail maps used by the Unreal materials at close range: plain-weave normal, skin pore normal,
+    RGB status noise (r frost crystals, g char pattern, b sparkle). All tile seamlessly."""
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float64) + 0.5
+    # plain weave: warp (vertical) and weft (horizontal) threads passing over / under each other
+    n = WEAVE_THREADS
+    u = xx / size * n
+    v = yy / size * n
+    i = np.floor(u)
+    j = np.floor(v)
+    fu, fv = u - i, v - j
+    prof_w = np.sqrt(np.clip(1 - (2 * fu - 1) ** 2, 0, 1))
+    prof_f = np.sqrt(np.clip(1 - (2 * fv - 1) ** 2, 0, 1))
+    par = (i + j) % 2
+    und_w = np.where(par == 0, np.cos(np.pi * (fv - 0.5)), 1 - np.cos(np.pi * (fv - 0.5)))
+    und_f = np.where(par == 1, np.cos(np.pi * (fu - 0.5)), 1 - np.cos(np.pi * (fu - 0.5)))
+    hw = prof_w * (0.55 + 0.45 * und_w)
+    hf = prof_f * (0.55 + 0.45 * und_f)
+    fiber = N.noise2_periodic(xx / size * 128, yy / size * 8, 128, 8, seed=3) * 0.08
+    fiber += N.noise2_periodic(xx / size * 8, yy / size * 128, 8, 128, seed=4) * 0.08
+    h = np.maximum(hw, hf) + fiber
+    weave_n = _tile_normal(h, 2.2)
+    TM.save_png(os.path.join(out_dir, "T_Fighter_Detail_Weave_N.png"), weave_n, "RGB")
+    # skin pores + fine creases
+    cells = N.cellular2_periodic(xx / size * 40, yy / size * 40, 40, seed=5)
+    pores = -np.exp(-(cells / 0.18) ** 2)
+    creases = N.fbm2_periodic(xx / size * 16, yy / size * 16, 16, 3, seed=6)
+    hs = pores * 0.8 + 0.25 * (1 - np.abs(creases)) ** 4 + 0.1 * N.noise2_periodic(xx / size * 96, yy / size * 96, 96, 96, seed=7)
+    skin_n = _tile_normal(hs, 1.6)
+    TM.save_png(os.path.join(out_dir, "T_Fighter_Detail_Skin_N.png"), skin_n, "RGB")
+    # status noise
+    frost = 1 - N.cellular2_periodic(xx / size * 24, yy / size * 24, 24, seed=8)
+    frost = np.clip(0.6 * frost + 0.4 * (0.5 + 0.5 * N.fbm2_periodic(xx / size * 6, yy / size * 6, 6, 4, seed=9)), 0, 1)
+    char = np.clip(0.5 + 0.5 * N.fbm2_periodic(xx / size * 5, yy / size * 5, 5, 5, seed=10), 0, 1)
+    rng = np.random.default_rng(11)
+    sparkle = rng.random((size, size))
+    noise = np.dstack([frost, char, sparkle])
+    TM.save_png(os.path.join(out_dir, "T_Fighter_Detail_Noise.png"), noise, "RGB")
+    return {"weave_tile_m": WEAVE_TILE_M, "skin_tile_m": SKIN_TILE_M, "size": size}
+
+
+def detail_tiling(uv_report):
+    """Tiles per UV unit for each slot's detail normal so threads / pores have a real-world size."""
+    out = {}
+    for slot, size in TEX_SIZE.items():
+        info = uv_report.get(slot)
+        if not info:
+            continue
+        uv_per_m = info["px_per_m"] / size
+        tile = SKIN_TILE_M if slot == "skin" else WEAVE_TILE_M
+        out[slot] = round(1.0 / (uv_per_m * tile), 2)
+    return out

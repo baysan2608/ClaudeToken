@@ -101,3 +101,52 @@ def hash01(ix, seed=0):
     h = _PERM[(_PERM[(ix + seed) & 255] + (ix >> 8)) & 255]
     h2 = _PERM[(h + (ix >> 3) + seed * 7) & 255]
     return ((h * 256 + h2) % 65536) / 65536.0
+
+
+def noise2_periodic(x, y, px, py, seed=0):
+    """Gradient noise that tiles with integer periods (px, py) in lattice units."""
+    x = np.asarray(x, float)
+    y = np.asarray(y, float)
+    xi = np.floor(x).astype(np.int64)
+    yi = np.floor(y).astype(np.int64)
+    xf, yf = x - xi, y - yi
+
+    def g(ix, iy, dx, dy):
+        ix = ix % px
+        iy = iy % py
+        h = _PERM[(_PERM[(ix + seed * 13) & 255] + iy) & 255] & 15
+        return _G2[h, 0] * dx + _G2[h, 1] * dy
+    u, v = _fade(xf), _fade(yf)
+    n00 = g(xi, yi, xf, yf)
+    n10 = g(xi + 1, yi, xf - 1, yf)
+    n01 = g(xi, yi + 1, xf, yf - 1)
+    n11 = g(xi + 1, yi + 1, xf - 1, yf - 1)
+    return 1.414 * ((n00 * (1 - u) + n10 * u) * (1 - v) + (n01 * (1 - u) + n11 * u) * v)
+
+
+def fbm2_periodic(x, y, period, octaves=4, seed=0):
+    a, f, s, norm = 1.0, 1, 0.0, 0.0
+    for o in range(octaves):
+        s = s + a * noise2_periodic(x * f, y * f, period * f, period * f, seed + o * 7)
+        norm += a
+        a *= 0.5
+        f *= 2
+    return s / norm
+
+
+def cellular2_periodic(x, y, period, seed=0):
+    x = np.asarray(x, float)
+    y = np.asarray(y, float)
+    xi = np.floor(x).astype(np.int64)
+    yi = np.floor(y).astype(np.int64)
+    best = np.full(x.shape, 9.0)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            cx, cy = xi + dx, yi + dy
+            hx, hy = cx % period, cy % period
+            h = _PERM[(_PERM[(hx + seed) & 255] + hy) & 255]
+            jx = (h & 15) / 15.0
+            jy = ((h >> 4) & 15) / 15.0
+            d = (cx + jx - x) ** 2 + (cy + jy - y) ** 2
+            best = np.minimum(best, d)
+    return np.sqrt(best)

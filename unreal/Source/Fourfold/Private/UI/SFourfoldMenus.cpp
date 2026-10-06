@@ -41,13 +41,18 @@ void SFourfoldMenus::Construct(const FArguments& InArgs, const FFourfoldMenuHost
 			return FMargin(S.Left + M, S.Top + M, S.Right + M, S.Bottom + M);
 		}))
 		[
-			SAssignNew(CardBox, SBox)
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
+			SAssignNew(PlacementBox, SBox)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
 			[
-				SAssignNew(Card, SBorder)
-				.BorderImage(FFUiBrushes::Card())
-				.Padding(TAttribute<FMargin>::CreateLambda([]() { return FMargin(FFUi::Mm(3.0f), FFUi::Mm(2.4f)); }))
+				SAssignNew(CardBox, SBox)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SAssignNew(Card, SBorder)
+					.BorderImage(FFUiBrushes::Card())
+					.Padding(TAttribute<FMargin>::CreateLambda([]() { return FMargin(FFUi::Mm(3.0f), FFUi::Mm(2.4f)); }))
+				]
 			]
 		]
 	];
@@ -262,8 +267,8 @@ void SFourfoldMenus::BuildPage()
 
 	// Card placement: title on the left over the attract duel, watch bar top centre, the rest centred.
 	const float MaxW = FFUi::Mm(Page == EFFMenuPage::Title ? 92.0f : (Page == EFFMenuPage::Watch ? 110.0f : 132.0f));
-	CardBox->SetHAlign(Page == EFFMenuPage::Title ? HAlign_Left : HAlign_Center);
-	CardBox->SetVAlign(Page == EFFMenuPage::Watch ? VAlign_Top : VAlign_Center);
+	PlacementBox->SetHAlign(Page == EFFMenuPage::Title ? HAlign_Left : HAlign_Center);
+	PlacementBox->SetVAlign(Page == EFFMenuPage::Watch ? VAlign_Top : VAlign_Center);
 	CardBox->SetMaxDesiredWidth(MaxW);
 	CardBox->SetWidthOverride(Page == EFFMenuPage::Watch ? FOptionalSize() : FOptionalSize(MaxW));
 

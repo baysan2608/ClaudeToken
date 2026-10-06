@@ -149,6 +149,7 @@ void SFourfoldLabPanel::Construct(const FArguments& InArgs, const FFourfoldLabHo
 	ChildSlot
 	[
 		SNew(SOverlay)
+		.Visibility(EVisibility::SelfHitTestInvisible)   // only the panel card takes hits
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Fill)
@@ -201,7 +202,8 @@ void SFourfoldLabPanel::Tick(const FGeometry& AllottedGeometry, const double InC
 
 FReply SFourfoldLabPanel::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	// Only the panel area is hit-testable (SelfHitTestInvisible root): clicks that reach here are on the panel.
+	// Only the panel card is hit-testable (the root and its overlay are SelfHitTestInvisible): a click that bubbles up
+	// to here landed on the panel and must not fall through to the game viewport.
 	return FReply::Handled();
 }
 

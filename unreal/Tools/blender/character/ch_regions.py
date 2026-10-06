@@ -1,4 +1,6 @@
 """Where things go on the fitted body: landmarks, hairline, garment boundaries (numpy only, rig space metres)."""
+import os
+
 import numpy as np
 
 import ch_mh
@@ -15,6 +17,11 @@ HEM_Z = 0.56              # hem bottom (knee) - ff_hem_*_02 tails end at 0.55
 SLIT_Z = 0.86             # side slits open from the hem up to here
 SHIN_WRAP_TOP = 0.39      # shin wraps from here down to the shoe
 SHOE_TOP = 0.105
+# CC0 MakeHuman ear-translate targets (they move the ear rigidly): only read as a vertex mask (which base-mesh
+# vertices belong to the ears)
+EAR_TARGETS = ("targets/ears/l-ear-trans-backward.target", "targets/ears/r-ear-trans-backward.target")
+EAR_R0, EAR_R1 = 0.003, 0.011   # hair stays this far from the ears (full / fading)
+EAR_DROP = 0.04                 # how strongly the ears push the hairline field negative
 
 
 def landmarks(st):
@@ -44,6 +51,56 @@ def landmarks(st):
         lm[f"eye_r_{s}"] = float(np.linalg.norm(V[eix] - ec, axis=1).mean())
     # brow height: a bit above the upper lid
     lm["brow_z"] = lm["l-upperlid"][2] + 0.017
+    # lips from the mid-line profile: upper / lower lip bulges and the contact line between them
+    # (front-most y of the mid-sagittal slice of the mesh at each height; the slice is cut through the faces, so
+    # the inner lip surfaces between two vertex rows never masquerade as the front contour)
+    nz = lm["nose_tip"][2]
+    segs = []
+    xc = 0.0007
+    for f, g in zip(obj.faces, obj.groups):
+        if g != "body":
+            continue
+        P = V[f]
+        if P[:, 2].max() < nz - 0.07 or P[:, 2].min() > nz or P[:, 1].min() > lm["nose_tip"][1] + 0.03:
+            continue
+        pts = []
+        for k in range(len(f)):
+            a, b = P[k], P[(k + 1) % len(f)]
+            if (a[0] - xc) * (b[0] - xc) < 0:
+                t = (xc - a[0]) / (b[0] - a[0])
+                pts.append(a + t * (b - a))
+        if len(pts) == 2:
+            segs.append((pts[0][1:], pts[1][1:]))
+    zs = np.arange(nz - 0.060, nz - 0.012, 0.00025)
+    front = np.full(len(zs), np.nan)
+    for (y0, z0), (y1, z1) in segs:
+        lo_, hi_ = min(z0, z1), max(z0, z1)
+        ii = np.nonzero((zs >= lo_) & (zs <= hi_))[0]
+        if len(ii) == 0 or hi_ - lo_ < 1e-9:
+            continue
+        yy = y0 + (zs[ii] - z0) / (z1 - z0) * (y1 - y0)
+        front[ii] = np.fmin(front[ii], yy)
+    ok = ~np.isnan(front)
+    front = np.interp(zs, zs[ok], front[ok])
+
+    def most_forward(z0, z1):
+        m = (zs >= z0) & (zs <= z1)
+        return zs[m][np.argmin(front[m])]
+    up = most_forward(nz - 0.036, nz - 0.019)
+    lo = most_forward(nz - 0.056, up - 0.008)
+    m = (zs > lo) & (zs < up)
+    lm["mouth_z"] = float(zs[m][np.argmax(front[m])]) if m.any() else 0.5 * (up + lo)
+    lm["upper_lip_z"] = float(up)
+    lm["lower_lip_z"] = float(lo)
+    # ears: base-mesh vertices the ear-translate targets move fully (the skin around them only partly)
+    em = np.zeros(len(V))
+    for rel in EAR_TARGETS:
+        d = ch_mh.read_target(os.path.join(ch_mh.MH_DIR, rel), len(V))
+        em = np.maximum(em, np.linalg.norm(d, axis=1))
+    inb = np.zeros(len(V), dtype=bool)
+    inb[body] = True
+    em[~inb] = 0.0
+    lm["ear_pts"] = V[em > 0.85 * em.max()]
     return lm
 
 
@@ -56,10 +113,10 @@ def head_polar(V, lm):
 
 
 # hairline: (|azimuth| deg, height above the brow line in m). Short, neat male hairline; sideburns to mid-ear;
-# behind the ear it drops to the nape.
-_HAIRLINE = [(0, 0.062), (18, 0.060), (32, 0.052), (48, 0.052), (62, 0.035), (72, 0.000), (80, -0.030),
-             (86, -0.030), (92, 0.020), (104, 0.028), (118, 0.004), (135, -0.050), (155, -0.085),
-             (180, -0.095)]
+# behind the ear it drops to the nape. The ears themselves are carved out by ear_weight() (hair_field).
+_HAIRLINE = [(0, 0.063), (15, 0.061), (30, 0.054), (45, 0.050), (58, 0.040), (68, 0.018), (76, -0.010),
+             (84, -0.024), (92, -0.016), (102, -0.008), (115, -0.018), (130, -0.040), (150, -0.070),
+             (180, -0.086)]
 
 
 def hairline_z(az, lm):
@@ -68,11 +125,33 @@ def hairline_z(az, lm):
     return lm["brow_z"] + np.interp(a, xs, ys)
 
 
+_EAR_TREES = {}
+
+
+def ear_weight(V, lm):
+    """1 on / right next to the ears, fading to 0 at EAR_R1 (smooth)."""
+    pts = lm.get("ear_pts")
+    if pts is None or len(pts) == 0:
+        return np.zeros(len(V))
+    key = (len(pts), float(pts.sum()))
+    if key not in _EAR_TREES:
+        from scipy.spatial import cKDTree
+        _EAR_TREES[key] = cKDTree(pts)
+    d, _ = _EAR_TREES[key].query(np.asarray(V, float))
+    t = np.clip((EAR_R1 - d) / (EAR_R1 - EAR_R0), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def hair_field(V, lm):
+    """> 0 on the scalp under the hair cap (m, ~ height above the hairline), < 0 on the face, neck and ears."""
+    V = np.asarray(V, float)
+    az, z = head_polar(V, lm)
+    return z - hairline_z(az, lm) - EAR_DROP * ear_weight(V, lm)
+
+
 def hair_mask(V, lm, soft=0.006):
     """0..1 coverage of the scalp by the hair cap (smooth at the hairline)."""
-    az, z = head_polar(V, lm)
-    h = hairline_z(az, lm)
-    m = np.clip((z - h) / soft + 0.5, 0, 1)
+    m = np.clip(hair_field(V, lm) / soft + 0.5, 0, 1)
     # only on the head (not the neck / shoulders): above the jaw line at the back
     m[V[:, 2] < lm["jaw"][2] - 0.03] = 0.0
     return m

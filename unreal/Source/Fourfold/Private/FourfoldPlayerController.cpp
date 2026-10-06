@@ -210,7 +210,10 @@ void AFourfoldPlayerController::BeginPlay()
 			if (UFourfoldSimSubsystem* Sim = GetSim(); Sim && Sim->LoadScenario(StartId, Opts))
 			{
 				Mode = EFourfoldMode::Watch;
-				Impl->Ui->GetMenus()->Open(EFFMenuPage::Watch);
+				if (Impl->Ui.IsValid())
+				{
+					Impl->Ui->GetMenus()->Open(EFFMenuPage::Watch);
+				}
 				return;
 			}
 		}
@@ -481,7 +484,7 @@ void AFourfoldPlayerController::PauseGame()
 	{
 		return;
 	}
-	if (bLabOpen)
+	if (bLabOpen && Impl->Ui.IsValid())
 	{
 		Impl->Ui->GetLab()->Close();
 	}
@@ -1054,8 +1057,11 @@ void AFourfoldPlayerController::OnSimFrame(const FFourfoldFrame& Frame)
 	}
 	SFourfoldHud& Hud = Impl->Ui->GetHud().Get();
 
-	// ---- feel (hit-stop, shake, haptics, flashes, toasts)
-	if (!Frame.bPaused && Impl->Feel.Apply(Frame, Settings, *Sim, CameraRig, &Hud) > 0)
+	// ---- feel (hit-stop, shake, haptics, flashes, toasts). Behind the title and in Watch nobody holds the phone's
+	// fighter: no haptics there, and the title stays free of toasts / flashes.
+	FFourfoldSettings FeelSettings = Settings;
+	FeelSettings.bHaptics = Settings.bHaptics && Mode == EFourfoldMode::Play;
+	if (!Frame.bPaused && Impl->Feel.Apply(Frame, FeelSettings, *Sim, CameraRig, Mode == EFourfoldMode::Title ? nullptr : &Hud) > 0)
 	{
 		UiCue(FName(TEXT("ui_toast")));
 	}

@@ -34,12 +34,14 @@ import ff_fbx_export as fx  # noqa: E402
 
 UNREAL = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 ART = os.path.join(UNREAL, "SourceArt", "Character")
+DATA_JSON = os.path.join(UNREAL, "Content", "Fourfold", "Data", "character.json")
 LOD_TARGETS = {0: 30000, 1: 15000, 2: 6000}
-LOD_GOALS = {0: 27500, 1: 14000, 2: 5600}        # leave headroom under the budgets
+LOD_SCREEN_SIZES = [1.0, 0.30, 0.12]
+LOD_GOALS = {0: 29300, 1: 14600, 2: 5800}        # a little headroom under the budgets (30k / 15k / 6k)
 
 
 def body_decimate_weights(obj, lm):
-    """0 = keep (face, lips, eyelids, fingertips), 1 = free to collapse (wraps, back of the head)."""
+    """0 = keep (face, lips, eyelids), 1 = free to collapse (back of the head under the hair)."""
     me = obj.data
     v = ch_bl.get_verts(obj)
     w = np.full(len(v), 0.6)
@@ -48,8 +50,10 @@ def body_decimate_weights(obj, lm):
     az, z = R.head_polar(v, lm)
     head = dom == "head"
     face = head & (np.abs(az) < 75) & (z < lm["brow_z"] + 0.05) & (z > lm["jaw"][2] - 0.03)
-    w[head] = 0.85
+    w[head] = 0.7
+    w[head & (R.hair_field(v, lm) > 0.004)] = 1.0          # scalp under the hair cap: never seen
     w[face] = 0.15
+    w[R.ear_weight(v, lm) > 0.5] = 0.25                     # ears keep their rim
     for s in ("l", "r"):
         e = lm[f"eye_c_{s}"]
         w[np.linalg.norm(v - e, axis=1) < 0.03] = 0.0
@@ -60,7 +64,7 @@ def body_decimate_weights(obj, lm):
     for poly in me.polygons:
         if obj.material_slots[poly.material_index].name == "wraps":
             mats[list(poly.vertices)] = True
-    w[mats] = 1.0
+    w[mats] = 0.55            # the hand wraps are in every close-up: keep their silhouette round
     return w
 
 
@@ -83,7 +87,11 @@ def build_lods(objs, by_name, lm, log):
     lod0_parts = list(objs)
     log["lod0_parts"] = {o.name: tris(o) for o in lod0_parts}
     for lod in (1, 2):
-        dup = [S.duplicate(o, f"{o.name}_LOD{lod}") for o in objs]
+        dup = []
+        for o in objs:
+            if lod == 2 and o.name.startswith("lash_"):        # lashes are not worth their triangles at LOD2
+                continue
+            dup.append(S.duplicate(o, f"{o.name}_LOD{lod}"))
         tot = sum(tris(o) for o in dup)
         ratio = LOD_GOALS[lod] / tot
         for o in dup:
@@ -91,12 +99,8 @@ def build_lods(objs, by_name, lm, log):
             nm = o.name
             if nm.startswith(("eye_", "lash_")):
                 r = max(ratio, 0.6) if lod == 1 else 0.35
-            if nm.startswith("lash_") and lod == 2:
-                bpy.data.objects.remove(o)
-                continue
             S.decimate(o, r, None, symmetric=not nm.startswith(("sash", "collar_diag", "hair_tail", "hair_bun",
-                                                                    "hair_tie", "eye_")))
-        dup = [o for o in dup if o.name in bpy.data.objects]
+                                                                    "hair_tie", "eye_", "lash_")))
         # second pass if still over
         tot = sum(tris(o) for o in dup)
         if tot > LOD_GOALS[lod]:
@@ -110,6 +114,47 @@ def build_lods(objs, by_name, lm, log):
     return out
 
 
+def write_character_json(path, log):
+    """Runtime data for the game (palettes, yaw offset, slots) + import settings for the editor script."""
+    import ch_design
+    import ch_textures
+    import ff_rig_spec as spec
+    tint_vec = {"FF_Main": [1.0, 0.0, 0.0], "FF_Accent": [0.0, 1.0, 0.0], "FF_Trim": [0.0, 0.0, 1.0]}
+    data = {
+        "schema": "fourfold.character/1",
+        "rig": spec.SPEC_VERSION,
+        "mesh": "/Game/Fourfold/Characters/Fighter/SK_Fighter",
+        "skeleton": "/Game/Fourfold/Characters/Fighter/SKEL_Fighter",
+        "physics_asset": "/Game/Fourfold/Characters/Fighter/PA_Fighter",
+        "mesh_yaw_offset_deg": -90.0,
+        "height_m": 1.79,
+        "slots": list(A.SLOTS),
+        "palettes": ch_design.PALETTES,
+        "materials": {s: f"/Game/Fourfold/Characters/Fighter/Materials/MI_Fighter_{s}" for s in A.SLOTS},
+        "slot_tint": dict(ch_design.SLOT_TINT),
+        "slot_tint_select": {s: tint_vec[t] for s, t in ch_design.SLOT_TINT.items()},
+        "slot_params": {"skin": {"ScatterStrength": 0.22}, "cloth_main": {"SheenStrength": 0.25},
+                        "cloth_accent": {"SheenStrength": 0.20}, "sash": {"SheenStrength": 0.35},
+                        "wraps": {"SheenStrength": 0.15, "Porosity": 1.0}, "shoes": {"SheenStrength": 0.10}},
+        "status_params": {"vectors": ["FF_Main", "FF_Accent", "FF_Trim", "FF_ElementColor"],
+                          "scalars": ["FF_Wet", "FF_Frost", "FF_Burn", "FF_ElementGlow"]},
+        "detail_tiling": ch_textures.detail_tiling(log.get("uv", {})),
+        "textures": {s: {"size": A.TEX_SIZE[s], "maps": [f"T_Fighter_{s}_{k}" for k in ("BC", "N", "ORM")]}
+                     for s in A.SLOTS},
+        "lods": {"count": 3, "screen_sizes": LOD_SCREEN_SIZES, "triangles": [log["tris"].get(f"LOD{i}") for i in range(3)],
+                 "sources": ["SK_Fighter.fbx", "SK_Fighter_LOD1.fbx", "SK_Fighter_LOD2.fbx"]},
+        "bones": {"count": len(spec.BONES) + 1, "manny": spec.UE5_MANNY_BONES,
+                  "secondary": spec.FF_SECONDARY_BONES},
+        "sockets_hint": {"hand_l": "hand_l", "hand_r": "hand_r", "foot_l": "foot_l", "foot_r": "foot_r",
+                         "head": "head", "chest": "spine_05", "pelvis": "pelvis"},
+    }
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=1)
+        f.write("\n")
+    return path
+
+
 def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-textures", action="store_true")
@@ -117,6 +162,9 @@ def main(argv):
     ap.add_argument("--quick", action="store_true", help="small textures / few samples (iteration)")
     ap.add_argument("--out", default=ART)
     ap.add_argument("--blend", default=None, help="also save the built scene as .blend here")
+    ap.add_argument("--scratch", default=None, help="cache dir for the AO bake (reused while the mesh is unchanged)")
+    ap.add_argument("--json", default=None, help="write character.json here (default: Content/Fourfold/Data when "
+                                                   "--out is SourceArt/Character)")
     a = ap.parse_args(argv)
     t0 = time.time()
     log = {}
@@ -133,7 +181,8 @@ def main(argv):
         objs.append(o)
         by_name[p.name] = o
     lods = build_lods(objs, by_name, lm, log)
-    log["tris"] = {f"LOD{k}": tris(o) for k, o in lods.items()}
+    log["ngons_split"] = {f"LOD{k}": S.triangulate_ngons(o) for k, o in sorted(lods.items())}
+    log["tris"] = {f"LOD{k}": tris(o) for k, o in sorted(lods.items())}
     print("[character] triangles", log["tris"], "uv", log["uv"])
     os.makedirs(a.out, exist_ok=True)
     if not a.no_textures:
@@ -141,9 +190,12 @@ def main(argv):
         for k, o in lods.items():          # only LOD0 may occlude itself in the AO bake
             o.hide_render = k != 0
         arm.hide_render = True
-        log["textures"] = ch_textures.build_all(lods[0], parts, lm, a.out, quick=a.quick)
+        lods[0]["ff_part_names"] = [p.name for p in parts]
+        log["textures"] = ch_textures.build_all(lods[0], parts, lm, a.out, quick=a.quick,
+                                                ao_cache=os.path.join(a.scratch, "ao_cache.npz") if a.scratch else None)
         for o in lods.values():
             o.hide_render = False
+        log["detail"] = ch_textures.build_detail_textures(a.out)
     # FBX: LOD0 = SK_Fighter.fbx, LOD1 / LOD2 separate files (imported into the same asset by the editor script)
     for lod, o in lods.items():
         others = [x for k, x in lods.items() if k != lod]
@@ -159,6 +211,9 @@ def main(argv):
         import ch_previews
         ch_previews.render_all(arm, lods, a.out, quick=a.quick)
     log["seconds"] = round(time.time() - t0, 1)
+    json_path = a.json or (DATA_JSON if os.path.abspath(a.out) == os.path.abspath(ART) else None)
+    if json_path:
+        write_character_json(json_path, log)
     with open(os.path.join(a.out, "build_report.json"), "w") as f:
         json.dump(log, f, indent=1, sort_keys=True)
     print("[character] done in", log["seconds"], "s")

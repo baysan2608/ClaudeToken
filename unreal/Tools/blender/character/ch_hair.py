@@ -13,9 +13,19 @@ def _n(a):
 
 
 def hair_field(v, lm):
-    """> 0 on the scalp (above the hairline)."""
-    az, z = R.head_polar(v, lm)
-    return z - R.hairline_z(az, lm)
+    """> 0 on the scalp (above the hairline, away from the ears)."""
+    return R.hair_field(v, lm)
+
+
+CAP_EDGE = 0.012      # the cap thickens from 0 at its edge to full over this distance
+
+
+def _cap_thickness(cap, lm, edge_d):
+    """0 at the cap edge -> ~5 mm one centimetre in -> fuller toward the crown / back where it gathers."""
+    c = lm["skull_c"]
+    back = np.clip((cap.v[:, 1] - c[1]) / 0.08, 0, 1)
+    top = np.clip((cap.v[:, 2] - (c[2] + 0.02)) / 0.06, 0, 1)
+    return np.clip(edge_d / CAP_EDGE, 0, 1) ** 0.7 * (0.0045 + 0.0035 * top + 0.004 * back * top)
 
 
 def build_hair_cap(st, W_all, lm):
@@ -27,27 +37,47 @@ def build_hair_cap(st, W_all, lm):
     hf = hair_field(head.v, lm)
     sel = [all(hf[i] > -0.02 for i in f) and all(head.v[i, 2] > lm["jaw"][2] - 0.01 for i in f) for f in head.f]
     cap = head.subset(sel, "hair_cap")
-    # thickness: 0 at the hairline -> 5 mm one centimetre in -> fuller toward the crown / back where it gathers
-    hf = hair_field(cap.v, lm)
+    # the base mesh's scalp is coarse (~1.5 cm quads): one subdivision step so the hairline cut and the cap's
+    # silhouette are smooth, then the exact hairline (on the skin surface, away from the ears)
+    cap = P.subdivide(cap)
+    cap = P.clip(cap, -(hair_field(cap.v, lm) - 0.0005))
+    # the field bends sharply around the ears: linear cuts on 7 mm edges zig-zag there. Relax the cut line along
+    # itself and put it back on the skin.
+    _relax_boundary(cap, G.bvh_of(head), 8)
+    # thickness from the distance to the cap edge (the edge stays on the skin; works along the ears too)
+    edge_d = P.boundary_distance(cap)
     nrm = cap.vertex_normals()
-    c = lm["skull_c"]
-    back = np.clip((cap.v[:, 1] - c[1]) / 0.08, 0, 1)
-    top = np.clip((cap.v[:, 2] - (c[2] + 0.02)) / 0.06, 0, 1)
-    thick = np.clip(hf / 0.012, 0, 1) ** 0.7 * (0.0045 + 0.0035 * top + 0.004 * back * top)
-    cap.v = cap.v + nrm * thick[:, None]
+    cap.v = cap.v + nrm * _cap_thickness(cap, lm, edge_d)[:, None]
     # comb smooth (lose the skull's small bumps), keep the hairline where it is
-    pin = hf < 0.004
-    G.taubin(cap, 10, mask=~pin)
-    cap = P.clip(cap, -(hair_field(cap.v, lm) - 0.0005))     # exact hairline, a hair above the skin
+    G.taubin(cap, 12, mask=edge_d > 0.004)
     return cap
 
 
+def _relax_boundary(part, bvh, iters):
+    from mathutils import Vector
+    for loop in P.boundary_loops(part):
+        if len(loop) < 6:
+            continue
+        pts = part.v[loop].copy()
+        closed = loop[0] in {b for a, b in part.edges_boundary() if a == loop[-1]}
+        for _ in range(iters):
+            sm = 0.5 * pts + 0.25 * (np.roll(pts, 1, axis=0) + np.roll(pts, -1, axis=0))
+            if not closed:
+                sm[0], sm[-1] = pts[0], pts[-1]
+            pts = sm
+        for k, q in enumerate(pts):
+            loc = bvh.find_nearest(Vector(q), 0.02)[0]
+            part.v[loop[k]] = np.array(loc) if loc is not None else q
+    return part
+
+
 def keep_above(cap, head_part, lm, gap=0.0006):
-    """No part of the cap may sink under the scalp (smoothing pulls it into concave spots behind the ears)."""
+    """No part of the cap may sink under the scalp (smoothing pulls it into concave spots behind the ears); at the
+    edge the cap tucks just under the skin surface (no visible gap / shadow line)."""
     bb = G.bvh_of(head_part)
-    hf = hair_field(cap.v, lm)
-    # at the hairline the cap tucks just under the skin surface (no visible gap / shadow line)
-    thick = np.clip(hf / 0.012, 0, 1) * 0.004 + gap - 0.0012 * np.clip(1 - hf / 0.004, 0, 1)
+    edge_d = P.boundary_distance(cap)
+    thick = np.clip(edge_d / CAP_EDGE, 0, 1) * 0.004 + gap - 0.0012 * np.clip(1 - edge_d / 0.004, 0, 1)
+    thick_max = _cap_thickness(cap, lm, edge_d) + 0.0015 + 0.004 * np.clip((edge_d - 0.02) / 0.03, 0, 1)
     from mathutils import Vector
     for i in range(len(cap.v)):
         loc, nrm, _fi, _d = bb.find_nearest(Vector(cap.v[i]), 0.05)
@@ -55,9 +85,23 @@ def keep_above(cap, head_part, lm, gap=0.0006):
             continue
         loc, nrm = np.array(loc), np.array(nrm)
         d = (cap.v[i] - loc) @ nrm
-        if d < thick[i] or hf[i] < 0.004:
+        if d < thick[i] or edge_d[i] < 0.004:
             cap.v[i] += nrm * (thick[i] - d)
+        elif d > thick_max[i]:                    # no flaps standing off concave spots (behind the ears)
+            cap.v[i] += nrm * (thick_max[i] - d)
     return cap
+
+
+def cut_under_bun(cap, lm, seat, hole=0.09):
+    """Open the cap under the top knot (the bun hides it): removes the pole of the cap's polar UV map, where
+    triangles around the pole would fold in UV space."""
+    c = lm["skull_c"]
+    ax = _n(cw.bone_head("ff_hair_01") - c)
+    pol = np.arccos(np.clip(_n(cap.v - c) @ ax, -1, 1))
+    pole_pt = cap.v[np.argmin(pol)]
+    if np.linalg.norm(pole_pt - seat) > 0.012:       # pole not under the bun: keep the cap closed
+        return cap
+    return P.clip(cap, hole - pol)
 
 
 def lofted_tube(name, centers, radii_a, radii_b, up_hint, segs, mat, cap_end=True, twist=None):
@@ -121,7 +165,8 @@ def build_knot_and_tail(cap, lm):
     # bun: squashed sphere, axis along the scalp normal tilted back
     axis = _n(n + np.array([0.0, 0.35, 0.1]))
     r_bun = 0.026
-    centers = [seat + axis * (r_bun * (0.15 + 1.6 * t)) for t in np.linspace(0, 1, 9)]
+    # the first ring sits a few millimetres inside the cap so the bun's base meets the hair without a gap
+    centers = [seat + axis * (r_bun * (-0.15 + 1.9 * t)) for t in np.linspace(0, 1, 9)]
     prof = np.sin(np.linspace(0.12, np.pi - 0.15, 9)) * r_bun
     prof[0] = r_bun * 0.62
     bun = lofted_tube("hair_bun", centers, prof * 1.05, prof * 0.95, np.array([1.0, 0, 0]), 14, "hair",
@@ -144,8 +189,8 @@ def build_knot_and_tail(cap, lm):
     C = G.smooth_polyline(C, 3, False)
     C[:, 0] += 0.004 * np.sin(tt * np.pi * 1.5)                 # a little sway, not symmetric
     taper = (1 - tt) ** 0.8
-    ra = 0.016 * taper ** 0.7 + 0.0015
-    rb = 0.011 * taper ** 0.7 + 0.0012
+    ra = 0.0125 * taper ** 0.7 + 0.0015
+    rb = 0.0090 * taper ** 0.7 + 0.0012
     tail = lofted_tube("hair_tail", C, ra, rb, lambda i: np.array([0, 1.0, 0.2]), 10, "hair", cap_end=True,
                        twist=np.linspace(0, 0.5, len(C)))
     return bun, tie, tail, seat, axis
@@ -161,7 +206,7 @@ def chain_weight_tail(part, chain_bones, z_centers):
 
 
 # ---------------------------------------------------------------------------------------------------- eyes
-def build_eyes(lm, segs=20, rings=14):
+def build_eyes(lm, segs=18, rings=12):
     parts = []
     for s in ("l", "r"):
         c = lm[f"eye_c_{s}"]
@@ -182,14 +227,18 @@ def build_eyes(lm, segs=20, rings=14):
                 f = [idx(i, k), idx(i + 1, k), idx(i + 1, k + 1), idx(i, k + 1)]
                 faces.append(f)
         # azimuthal map around the front pole (unique, no overlap): r = 0.5 * (theta / pi) ** 0.6 so the iris
-        # (theta < ~32 deg) gets a big share of the texture; the back pole sits on the outer circle
-        def uv_of(vi):
-            d = (verts[vi] - c) / np.linalg.norm(verts[vi] - c)
-            th = np.arccos(np.clip(-d[1], -1, 1))
-            ph = np.arctan2(d[2], d[0] * (1 if s == "l" else -1))
+        # (theta < ~32 deg) gets a big share of the texture; the back pole sits on the outer circle. UVs come from the
+        # grid indices (not the positions) so the pole corners keep their own azimuth.
+        sx = 1 if s == "l" else -1
+
+        def uv_ik(i, k):
+            th = np.pi * i / rings
+            ph = 2 * np.pi * k / segs
+            ph = np.arctan2(np.sin(ph), np.cos(ph) * sx)
             rr = 0.5 * (th / np.pi) ** 0.6 * 0.98
             return (float(0.5 + rr * np.cos(ph)), float(0.5 + rr * np.sin(ph)))
-        uvs = [[uv_of(vi) for vi in f] for f in faces]
+        uvs = [[uv_ik(i, k), uv_ik(i + 1, k), uv_ik(i + 1, k + 1), uv_ik(i, k + 1)]
+               for i in range(rings) for k in range(segs)]
         p = P.Part("eye_" + s, verts, faces, "eyes", None, uvs)
         # outward winding
         f0 = faces[segs * 3]
@@ -203,36 +252,42 @@ def build_eyes(lm, segs=20, rings=14):
     return parts
 
 
-def build_lashes(body, lm):
-    """Opaque upper-lash strips along the top of each eye opening (hair material)."""
-    loops = P.boundary_loops(body)
+def build_lashes(st, lm):
+    """Opaque upper-lash strips along the upper lid margins (hair material, both faces). The lid margin comes from
+    the base mesh's CC0 upper-lash helper strip (its root row), which the fit moves with the eyelids."""
     out = []
     for s in ("l", "r"):
         c = lm[f"eye_c_{s}"]
-        best = min(loops, key=lambda l: np.linalg.norm(body.v[l].mean(axis=0) - (c + np.array([0, -0.012, 0]))))
-        L = body.v[best]
-        if np.linalg.norm(L.mean(axis=0) - c) > 0.03:
+        fs = [f for f, g in zip(st.obj.faces, st.obj.groups) if g == f"helper-{s}-eyelashes-2"]
+        ids = sorted({i for f in fs for i in f})
+        if len(ids) < 8:
             continue
-        # upper half of the opening, ordered from inner to outer corner
-        upper = [i for i in best if body.v[i, 2] > c[2] - 0.001]
-        pts = body.v[upper]
-        order = np.argsort(np.abs(pts[:, 0]))
-        pts = pts[order]
-        if len(pts) < 4:
+        hv = st.v[ids]
+        d = np.linalg.norm(hv - c, axis=1)
+        root = hv[d <= np.percentile(d, 40)]
+        # one point per x slot, inner -> outer corner
+        order = np.argsort(np.abs(root[:, 0]))
+        root = root[order]
+        if len(root) < 4:
             continue
-        pts = G.resample_polyline(pts, 14, False)
+        pts = G.smooth_polyline(G.resample_polyline(root, 14, False), 2, False)
+        # sit just on the lid margin (a hair outside the eyeball)
+        rel = pts - c
+        rr = np.linalg.norm(rel, axis=1, keepdims=True)
+        pts = c + rel / rr * np.maximum(rr, lm[f"eye_r_{s}"] + 0.0012)
         verts, faces = [], []
         n_out = len(pts)
         for i, p in enumerate(pts):
             t = i / (n_out - 1)
-            ln = 0.0045 + 0.004 * np.sin(np.pi * min(1.0, t * 1.15))          # longer toward the outer third
+            # short and mostly forward: from the front they read as a fine dark lash line, not a slab
+            ln = 0.0022 + 0.0016 * np.sin(np.pi * min(1.0, t * 1.15))        # longer toward the outer third
             fwd = np.array([0, -1.0, 0])
             up = np.array([0, 0, 1.0])
             outward = _n(np.array([np.sign(c[0]) * 0.35, 0, 0]) + 0.2 * up)
-            tip = p + fwd * ln * 0.55 + up * ln * 0.75 + outward * ln * 0.3 * t
-            mid = p + fwd * ln * 0.45 + up * ln * 0.25
-            base_in = p + np.array([0, 0.0008, -0.0004])
-            verts += [base_in, p + fwd * 0.0006, mid, tip]
+            tip = p + fwd * ln * 0.85 + up * ln * 0.40 + outward * ln * 0.25 * t
+            mid = p + fwd * ln * 0.50 + up * ln * 0.08
+            base_in = p + np.array([0, 0.0006, -0.0003])
+            verts += [base_in, p + fwd * 0.0004, mid, tip]
         for i in range(n_out - 1):
             for k in range(3):
                 a, b = i * 4 + k, i * 4 + k + 1
@@ -242,7 +297,14 @@ def build_lashes(body, lm):
             for k in range(3):
                 luv.append([(i * 0.003, k * 0.002), (i * 0.003, (k + 1) * 0.002), ((i + 1) * 0.003, (k + 1) * 0.002),
                             ((i + 1) * 0.003, k * 0.002)])
-        lp = P.Part("lash_" + s, np.array(verts), faces, "hair", uvs=luv)
+        # second face (reversed, a quarter millimetre behind) so the strip shows from above as well
+        verts = np.array(verts)
+        nv = len(verts)
+        lp0 = P.Part("tmp", verts, faces, "hair")
+        back = verts - lp0.vertex_normals() * 0.00025
+        faces2 = faces + [[v + nv for v in reversed(f)] for f in faces]
+        luv2 = luv + [list(reversed(u)) for u in luv]
+        lp = P.Part("lash_" + s, np.vstack([verts, back]), faces2, "hair", uvs=luv2)
         lp.W[:, cw.BI["head"]] = 1.0
         out.append(lp)
     return out

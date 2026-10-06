@@ -98,6 +98,15 @@ def look_at(cam, target, yaw_deg, dist, height):
     cam.rotation_euler = (t - loc).to_track_quat("-Z", "Y").to_euler()
 
 
+def look_dir(cam, target, direction, dist):
+    """Camera at target + direction * dist, looking at target (world up stays up)."""
+    t = Vector(target)
+    dv = Vector(direction).normalized()
+    loc = t + dv * dist
+    cam.location = loc
+    cam.rotation_euler = (t - loc).to_track_quat("-Z", "Y").to_euler()
+
+
 def render(path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     bpy.context.scene.render.filepath = path

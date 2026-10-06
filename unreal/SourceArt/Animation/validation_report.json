@@ -1,0 +1,302 @@
+{
+ "a_stance": {
+  "errors": [],
+  "fbx": "SourceArt/Animation/A_a_stance.fbx",
+  "fbx_bytes": 1546428,
+  "fbx_check": {
+   "bones": 103,
+   "bones_match": true,
+   "first_frame": 1,
+   "keys": 145,
+   "ok": false,
+   "worst_deg": 0.0651,
+   "worst_mm": 0.001
+  },
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 1.12,
+   "max_wrist_deg": 29.4,
+   "seam_vel_deg": 0.02,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "e_guard": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.079,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 2.1,
+   "seam_vel_deg": 0.34,
+   "start_base_deg": 0.079
+  },
+  "warnings": []
+ },
+ "e_heave": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": -0.96,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 45.2,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "centre of mass outside the support box on 13 frames"
+  ]
+ },
+ "e_lift": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 1.21,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 41.2,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "centre of mass outside the support box on 6 frames"
+  ]
+ },
+ "e_pour": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": -0.643,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.34,
+   "max_wrist_deg": 58.1,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "arm_r short of its target by 3.1 cm at frame 15",
+   "arm_l short of its target by 6.0 cm at frame 16",
+   "arm_r short of its target by 6.3 cm at frame 16",
+   "arm_l short of its target by 6.0 cm at frame 17",
+   "arm_r short of its target by 6.3 cm at frame 17",
+   "arm_l short of its target by 6.0 cm at frame 18",
+   "arm_r short of its target by 6.3 cm at frame 18",
+   "centre of mass outside the support box on 12 frames"
+  ]
+ },
+ "e_seize_loop": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.209,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 28.7,
+   "seam_vel_deg": 0.85,
+   "start_base_deg": 0.209
+  },
+  "warnings": []
+ },
+ "e_stance": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 43.8,
+   "seam_vel_deg": 0.01,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "e_strike": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.61,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 52.3,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "centre of mass outside the support box on 13 frames"
+  ]
+ },
+ "e_throw": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.732,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 76.0,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "centre of mass outside the support box on 9 frames"
+  ]
+ },
+ "e_wall": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 1.37,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 41.2,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "centre of mass outside the support box on 5 frames"
+  ]
+ },
+ "f_stance": {
+  "errors": [],
+  "fbx": "SourceArt/Animation/A_f_stance.fbx",
+  "fbx_bytes": 1093180,
+  "fbx_check": {
+   "bones": 103,
+   "bones_match": true,
+   "first_frame": 1,
+   "keys": 73,
+   "ok": false,
+   "worst_deg": 0.0658,
+   "worst_mm": 0.001
+  },
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 25.4,
+   "seam_vel_deg": 0.14,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "guard": {
+  "errors": [],
+  "fbx": "SourceArt/Animation/A_guard.fbx",
+  "fbx_bytes": 1255100,
+  "fbx_check": {
+   "bones": 103,
+   "bones_match": true,
+   "first_frame": 1,
+   "keys": 97,
+   "ok": false,
+   "worst_deg": 0.0979,
+   "worst_mm": 0.001
+  },
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 13.7,
+   "seam_vel_deg": 0.04,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "hand_fist": {
+  "errors": [],
+  "fbx": "SourceArt/Animation/A_hand_fist.fbx",
+  "fbx_bytes": 609996,
+  "fbx_check": {
+   "bones": 103,
+   "bones_match": true,
+   "first_frame": 1,
+   "keys": 2,
+   "ok": true,
+   "worst_deg": 0.0398,
+   "worst_mm": 0.001
+  },
+  "n_errors": 0,
+  "stats": {
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 5.5
+  },
+  "warnings": []
+ },
+ "idle": {
+  "errors": [],
+  "fbx": "SourceArt/Animation/A_idle.fbx",
+  "fbx_bytes": 1402044,
+  "fbx_check": {
+   "bones": 103,
+   "bones_match": true,
+   "first_frame": 1,
+   "keys": 121,
+   "ok": false,
+   "worst_deg": 0.1283,
+   "worst_mm": 0.001
+  },
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.002,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 20.2,
+   "seam_vel_deg": 0.01,
+   "start_base_deg": 0.002
+  },
+  "warnings": []
+ },
+ "run": {
+  "errors": [
+   "foot_l sinks -5.4 mm below the floor",
+   "foot_r sinks -5.4 mm below the floor",
+   "loop seam velocity mismatch 41.39 deg/frame"
+  ],
+  "n_errors": 3,
+  "stats": {
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 76.0,
+   "seam_vel_deg": 41.39
+  },
+  "warnings": []
+ },
+ "strafe_l": {
+  "errors": [
+   "loop seam velocity mismatch 21.90 deg/frame"
+  ],
+  "n_errors": 1,
+  "stats": {
+   "max_slide_mm": 0.24,
+   "max_wrist_deg": 16.2,
+   "seam_vel_deg": 21.9
+  },
+  "warnings": []
+ },
+ "w_stance": {
+  "errors": [],
+  "fbx": "SourceArt/Animation/A_w_stance.fbx",
+  "fbx_bytes": 1545596,
+  "fbx_check": {
+   "bones": 103,
+   "bones_match": true,
+   "first_frame": 1,
+   "keys": 145,
+   "ok": false,
+   "worst_deg": 0.0988,
+   "worst_mm": 0.001
+  },
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_wrist_deg": 41.8,
+   "seam_vel_deg": 0.02,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "walk": {
+  "errors": [
+   "loop seam velocity mismatch 18.79 deg/frame"
+  ],
+  "n_errors": 1,
+  "stats": {
+   "max_slide_mm": 0.34,
+   "max_wrist_deg": 40.3,
+   "seam_vel_deg": 18.79
+  },
+  "warnings": []
+ }
+}

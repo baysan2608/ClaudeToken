@@ -88,6 +88,9 @@ private:
 	FFourfoldMenuHost Host;
 	TArray<EFFMenuPage> Stack;
 	TSharedPtr<SBorder> Backdrop;
+	/** Fills the safe area and places CardBox (page-dependent alignment); CardBox sizes the card (SBox overrides only
+	 *  size the widget itself, so the alignment must live one level up). */
+	TSharedPtr<SBox> PlacementBox;
 	TSharedPtr<SBox> CardBox;
 	TSharedPtr<SBorder> Card;
 	TSharedPtr<SScrollBox> Scroll;
