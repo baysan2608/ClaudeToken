@@ -7,6 +7,11 @@ UE 5.8.2 public-header mirror (for API verification, read-only, made by the game
   /tmp/claude-0/-home-user-ClaudeToken/37fdfe41-9b78-53ea-8620-b33d5491ff57/scratchpad/ue/game/uecheck58/ue/Engine/Source/Runtime
   (+ mock UHT / syntax-check scripts in unreal/Source/Fourfold/Private/Logic/tools/ue_syntax_check; if the scratch dir is gone, re-run its setup.sh)
 
+## RUN 3 (started): audio A1-A4 are DONE (see below). Remaining, in order:
+ A5 docs/audio/{README,API_NOTES}.md (not yet written) -> W1 env art (Tools/world) -> W2 fourfold/world + Shaders/Env -> S1 fourfold_setup.py + init_unreal.py
+ -> C1 Config review (+ requests from game stream) -> docs/world/README.md -> final mock dry run + report.
+ (Run-3 log lines are appended at the bottom under "RUN 3 LOG".)
+
 ## State at start of run 2 (this file did not exist before)
 - Existing partial files at start: Config/{DefaultEngine,DefaultInput,DefaultGame,DefaultEditor}.ini, Config/IOS/IOSEngine.ini
   (architect versions, unreviewed), Source/FourfoldAudio/{FourfoldAudio.Build.cs, Private/FourfoldAudioModule.cpp} (architect stubs).
@@ -78,3 +83,6 @@ UE 5.8.2 public-header mirror (for API verification, read-only, made by the game
 - Manifest `category` uses the ARCHITECTURE set impact|element|ui|ambience|loop; extra fields: family (Godot category), bus (sfx|ui|ambience), stinger flag.
 - Actor surface strings from the sim: stone | water | puddle | metal | zone:<tag> (zone:ice, zone:sand..., zone:mud...). Footstep sets: stone, sand, water, puddle, metal, ice, mud.
 - ~219 sounds planned: base 116 + martial swings/kicks/steps/cloth/breath + material impacts + per-element charge T1-T3 + UI/round/KO + ambience beds & chimes.
+
+## RUN 3 LOG
+- [r3] read ARCHITECTURE/MAC_SETUP/Godot env sources; check_audio.sh warning pass of run 2: exit=0 (clean). Next: re-run logic tests, write docs/audio.
