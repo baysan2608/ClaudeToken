@@ -57,7 +57,7 @@ using TechPreviewFn = std::function<Dict(CombatWorld&, ActorState&, Vec3)>;
 namespace Hooks {
 
 const HookTable& table();
-void ensure();     // builds the runtime registries from hooks.json (idempotent; Moves::ensure calls it)
+void ensure_ready();     // builds the runtime registries from hooks.json (idempotent; Moves::ensure calls it)
 
 // Runtime registries (process-wide, like Godot's static vars).
 std::map<std::string, BodyTickFn>& body_ticks();

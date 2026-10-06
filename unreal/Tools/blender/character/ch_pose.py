@@ -7,6 +7,10 @@ from mathutils import Quaternion, Vector
 FIST = {"index": (75, 95, 55), "middle": (80, 95, 55), "ring": (85, 95, 55), "pinky": (90, 95, 55)}
 TIGER = {"index": (25, 75, 70), "middle": (25, 75, 70), "ring": (25, 75, 70), "pinky": (25, 75, 70)}
 SWORD = {"index": (0, 3, 3), "middle": (0, 3, 3), "ring": (85, 100, 60), "pinky": (90, 100, 60)}
+# fist thumb: folded over the index / middle fingers (solved for the left hand: thumb_02 / _03 curls + three world-axis
+# rotations of thumb_01 about the palm normal, the hand axis and the forward axis; the right hand mirrors them)
+FIST_THUMB = {"curl": (0, 0, 64),
+              "rot": [((-0.7071, 0.0, -0.7071), -42), ((0.7071, 0.0, -0.7071), 53), ((0.0, -1.0, 0.0), 50)]}
 
 
 def _mirror_axis(a):
@@ -52,12 +56,19 @@ class Pose:
             self.ops.append((bone[:-2] + "_r", "w", (_mirror_axis(axis), deg)))
         return self
 
-    def hand(self, side, shape, thumb=(30, 30, 20)):
+    def hand(self, side, shape, thumb=None):
+        """thumb: (x1, x2, x3) flexions, or a dict {"curl": (x1, x2, x3), "rot": [(left-hand world axis, deg)..]}.
+        Default: FIST_THUMB for the fist, a relaxed (30, 30, 20) curl otherwise."""
+        if thumb is None:
+            thumb = FIST_THUMB if shape is FIST else (30, 30, 20)
         for f, angs in shape.items():
             for j, a in enumerate(angs, start=1):
                 self.ops.append((f"{f}_0{j}_{side}", "x", a))
-        for j, a in enumerate(thumb, start=1):
+        curl, rots = (thumb["curl"], thumb["rot"]) if isinstance(thumb, dict) else (thumb, [])
+        for j, a in enumerate(curl, start=1):
             self.ops.append((f"thumb_0{j}_{side}", "x", a))
+        for axis, deg in rots:
+            self.ops.append((f"thumb_01_{side}", "w", (axis if side == "l" else _mirror_axis(axis), deg)))
         return self
 
     def apply(self, arm_obj):

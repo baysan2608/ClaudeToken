@@ -19,7 +19,7 @@ namespace Status {
 inline constexpr double WET_AT = 0.3;
 inline constexpr double HIDDEN_RANGE = 2.0;
 
-void ensure();
+void ensure_ready();
 Dict& specs();                                   // Status.SPECS (process-wide)
 void register_spec(const std::string& nm, const Dict& spec);
 Dict spec(std::string_view nm);

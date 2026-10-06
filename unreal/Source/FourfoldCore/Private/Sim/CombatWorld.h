@@ -256,8 +256,11 @@ public:
 
 	// Snapshot of the list for loops that must not see bodies spawned meanwhile (GDScript bodies.duplicate()).
 	std::vector<MatBody*> body_list() const;
+	int next_body_id() const { return _next_body; }   // GDScript w._next_body (Lab spawner)
+	uint64_t instance_id() const { return _uid; }       // GDScript get_instance_id() (process-unique, never reused)
 
 private:
+	uint64_t _uid = 0;
 	int _next_body = 1;
 	int _next_attack = 1;
 	std::vector<GripRequest> _grips;

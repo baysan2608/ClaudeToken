@@ -1,11 +1,12 @@
 #!/bin/bash
-# Fourfold - one-time setup of the UE header syntax check (Linux, clang). Downloads the public headers of a UE 5.5
-# mirror (sparse, headers only, ~80 MB) into $FF_UE_CHECK_DIR, then writes the mock UHT headers, include list and
-# API-macro prelude there. Usage: FF_UE_CHECK_DIR=/some/scratch ./setup.sh
+# Fourfold - one-time setup of the UE header syntax check (Linux, clang). Downloads the public headers of a UE source
+# mirror (sparse, headers only, ~150 MB) into $FF_UE_CHECK_DIR, then writes the mock UHT headers, include list and
+# API-macro prelude there. Usage: FF_UE_CHECK_DIR=/some/scratch [FF_UE_MIRROR=<git url>] ./setup.sh
+# Default mirror: a public UE 5.8.2 tree. Also used: github.com/F-Fumino/UE5.7 (5.7), github.com/Pekyyyyyy/Toon-UE (5.5.2).
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DIR="${FF_UE_CHECK_DIR:?set FF_UE_CHECK_DIR to a scratch directory}"
-REPO="${FF_UE_MIRROR:-https://github.com/Pekyyyyyy/Toon-UE.git}"
+REPO="${FF_UE_MIRROR:-https://github.com/AFIshInWater/UE5.8.git}"
 SRC="$HERE/../../../../.."          # unreal/Source
 mkdir -p "$DIR"
 if [ ! -d "$DIR/ue/.git" ]; then

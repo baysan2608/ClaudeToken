@@ -4,13 +4,23 @@ Every Unreal API the `Fourfold` module uses, with the header it comes from. The 
 the machine.
 
 **How it was verified:** all 18 UE source files of the module, plus one unity TU that includes every source file of
-the module, were syntax-checked with `clang++ -std=c++20 -fsyntax-only`. The check ran against the public headers of
-a UE **5.5.2** mirror (github.com/Pekyyyyyy/Toon-UE, sparse checkout) with the engine shared PCH force-included and
-mock UHT headers. Result: 0 errors and 0 warnings in `Source/Fourfold` under `-Wshadow-all -Wundef -Wunused-variable`.
-The tooling is in `Source/Fourfold/Private/Logic/tools/ue_syntax_check/` (see README).
+the module, were syntax-checked with `clang++ -std=c++20 -fsyntax-only` against the public headers of a **UE 5.8.2**
+source mirror (github.com/AFIshInWater/UE5.8, `Version.h` 5.8.2, sparse checkout), with the engine shared PCH
+force-included and mock UHT headers. Result: 0 errors and 0 warnings in `Source/Fourfold` under
+`-Wshadow-all -Wundef -Wunused-variable`, and no `-Wdeprecated-declarations` hit in our code (no API we call is marked
+`UE_DEPRECATED` in 5.8.2). A negative control (an injected bad member call) is reported, so the check is live. The same
+sources were checked earlier against 5.5.2 (github.com/Pekyyyyyy/Toon-UE) and, file by file, 5.7
+(github.com/F-Fumino/UE5.7). The tooling is in `Source/Fourfold/Private/Logic/tools/ue_syntax_check/` (see README).
 
-The project targets **5.8.3**, so anything that changed between 5.5 and 5.8 can still break on the Mac. The entries
-marked "5.8 watch" are the likeliest places. Paths are relative to `Engine/Source/Runtime/`.
+The project targets **5.8.3**. A hotfix rarely changes public signatures, but the check cannot see link errors, UHT
+rules (UPROPERTY types, specifiers) or asset-side names. The entry marked "5.8 watch" (an asset-side name) is the place to look first.
+These 5.8.2 declarations were also read by hand: `FAnimExtractContext(double, bool, FDeltaTimeRecord, bool)`,
+`UAnimSequence::GetAnimationPose(FAnimationPoseData&, const FAnimExtractContext&)`, `FSlateDrawElement::MakeBox /
+MakeLines(TArray<FVector2f>) / MakeText(FString)`, `APlayerController::IsInputKeyDown / WasInputKeyJustPressed /
+WasInputKeyJustReleased / GetInputAnalogKeyState / ActivateTouchInterface`, `FSlateApplicationBase::GetSafeZoneSize`,
+`FPlatformApplicationMisc::GetPhysicalScreenDensity`, `FPlatformMisc::Prepare / Trigger / ReleaseMobileHaptics`,
+`UGameplayStatics::SetGlobalTimeDilation`, and `UEnhancedPlayerInput::InputKey` (plugin source) still calling
+`Super::InputKey`, so the key state the game reads is filled. Paths are relative to `Engine/Source/Runtime/`.
 
 ## Module, logging, subsystems
 
@@ -49,10 +59,10 @@ marked "5.8 watch" are the likeliest places. Paths are relative to `Engine/Sourc
 
 | API | Header | Notes |
 |---|---|---|
-| `USkeletalMeshComponent::SetSkeletalMeshAsset`, `SetAnimationMode(EAnimationMode::AnimationBlueprint)`, `SetAnimInstanceClass`, `GetAnimInstance`, `VisibilityBasedAnimTickOption`, `SetTickGroup(TG_PostUpdateWork)` | Engine/Classes/Components/SkeletalMeshComponent.h, SkinnedMeshComponent.h | Tick group after the subsystem tick (LevelTick.cpp order). **5.8 watch:** `SetSkeletalMeshAsset` (replaced `SetSkeletalMesh` in 5.1). |
+| `USkeletalMeshComponent::SetSkeletalMeshAsset`, `SetAnimationMode(EAnimationMode::AnimationBlueprint)`, `SetAnimInstanceClass`, `GetAnimInstance`, `VisibilityBasedAnimTickOption`, `SetTickGroup(TG_PostUpdateWork)` | Engine/Classes/Components/SkeletalMeshComponent.h, SkinnedMeshComponent.h | Tick group after the subsystem tick (LevelTick.cpp order). `SetSkeletalMeshAsset` replaced `SetSkeletalMesh` in 5.1; present in 5.8.2. |
 | `UAnimInstance::CreateAnimInstanceProxy / DestroyAnimInstanceProxy`, `FAnimInstanceProxy::PreUpdate / Evaluate(FPoseContext&) -> bool` | Engine/Classes/Animation/AnimInstance.h, Engine/Public/Animation/AnimInstanceProxy.h | Pattern verified against open-source native proxies (see the stream notes). |
 | `FPoseContext`, `FCompactPose::ForEachBoneIndex`, `FCompactPoseBoneIndex`, `FBoneContainer::GetReferenceSkeleton / MakeMeshPoseIndex / GetParentBoneIndex`, `FReferenceSkeleton::FindBoneIndex / GetRefBonePose` | Engine/Public/Animation/AnimNodeBase.h, BonePose.h, BoneContainer.h, Engine/Classes/Animation/AnimTypes.h | Model space built from the parent chain by hand. |
-| `UAnimSequence::GetAnimationPose(FAnimationPoseData&, const FAnimExtractContext&)`, `FAnimExtractContext(double, bool, FDeltaTimeRecord, bool)`, `GetPlayLength` | Engine/Classes/Animation/AnimSequence.h, AnimationAsset.h | **5.8 watch:** the `FAnimExtractContext` constructor. |
+| `UAnimSequence::GetAnimationPose(FAnimationPoseData&, const FAnimExtractContext&)`, `FAnimExtractContext(double, bool, FDeltaTimeRecord, bool)`, `GetPlayLength` | Engine/Classes/Animation/AnimSequence.h, AnimationAsset.h | Constructor unchanged in 5.8.2. |
 | `LoadObject<UAnimSequence / USkeletalMesh>(nullptr, Path)` | CoreUObject/Public/UObject/UObjectGlobals.h | Object paths `/Game/.../A_x.A_x`. |
 | `FQuat` / `FTransform` / `FVector` math (`Slerp`, `GetNormalized`, `Inverse`, `TransformPosition`, `InverseTransformVectorNoScale`) | Core/Public/Math/*.h | |
 
@@ -65,7 +75,7 @@ marked "5.8 watch" are the likeliest places. Paths are relative to `Engine/Sourc
 | `OnTouchStarted / OnTouchMoved / OnTouchEnded`, `OnMouseButtonDown / Up / Move / Wheel`, `OnMouseEnter / Leave`, `OnMouseCaptureLost(const FCaptureLostEvent&)` (`PointerIndex`) | SlateCore/Public/Widgets/SWidget.h, Input/Events.h | Touch pointer indices 0..9 (`ETouchIndex`), mouse = `FSlateApplicationBase::CursorPointerIndex`. |
 | `FPointerEvent::GetPointerIndex / IsTouchEvent / GetEffectingButton / GetScreenSpacePosition`, `FGeometry::AbsoluteToLocal / GetLocalSize / Scale` | SlateCore/Public/Input/Events.h, Layout/Geometry.h | Touch events carry `EKeys::LeftMouseButton` as the effecting button. |
 | `FReply::Handled / Unhandled / CaptureMouse(SharedThis(this)) / ReleaseMouseCapture` | SlateCore/Public/Input/Reply.h | Capture is per pointer for touches. |
-| `FSlateDrawElement::MakeBox(List, Layer, PaintGeometry, Brush, Effects, Tint)`, `MakeLines(..., TArray<FVector2f>, Effects, Tint, bAntialias, Thickness)`, `MakeText(..., const FString&, const FSlateFontInfo&, Effects, Tint)` | SlateCore/Public/Rendering/DrawElementTypes.h | MakeBox skips a fully transparent tint unless the outline is visible (DrawElementTypes.cpp `ShouldCull`). Line thickness is in local units. Payloads copy the brush, so stack brushes are safe. **5.8 watch:** signatures. |
+| `FSlateDrawElement::MakeBox(List, Layer, PaintGeometry, Brush, Effects, Tint)`, `MakeLines(..., TArray<FVector2f>, Effects, Tint, bAntialias, Thickness)`, `MakeText(..., const FString&, const FSlateFontInfo&, Effects, Tint)` | SlateCore/Public/Rendering/DrawElementTypes.h | MakeBox skips a fully transparent tint unless the outline is visible (DrawElementTypes.cpp `ShouldCull`). Line thickness is in local units. Payloads copy the brush, so stack brushes are safe. Signatures unchanged in 5.8.2. |
 | `FGeometry::ToPaintGeometry()`, `ToPaintGeometry(FVector2f Size, FSlateLayoutTransform(FVector2f Offset))` | SlateCore/Public/Layout/Geometry.h, Rendering/SlateLayoutTransform.h | The (offset, size, scale) overload is deprecated since 5.2 and is not used. |
 | `FSlateRoundedBoxBrush(Fill, Radius, OutlineColor, OutlineWidth)`, `FSlateBrush::OutlineSettings.CornerRadii`, `FSlateNoResource` | SlateCore/Public/Brushes/SlateRoundedBoxBrush.h, Styling/SlateBrush.h | Circles, rings, pills and cards. The fill comes from the MakeBox tint. The outline is drawn inside the box. |
 | `FCoreStyle::GetDefaultFontStyle(FName, float, FFontOutlineSettings)`, `FSlateFontInfo::{Size, OutlineSettings, LetterSpacing}` | SlateCore/Public/Styling/CoreStyle.h, Fonts/SlateFontInfo.h | Size is in points at 96 dpi, so px = Size * 4/3. |
@@ -75,11 +85,10 @@ marked "5.8 watch" are the likeliest places. Paths are relative to `Engine/Sourc
 | `SOverlay`, `SVerticalBox / SHorizontalBox` (`AddSlot().AutoHeight / FillHeight / FillWidth / Padding`, `NumSlots`), `SScrollBox` (`ScrollBarThickness(FVector2f)`, `ScrollDescendantIntoView`), `SBox` (`SetHAlign / SetVAlign / SetWidthOverride / SetMaxDesiredWidth / SetMaxDesiredHeight`), `SBorder` (`SetContent`, `BorderImage`, `BorderBackgroundColor_Lambda`), `SWrapBox` (`UseAllottedSize`, `InnerSlotPadding`), `STextBlock` (`Font`, `ColorAndOpacity`, `AutoWrapText`), `SSpacer` | Slate/Public/Widgets/Layout/*.h, SlateCore/Public/Widgets/SOverlay.h, SBoxPanel.h, Slate/Public/Widgets/Text/STextBlock.h | SBox overrides only size the box itself (SBox.cpp `OnArrangeChildren`), so alignment is applied one box up. |
 | `FString::Printf` (literal formats only), `FString::Join`, `FText::FromString`, `TCHAR_TO_UTF8 / UTF8_TO_TCHAR` | Core/Public/Containers/UnrealString.h, Internationalization/Text.h, Containers/StringConv.h | UE5 rejects non-literal Printf formats with a static_assert. Precision variants go through a switch. |
 
-## Known 5.5 -> 5.8 risks to check first on the Mac
+## Risks to check first on the Mac (not covered by the header check)
 
-1. `FAnimExtractContext` constructor and `UAnimSequence::GetAnimationPose` (animation runtime).
-2. `FSlateDrawElement::MakeLines` / `MakeBox` signatures and `FGeometry::ToPaintGeometry` overloads.
-3. `USkeletalMeshComponent::SetSkeletalMeshAsset` and `GetSkinnedAsset`.
-4. `FInputModeGameAndUI` setters, and the `EnhancedPlayerInput` key state reaching `IsInputKeyDown` (it did in 5.5:
-   `UEnhancedPlayerInput::InputKey` calls `UPlayerInput::InputKey`).
-5. The BasicShapeMaterial color parameter name (placeholder arena tint).
+1. UHT: every `UPROPERTY` / `UCLASS` specifier (the mock UHT does not validate them).
+2. Linking: every engine module a symbol comes from must be in `Fourfold.Build.cs` (`Core CoreUObject Engine InputCore
+   Slate SlateCore ApplicationCore FourfoldCore`).
+3. The BasicShapeMaterial color parameter name (placeholder arena tint): both "Color" and "BaseColor" are set.
+4. Runtime behaviour on device: safe-area insets, physical screen density, haptics and multi-touch indices.

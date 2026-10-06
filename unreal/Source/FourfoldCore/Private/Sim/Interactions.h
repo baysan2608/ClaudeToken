@@ -65,7 +65,7 @@ inline constexpr double HU_PER_PU = 20.0;
 inline constexpr int IX_EVENT_TICKS = 30;
 inline constexpr int CONTACT_TICKS = 30;
 
-void ensure();
+void ensure_ready();
 const Dict& DEFAULT_RULE();
 const Dict& CLASH_RULE();
 const Dict& PASS_RULE();

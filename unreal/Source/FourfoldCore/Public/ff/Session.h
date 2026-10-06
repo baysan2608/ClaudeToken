@@ -115,6 +115,21 @@ public:
 	bool LoadProgress(const std::string& json);
 	void ResetProgress();
 
+	// ---------------------------------------------------------------- additions (core stream, additive)
+	// Lab mode (every technique unlocked in Free Spar). LoadScenario("__lab_mode") toggles it and reloads the scenario.
+	void SetLabMode(bool on);
+	bool LabMode() const;
+	// Counter-rule cells for the Lab tuning page: fields of a cell use TuningField with move_id = "<key>#<idx>".
+	std::vector<RuleCellInfo> LabRuleCells() const;
+	std::vector<TuningField> LabRuleFields(const std::string& key, int idx) const;
+	bool LabSetRuleValue(const std::string& key, int idx, const std::string& field, double value);
+	// Move-list text rows for the Lab "Move list" page (device: touch | keyboard | gamepad): input / cost / frames.
+	std::string MoveInputText(Slot slot, const std::string& device) const;
+	std::string MoveCostText(const std::string& id) const;
+	std::string MoveFramesText(const std::string& id) const;
+	// Spar rival choice persisted in the progression (Free Spar page / practice option rows).
+	void SetSparOptions(const std::string& difficulty, const std::string& kit);
+
 private:
 	struct Impl;
 	std::unique_ptr<Impl> impl_;

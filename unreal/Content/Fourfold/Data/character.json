@@ -158,9 +158,9 @@
   ]
  },
  "detail_tiling": {
-  "skin": 45.35,
-  "cloth_main": 75.51,
-  "cloth_accent": 42.91,
+  "skin": 45.34,
+  "cloth_main": 75.36,
+  "cloth_accent": 42.99,
   "hair": 17.44,
   "wraps": 23.82,
   "sash": 38.06,
@@ -240,9 +240,9 @@
    0.12
   ],
   "triangles": [
-   29298,
-   14576,
-   5789
+   29300,
+   14582,
+   5787
   ],
   "sources": [
    "SK_Fighter.fbx",

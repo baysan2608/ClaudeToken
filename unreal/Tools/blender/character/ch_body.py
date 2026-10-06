@@ -61,6 +61,15 @@ RECIPE = {
         "nose/nose-hump-decr": 0.3,
         "eyebrows/eyebrows-angle-down": 0.25,
         "mouth/mouth-scale-horiz-decr": 0.1,
+        # ears lie closer to the head with a rounder helix (the base ears' pointed tops stand out in a front view)
+        "ears/l-ear-wing-decr": 0.40,
+        "ears/r-ear-wing-decr": 0.40,
+        "ears/l-ear-flap-decr": 0.30,
+        "ears/r-ear-flap-decr": 0.30,
+        "ears/l-ear-shape-round": 0.70,
+        "ears/r-ear-shape-round": 0.70,
+        "ears/l-ear-shape-pointed": -0.35,
+        "ears/r-ear-shape-pointed": -0.35,
     },
 }
 

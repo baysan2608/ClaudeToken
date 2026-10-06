@@ -162,14 +162,25 @@ def render(W, Hd, cam, size=(320, 320), ss=2, label=None, plants=None, flags=Non
     return img
 
 
-def make_camera(view, w, h):
+def make_camera(view, w, h, shift=(0.0, 0.0)):
     v = VIEWS[view]
-    return Camera(v["pos"], v["at"], v["fov"], w, h, up=v.get("up", (0, 0, 1)), ortho=v.get("ortho"))
+    pos = (v["pos"][0] + shift[0], v["pos"][1] + shift[1], v["pos"][2])
+    at = (v["at"][0] + shift[0], v["at"][1] + shift[1], v["at"][2])
+    return Camera(pos, at, v["fov"], w, h, up=v.get("up", (0, 0, 1)), ortho=v.get("ortho"))
 
 
-def frame_image(pose, view, size=(320, 320), label=None, plants=None, flags=None, ghost=None):
+def clip_shift(res):
+    """Camera shift (A-frame x, y) for clips whose body travels far from the origin (falls, lying): the mean pelvis
+    ground position, applied only when it is more than 15 cm away."""
+    ps = [rig.fk(p)[1]["pelvis"] for p in res.poses]
+    mx = float(np.mean([p[0] for p in ps]))
+    my = float(np.mean([-p[1] for p in ps]))
+    return (mx, my) if math.hypot(mx, my) > 0.15 else (0.0, 0.0)
+
+
+def frame_image(pose, view, size=(320, 320), label=None, plants=None, flags=None, ghost=None, shift=(0.0, 0.0)):
     W, Hd, _ = rig.fk(pose)
-    cam = make_camera(view, *size)
+    cam = make_camera(view, *size, shift=shift)
     return render(W, Hd, cam, size, label=label, plants=plants, flags=flags, ghost=ghost)
 
 
@@ -180,11 +191,12 @@ def contact_sheet(res, frames, path, views=("game", "side"), panel=(240, 270), t
     sheet = Image.new("RGB", (pw * len(frames), ph * len(views) + head), (246, 246, 244))
     d = ImageDraw.Draw(sheet)
     d.text((6, 5), title or res.name, fill=(20, 20, 20), font=font(14))
+    sh = clip_shift(res)
     for r, view in enumerate(views):
         for c, (f, cap) in enumerate(frames):
             pl = _planted_at(res, f)
             fl = ["contact"] if f in (res.clip.contacts or []) else None
-            im = frame_image(res.poses[f], view, (pw, ph), label=f"{cap} f{f}", plants=pl, flags=fl)
+            im = frame_image(res.poses[f], view, (pw, ph), label=f"{cap} f{f}", plants=pl, flags=fl, shift=sh)
             sheet.paste(im, (c * pw, head + r * ph))
     os.makedirs(os.path.dirname(path), exist_ok=True)
     if path.endswith(".jpg"):
@@ -212,6 +224,7 @@ def video(res, path, views=("game", "front"), size=(640, 360), loops=1, slow=1, 
     seq = frames * loops if res.loop else frames + [res.frames] * 12
     k = 0
     cache = {}
+    sh = clip_shift(res)
     for f in seq:
         if f not in cache:
             img = Image.new("RGB", size, (240, 240, 240))
@@ -219,7 +232,7 @@ def video(res, path, views=("game", "front"), size=(640, 360), loops=1, slow=1, 
             fl = ["contact"] if f in (res.clip.contacts or []) else None
             for i, view in enumerate(views):
                 im = frame_image(res.poses[f], view, (pw, ph), label=(f"{res.name}  f{f}/{res.frames}" if i == 0 else view),
-                                 plants=pl, flags=fl)
+                                 plants=pl, flags=fl, shift=sh)
                 img.paste(im, (i * pw, 0))
             p = os.path.join(tmp, f"c{f:04d}.png")
             img.save(p)

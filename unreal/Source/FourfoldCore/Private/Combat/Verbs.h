@@ -33,7 +33,7 @@ struct VerbParams {
 
 namespace Verbs {
 bool is_channel_verb(std::string_view verb);
-void ensure();
+void ensure_ready();
 void on_start(CombatWorld& w, ActorState& a, ActionInst& inst, const ActorIntent& it);
 ActionPhase after_startup(CombatWorld& w, ActorState& a, ActionInst& inst, const ActorIntent& it);
 void on_phase(CombatWorld& w, ActorState& a, ActionInst& inst, ActionPhase p);

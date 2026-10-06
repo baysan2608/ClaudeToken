@@ -42,7 +42,7 @@ const HookTable& table() {
 	return t;
 }
 
-void ensure() {
+void ensure_ready() {
 	HookRuntime& r = hrt();
 	if (r.ready) return;
 	r.ready = true;
@@ -63,15 +63,15 @@ void ensure() {
 }
 
 std::map<std::string, BodyTickFn>& body_ticks() {
-	ensure();
+	ensure_ready();
 	return hrt().body_ticks;
 }
 std::map<std::string, ZoneEffectFn>& zone_effects() {
-	ensure();
+	ensure_ready();
 	return hrt().zone_effects;
 }
 std::map<std::string, TechPreviewFn>& tech_previews() {
-	ensure();
+	ensure_ready();
 	return hrt().tech_previews;
 }
 

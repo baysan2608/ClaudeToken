@@ -61,7 +61,7 @@ bool ix_tier_ok(const Dict& r, int tier) {
 
 }  // namespace
 
-void ensure() {
+void ensure_ready() {
 	IxRegistry& r = reg();
 	if (r.ready) return;
 	r.ready = true;
@@ -101,26 +101,26 @@ void ensure() {
 }
 
 const Dict& DEFAULT_RULE() {
-	ensure();
+	ensure_ready();
 	return reg().default_rule;
 }
 const Dict& CLASH_RULE() {
-	ensure();
+	ensure_ready();
 	return reg().clash_rule;
 }
 const Dict& PASS_RULE() {
-	ensure();
+	ensure_ready();
 	return reg().pass_rule;
 }
 
 std::string kind_class(std::string_view kind, std::string_view def) {
-	ensure();
+	ensure_ready();
 	const Value& v = reg().kind_class.get(kind);
 	return v.is_string() ? v.as_string() : std::string(def);
 }
 
 std::string class_channel(std::string_view cls, std::string_view def) {
-	ensure();
+	ensure_ready();
 	const Value& v = reg().class_channel.get(cls);
 	return v.is_string() ? v.as_string() : std::string(def);
 }
@@ -128,7 +128,7 @@ std::string class_channel(std::string_view cls, std::string_view def) {
 // ================================================================ classes
 
 std::string classify(const MatBody& b) {
-	ensure();
+	ensure_ready();
 	if (b.props.has("cls")) return dstr(b.props, "cls");
 	if (!b.tag.empty()) {
 		auto it = reg().tag_threat.find(b.tag);
@@ -196,7 +196,7 @@ std::string wall_class(const MatBody& b) {
 }
 
 std::string counter_class(const MatBody& b, CombatWorld* w) {
-	ensure();
+	ensure_ready();
 	if (b.props.has("ccls")) return dstr(b.props, "ccls");
 	if (!b.tag.empty()) {
 		auto it = reg().tag_counter.find(b.tag);
@@ -234,41 +234,41 @@ bool is_barrier(CombatWorld& w, const MatBody& b) {
 }
 
 std::string family(std::string_view cls) {
-	ensure();
+	ensure_ready();
 	return vstr(reg().threat_family.get(cls), "");
 }
 
 std::string counter_family(std::string_view ccls) {
-	ensure();
+	ensure_ready();
 	const Value& v = reg().counter_family.get(ccls);
 	if (v.is_string()) return v.as_string();
 	return vstr(reg().threat_family.get(ccls), "");
 }
 
 void register_tag_class(const std::string& tag, const std::string& threat_cls, const std::string& counter_cls) {
-	ensure();
+	ensure_ready();
 	if (!threat_cls.empty()) reg().tag_threat[tag] = threat_cls;
 	if (!counter_cls.empty()) reg().tag_counter[tag] = counter_cls;
 }
 
 void register_channels(const std::string& tag, ChannelFn cb) {
-	ensure();
+	ensure_ready();
 	reg().channels[tag] = std::move(cb);
 }
 
 const ChannelFn* channel_hook(const std::string& tag) {
-	ensure();
+	ensure_ready();
 	auto it = reg().channels.find(tag);
 	return it == reg().channels.end() ? nullptr : &it->second;
 }
 
 void register_outcome(const std::string& nm, OutcomeFn cb) {
-	ensure();
+	ensure_ready();
 	reg().handlers[nm] = std::move(cb);
 }
 
 const OutcomeFn* handler(const std::string& nm) {
-	ensure();
+	ensure_ready();
 	auto it = reg().handlers.find(nm);
 	return it == reg().handlers.end() ? nullptr : &it->second;
 }
@@ -276,7 +276,7 @@ const OutcomeFn* handler(const std::string& nm) {
 // ================================================================ rules
 
 bool can_add(const std::string& threat_cls, const std::string& counter_cls, const Dict& r) {
-	ensure();
+	ensure_ready();
 	if (dbool(r, "legacy", false)) return true;
 	auto it = reg().rules.find(ix_rk(threat_cls, counter_cls));
 	if (it == reg().rules.end()) return true;
@@ -286,7 +286,7 @@ bool can_add(const std::string& threat_cls, const std::string& counter_cls, cons
 }
 
 bool add_rule(const std::string& threat_cls, const std::string& counter_cls, const Dict& rule_in) {
-	ensure();
+	ensure_ready();
 	const std::string k = ix_rk(threat_cls, counter_cls);
 	if (!can_add(threat_cls, counter_cls, rule_in)) return false;   // Godot: push_error + assert in debug
 	Dict r = rule_in.duplicate(true);
@@ -315,7 +315,7 @@ bool add_rule(const std::string& threat_cls, const std::string& counter_cls, con
 }
 
 void remove_rule(const std::string& threat_cls, const std::string& counter_cls, bool include_legacy) {
-	ensure();
+	ensure_ready();
 	const std::string k = ix_rk(threat_cls, counter_cls);
 	auto it = reg().rules.find(k);
 	if (it == reg().rules.end()) return;
@@ -332,7 +332,7 @@ void remove_rule(const std::string& threat_cls, const std::string& counter_cls, 
 }
 
 Dict rule(std::string_view threat_cls, std::string_view counter_cls, int tier, const Dict* fallback_rule) {
-	ensure();
+	ensure_ready();
 	const std::string tf = family(threat_cls);
 	const std::string cf = counter_family(counter_cls);
 	const std::string_view t = threat_cls;
@@ -355,17 +355,17 @@ bool has_rule(std::string_view threat_cls, std::string_view counter_cls, int tie
 }
 
 const std::unordered_map<std::string, std::vector<Dict>>& all_rules() {
-	ensure();
+	ensure_ready();
 	return reg().rules;
 }
 
 std::vector<std::string> rule_keys_in_order() {
-	ensure();
+	ensure_ready();
 	return reg().order;
 }
 
 State save_state() {
-	ensure();
+	ensure_ready();
 	State s;
 	for (const auto& it : reg().rules) {
 		std::vector<Dict> l;
@@ -382,7 +382,7 @@ State save_state() {
 }
 
 void load_state(const State& st) {
-	ensure();
+	ensure_ready();
 	reg().rules.clear();
 	for (const auto& it : st.rules) {
 		std::vector<Dict> l;

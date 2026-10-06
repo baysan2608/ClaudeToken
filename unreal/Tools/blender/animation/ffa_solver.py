@@ -52,6 +52,12 @@ _HAND_REST = {s: rig.HEAD["hand_" + s] for s in rig.SIDES}
 _REST_AIM = {s: norm(_HAND_REST[s] - _CLAV_REST[s]) for s in rig.SIDES}
 
 
+_TOE_FWD = float(abs(rig.TOE_L[1] - rig.BALL_L[1]))          # toe tip ahead of the ball joint (m)
+_TOE_RZ = -float(rig.BALL_L[2])                                # floor point below the ball joint (m, negative)
+_TOE_R = math.hypot(_TOE_FWD, _TOE_RZ)
+_TOE_ALPHA = math.atan2(_TOE_RZ, _TOE_FWD)
+
+
 def sole_point(side, pv):
     """Rest-pose point on the sole for a pivot parameter pv (-1 heel, 0 under the ankle, 1 ball joint, 2 toe tip)."""
     heel = rig.side_point(rig.HEEL_L, side)
@@ -119,8 +125,9 @@ def rest_foot_x(side):
 
 
 # ------------------------------------------------------------------------------------------------ the solve
-def two_bone(a, c, l1, l2, pole, max_ext):
-    """Two-bone IK.  Returns (b, c_actual, miss, vhat, dirv)."""
+def two_bone(a, c, l1, l2, pole, max_ext, prev_v=None):
+    """Two-bone IK.  Returns (b, c_actual, miss, vhat, dirv).  prev_v (last frame's bend direction) keeps the bend
+    plane continuous when the pole runs (nearly) along the reach direction."""
     to = c - a
     d = float(np.linalg.norm(to))
     dmax = (l1 + l2) * max_ext
@@ -129,7 +136,14 @@ def two_bone(a, c, l1, l2, pole, max_ext):
     dirv = to / d if d > 1e-9 else np.array([0.0, 0.0, -1.0])
     aa = (l1 * l1 - l2 * l2 + dc * dc) / (2.0 * dc)
     h = math.sqrt(max(l1 * l1 - aa * aa, 0.0))
-    v = perp(np.asarray(pole, float), dirv)
+    pole = norm(np.asarray(pole, float))
+    v = perp(pole, dirv)
+    m = float(np.linalg.norm(v))
+    if prev_v is not None:
+        pv = perp(np.asarray(prev_v, float), dirv)
+        if np.linalg.norm(pv) > 1e-6:
+            w = max(0.0, 1.0 - m / 0.35)          # pole within ~20 deg of the reach line: lean on continuity
+            v = v + norm(pv) * (w * 2.0)
     if np.linalg.norm(v) < 1e-6:
         v = perp(np.array([0.0, -1.0, 0.0]), dirv)
     v = norm(v)
@@ -137,19 +151,24 @@ def two_bone(a, c, l1, l2, pole, max_ext):
     return b, a + dirv * dc, max(0.0, d - dc), v, dirv
 
 
+TWIST_LINEAR = 90.0         # forearm roll follows the target 1:1 up to this many degrees from neutral ...
+TWIST_SOFT = 45.0           # ... then saturates smoothly toward TWIST_LINEAR + TWIST_SOFT (anatomical range)
+
+
 def _twist_unwrap(ctx, key, tw):
-    """Keep a roll angle continuous between frames (no 360 jumps) but never beyond +-200 deg."""
-    if ctx is None:
+    """Forearm roll: kept continuous between frames (the raw angle is unwrapped against the previous frame, so it never
+    jumps by 360 deg), then soft-limited to the forearm's range, so an over-rotated target saturates instead of
+    flipping the twist bones round the other way."""
+    if ctx is not None:
+        last = ctx.get(key)
+        if last is not None:
+            tw += 360.0 * round((last - tw) / 360.0)
+            tw = max(-180.0, min(180.0, tw))   # past the half turn the roll stays saturated (no wrap, no flip)
+        ctx[key] = tw
+    a = abs(tw)
+    if a <= TWIST_LINEAR:
         return tw
-    last = ctx.get(key)
-    if last is not None:
-        tw += 360.0 * round((last - tw) / 360.0)
-        if tw > 200.0:
-            tw -= 360.0
-        elif tw < -200.0:
-            tw += 360.0
-    ctx[key] = tw
-    return tw
+    return math.copysign(TWIST_LINEAR + TWIST_SOFT * math.tanh((a - TWIST_LINEAR) / TWIST_SOFT), tw)
 
 
 def _axial_angle(neutral, target, axis):
@@ -204,6 +223,9 @@ def solve(st, ctx=None):
         dla = np.array([dl[0], -dl[1], dl[2]])
         yaw_c = math.degrees(math.atan2(dla[0], dla[1]))
         pitch_c = -math.degrees(math.asin(max(-1.0, min(1.0, dla[2]))))
+        # a look target behind the shoulder fades out (the head turns with the body through a spin instead of
+        # snapping from one side to the other at 180 deg)
+        gw = gw * max(0.0, min(1.0, (165.0 - abs(yaw_c)) / 65.0))
         yaw_c = max(-80.0, min(80.0, yaw_c))
         pitch_c = max(-40.0, min(45.0, pitch_c))
         nk[0] = nk[0] + (pitch_c - nk[0]) * gw
@@ -247,11 +269,15 @@ def solve(st, ctx=None):
         ua, la, hn = "upperarm_" + s, "lowerarm_" + s, "hand_" + s
         l1 = float(np.linalg.norm(rig.HEAD[la] - rig.HEAD[ua]))
         l2 = float(np.linalg.norm(rig.HEAD[hn] - rig.HEAD[la]))
-        B, Cact, miss, vhat, dirv = two_bone(S, T, l1, l2, pole, ARM_MAX_EXT)
+        B, Cact, miss, vhat, dirv = two_bone(S, T, l1, l2, pole, ARM_MAX_EXT,
+                                             ctx.get("v_arm_" + s) if ctx is not None else None)
+        if ctx is not None:
+            ctx["v_arm_" + s] = vhat
         y1 = norm(B - S)
         y2 = norm(Cact - B)
-        z1 = perp(y2, y1)
-        z1 = norm(z1) if np.linalg.norm(z1) > 1e-6 else -vhat
+        # bend plane from the pole (well defined even when the arm is straight; the forearm bends toward -vhat), so
+        # the forearm's roll reference never flips near full extension
+        z1 = norm(perp(-vhat, y1))
         x1 = np.cross(y1, z1)
         W[ua] = np.stack([x1, y1, z1], axis=1)
         z2 = np.cross(x1, y2)
@@ -259,17 +285,31 @@ def solve(st, ctx=None):
         H[ua], H[la] = S, B
         # hand orientation: the forearm roll (pronation / supination) is measured about the forearm axis between the
         # palm normals, given to the twist bones, and the remaining wrist swing is limited
+        # The target, seen from the forearm-following "neutral" hand (whose +Y runs along the forearm), is split into
+        # twist about +Y (-> forearm roll, soft-limited, spread over the twist bones) and a swing that only tips the
+        # finger axis (-> wrist, limited to WRIST_MAX_SWING).  Both parts are continuous for any wrist bend < 180 deg,
+        # so palms that face along the forearm (push palms, fingers up) never flip.
         neutral = W[la] @ rig.REST[la].T @ rig.REST[hn]
         target = frame_from(fdir, mdir)
-        tw = _axial_angle(neutral, target, y2)
-        tw = _twist_unwrap(ctx, "tw_" + s, tw)
-        Nt = rot(y2, tw) @ neutral
-        swq = mat_to_quat(Nt.T @ target)
-        sw_ang = math.degrees(2.0 * math.acos(max(-1.0, min(1.0, abs(swq[0])))))
-        sw = quat_to_mat(swq)
+        Rl = neutral.T @ target
+        tw_raw, _ = swing_twist_y(mat_to_quat(Rl))
+        info["twist_raw_" + s] = tw_raw
+        tw_want = st["tw_" + s][0] if ("tw_" + s) in st else tw_raw    # anatomical roll from the keys (ffa_dsl)
+        tw = _twist_unwrap(None, "tw_" + s, tw_want)                     # soft forearm range
+        R = ry(tw).T @ Rl                                                 # what the wrist still has to do
+        swing = rot_between(np.array([0.0, 1.0, 0.0]), R[:, 1])           # tip the finger axis (continuous)
+        sq = mat_to_quat(swing)
+        sw_ang = math.degrees(2.0 * math.acos(max(-1.0, min(1.0, abs(sq[0])))))
         if sw_ang > WRIST_MAX_SWING:
-            sw = mat_slerp(np.eye(3), sw, WRIST_MAX_SWING / sw_ang)
-        W[hn] = Nt @ sw
+            swing = mat_slerp(np.eye(3), swing, WRIST_MAX_SWING / sw_ang)
+        # leftover roll about the finger axis (what the soft-limited forearm could not take, or - between keys - the
+        # difference between the slerped target and the keyed roll): the wrist takes a little of it, fading to zero
+        # toward a half turn so it can never flip
+        T = rot_between(np.array([0.0, 1.0, 0.0]), R[:, 1]).T @ R
+        rr = math.degrees(math.atan2(float(T[0, 2]), float(T[0, 0])))
+        rr = 20.0 * math.tanh(rr / 20.0) * math.cos(math.radians(rr) / 2.0) ** 2
+        Nt = neutral @ ry(tw)
+        W[hn] = Nt @ swing @ ry(rr)
         H[hn] = Cact
         pose.q[ua] = rig.local_from_world(ua, W[cn], W[ua])
         pose.q[la] = rig.local_from_world(la, W[ua], W[la])
@@ -291,11 +331,13 @@ def solve(st, ctx=None):
         th, ca, fo, ba = "thigh_" + s, "calf_" + s, "foot_" + s, "ball_" + s
         Hh = H["pelvis"] + Dp @ (rig.HEAD[th] - rig.HEAD["pelvis"])
         kdir = rz(yaw + kyaw) @ A(0.0, 1.0, 0.0) + np.array([0.0, 0.0, kup])
-        B, Cact, miss, vhat, dirv = two_bone(Hh, ankle, rig.L_THIGH, rig.L_CALF, kdir, LEG_MAX_EXT)
+        B, Cact, miss, vhat, dirv = two_bone(Hh, ankle, rig.L_THIGH, rig.L_CALF, kdir, LEG_MAX_EXT,
+                                             ctx.get("v_leg_" + s) if ctx is not None else None)
+        if ctx is not None:
+            ctx["v_leg_" + s] = vhat
         y1 = norm(B - Hh)
         y2 = norm(Cact - B)
-        dev = perp(y2, y1)
-        z1 = -norm(dev) if np.linalg.norm(dev) > 1e-6 else vhat
+        z1 = norm(perp(vhat, y1))          # knee bend plane from the pole (stable when the leg is straight)
         x1 = np.cross(y1, z1)
         W[th] = np.stack([x1, y1, z1], axis=1)
         x2 = -x1
@@ -307,12 +349,13 @@ def solve(st, ctx=None):
         else:
             tp = pitch * min(max(pv - 1.0, 0.0), 1.0)   # heel raised on the ball: toes stay flat (toe tip pivot: follow)
         # never push the toe tip through the floor: limit how far the toes point down from the ball joint
+        # (the sole under the toe tip sits _TOE_RZ below the bone line, so solve for that point, not the bone tail)
         ball_w = P + Df @ (rig.HEAD[ba] - prest)
-        lt = rig.LENGTH[ba]
         if tp + toe < 0.0:
-            lim = -math.degrees(math.asin(max(0.0, min(1.0, (ball_w[2] - 0.002) / lt))))
+            arg = max(-1.0, min(1.0, (0.0005 - float(ball_w[2])) / _TOE_R))
+            lim = math.degrees(math.asin(arg) - _TOE_ALPHA)
             if tp + toe < lim:
-                toe = lim - tp
+                toe = min(lim, 0.0) - tp
         Db = rz(yaw) @ rx(-(tp + toe)) @ ry(roll)
         W[ba] = Db @ rig.REST[ba]
         H[th], H[ca] = Hh, B

@@ -42,22 +42,44 @@ def _ss(x):
     return x * x * (3 - 2 * x)
 
 
+def _swing_o(u, a, s):
+    """Swing-foot travel (body frame) from -a to +a: a cubic Hermite whose end velocities equal the stance velocity, so
+    the foot leaves and meets the ground with zero ground speed (no velocity pop at toe-off / heel strike); the small
+    overshoot at the end is the natural swing-leg retraction."""
+    m = -2.0 * a * (1.0 - s) / s
+    h00 = 2 * u ** 3 - 3 * u ** 2 + 1
+    h10 = u ** 3 - 2 * u ** 2 + u
+    h01 = -2 * u ** 3 + 3 * u ** 2
+    h11 = u ** 3 - u ** 2
+    return -a * h00 + m * h10 + a * h01 + m * h11
+
+
+def _swing_lift(u, lift, peak=0.38):
+    """Swing-foot clearance: quick rise after toe-off, low glide forward, soft touchdown (zero vertical speed)."""
+    if u < peak:
+        w = u / peak
+        return lift * (0.35 * w + 0.65 * _ss(w))
+    w = (u - peak) / (1.0 - peak)
+    return lift * (1.0 - _ss(w))
+
+
 def gait(name, frames, v, d, s, *, base, z=-0.03, lift=0.09, hs=14.0, to=-28.0, lane=0.09, lean=3.0, bob=0.012,
          sway=0.012, yaw_amp=6.0, arms="swing", foot_yaw=6.0, phase_r=0.5, arm_amp=0.13, toe_first=False,
-         technique="", priority="P0", hands=("relaxed", "relaxed"), spec_fn=None, lane_y=(0.0, 0.0), knee_out=0.0):
+         technique="", priority="P0", hands=("relaxed", "relaxed"), spec_fn=None, lane_y=(0.0, 0.0), knee_out=0.0,
+         cycles=1, offsets=None):
     """Procedural in-place gait loop.  frames per cycle, v ground speed (m/s), d travel direction (A-frame x, y),
     s stance fraction.  Stance footprints move backwards at exactly v (no foot sliding at the design speed); the
     pelvis is lowered automatically where a planted leg would overstretch."""
     N = frames
-    a = v * (N / 60.0) * s / 2.0
+    a = v * (N / 60.0 / cycles) * s / 2.0
     c = Clip(name, N, base, loop=True, priority=priority, technique=technique, hands=hands, speed=v,
-             treadmill=(-d[0] * v, -d[1] * v), auto_hips=True, offsets={"neck": -1.5, "hand_l": -1.0, "hand_r": -1.0},
-             no_balance=True, base_check=False)
+             treadmill=(-d[0] * v, -d[1] * v), auto_hips=True,
+             offsets=offsets or {"neck": -1.5, "hand_l": -1.0, "hand_r": -1.0}, no_balance=True, base_check=False)
     perp = (d[1], -d[0])
     base_st = c.keys[0][1]
     keys = []
     for f in range(N):
-        ph = f / N
+        ph = (f / N * cycles) % 1.0
         spec = {}
         for side in "lr":
             phi = ph if side == "l" else (ph + phase_r) % 1.0
@@ -79,8 +101,8 @@ def gait(name, frames, v, d, s, *, base, z=-0.03, lift=0.09, hs=14.0, to=-28.0, 
                         pitch, pv = to * _ss((u - 0.5) / 0.5), PIVOTS["ball"]
             else:                                        # swing: back to the front of the stride, foot lifted
                 u = (phi - s) / (1 - s)
-                o = -a + 2 * a * _ss(u)
-                zl = lift * math.sin(math.pi * u) ** 1.2
+                o = _swing_o(u, a, s)
+                zl = _swing_lift(u, lift)
                 if toe_first:
                     pitch = to * 0.45 * _ss(u / 0.4) if u < 0.4 else to * 0.45
                     pv = PIVOTS["ball"]
@@ -160,8 +182,86 @@ def run():
                 foot_yaw=4.0, hands=("fist", "fist"))
 
 
+def _ground_footprint(side, f):
+    """(x, y, yaw) of the point under the ankle (A-frame) for a foot tuple."""
+    _, ankle, _, _ = _solver.foot_pose(side, f)
+    return ankle[0], -ankle[1], f[3]
+
+
+def shuffle(name, frames, v, d, *, base, cycles=2, s=0.64, lead="l", lift=0.045, bob=0.010, lean=3.0,
+            toe_first=False, technique="", priority="P0", hands=("fist", "fist"), arm_bounce=0.010, heel_up=-9.0):
+    """Fighting-stance stepping loop (strafe / back-pedal): the stance footprints of the base keep their stagger and
+    yaw, the lead foot (the one on the side of travel) steps first and the trail foot follows half a cycle later, feet
+    flat (or landing toe-first), never crossing.  Stance feet travel backwards at exactly v (stride-matched)."""
+    N = frames
+    T = N / 60.0 / cycles
+    a = v * T * s / 2.0
+    w = 1.0 - s
+    c = Clip(name, N, base, loop=True, priority=priority, technique=technique, hands=hands, speed=v,
+             treadmill=(-d[0] * v, -d[1] * v), auto_hips=True, offsets={"neck": -1.5, "hand_l": -1.0, "hand_r": -1.0},
+             no_balance=True, base_check=False)
+    base_st = BASES[base]
+    fp = {sd: _ground_footprint(sd, base_st["foot_" + sd]) for sd in "lr"}
+    start = {lead: 0.0, ("r" if lead == "l" else "l"): 0.5}
+    for f in range(N):
+        ph = (f / N * cycles) % 1.0
+        st = copy_state(base_st)
+        for sd in "lr":
+            phi = (ph - start[sd]) % 1.0
+            x0, y0, yaw0 = fp[sd]
+            if phi < w:                                   # swing
+                u = phi / w
+                o = _swing_o(u, a, s)
+                zl = _swing_lift(u, lift, peak=0.45)
+                if toe_first:
+                    pitch = heel_up * (1 - _ss(u / 0.3)) - 14.0 * _ss((u - 0.35) / 0.65)
+                    pv = PIVOTS["ball"]
+                else:
+                    pitch = heel_up * (1 - _ss(u / 0.5))
+                    pv = PIVOTS["ball"] if u < 0.5 else PIVOTS["mid"]
+            else:                                         # stance: flat (toe-first lands on the ball, heel lowers)
+                u = (phi - w) / s
+                o = a * (1 - 2 * u)
+                zl = 0.0
+                if toe_first and u < 0.25:
+                    pitch, pv = -14.0 * (1 - _ss(u / 0.25)), PIVOTS["ball"]
+                elif u > 0.78:
+                    pitch, pv = heel_up * _ss((u - 0.78) / 0.22), PIVOTS["ball"]
+                else:
+                    pitch, pv = 0.0, PIVOTS["ball"] if toe_first else PIVOTS["mid"]
+            st["foot_" + sd] = tuple(_solver.footprint(sd, x0 + d[0] * o, y0 + d[1] * o, yaw=yaw0, pv=pv, lift=zl,
+                                                       pitch=pitch))
+        pel = list(st["pel"])
+        pel[2] += -bob * 0.5 + bob * 0.5 * math.cos(4 * math.pi * ph)
+        pel[4] += lean * (d[0])           # lean the trunk a little toward the travel (side bend)
+        pel[3] += lean * 0.5 * (-d[1])
+        st["pel"] = tuple(pel)
+        g = arm_bounce * math.sin(4 * math.pi * ph + 0.6)
+        for sd, sg in (("l", 1.0), ("r", -1.0)):
+            h = list(st["hand_" + sd])
+            h[1] += g * 0.6 * sg
+            h[2] -= g
+            st["hand_" + sd] = tuple(h)
+        if f == 0:
+            c.keys[0] = (0, st, "lin", None)
+        else:
+            c.keys.append((f, st, "lin", None))
+    return c
+
+
 @clip("strafe_l")
 def strafe_l():
-    return gait("strafe_l", 54, 1.1, (1.0, 0.0), 0.70, base="guard", z=-0.09, lift=0.05, hs=6.0, to=-14.0, lane=0.20,
-                lean=4.0, bob=0.008, sway=0.0, yaw_amp=0.0, spec_fn=_guard_arms, phase_r=0.70, foot_yaw=0.0,
-                technique="guard-up side step, feet never cross", hands=("fist", "fist"), lane_y=(0.06, -0.06))
+    return shuffle("strafe_l", 54, 1.1, (1.0, 0.0), base="guard", lead="l",
+                   technique="guard-up side shuffle to the left, feet never cross")
+
+
+@clip("strafe_r")
+def strafe_r():
+    return shuffle("strafe_r", 54, 1.1, (-1.0, 0.0), base="guard", lead="r",
+                   technique="guard-up side shuffle to the right, feet never cross")
+
+
+@clip("walk_back")
+def walk_back():
+    return shuffle("walk_back", 54, 1.0, (0.0, -1.0), base="guard", lead="r", toe_first=True, lean=2.0,
+                   technique="guard-up back-pedal, toe first")

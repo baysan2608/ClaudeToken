@@ -27,7 +27,7 @@ The contracts are in ARCHITECTURE §7 and §8.4. Related docs: [API_NOTES.md](AP
 | `Private/FourfoldPlaceholderArena.*` | Engine-cube arena when the level has no `FourfoldArena` actor, camera see-through, debug overlay. |
 | `Private/UI/` | Slate: `FourfoldUi` (palette, mm sizing, painter, glyphs, button / toggle / slider / choice widgets), `FourfoldPageBuilder`, `SFourfoldTouchOverlay`, `SFourfoldHud`, `SFourfoldMenus`, `SFourfoldLabPanel`, `SFourfoldUiRoot`. |
 | `Private/Logic/` | **Logic island:** no Unreal headers, unit-tested here. Touch layout + controls + flick recognizer, desktop input grammar, UI scale, settings JSON, feel policy, camera logic + arena collision, anim library / director / timing / locomotion / IK / springs / inertial fades. `tools/gen_anim_defaults.py` writes `FFGAnimDefaults.gen.cpp` from MARTIAL_ARTS §3-4. |
-| `Private/Logic/tests/` | `logic_tests.cpp` + CMake (guarded by `FF_LOGIC_TESTS`, so UBT ignores it). |
+| `Private/Logic/tests/` | `logic_tests.cpp`, `layout_dump.cpp` + `draw_layouts.py`, CMake (guarded by `FF_LOGIC_TESTS`, so UBT ignores it). |
 | `Private/Logic/tools/ue_syntax_check/` | Syntax check of the module against real UE public headers (see Testing). |
 
 ## Flow
@@ -208,20 +208,27 @@ Flashes setting.
   - It builds with g++ 13 and clang 18 at `-Wall -Wextra -Wshadow -Wconversion -Wundef -Werror`.
   - Every source is compiled once more against `CoreTests/ue_macro_poison.h`, so no Unreal macro name is used.
   - Current result: 56 tests, 2544 checks, 0 failures on both compilers.
+- **Touch layout review:** the same build makes `ffg_layout_dump`. Run
+  `build/ffg_layout_dump > layouts.json && python3 Source/Fourfold/Private/Logic/tests/draw_layouts.py layouts.json
+  <out_dir>` (needs Pillow). It draws the touch HUD of iPhone 15 Pro (also left-handed), iPhone SE, iPhone 15 Pro Max
+  (compact), iPad Air 11, iPad Pro 13 (wide, scale 1.2) and a Mac window, with the safe area, hit radii, aim ring,
+  cancel zone, sub-element ring and a 10 mm bar. It flags any hit target under 9 mm. Current result: none. The
+  geometry matches `touch_layout.gd`.
 - **Unreal syntax check:** `Private/Logic/tools/ue_syntax_check/`.
-  - `FF_UE_CHECK_DIR=<scratch> ./setup.sh` sparse-clones the UE 5.5 public headers (~80 MB) and writes mock UHT
-    headers.
-  - `./check_all.sh` runs `clang -fsyntax-only` on every module source plus one unity TU, against the real engine
-    headers with the engine shared PCH.
-  - Current result: 0 errors and 0 warnings in `Source/Fourfold` (`-Wshadow-all -Wundef -Wunused-variable`).
-  - It cannot catch link errors, UHT rules (UPROPERTY types, specifiers) or 5.5 -> 5.8 API changes.
+  - `FF_UE_CHECK_DIR=<scratch> ./setup.sh` sparse-clones the public headers of a UE 5.8.2 source mirror (~150 MB;
+    `FF_UE_MIRROR` picks another) and writes mock UHT headers.
+  - `FF_JOBS=3 ./check_all.sh` runs `clang -fsyntax-only` on every module source plus one unity TU, against the real
+    engine headers with the engine shared PCH.
+  - Current result on 5.8.2: 0 errors and 0 warnings in `Source/Fourfold` (`-Wshadow-all -Wundef
+    -Wunused-variable`), and no deprecated API in our code (`-Wdeprecated-declarations`).
+  - It cannot catch link errors or UHT rules (UPROPERTY types, specifiers).
 
 ## Owner steps on the Mac
 
 1. Follow MAC_SETUP §3: generate the project, build `FourfoldEditor`, open the editor.
 2. Press Play in any map. With no arena actors you get the cube arena and the title over the AI duel.
-3. If something fails to compile, send the first errors back (MAC_SETUP §9). API_NOTES lists the likeliest 5.8
-   differences first.
+3. If something fails to compile, send the first errors back (MAC_SETUP §9). API_NOTES lists what the header check
+   cannot see.
 4. On iPhone / iPad: apply the two config requests in REQUESTS.md (the four-finger console tap, 120 Hz), then follow
    MAC_SETUP §6.
 
@@ -236,7 +243,8 @@ Flashes setting.
 
 ## Known gaps
 
-- Nothing was compiled or run by Unreal itself. The syntax check uses 5.5 headers and mock UHT.
+- Nothing was compiled or run by Unreal itself. The syntax check uses 5.8.2 headers (the target is 5.8.3) and mock
+  UHT.
 - Touch layout, multi-touch, the safe area and the density heuristics were only tested synthetically. They need a
   pass on a real iPhone / iPad.
 - The Lab Tuning page has no counter-rule thresholds, and the Lab-mode toggle depends on core (REQUESTS.md).

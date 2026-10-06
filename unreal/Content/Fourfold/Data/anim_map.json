@@ -1,0 +1,1444 @@
+{
+ "schema": "fourfold.anim_map/1",
+ "locomotion": {
+  "idle": "idle",
+  "stance": [
+   "e_stance",
+   "w_stance",
+   "f_stance",
+   "a_stance"
+  ],
+  "walk": "walk",
+  "run": "run",
+  "strafe_l": "strafe_l",
+  "strafe_r": "strafe_r",
+  "back": "walk_back"
+ },
+ "reactions": {
+  "light": "hit_light_front",
+  "light_back": "hit_light_front",
+  "heavy": "hit_heavy",
+  "knockdown": "knockdown",
+  "getup": "getup",
+  "guard_break": "stagger",
+  "bound": "stagger",
+  "stagger": "stagger",
+  "block": "block_impact",
+  "perfect": "deflect"
+ },
+ "air": {
+  "jump": "jump",
+  "fall": "fall",
+  "land": "land",
+  "glide": "glide"
+ },
+ "guard": {
+  "default": "e_guard",
+  "by_element": [
+   "e_guard",
+   "w_shield",
+   "guard",
+   "a_guard"
+  ]
+ },
+ "modes": {
+  "flight": "glide",
+  "hover": "fall",
+  "skate": "glide",
+  "surf": "glide"
+ },
+ "moves": {
+  "earth_attack": {
+   "startup": "e_lift",
+   "release": "e_strike",
+   "hands": {
+    "l": "tiger",
+    "r": "fist"
+   },
+   "tiers": {
+    "1": {
+     "release": "e_heave"
+    },
+    "2": {
+     "release": "e_heave"
+    },
+    "3": {
+     "release": "e_heave"
+    }
+   }
+  },
+  "spear_stone": {
+   "startup": "e_thrust",
+   "hands": {
+    "l": "tiger",
+    "r": "tiger"
+   }
+  },
+  "rising_fangs": {
+   "startup": "e_ground_rise",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "rubble_fan": {
+   "startup": "e_sweep",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "guard@0": {
+   "startup": "e_wall",
+   "hold": "e_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "ram_wall": {
+   "startup": "e_push",
+   "hands": {
+    "l": "tiger",
+    "r": "tiger"
+   }
+  },
+  "swallow": {
+   "startup": "e_sink",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "earth_tech": {
+   "hold": "e_seize_loop",
+   "release": "e_throw",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   },
+   "modes": {
+    "rip": {
+     "startup": "e_lift",
+     "hold": "e_seize_loop",
+     "release": "e_throw"
+    }
+   }
+  },
+  "evade@0": {
+   "startup": "evade_*",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "stone_skin": {
+   "hold": "e_stone_skin",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   },
+   "modes": {
+    "burrow": {
+     "startup": "e_burrow",
+     "hands": {
+      "l": "relaxed",
+      "r": "relaxed"
+     }
+    },
+    "skin": {
+     "hold": "e_stone_skin"
+    }
+   }
+  },
+  "razor_disc": {
+   "startup": "e_disc_flick",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "iron_lance": {
+   "startup": "e_thrust",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "lodestone_line": {
+   "startup": "e_ground_slap",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "chain_arc": {
+   "startup": "e_chain_whirl",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "aegis_plate": {
+   "hold": "e_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "plate_rush": {
+   "startup": "e_disc_flick",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "rod_plant": {
+   "startup": "e_overhead_slam",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "lodestone_grip": {
+   "hold": "e_seize_loop",
+   "release": "e_throw",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "magnet_glide": {
+   "startup": "a_dash",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "iron_stance": {
+   "hold": "e_stone_skin",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "grit_shot": {
+   "startup": "e_lift",
+   "release": "e_strike",
+   "hands": {
+    "l": "tiger",
+    "r": "tiger"
+   }
+  },
+  "sandblast": {
+   "startup": "e_thrust",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "sand_surge": {
+   "startup": "e_ground_slap",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "veil_of_grit": {
+   "startup": "e_sweep",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "dune_wall": {
+   "startup": "e_wall",
+   "hold": "e_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "dune_push": {
+   "startup": "e_push",
+   "hands": {
+    "l": "tiger",
+    "r": "tiger"
+   }
+  },
+  "quicksand": {
+   "startup": "e_sink",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "sandform": {
+   "hold": "e_seize_loop",
+   "release": "e_throw",
+   "hands": {
+    "l": "cup",
+    "r": "cup"
+   },
+   "modes": {
+    "rip": {
+     "startup": "e_lift",
+     "hold": "e_seize_loop",
+     "release": "e_throw"
+    }
+   }
+  },
+  "sand_surf": {
+   "startup": "e_burrow",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "sand_ride": {
+   "hold": "glide",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "ember_clot": {
+   "startup": "e_lob",
+   "hands": {
+    "l": "cup",
+    "r": "cup"
+   }
+  },
+  "lava_lash": {
+   "startup": "e_chain_whirl",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "magma_surge": {
+   "startup": "e_pour",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "spatter_arc": {
+   "startup": "e_sweep",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "magma_curtain": {
+   "startup": "e_wall",
+   "hold": "e_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "slag_wave": {
+   "startup": "e_pour",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "melt_pit": {
+   "startup": "e_sink",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "magma_hold": {
+   "hold": "e_magma_hold",
+   "release": "e_pour",
+   "hands": {
+    "l": "cup",
+    "r": "cup"
+   }
+  },
+  "cinder_step": {
+   "startup": "evade_fwd",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "lava_wade": {
+   "hold": "walk",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "water_attack": {
+   "startup": "w_lash",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   },
+   "tiers": {
+    "1": {
+     "release": "w_freeze",
+     "hands": {
+      "l": "fist",
+      "r": "fist"
+     }
+    },
+    "2": {
+     "release": "w_push",
+     "hands": {
+      "l": "palm",
+      "r": "palm"
+     }
+    },
+    "3": {
+     "release": "w_lash",
+     "hands": {
+      "l": "willow",
+      "r": "willow"
+     }
+    }
+   }
+  },
+  "water_bullet": {
+   "startup": "w_press",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "tidal_rush": {
+   "startup": "w_ground",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "spray_fan": {
+   "startup": "w_single_whip",
+   "hands": {
+    "l": "willow",
+    "r": "crane"
+   }
+  },
+  "guard@1": {
+   "hold": "w_shield",
+   "perfect": "deflect",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "surge_orb": {
+   "startup": "w_push",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "slick": {
+   "startup": "w_snake",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "water_tech": {
+   "startup": "w_draw",
+   "hold": "w_hold",
+   "release": "w_release",
+   "hands": {
+    "l": "cup",
+    "r": "cup"
+   }
+  },
+  "riptide_step": {
+   "startup": "w_repulse",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "wave_ride": {
+   "hold": "glide",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "frost_shard": {
+   "startup": "w_freeze",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "icicle_volley": {
+   "startup": "w_press",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "rime_path": {
+   "startup": "w_ground",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "hoarfrost_fan": {
+   "startup": "w_single_whip",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "ice_wall": {
+   "startup": "w_freeze",
+   "hold": "w_shield",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "glacier_shove": {
+   "startup": "w_heel_kick",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "frost_floor": {
+   "startup": "w_snake",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "freeze_draw": {
+   "startup": "w_draw",
+   "hold": "w_hold",
+   "release": "w_release",
+   "hands": {
+    "l": "cup",
+    "r": "cup"
+   },
+   "modes": {
+    "rip": {
+     "startup": "w_draw"
+    }
+   }
+  },
+  "ice_glide": {
+   "startup": "evade_*",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "skate": {
+   "hold": "glide",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "scald_puff": {
+   "startup": "w_push",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "fog_lance": {
+   "startup": "w_press",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "creeping_fog": {
+   "startup": "w_ground",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "veil": {
+   "startup": "w_single_whip",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "steam_screen": {
+   "hold": "w_shield",
+   "perfect": "deflect",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "steam_blast": {
+   "startup": "w_push",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "dew_fall": {
+   "startup": "w_snake",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "vapor_draw": {
+   "startup": "w_draw",
+   "hold": "w_hold",
+   "release": "w_release",
+   "hands": {
+    "l": "cup",
+    "r": "cup"
+   }
+  },
+  "mist_step": {
+   "startup": "w_repulse",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "fog_walk": {
+   "hold": "walk",
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   }
+  },
+  "bramble_lash": {
+   "startup": "w_lash",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   },
+   "tiers": {
+    "3": {
+     "release": "w_lash"
+    }
+   }
+  },
+  "burr_shot": {
+   "startup": "w_press",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "root_snare": {
+   "startup": "w_ground",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "thicket_fan": {
+   "startup": "w_single_whip",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "living_lattice": {
+   "hold": "w_shield",
+   "perfect": "deflect",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "lattice_roll": {
+   "startup": "w_push",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "deep_roots": {
+   "startup": "w_snake",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "vinegrip": {
+   "startup": "w_draw",
+   "hold": "w_hold",
+   "release": "w_release",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "vine_swing": {
+   "startup": "evade_*",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "canopy": {
+   "hold": "fall",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  },
+  "fire_attack": {
+   "startup": "f_jab",
+   "hold": "f_charge",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   },
+   "tiers": {
+    "1": {
+     "release": "f_palm_burst",
+     "hands": {
+      "l": "palm",
+      "r": "palm"
+     }
+    },
+    "2": {
+     "release": "f_column",
+     "hands": {
+      "l": "palm",
+      "r": "palm"
+     }
+    },
+    "3": {
+     "release": "f_inferno",
+     "hands": {
+      "l": "palm",
+      "r": "palm"
+     }
+    }
+   }
+  },
+  "fireball": {
+   "startup": "f_snap_kick",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "fire_line": {
+   "startup": "f_low_sweep",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "fire_fan": {
+   "startup": "f_crescent_kick",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   },
+   "tiers": {
+    "3": {
+     "release": "f_crescent_kick"
+    }
+   }
+  },
+  "flame_guard": {
+   "hold": "guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "backdraft": {
+   "startup": "f_palm_burst",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "ground_heat": {
+   "startup": "f_stomp",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "fire_tech": {
+   "hold": "f_thermal_hold",
+   "release": "f_pour",
+   "hands": {
+    "l": "cup",
+    "r": "cup"
+   },
+   "modes": {
+    "heat": {
+     "hold": "f_thermal_hold",
+     "release": "f_pour",
+     "hands": {
+      "l": "cup",
+      "r": "cup"
+     }
+    },
+    "draw": {
+     "hold": "f_heat_draw",
+     "release": "f_palm_burst",
+     "hands": {
+      "l": "spread",
+      "r": "spread"
+     }
+    },
+    "scorch": {
+     "hold": "f_heat_draw",
+     "release": "f_palm_burst",
+     "hands": {
+      "l": "spread",
+      "r": "spread"
+     }
+    },
+    "vent": {
+     "startup": "f_palm_burst",
+     "release": "f_palm_burst",
+     "hands": {
+      "l": "palm",
+      "r": "palm"
+     }
+    }
+   }
+  },
+  "evade@2": {
+   "startup": "evade_*",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "rocket_hop": {
+   "startup": "f_hop",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "blue_needle": {
+   "startup": "f_needle",
+   "hold": "f_charge",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "comet_flame": {
+   "startup": "f_snap_kick",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "blue_furrow": {
+   "startup": "f_low_sweep",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "corona": {
+   "startup": "f_crescent_kick",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "blue_aegis": {
+   "hold": "guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "flash_over": {
+   "startup": "f_palm_burst",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "kiln": {
+   "hold": "f_heat_draw",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "smelter": {
+   "hold": "f_heat_draw",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "shimmer_step": {
+   "startup": "f_dash",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "afterburn": {
+   "hold": "run",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "spark": {
+   "startup": "f_jab",
+   "hold": "l_charge",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   },
+   "tiers": {
+    "1": {
+     "release": "l_release"
+    },
+    "2": {
+     "release": "l_release"
+    },
+    "3": {
+     "release": "l_skybreak"
+    }
+   }
+  },
+  "rail_arc": {
+   "startup": "l_release",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "ground_current": {
+   "startup": "l_ground",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "arc_fan": {
+   "startup": "l_release",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "static_ward": {
+   "hold": "guard",
+   "perfect": "l_redirect",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "static_burst": {
+   "startup": "f_palm_burst",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "grounding": {
+   "startup": "f_stomp",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "conductors_hand": {
+   "hold": "l_charge",
+   "release": "l_release",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "arc_step": {
+   "startup": "f_dash",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "overcharge": {
+   "hold": "run",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "pop": {
+   "startup": "f_jab",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   },
+   "tiers": {
+    "1": {
+     "startup": "c_point",
+     "release": "c_point",
+     "hands": {
+      "l": "sword",
+      "r": "fist"
+     }
+    }
+   }
+  },
+  "spark_mine": {
+   "startup": "e_disc_flick",
+   "hands": {
+    "l": "crane",
+    "r": "crane"
+   }
+  },
+  "chain_blasts": {
+   "startup": "f_stomp",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "scatter_charges": {
+   "startup": "e_disc_flick",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "reactive_blast": {
+   "hold": "guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "shockwave": {
+   "startup": "f_palm_burst",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "smother_blast": {
+   "startup": "f_hop",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "fuse": {
+   "hold": "l_charge",
+   "release": "c_point",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   }
+  },
+  "blast_jump": {
+   "startup": "f_hop",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
+   }
+  },
+  "afterglow": {
+   "hold": "fall",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "air_attack": {
+   "startup": "a_palm",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   },
+   "tiers": {
+    "1": {
+     "release": "a_double_palm"
+    },
+    "2": {
+     "release": "a_double_palm"
+    },
+    "3": {
+     "release": "a_hurricane"
+    }
+   }
+  },
+  "gust_crescent": {
+   "startup": "a_pierce",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "gust_dust_line": {
+   "startup": "a_low_palm",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "gust_crosswind": {
+   "startup": "a_turn_palm",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "guard@3": {
+   "hold": "a_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "gust_wall": {
+   "startup": "a_wall_push",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "gust_downdraft": {
+   "startup": "a_downdraft",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "air_tech": {
+   "startup": "a_updraft",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   },
+   "modes": {
+    "wind grip": {
+     "startup": "a_pluck",
+     "hold": "w_hold",
+     "release": "a_palm",
+     "hands": {
+      "l": "oxtongue",
+      "r": "oxtongue"
+     }
+    }
+   }
+  },
+  "air_dash": {
+   "startup": "a_dash",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "gust_tailwind": {
+   "hold": "run",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_twister": {
+   "startup": "a_spin",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_spiral": {
+   "startup": "a_pierce",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_funnel": {
+   "startup": "a_low_palm",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_eddy": {
+   "startup": "a_spin",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_wall": {
+   "startup": "a_guard",
+   "hold": "a_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_unleash": {
+   "startup": "a_wall_push",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "vortex_funnel_down": {
+   "startup": "a_downdraft",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "vortex_eye": {
+   "startup": "a_gather",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_spin_step": {
+   "startup": "a_spin",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vortex_whirl": {
+   "hold": "fall",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vacuum_palm": {
+   "startup": "a_palm",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   },
+   "tiers": {
+    "1": {
+     "release": "a_double_palm"
+    },
+    "2": {
+     "release": "a_hurricane"
+    },
+    "3": {
+     "release": "a_hurricane"
+    }
+   }
+  },
+  "vacuum_suction": {
+   "startup": "a_pluck",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "vacuum_mine": {
+   "startup": "a_low_palm",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "vacuum_arc": {
+   "startup": "a_turn_palm",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vacuum_bubble": {
+   "hold": "a_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vacuum_wave": {
+   "startup": "a_wall_push",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "vacuum_anchor": {
+   "startup": "a_downdraft",
+   "hold": "e_stone_skin",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "vacuum_well": {
+   "startup": "a_gather",
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   }
+  },
+  "vacuum_hop": {
+   "startup": "a_updraft",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "vacuum_slipstream": {
+   "hold": "run",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "sound_clap": {
+   "startup": "a_clap",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   },
+   "tiers": {
+    "1": {
+     "startup": "a_roar",
+     "release": "a_roar"
+    }
+   }
+  },
+  "sound_lance": {
+   "startup": "a_pierce",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "sound_tremor": {
+   "startup": "f_stomp",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "sound_echo_ring": {
+   "startup": "a_spin",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "sound_barrier": {
+   "hold": "a_guard",
+   "perfect": "deflect",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "sound_thunder_step": {
+   "startup": "a_dash",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "sound_ping": {
+   "startup": "f_stomp",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "sound_flight": {
+   "startup": "a_updraft",
+   "hold": "glide",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "sound_boom_step": {
+   "startup": "a_dash",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "sound_hover": {
+   "hold": "fall",
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   }
+  }
+ },
+ "fallbacks": {
+  "slot": {
+   "strike": "f_jab",
+   "thrust": "a_pierce",
+   "ground": "e_ground_slap",
+   "sweep": "e_sweep",
+   "guard": "e_wall",
+   "push": "w_push",
+   "sink": "e_sink",
+   "tech": "w_hold",
+   "evade": "evade_fwd",
+   "evade_hold": "run"
+  },
+  "clips": {
+   "a_rising_guard": "a_guard",
+   "c_chain_stomp": "f_stomp",
+   "c_fuse_loop": "l_charge",
+   "c_toss": "e_disc_flick",
+   "e_shadowless_kick": "f_snap_kick",
+   "e_spatter": "e_sweep",
+   "f_corona": "f_crescent_kick",
+   "f_tornado_kick": "f_crescent_kick",
+   "flight": "glide",
+   "guard_break": "stagger",
+   "hit_light_back": "hit_light_front",
+   "hover": "fall",
+   "l_fan": "l_release",
+   "salute": "idle",
+   "skate": "glide",
+   "surf": "glide",
+   "turn_l90": "idle",
+   "turn_r90": "idle",
+   "w_crane": "w_ground",
+   "w_maelstrom": "w_lash",
+   "w_shuttle": "w_push"
+  }
+ }
+}

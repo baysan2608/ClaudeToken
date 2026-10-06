@@ -16,7 +16,7 @@ inline constexpr double BUFFER_TIME = 0.15;      // press buffer
 inline constexpr double PERFECT_WINDOW = 0.18;   // guard press this close before contact = perfect
 inline constexpr double GUARD_MASH_LOCK = 0.35;  // a new perfect window needs this gap since the last press
 
-void ensure();
+void ensure_ready();
 Dict& defs();                                    // Moves.DEFS
 Dict& bindings();                                // Moves.BINDINGS ("e/s/slot" -> id)
 const std::vector<std::string>& registered();    // Moves.REGISTERED
@@ -37,6 +37,7 @@ std::string slot_of(int element, int sub, const std::string& id);
 void set_override(const std::string& id, const std::string& key, const Value& value);
 void clear_overrides();
 Dict overrides();
+Dict originals();                                // Moves._orig: id -> {key: registered value}
 
 struct State {
 	Dict defs, bindings, orig, over;

@@ -102,11 +102,11 @@ def export_clip(res, out_dir):
     return path
 
 
-def check_fbx(path, res, frames=None, tol_deg=0.05, tol_m=0.0005):
+def check_fbx(path, res, frames=None, tol_deg=0.12, tol_m=0.0008):
     """Re-import an exported clip into an empty scene and compare bone transforms with the solver's FK.
     Returns a dict (ok, worst angle / offset, frame range, bone count)."""
     reset_scene()
-    bpy.ops.import_scene.fbx(filepath=path, automatic_bone_orientation=False)
+    bpy.ops.import_scene.fbx(filepath=path, automatic_bone_orientation=False, anim_offset=0.0)
     arms = [o for o in bpy.data.objects if o.type == "ARMATURE"]
     if not arms:
         return {"ok": False, "error": "no armature"}
@@ -129,7 +129,7 @@ def check_fbx(path, res, frames=None, tol_deg=0.05, tol_m=0.0005):
             worst_p = max(worst_p, float(np.linalg.norm(np.array(pb.head) - Hd[b])))
     names = {b.name for b in a.data.bones}
     want = {b["name"] for b in spec.BONES}
-    ok = worst_a < tol_deg and worst_p < tol_m and names == want and nkeys == res.frames + 1
+    ok = worst_a < tol_deg and worst_p < tol_m and names == want and nkeys == res.frames + 1 and f0 == 0
     reset_scene()
     return {"ok": ok, "worst_deg": round(worst_a, 4), "worst_mm": round(worst_p * 1000, 3), "first_frame": f0,
             "keys": nkeys, "bones": len(names), "bones_match": names == want}

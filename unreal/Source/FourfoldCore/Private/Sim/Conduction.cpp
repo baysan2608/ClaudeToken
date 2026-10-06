@@ -24,8 +24,6 @@ Array cd_path(std::initializer_list<Vec3> pts) {
 	return a;
 }
 
-bool cd_hits_has(const Dict& out, int id) { return out.get("hits").as_array().has(Value(id)); }
-
 std::vector<std::string> cd_keys_in_order(const std::vector<std::string>& order) { return order; }
 
 }  // namespace

@@ -24,8 +24,8 @@ hand wraps (fingers and thumb tip free); soft cloth shoes with layered white sol
 | `Shaders/Character/FFFighter.ush` | HLSL helpers (tint, detail normal, sheen, fake subsurface, wet / frost / burn / glow) |
 
 ## Measured (LOD0 / LOD1 / LOD2)
-Triangles 29,298 / 14,576 / 5,789 (budgets 30k / 15k / 6k). <= 4 influences, normalised, no unweighted vertex, mirrored
-vertex pairs have mirrored weights. Texel density: skin 2,258 px/m (face x1.35 = ~3,050 px/m), cloth_main 935,
+Triangles 29,300 / 14,582 / 5,787 (budgets 30k / 15k / 6k). <= 4 influences, normalised, no unweighted vertex, mirrored
+vertex pairs have mirrored weights. Texel density: skin 2,258 px/m (face x1.35 = ~3,050 px/m), cloth_main 937,
 wraps ~1,480, hair ~2,025, shoes ~1,690, sash ~930, accent ~820 px/m. 8 material slots in the fixed order
 `skin hair eyes cloth_main cloth_accent wraps sash shoes`. Exact numbers: `SourceArt/Character/build_report.json`.
 
@@ -35,7 +35,8 @@ face and hands, so the body starts from the **CC0 MakeHuman base mesh** (hm08) -
 in `SourceArt/Character/LICENSES.md`. Everything else is our own geometry and code.
 1. `ch_mh.py` reads the base mesh, targets, default-skeleton joints and CC0 skin weights. `ch_body.py` RECIPE: adult
    male, muscle 0.72, weight 0.38, mixed ancestry, measurement targets solved by least squares against the rig's
-   landmarks (`solve_proportions.py`), plus build / face targets (square jaw, cheekbones, straight nose).
+   landmarks (`solve_proportions.py`), plus build / face targets (square jaw, cheekbones, straight nose; ears laid
+   closer to the head with a rounder helix so they do not read as points in a front view).
 2. `ch_fit.py` fits the morphed mesh onto the frozen rig: per-limb stretch + dual-quaternion blend of rigid fits
    (arms straightened into the A-pose, palms to the thighs, legs parallel, fingers on the metacarpal / phalanx bones).
 3. `ch_weights.py`: CC0 weights mapped to our bones (spine / neck re-split by height, upper / lower arm and leg
@@ -44,11 +45,14 @@ in `SourceArt/Character/LICENSES.md`. Everything else is our own geometry and co
    `ff_sash_l/r_*`, hair tail on `ff_hair_01..03`, <= 4 influences, symmetry.
 4. `ch_bodypart.py` / `ch_garments.py` / `ch_hair.py`: hidden skin removed under clothes (margins kept), forearm /
    hand wraps raised from the body surface with a lip; tunic + trousers from the base mesh's CC0 tights helper
-   (loosened, draped, exact cuts on smooth fields), hem from the skirt helper (hangs from its widest point, side
-   slits), collar / cuff bands swept along the cut edges (their flat part conforms to the tunic), sash band + knot +
-   tails, hair cap (scalp subdivided once, cut on a smooth hairline field that keeps clear of the ears - ear vertices
-   from the CC0 ear-translate targets - edge relaxed, thickness tapering to the edge) combed to a top knot (bun + tie
-   + tail), eyeballs with a cornea bulge, upper-lash strips on the lid margin of the base mesh's lash helper.
+   (loosened, draped, hollows bridged - the sternum cleft and spine groove are spanned by an outward-only Laplacian
+   like cloth under light tension, so the wrap front never shows a bust line - exact cuts on smooth fields), hem from
+   the skirt helper (hangs from its widest point, side slits), collar / cuff bands swept along the cut edges (their
+   flat part conforms to the tunic), sash band + knot + tails, hair cap (scalp subdivided once, cut on a smooth
+   hairline field that keeps clear of the ears - ear vertices from the CC0 ear-translate targets - edge relaxed,
+   thickness tapering to the edge) combed to a top knot (bun + tie + tail: one broad, flat lock with four strand
+   clumps in its cross-section that part toward a brush-like split end - a round tapering tube read as a horn),
+   eyeballs with a cornea bulge, upper-lash strips on the lid margin of the base mesh's lash helper.
 5. `ch_uv.py`: analytic UVs where the pattern direction matters (wraps spiral, hair strands, bands), Blender unwrap
    with front / back seams for the garments, islands grain-aligned (world up = +V), texel density levelled, skyline
    packing per material. A second UV set (`PatternUV`, metres) drives the procedural textures.
@@ -57,16 +61,18 @@ in `SourceArt/Character/LICENSES.md`. Everything else is our own geometry and co
    `ff_fbx_export`, previews (`ch_previews.py`, Cycles CPU), `character.json`.
 
 ## Regenerate / test here
+Work log / resume checkpoint: `docs/character/PROGRESS.md` (read first after an interruption).
 ```bash
 B=/home/user/tools/bpyenv/bin/python
-$B unreal/Tools/blender/character/build_character.py              # everything (~9 min with previews)
+$B unreal/Tools/blender/character/build_character.py              # everything (~9-12 min with previews)
 $B unreal/Tools/blender/character/build_character.py --no-previews --quick --out /tmp/x   # fast iteration
 $B unreal/Tools/blender/character/validate_character.py           # reads the FBX like Unreal will
 $B unreal/Tools/blender/common/test_rig_spec.py /tmp/rigtest       # frozen rig self-test (unchanged, green)
 python3 unreal/Tools/py_mock/run_with_mock_unreal.py unreal/Content/Python/fourfold/character/__init__.py --call fourfold.character:build_all
 python3 unreal/Tools/blender/character/check_hlsl.py <dxc>          # optional: DXC compile of FFFighter.ush
 ```
-`retexture.py <scene.blend> <out>` regenerates textures from a saved build scene (AO bake cached). Under the mock the
+`review_closeups.py <scene.blend> <tex dir> <out dir> chest,face,tailB,... [pose]` renders close-ups of a saved build
+scene for iteration. `retexture.py <scene.blend> <out>` regenerates textures from a saved build scene (AO bake cached). Under the mock the
 dry run ends "created 39, failed 1": the mock's import creates no asset, so the SK_Fighter lookup fails by design; the
 point of the run is that every code path executes without a Python error.
 

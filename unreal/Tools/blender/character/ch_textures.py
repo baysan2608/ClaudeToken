@@ -63,7 +63,7 @@ class Ctx:
 
 # ================================================================================================ skin
 SKIN = np.array([0.262, 0.157, 0.104])          # linear base tone (warm medium tan)
-LIP = np.array([0.165, 0.066, 0.056])
+LIP = np.array([0.192, 0.090, 0.074])          # close to the skin tone: a male lip, not a painted one
 BROW = np.array([0.012, 0.0085, 0.007])
 HAIR_DARK = np.array([0.018, 0.013, 0.010])
 
@@ -222,7 +222,7 @@ def lip_mask(P, lm):
     lower = _ss(1.15, 0.85, lo) * (z <= zs + 0.0004)
     bow = 0.0012 * np.exp(-(x / 0.0035) ** 2) - 0.0005 * np.exp(-((ax - 0.0060) / 0.0035) ** 2)
     top_edge = lm["upper_lip_z"] + 0.0022 - bow - 0.0060 * (ax / 0.024) ** 2
-    upper = _ss(0.0245, 0.0205, ax) * _ss(top_edge + 0.0006, top_edge - 0.0006, z) * (z >= zs - 0.0004)
+    upper = _ss(0.0245, 0.0205, ax) * _ss(top_edge + 0.0011, top_edge - 0.0009, z) * (z >= zs - 0.0004)
     return np.maximum(lower, upper) * front
 
 
@@ -642,6 +642,17 @@ NORMAL_STRENGTH = {"skin": 1.0, "hair": 1.0, "eyes": 1.0, "cloth_main": 1.0, "cl
                    "sash": 1.0, "shoes": 1.0}
 
 
+def _mesh_signature(obj):
+    """Geometry + UV fingerprint of the baked object: the AO cache is only reused for the identical mesh."""
+    me = obj.data
+    co = np.zeros(len(me.vertices) * 3)
+    me.vertices.foreach_get("co", co)
+    uv = np.zeros(len(me.loops) * 2)
+    if me.uv_layers.active is not None:
+        me.uv_layers.active.data.foreach_get("uv", uv)
+    return np.array([len(me.vertices), len(me.polygons), co.sum(), (co * co).sum(), uv.sum(), (uv * uv).sum()])
+
+
 def build_all(obj, parts, lm, out_dir, quick=False, slots=None, ao_cache=None):
     """Rasterise the LOD0 object, bake AO, generate and save every texture. Returns a report dict."""
     import time
@@ -649,15 +660,17 @@ def build_all(obj, parts, lm, out_dir, quick=False, slots=None, ao_cache=None):
     sizes = {k: (v // 4 if quick else v) for k, v in TEX_SIZE.items()}
     t0 = time.time()
     ao = None
+    sig = _mesh_signature(obj)
     if ao_cache and os.path.exists(ao_cache):
         z = np.load(ao_cache)
-        ao = {k: z[k] for k in z.files}
-        if any(ao.get(k) is None or ao[k].shape[0] != sizes[k] for k in sizes):
+        ao = {k: z[k] for k in z.files if k != "_sig"}
+        stale = "_sig" not in z.files or not np.array_equal(z["_sig"], sig)
+        if stale or any(ao.get(k) is None or ao[k].shape[0] != sizes[k] for k in sizes):
             ao = None
     if ao is None:
         ao = TM.bake_ao(obj, sizes, samples=8 if quick else 32)
         if ao_cache:
-            np.savez_compressed(ao_cache, **ao)
+            np.savez_compressed(ao_cache, _sig=sig, **ao)
     rep = {"ao_bake_s": round(time.time() - t0, 1)}
     T = TM.mesh_tables(obj)
     for si, slot in enumerate(SLOTS):

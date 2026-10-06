@@ -20,7 +20,7 @@ Dict& status_specs_store() {
 
 Dict& specs() { return status_specs_store(); }
 
-void ensure() {
+void ensure_ready() {
 	Dict& s = status_specs_store();
 	if (!s.empty()) return;
 	// hooks.json status_specs = Status.CORE + every kit registration, in registration order.
@@ -29,7 +29,7 @@ void ensure() {
 }
 
 void register_spec(const std::string& nm, const Dict& spec) {
-	ensure();
+	ensure_ready();
 	specs().set(nm, spec.duplicate(true));
 }
 

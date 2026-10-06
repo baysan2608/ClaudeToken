@@ -1,5 +1,5 @@
 """Earth clips - Hung Gar (MARTIAL_ARTS.md §2.1, §3.2): rooted horse stance, short heavy bridge-arm strikes, stomps."""
-from ffa_dsl import BASES, Clip, F, H, HW, both, copy_state
+from ffa_dsl import BASES, HS, Clip, F, H, HW, apply_spec, both, copy_state
 
 from . import clip
 
@@ -213,4 +213,311 @@ def e_pour():
     c.k(27, ease="io", foot_l=F(**E_FOOT_L), foot_r=F(**E_FOOT_R), pel=dict(x=0.0, y=-0.075, z=-0.30, pitch=4.0),
         spine=dict(pitch=-1.0), neck=dict(pitch=-4.0))
     c.k(30, ease="io", base=True)
+    return c
+
+
+# ================================================================================================ P1
+def _eoff(**kw):
+    d = {"pel": 2.0, "spine": 1.0, "hand_l": -1.0, "hand_r": -1.0, "neck": -1.5}
+    d.update(kw)
+    return d
+
+
+GUARD_CLAW_L = dict(f=(-0.1, 0.25, 1.0), m=(-0.15, 1.0, -0.1))      # lead tiger claw, palm heel forward
+CHAMBER_R = dict(f=(0.0, 1.0, 0.0), m=(0.0, 0.0, 1.0))             # fist / claw chambered palm-up at the hip
+
+
+def _step_bow(c, t_lift, t_land, y=0.17):
+    c.k(t_lift, ease="io", foot_l=F(pv=0.0, lift=0.03, kup=0.2))
+    c.k(t_land, ease="in", foot_l=F(at=(0.37, y), yaw=2.0, pv=1.0))
+
+
+def _step_home(c, t_lift, t_land):
+    c.k(t_lift, ease="io", foot_l=F(pv=0.0, lift=0.025))
+    c.k(t_land, ease="in", foot_l=F(**E_FOOT_L), foot_r=F(**E_FOOT_R))
+
+
+@clip("e_thrust")
+def e_thrust():
+    # tiger claw thrust (fu jow): the rear hand chambers palm-up at the hip while the waist coils, the lead foot
+    # slides into a bow, the hips square and the claw drives forward palm-heel first, opening into the claw at contact
+    c = Clip("e_thrust", 24, "e_stance", contact=12, priority="P1", technique="tiger claw thrust (fu jow)",
+             hands=("tiger", "tiger"), strike="hand_r", offsets=_eoff(hand_r=0.0, hand_l=-1.5), antic=5, follow=16)
+    c.k(5, ease="io", pel=dict(dz=-0.02, dy=-0.02, yaw=-12.0), spine=dict(yaw=-6.0),
+        hand_r=_hw((-0.21, 0.00, 0.96), CHAMBER_R, e=(-0.3, -1.0, -0.2)), fing_r="fist",
+        hand_l=_hw((0.10, 0.46, 1.14), GUARD_CLAW_L, e=(0.45, -0.1, -1.0)))
+    _step_bow(c, 7, 9)
+    c.k(12, ease="in3", pel=dict(x=0.04, y=0.09, z=-0.24, pitch=6.0, yaw=8.0), spine=dict(pitch=3.0, yaw=6.0),
+        clav_r=dict(prot=10.0, lift=-2.0), foot_r=F(yaw=-34.0), fing_r="tiger",
+        hand_r=HS((0.12, 1.0, 0.05), ext=0.95, f=(0.0, 0.3, 1.0), m=(0.0, 1.0, -0.2), e=(-0.4, 0.0, -1.0)),
+        hand_l=_hw((0.14, 0.22, 1.12), dict(f=(-0.2, 0.3, 1.0), m=(-0.2, 1.0, -0.1)), e=(0.5, -0.4, -1.0)))
+    c.hold(14)
+    c.k(18, ease="out", pel=dict(dy=-0.05, dz=-0.02, yaw=0.0), spine=dict(yaw=0.0), clav_r=dict(prot=0.0, lift=0.0),
+        hand_r=_hw((-0.15, 0.30, 1.04), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3)), e=(-0.3, -1.0, -0.4)))
+    _step_home(c, 19, 21)
+    c.k(24, ease="io", base=True)
+    return c
+
+
+@clip("e_ground_rise")
+def e_ground_rise():
+    # lifting the bridge: drop deep into the horse, the palms reach down by the knees, turn up and lift sharply to
+    # chest height as the legs drive (the spikes rise from the ground)
+    c = Clip("e_ground_rise", 30, "e_stance", contact=15, priority="P1", technique="lifting the bridge (tok kiu)",
+             hands=("palm", "palm"), metric="high_hand_r", offsets=_eoff(hand_l=0.0, hand_r=0.0), antic=8, follow=20)
+    c.k(5, ease="io", pel=dict(z=-0.36, pitch=18.0), spine=dict(pitch=14.0), neck=dict(pitch=-16.0),
+        clav=dict(lift=-4.0),
+        hand_l=_hw((0.20, 0.42, 0.62), dict(f=(0.0, 1.0, -0.3), m=(0.0, 0.0, -1.0)), e=(0.6, -0.3, -1.0)),
+        hand_r=_hw((-0.20, 0.42, 0.62), dict(f=(0.0, 1.0, -0.3), m=(0.0, 0.0, -1.0)), e=(-0.6, -0.3, -1.0)), fing="palm")
+    c.k(9, ease="io", pel=dict(z=-0.37, pitch=16.0),
+        hand_l=_hw((0.19, 0.44, 0.58), dict(f=(0.0, 1.0, -0.1), m=(0.0, 0.1, 1.0)), e=(0.6, -0.3, -1.0)),
+        hand_r=_hw((-0.19, 0.44, 0.58), dict(f=(0.0, 1.0, -0.1), m=(0.0, 0.1, 1.0)), e=(-0.6, -0.3, -1.0)))
+    c.k(15, ease="in", pel=dict(z=-0.27, pitch=0.0), spine=dict(pitch=-4.0), neck=dict(pitch=-2.0), clav=dict(lift=5.0),
+        hand_l=_hw((0.17, 0.38, 1.16), dict(f=(0.0, 1.0, 0.2), m=(0.0, -0.1, 1.0)), e=(0.6, -0.5, -1.0)),
+        hand_r=_hw((-0.17, 0.38, 1.16), dict(f=(0.0, 1.0, 0.2), m=(0.0, -0.1, 1.0)), e=(-0.6, -0.5, -1.0)))
+    c.hold(17)
+    c.k(24, ease="io", pel=dict(z=-0.295, pitch=3.0), spine=dict(pitch=-1.0), clav=dict(lift=-2.0),
+        hand_l=_hw((0.11, 0.39, 1.16), dict(f=(-0.1, 0.25, 1.0), m=(-0.15, 1.0, -0.1))),
+        hand_r=_hw((-0.19, 0.12, 1.00), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))), fing="tiger")
+    c.k(30, ease="io", base=True)
+    return c
+
+
+@clip("e_ground_slap")
+def e_ground_slap():
+    # hammer palm to the ground: the right palm winds up high behind the head while the weight loads the right leg,
+    # then the body folds forward and down into a low lead-side drop and the palm slaps the floor ahead of the lead foot
+    c = Clip("e_ground_slap", 30, "e_stance", contact=14, priority="P1", technique="hammer palm to the ground",
+             hands=("tiger", "palm"), metric="low_hand_r", offsets=_eoff(hand_r=0.0), antic=6, follow=19)
+    c.k(6, ease="io", pel=dict(dx=-0.06, dz=0.01, pitch=-4.0, yaw=-14.0, side=-4.0), spine=dict(pitch=-8.0, yaw=-8.0),
+        clav_r=dict(lift=14.0),
+        hand_r=_hw((-0.24, -0.06, 1.62), dict(f=(0.1, -0.2, 1.0), m=(0.0, 1.0, 0.2)), e=(-0.6, 0.2, 0.2)), fing_r="palm",
+        hand_l=_hw((0.14, 0.48, 1.08), GUARD_CLAW_L, e=(0.45, -0.1, -1.0)))
+    c.k(10, ease="io", pel=dict(dx=0.0, z=-0.34, pitch=20.0, yaw=4.0, side=0.0), spine=dict(pitch=12.0, yaw=4.0),
+        hand_r=_hw((-0.12, 0.40, 1.30), dict(f=(0.1, 0.8, 0.5), m=(0.0, 0.5, -0.8)), e=(-0.6, 0.0, -0.4)),
+        path="arc")
+    c.k(14, ease="acc", pel=dict(x=0.04, y=0.0, z=-0.45, pitch=38.0, yaw=10.0), spine=dict(pitch=30.0, yaw=6.0),
+        neck=dict(pitch=-30.0), clav_r=dict(lift=-4.0, prot=10.0),
+        hand_r=_hw((-0.02, 0.62, 0.20), dict(f=(0.0, 1.0, -0.3), m=(0.0, 0.2, -1.0)), e=(-0.6, -0.2, -0.6)),
+        hand_l=_hw((0.22, 0.20, 0.80), dict(f=(0.0, 0.6, 0.8), m=(-0.9, 0.0, 0.3)), e=(0.6, -0.4, -1.0)), path="arc")
+    c.hold(16)
+    c.k(22, ease="out", pel=dict(x=0.0, z=-0.32, pitch=10.0, yaw=0.0), spine=dict(pitch=3.0, yaw=0.0),
+        neck=dict(pitch=-6.0), clav_r=dict(lift=0.0, prot=0.0),
+        hand_r=_hw((-0.19, 0.14, 1.00), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))),
+        hand_l=_hw((0.11, 0.39, 1.16), dict(f=(-0.1, 0.25, 1.0), m=(-0.15, 1.0, -0.1))), fing_r="tiger")
+    c.k(30, ease="io", base=True)
+    return c
+
+
+@clip("e_sweep")
+def e_sweep():
+    # crane wing sweep (hok yik): the waist winds right and the right arm opens back like a wing, then the waist
+    # pivots ~70 deg left and the arm sweeps flat across the front at chest height, finishing in a crane beak
+    c = Clip("e_sweep", 30, "e_stance", contact=13, priority="P1", technique="crane wing sweep (hok yik)",
+             hands=("tiger", "crane"), metric="fwd_hand_r", offsets=_eoff(hand_r=0.0), antic=6, follow=17)
+    c.k(6, ease="io", pel=dict(dx=-0.04, dz=-0.01, yaw=-34.0), spine=dict(yaw=-14.0),
+        hand_r=_hw((-0.58, -0.12, 1.14), dict(f=(-1.0, -0.2, 0.0), m=(0.0, 0.0, -1.0)), e=(0.0, -0.3, -1.0)),
+        hand_l=_hw((0.16, 0.36, 1.12), dict(f=(-0.2, 0.3, 1.0), m=(-0.2, 1.0, -0.1)), e=(0.5, -0.4, -1.0)),
+        fing_r="crane")
+    c.k(13, ease="in3", pel=dict(dx=0.0, x=0.03, dz=-0.02, yaw=16.0), spine=dict(yaw=10.0, pitch=2.0),
+        clav_r=dict(prot=12.0), foot_r=F(yaw=-2.0),
+        hand_r=_hw((-0.02, 0.62, 1.12), dict(f=(0.6, 0.6, -0.4), m=(0.2, -0.3, -1.0)), e=(-0.3, 0.0, -1.0)),
+        hand_l=_hw((0.18, 0.18, 1.08), dict(f=(-0.2, 0.3, 1.0), m=(-0.2, 1.0, -0.1)), e=(0.5, -0.4, -1.0)), path="arc")
+    c.k(17, ease="out", pel=dict(yaw=30.0), spine=dict(yaw=14.0),
+        hand_r=_hw((0.40, 0.36, 1.10), dict(f=(0.6, -0.3, -0.6), m=(0.5, -0.5, -0.6)), e=(-0.2, 0.3, -1.0)), path="arc")
+    c.k(24, ease="io", pel=dict(x=0.0, yaw=4.0, z=-0.30), spine=dict(yaw=0.0, pitch=-1.0), clav_r=dict(prot=0.0),
+        foot_r=F(**E_FOOT_R),
+        hand_r=_hw((-0.17, 0.16, 1.00), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))),
+        hand_l=_hw((0.10, 0.39, 1.16), GUARD_CLAW_L), fing_r="tiger")
+    c.k(30, ease="io", base=True)
+    return c
+
+
+@clip("e_push")
+def e_push():
+    # double tiger palms push (seung fu jow): sink and draw both palms to the chest, lunge the lead foot into a bow,
+    # both palms drive forward at shoulder height (palm heels first, fingers clawed) with the whole body behind them
+    c = Clip("e_push", 30, "e_stance", contact=10, priority="P1", technique="double tiger palms push",
+             hands=("tiger", "tiger"), strike="hands", metric="fwd_hand_l", offsets=_eoff(hand_l=0.0, hand_r=0.0),
+             antic=4, follow=16)
+    c.k(4, ease="io", pel=dict(dz=-0.025, dy=-0.03, pitch=2.0), foot_l=F(pv=0.0, lift=0.03),
+        hand_l=_hw((0.15, 0.20, 1.12), dict(f=(0.0, 0.3, 1.0), m=(0.0, 1.0, -0.2)), e=(0.6, -0.4, -1.0)),
+        hand_r=_hw((-0.15, 0.20, 1.12), dict(f=(0.0, 0.3, 1.0), m=(0.0, 1.0, -0.2)), e=(-0.6, -0.4, -1.0)))
+    c.k(7, ease="in", foot_l=F(at=(0.37, 0.20), yaw=2.0, pv=1.0), pel=dict(dy=0.05))
+    c.k(10, ease="in3", pel=dict(x=0.03, y=0.10, z=-0.24, pitch=8.0, yaw=0.0), spine=dict(pitch=5.0),
+        clav=dict(lift=1.0, prot=10.0), foot_r=F(yaw=-30.0),
+        hand_l=HS((0.14, 1.0, 0.06), ext=0.94, f=(0.0, 0.3, 1.0), m=(0.0, 1.0, -0.2), e=(0.5, 0.0, -1.0)),
+        hand_r=HS((-0.14, 1.0, 0.06), ext=0.94, f=(0.0, 0.3, 1.0), m=(0.0, 1.0, -0.2), e=(-0.5, 0.0, -1.0)))
+    c.hold(12)
+    c.k(18, ease="out", pel=dict(dy=-0.06, dz=-0.02), clav=dict(prot=2.0, lift=0.0),
+        hand_l=_hw((0.13, 0.46, 1.12), GUARD_CLAW_L), hand_r=_hw((-0.17, 0.28, 1.04), dict(f=(0.05, 0.45, 1.0), m=(0.1, 1.0, -0.3))))
+    _step_home(c, 20, 23)
+    c.k(30, ease="io", base=True)
+    return c
+
+
+@clip("e_sink")
+def e_sink():
+    # pressing the earth: palms rise a little with the inhale, then press straight down to knee height with a heavy
+    # exhale as the horse drops 6 cm (Swallow / Quicksand / Melt Pit)
+    c = Clip("e_sink", 24, "e_stance", contact=8, priority="P1", technique="pressing the earth (palms down)",
+             hands=("palm", "palm"), metric="low_hand_r", offsets=_eoff(hand_l=0.0, hand_r=0.0), antic=4, follow=13)
+    c.k(4, ease="io", pel=dict(dz=0.015), spine=dict(pitch=-3.0), clav=dict(lift=4.0),
+        hand_l=_hw((0.18, 0.34, 1.16), dict(f=(-0.3, 0.9, 0.0), m=(0.0, 0.0, -1.0)), e=(0.7, -0.3, -0.6)),
+        hand_r=_hw((-0.18, 0.34, 1.16), dict(f=(0.3, 0.9, 0.0), m=(0.0, 0.0, -1.0)), e=(-0.7, -0.3, -0.6)), fing="palm")
+    c.k(8, ease="in3", pel=dict(z=-0.36, pitch=8.0), spine=dict(pitch=6.0), neck=dict(pitch=-8.0), clav=dict(lift=-5.0),
+        hand_l=_hw((0.20, 0.38, 0.66), dict(f=(-0.35, 0.9, 0.0), m=(0.0, 0.0, -1.0)), e=(0.8, -0.2, -0.5)),
+        hand_r=_hw((-0.20, 0.38, 0.66), dict(f=(0.35, 0.9, 0.0), m=(0.0, 0.0, -1.0)), e=(-0.8, -0.2, -0.5)))
+    c.hold(10)
+    c.k(17, ease="out", pel=dict(z=-0.31, pitch=5.0), spine=dict(pitch=0.0), neck=dict(pitch=-4.0), clav=dict(lift=-2.0),
+        hand_l=_hw((0.12, 0.40, 1.08), GUARD_CLAW_L), hand_r=_hw((-0.19, 0.14, 0.96), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))),
+        fing="tiger")
+    c.k(24, ease="io", base=True)
+    return c
+
+
+@clip("e_overhead_slam")
+def e_overhead_slam():
+    # double hammer down: rise onto the toes with both fists high overhead (back arched), then crash down into a deep
+    # horse, both fists hammering to waist height in front (Rod Plant)
+    c = Clip("e_overhead_slam", 30, "e_stance", contact=12, priority="P1", technique="double hammer fists down",
+             hands=("fist", "fist"), metric="low_hand_r", offsets=_eoff(hand_l=0.0, hand_r=0.0), antic=6, follow=17,
+             no_balance=True)
+    c.k(6, ease="out", pel=dict(z=-0.10, pitch=-6.0), spine=dict(pitch=-10.0), neck=dict(pitch=6.0),
+        clav=dict(lift=24.0), feet=F(pv=1.0, pitch=-22.0),
+        hand_l=_hw((0.10, 0.02, 1.94), dict(f=(-0.3, 0.2, 1.0), m=(-0.9, 0.0, 0.2)), e=(0.8, 0.0, -0.3)),
+        hand_r=_hw((-0.10, 0.02, 1.94), dict(f=(0.3, 0.2, 1.0), m=(0.9, 0.0, 0.2)), e=(-0.8, 0.0, -0.3)), fing="fist")
+    c.k(12, ease="acc", pel=dict(z=-0.40, pitch=14.0), spine=dict(pitch=10.0), neck=dict(pitch=-14.0),
+        clav=dict(lift=-4.0, prot=8.0), feet=F(pv=1.0, pitch=0.0),
+        hand_l=_hw((0.08, 0.50, 0.74), dict(f=(0.0, 0.6, -0.8), m=(-1.0, 0.0, 0.0)), e=(0.7, 0.0, -0.6)),
+        hand_r=_hw((-0.08, 0.50, 0.74), dict(f=(0.0, 0.6, -0.8), m=(1.0, 0.0, 0.0)), e=(-0.7, 0.0, -0.6)), path="arc")
+    c.hold(14)
+    c.k(22, ease="out", pel=dict(z=-0.31, pitch=5.0), spine=dict(pitch=0.0), neck=dict(pitch=-4.0), clav=dict(lift=-2.0),
+        hand_l=_hw((0.11, 0.39, 1.14), GUARD_CLAW_L), hand_r=_hw((-0.19, 0.12, 0.98), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))),
+        fing="tiger")
+    c.k(30, ease="io", base=True)
+    return c
+
+
+@clip("e_disc_flick")
+def e_disc_flick():
+    # crane-beak flick: the right hand loads across the body to the left shoulder as the waist coils left, then the
+    # waist snaps back and the hand flicks out backhand to the front-right, the wrist cracking into a crane beak
+    c = Clip("e_disc_flick", 20, "e_stance", contact=8, priority="P1", technique="crane-beak backhand flick",
+             hands=("tiger", "crane"), strike="hand_r", offsets=_eoff(hand_r=0.0, pel=1.5, spine=0.75), antic=4, follow=12)
+    c.k(4, ease="io", pel=dict(yaw=18.0, dz=-0.01), spine=dict(yaw=10.0),
+        hand_r=_hw((0.16, 0.22, 1.18), dict(f=(0.6, -0.2, 0.6), m=(0.0, -1.0, 0.0)), e=(-0.2, -0.6, -1.0)),
+        hand_l=_hw((0.18, 0.30, 1.04), dict(f=(-0.2, 0.3, 1.0), m=(-0.2, 1.0, -0.1)), e=(0.5, -0.4, -1.0)))
+    c.k(8, ease="in3", pel=dict(yaw=-16.0, dz=-0.02), spine=dict(yaw=-10.0), clav_r=dict(prot=10.0),
+        hand_r=HS((-0.55, 1.0, 0.05), ext=0.96, f=(-0.4, 0.6, -0.6), m=(0.0, -0.3, -1.0), e=(-0.3, 0.0, -1.0)),
+        fing_r="crane")
+    c.hold(10)
+    c.k(15, ease="out", pel=dict(yaw=-4.0), spine=dict(yaw=-2.0), clav_r=dict(prot=0.0),
+        hand_r=_hw((-0.19, 0.18, 1.00), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))),
+        hand_l=_hw((0.10, 0.40, 1.16), GUARD_CLAW_L), fing_r="tiger")
+    c.k(20, ease="io", base=True)
+    return c
+
+
+@clip("e_chain_whirl")
+def e_chain_whirl():
+    # hanging back-fist (gwa choi): the right fist loads low across the body, swings up over the left side past the
+    # head and hangs down onto the target in a 120 deg vertical arc, the waist turning with it; follow through low
+    c = Clip("e_chain_whirl", 36, "e_stance", contact=14, priority="P1", technique="hanging back-fist arc (gwa choi)",
+             hands=("tiger", "fist"), metric="fwd_hand_r", offsets=_eoff(hand_r=0.0), antic=8, follow=19)
+    c.k(5, ease="io", pel=dict(yaw=14.0, dz=-0.02), spine=dict(yaw=8.0, pitch=4.0),
+        hand_r=_hw((0.10, 0.16, 0.92), dict(f=(0.4, 0.3, -0.8), m=(0.8, 0.0, 0.2)), e=(-0.4, -0.4, -1.0)), fing_r="fist")
+    c.k(10, ease="io", pel=dict(yaw=10.0, dz=0.0, pitch=-2.0), spine=dict(yaw=4.0, pitch=-6.0), clav_r=dict(lift=14.0),
+        hand_r=_hw((0.04, 0.10, 1.72), dict(f=(0.0, 0.2, 1.0), m=(0.5, 0.0, 0.0)), e=(-0.6, 0.0, -0.3)), path="arc")
+    c.k(14, ease="in3", pel=dict(yaw=-14.0, dz=-0.03, pitch=6.0), spine=dict(yaw=-6.0, pitch=6.0),
+        clav_r=dict(lift=2.0, prot=10.0),
+        hand_r=HS((-0.10, 1.0, -0.05), ext=0.96, f=(0.0, 0.8, -0.6), m=(0.0, -0.6, -0.8), e=(-0.3, 0.0, -1.0)), path="arc")
+    c.k(18, ease="out", pel=dict(yaw=-20.0), spine=dict(yaw=-8.0), clav_r=dict(lift=0.0, prot=4.0),
+        hand_r=_hw((-0.18, 0.40, 0.86), dict(f=(0.0, 0.5, -0.9), m=(0.6, -0.4, -0.5)), e=(-0.5, -0.2, -1.0)), path="arc")
+    c.k(28, ease="io", pel=dict(yaw=0.0), spine=dict(yaw=0.0, pitch=-1.0),
+        hand_r=_hw((-0.19, 0.12, 0.98), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))), fing_r="tiger")
+    c.k(36, ease="io", base=True)
+    return c
+
+
+@clip("e_lob")
+def e_lob():
+    # underhand scoop toss: sink and scoop the glob from low behind the right knee, then swing it forward-up and
+    # release at chest height (palm up) as the legs rise
+    c = Clip("e_lob", 24, "e_stance", contact=12, priority="P1", technique="underhand scoop toss",
+             hands=("tiger", "cup"), metric="fwd_hand_r", offsets=_eoff(hand_r=0.0), antic=6, follow=16)
+    c.k(6, ease="io", pel=dict(z=-0.36, pitch=14.0, yaw=-18.0), spine=dict(pitch=10.0, yaw=-8.0), neck=dict(pitch=-10.0),
+        hand_r=_hw((-0.30, -0.06, 0.62), dict(f=(0.0, -0.6, -0.8), m=(0.0, 0.6, -0.6)), e=(-0.5, 0.3, -1.0)), fing_r="cup")
+    c.k(12, ease="in", pel=dict(z=-0.27, pitch=0.0, yaw=6.0), spine=dict(pitch=-2.0, yaw=4.0), neck=dict(pitch=-4.0),
+        clav_r=dict(lift=6.0, prot=8.0),
+        hand_r=HS((0.0, 1.0, 0.18), ext=0.93, f=(0.0, 1.0, 0.3), m=(0.0, -0.2, 1.0), e=(-0.4, 0.0, -1.0)), path="arc")
+    c.hold(13)
+    c.k(18, ease="out", pel=dict(z=-0.29, yaw=0.0), spine=dict(pitch=-1.0, yaw=0.0), clav_r=dict(lift=0.0, prot=0.0),
+        hand_r=_hw((-0.18, 0.18, 1.02), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))), fing_r="tiger")
+    c.k(24, ease="io", base=True)
+    return c
+
+
+def _make_p1_bases():
+    st = BASES["e_stance"]
+    BASES["e_magma"] = apply_spec(st, dict(
+        pel=dict(dz=-0.02, pitch=3.0), spine=dict(pitch=4.0), clav_l=(2.0, 6.0), clav_r=(2.0, 6.0),
+        hand_l=HW(p=(0.12, 0.50, 1.08), f=(-0.2, 0.9, 0.2), m=(-0.95, 0.1, 0.1), e=(0.6, -0.2, -1.0)),
+        hand_r=HW(p=(-0.12, 0.50, 1.06), f=(0.2, 0.9, 0.2), m=(0.95, 0.1, 0.1), e=(-0.6, -0.2, -1.0)),
+        fing_l="cup", fing_r="cup"), st)
+    # iron wire: rooted horse, double bridge arms (forearms forward, fists, elbows sunk), tension
+    BASES["e_skin"] = apply_spec(st, dict(
+        pel=dict(dz=-0.01), spine=dict(pitch=0.0), clav_l=(-4.0, 2.0), clav_r=(-4.0, 2.0),
+        hand_l=HW(p=(0.17, 0.36, 1.02), f=(-0.1, 0.9, 0.4), m=(-0.9, 0.0, 0.3), e=(0.3, -0.3, -1.0)),
+        hand_r=HW(p=(-0.17, 0.36, 1.02), f=(0.1, 0.9, 0.4), m=(0.9, 0.0, 0.3), e=(-0.3, -0.3, -1.0)),
+        fing_l="fist", fing_r="fist"), st)
+
+
+_make_p1_bases()
+
+
+@clip("e_magma_hold")
+def e_magma_hold():
+    c = Clip("e_magma_hold", 72, "e_magma", loop=True, priority="P1", technique="magma hold (cupped hands, heat tremble)",
+             hands=("cup", "cup"), offsets={"neck": 0.0})
+    c.k(18, ease="sp", pel=dict(dz=-0.012), hand_l=H(dp=(0.004, -0.008, -0.008)), hand_r=H(dp=(-0.004, -0.008, -0.008)))
+    c.k(36, ease="sp", pel=dict(dz=0.006), hand_l=H(dp=(-0.004, 0.006, 0.008)), hand_r=H(dp=(0.004, 0.006, 0.008)))
+    c.k(54, ease="sp", pel=dict(dz=-0.008))
+    c.breathe(depth=1.0, cycles=1)
+    c.tremble(amp=1.6, hz=13.0)
+    return c
+
+
+@clip("e_burrow")
+def e_burrow():
+    # sink and shoot: drop low behind the arms, dive forward flat (the body goes into the ground at contact = centre of
+    # the burrow), come up through the legs
+    c = Clip("e_burrow", 28, "e_stance", contact=14, priority="P1", technique="sink and shoot (burrow dive)",
+             hands=("relaxed", "relaxed"), metric="fwd_head", offsets=_eoff(), antic=6, follow=20, no_balance=True)
+    c.k(6, ease="io", pel=dict(z=-0.44, pitch=24.0), spine=dict(pitch=14.0), neck=dict(pitch=-18.0),
+        hand_l=_hw((0.12, 0.40, 0.95), dict(f=(-0.2, 0.6, 0.8), m=(-0.8, 0.3, 0.0)), e=(0.6, -0.3, -1.0)),
+        hand_r=_hw((-0.12, 0.40, 0.95), dict(f=(0.2, 0.6, 0.8), m=(0.8, 0.3, 0.0)), e=(-0.6, -0.3, -1.0)), fing="palm")
+    c.k(14, ease="in", pel=dict(y=0.10, z=-0.46, pitch=46.0), spine=dict(pitch=14.0), neck=dict(pitch=-34.0),
+        feet=F(pv=1.0, pitch=-18.0),
+        hand_l=_hw((0.08, 0.98, 0.78), dict(f=(0.0, 1.0, 0.0), m=(-0.4, 0.0, -0.9)), e=(0.4, 0.0, 1.0)),
+        hand_r=_hw((-0.08, 0.98, 0.78), dict(f=(0.0, 1.0, 0.0), m=(0.4, 0.0, -0.9)), e=(-0.4, 0.0, 1.0)))
+    c.hold(16)
+    c.k(22, ease="out", pel=dict(y=-0.04, z=-0.33, pitch=8.0), spine=dict(pitch=2.0), neck=dict(pitch=-6.0),
+        feet=F(pv=1.0, pitch=0.0),
+        hand_l=_hw((0.11, 0.39, 1.12), GUARD_CLAW_L), hand_r=_hw((-0.19, 0.12, 0.98), dict(f=(0.05, 0.45, 1.0), m=(0.15, 1.0, -0.3))),
+        fing="tiger")
+    c.k(28, ease="io", base=True)
+    return c
+
+
+@clip("e_stone_skin")
+def e_stone_skin():
+    # iron-wire tension (tit sin): rooted horse, double bridge arms; the arms press slowly forward under dynamic
+    # tension with a long hissing exhale (trembling), then draw back on the inhale
+    c = Clip("e_stone_skin", 96, "e_skin", loop=True, priority="P1", technique="iron-wire tension (tit sin)",
+             hands=("fist", "fist"), offsets={"neck": 0.0})
+    c.k(48, ease="sp", pel=dict(dz=-0.014), spine=dict(dpitch=2.0), clav=dict(dprot=5.0, dlift=-2.0),
+        hand_l=H(dp=(-0.02, 0.10, 0.02)), hand_r=H(dp=(0.02, 0.10, 0.02)))
+    c.breathe(depth=-1.4, cycles=1)          # chest sinks (hissing exhale) while the arms press out
+    c.tremble(amp=0.9)
     return c

@@ -50,6 +50,24 @@ def taubin(part, iters, lam=0.5, mu=-0.53, mask=None, pin=None):
     return part
 
 
+def bridge_hollows(part, mask, iters=60, step=0.7):
+    """Outward-only Laplacian: a vertex lying below the mean of its neighbours (a hollow) moves out along its
+    normal; convex areas never move. Converges to a membrane stretched over the bumps, like cloth under light
+    tension. The mask fades over two rings of neighbours so the bridged area blends into the rest."""
+    A = part.adjacency()
+    w = mask.astype(float)
+    for _ in range(2):
+        w = np.maximum(w, 0.5 * (A @ w))
+    v = part.v.copy()
+    for _ in range(iters):
+        part.v = v
+        n = part.vertex_normals()
+        dn = ((A @ v - v) * n).sum(axis=1)
+        v = v + n * (np.maximum(dn, 0.0) * step * w)[:, None]
+    part.v = v
+    return part
+
+
 def boundary_vertex_mask(part):
     m = np.zeros(len(part.v), dtype=bool)
     for a, b in part.edges_boundary():
@@ -134,6 +152,11 @@ def build_tunic(st, W_all, body):
     for _ in range(4):
         taubin(t, 6)
         t.v = enforce_clearance(t.v, bb, 0.007)
+    # cloth spans hollows instead of following them: bridge the sternum cleft between the pectorals and the spine
+    # groove (a shrink-wrapped cleft reads as a bust under the wrap front)
+    dom = R.dominant_bones(t.W)
+    torso = np.isin(dom, list(TORSO_BONES)) & (np.abs(t.v[:, 0]) < 0.15) & (t.v[:, 2] > R.WAIST_Z + 0.01)
+    bridge_hollows(t, torso, iters=60)
     # ... then cut exact edges on the smooth shell: waist (under the sash), sleeve ends, wrap neckline
     t = P.clip(t, (R.WAIST_Z - 0.035) - t.v[:, 2])
     ap = R.arm_params(t.v)

@@ -2,8 +2,9 @@
 
 Checks (MARTIAL_ARTS.md §5, stream brief):
   * frame count / fps, no NaN
-  * planted feet do not slide: every sole landmark (heel, ball contact, toe tip) that is on the floor in two
-    consecutive planted frames moves <= 3 mm horizontally (in the treadmill frame for gait clips); a planted foot
+  * planted feet do not slide: the foot's anchor (the sole landmark - heel, ball contact or toe tip - on the floor in
+    two consecutive planted frames that moves least, i.e. the pivot) moves <= 3 mm horizontally (in the treadmill
+    frame for gait clips), so ball / heel pivots are allowed but any translation is caught; a planted foot
     touches the floor; nothing sinks below the floor by more than 5 mm; planted legs reach their ankle target
   * loops: first == last frame and matching per-frame velocity across the seam
   * joint limits: no knee / elbow hyperextension, wrist swing < 80 deg
@@ -96,6 +97,9 @@ def validate(res):
             for f in range(a, min(b, n)):
                 g = f + 1
                 on = False
+                best = None
+                # the foot's anchor this frame = the floor contact (heel, ball or toe tip) that moves least: a foot
+                # pivoting on its ball or heel is planted (its anchor stays put); a translating foot moves every point
                 for j in range(3):
                     p0, p1 = lms[f][j], lms[g][j]
                     if p0[2] < GROUND_TOL:
@@ -103,10 +107,12 @@ def validate(res):
                     if p0[2] < GROUND_TOL and p1[2] < GROUND_TOL:
                         d = p1 - p0 - vel
                         sl = math.hypot(d[0], d[1])
-                        max_slide = max(max_slide, sl)
-                        if sl > SLIDE_TOL:
-                            errors.append(f"foot_{s} slides {sl * 1000:.1f} mm at frame {f}->{g} (landmark {j})")
-                            break
+                        if best is None or sl < best[0]:
+                            best = (sl, j)
+                if best is not None:
+                    max_slide = max(max_slide, best[0])
+                    if best[0] > SLIDE_TOL:
+                        errors.append(f"foot_{s} slides {best[0] * 1000:.1f} mm at frame {f}->{g} (anchor {best[1]})")
                 if not on:
                     errors.append(f"foot_{s} planted at frame {f} but not on the floor")
                 miss = res.infos[f]["leg_miss_" + s]
@@ -135,19 +141,44 @@ def validate(res):
             if info.get("arm_miss_" + s, 0.0) > 0.03:
                 warnings.append(f"arm_{s} short of its target by {info['arm_miss_' + s] * 100:.1f} cm at frame {f}")
     stats["max_wrist_deg"] = round(worst_wrist, 1)
+    # ---------------------------------------------------------------- pops: no bone may jump > 40 deg in one frame
+    pop, pop_b, pop_f = 0.0, "", 0
+    body = [b for b in rig.ANIM_BONES if not any(k in b for k in ("index", "middle", "ring", "pinky", "thumb"))]
+    for f in range(n):
+        for b in body:
+            a = angle_of(res.poses[f].q[b].T @ res.poses[f + 1].q[b])
+            if a > pop:
+                pop, pop_b, pop_f = a, b, f
+    stats["max_step_deg"] = round(pop, 1)
+    if pop > 40.0:
+        errors.append(f"pop: {pop_b} turns {pop:.0f} deg between frames {pop_f} and {pop_f + 1}")
     # ---------------------------------------------------------------- loops
     if clip.loop:
         d0 = max(angle_of(res.poses[0].q[b].T @ res.poses[n].q[b]) for b in rig.ANIM_BONES)
         if d0 > 0.01 or np.abs(res.poses[0].pelvis_loc - res.poses[n].pelvis_loc).max() > 1e-5:
             errors.append(f"loop seam: last frame differs from the first ({d0:.3f} deg)")
-        worst = 0.0
+        # velocity change across the seam must be no worse than the clip's own smoothest-possible interior
+        # (the largest frame-to-frame velocity change inside the clip, e.g. a heel strike) and small in absolute terms
+        worst, wb, ratio = 0.0, "", 0.0
         for b in rig.ANIM_BONES:
             va = res.poses[0].q[b].T @ res.poses[1].q[b]
             vb = res.poses[n - 1].q[b].T @ res.poses[n].q[b]
-            worst = max(worst, angle_of(va.T @ vb))
+            seam = angle_of(va.T @ vb)
+            if seam <= 0.25:
+                continue
+            inner = 0.0
+            for f in range(1, n - 1):
+                v0 = res.poses[f - 1].q[b].T @ res.poses[f].q[b]
+                v1 = res.poses[f].q[b].T @ res.poses[f + 1].q[b]
+                inner = max(inner, angle_of(v0.T @ v1))
+            r = seam / max(inner, 0.25)
+            if seam > worst:
+                worst, wb = seam, b
+            ratio = max(ratio, r)
+            if seam > 1.0 and r > 1.5:
+                errors.append(f"loop seam velocity pop on {b}: {seam:.2f} deg/frame (interior max {inner:.2f})")
         stats["seam_vel_deg"] = round(worst, 2)
-        if worst > 1.5:
-            errors.append(f"loop seam velocity mismatch {worst:.2f} deg/frame")
+        stats["seam_ratio"] = round(ratio, 2)
     # ---------------------------------------------------------------- contact = max extension
     vals = metric(clip, fk)
     if vals is not None and clip.contacts:

@@ -188,12 +188,75 @@ def build_knot_and_tail(cap, lm):
     C = np.stack([np.interp(tt, s, pts[:, k]) for k in range(3)], axis=1)
     C = G.smooth_polyline(C, 3, False)
     C[:, 0] += 0.004 * np.sin(tt * np.pi * 1.5)                 # a little sway, not symmetric
-    taper = (1 - tt) ** 0.8
-    ra = 0.0125 * taper ** 0.7 + 0.0015
-    rb = 0.0090 * taper ** 0.7 + 0.0012
-    tail = lofted_tube("hair_tail", C, ra, rb, lambda i: np.array([0, 1.0, 0.2]), 10, "hair", cap_end=True,
-                       twist=np.linspace(0, 0.5, len(C)))
+    tail = _tail_clumps(C)
     return bun, tie, tail, seat, axis
+
+
+def _tail_clumps(C, segs=16, lobes=4):
+    """The tail as one broad, flat lock of hair (wide across the back, thin from the side - a round tapering tube
+    reads as a horn): its cross-section has `lobes` strand clumps (shallow grooves along the length) that part
+    toward the end, where each clump runs out into its own point (brush-like end, not one needle tip).
+    UVs as lofted_tube (u around, v along, metres). The centre line is the ff_hair chain, so the height-based chain
+    weights stay valid."""
+    C = np.asarray(C, float)
+    N = len(C)
+    tt = np.linspace(0, 1, N)
+    T = _n(np.gradient(C, axis=0))
+    up = np.array([0, 1.0, 0.2])
+    swell = 1.0 + 0.25 * np.sin(np.clip(tt / 0.6, 0, 1) * np.pi)           # spreads below the tie
+    taper = np.clip(1 - tt, 0, 1) ** 0.6
+    half_w = 0.0150 * swell * (0.45 + 0.55 * taper)                       # across the back
+    half_t = 0.0062 * (0.55 + 0.45 * taper)                               # front-to-back thickness
+    part_t = np.clip((tt - 0.55) / 0.45, 0, 1) ** 1.5                     # clumps part toward the end
+    twist = np.linspace(0.0, 0.35, N)
+    verts, faces, uvs = [], [], []
+    th = 2 * np.pi * np.arange(segs) / segs
+    prev_side = None
+    ring_len = []
+    for i in range(N):
+        side = _n(np.cross(T[i], up))
+        if prev_side is not None and side @ prev_side < 0:
+            side = -side
+        prev_side = side
+        upv = _n(np.cross(side, T[i]))
+        a = th + twist[i]
+        lobe = np.cos(lobes * th)                                          # +1 clump crest .. -1 groove
+        depth = 0.10 + 0.45 * part_t[i]
+        r = 1.0 + depth * 0.5 * (lobe - 1.0)                               # grooves cut in, crests keep the hull
+        along = np.zeros(segs)
+        if i == N - 1:
+            along = 0.016 * np.clip(lobe, 0, 1) ** 2                       # crests run out into points
+        elif i == N - 2:
+            along = 0.006 * np.clip(lobe, 0, 1) ** 2
+        for k in range(segs):
+            verts.append(C[i] + side * np.cos(a[k]) * half_w[i] * r[k] + upv * np.sin(a[k]) * half_t[i] * r[k]
+                         + T[i] * along[k])
+        ring_len.append(along)
+    sv = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(C, axis=0), axis=1))])
+    circ = 2 * np.pi * float(np.mean(0.5 * (half_w + half_t)))
+    for i in range(N - 1):
+        for k in range(segs):
+            k2 = (k + 1) % segs
+            faces.append([i * segs + k, i * segs + k2, (i + 1) * segs + k2, (i + 1) * segs + k])
+            u0, u1 = k / segs * circ, (k + 1) / segs * circ
+            uvs.append([(u0, sv[i] + ring_len[i][k]), (u1, sv[i] + ring_len[i][k2]),
+                        (u1, sv[i + 1] + ring_len[i + 1][k2]), (u0, sv[i + 1] + ring_len[i + 1][k])])
+    # close the end: centre vertex a little behind the crest points (the points stay free)
+    verts.append(C[-1] + T[-1] * 0.003)
+    tip = len(verts) - 1
+    for k in range(segs):
+        k2 = (k + 1) % segs
+        faces.append([(N - 1) * segs + k, (N - 1) * segs + k2, tip])
+        uvs.append([(k / segs * circ, sv[-1] + ring_len[-1][k]), ((k + 1) / segs * circ, sv[-1] + ring_len[-1][k2]),
+                    ((k + 0.5) / segs * circ, sv[-1] + 0.004)])
+    p = P.Part("hair_tail", np.array(verts), faces, "hair", uvs=uvs)
+    f0 = faces[0]
+    e1 = p.v[f0[1]] - p.v[f0[0]]
+    e2 = p.v[f0[3]] - p.v[f0[0]]
+    if np.cross(e1, e2) @ (p.v[f0[0]] - C[0]) < 0:                       # outward winding
+        p.f = [list(reversed(f)) for f in p.f]
+        p.uv = [list(reversed(u)) for u in p.uv]
+    return p
 
 
 def chain_weight_tail(part, chain_bones, z_centers):

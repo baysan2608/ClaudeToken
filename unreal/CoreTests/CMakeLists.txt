@@ -30,10 +30,16 @@ file(GLOB_RECURSE FF_PUBLIC_HEADERS CONFIGURE_DEPENDS "${FF_MODULE}/Public/ff/*.
 set(FF_WARN -Wall -Wextra -Wshadow -Wconversion -Wno-sign-conversion -Wundef -Werror)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   list(APPEND FF_WARN -Wshorten-64-to-32)
+else()
+  # g++ 13 false positives on std::variant / shared_ptr at -O2 (GCC PR 107138, 107532); Unreal never uses g++.
+  list(APPEND FF_WARN -Wno-maybe-uninitialized -Wno-dangling-reference)
 endif()
 set(FF_LANG -fno-exceptions -fno-rtti)
 # Test code is never compiled by Unreal: it keeps the language rules but not the conversion warnings.
 set(FF_TEST_WARN -Wall -Wextra -Wshadow -Wno-sign-conversion -Wundef -Werror -Wno-unused-parameter -Wno-unused-variable)
+if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  list(APPEND FF_TEST_WARN -Wno-maybe-uninitialized -Wno-dangling-reference)
+endif()
 
 function(ff_lib_options tgt)
   target_include_directories(${tgt} PUBLIC "${FF_MODULE}/Public" PRIVATE "${FF_MODULE}/Private")
@@ -51,7 +57,7 @@ add_executable(ff_tests ${FF_TEST_SOURCES})
 target_link_libraries(ff_tests PRIVATE ff_core)
 target_include_directories(ff_tests PRIVATE "${FF_MODULE}/Private" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(ff_tests PRIVATE ${FF_TEST_WARN} ${FF_LANG})
-target_compile_definitions(ff_tests PRIVATE FF_DATA_DIR="${FF_DATA_DIR}")
+target_compile_definitions(ff_tests PRIVATE FF_DATA_DIR="${FF_DATA_DIR}" FF_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 # ---------------------------------------------------------------- perf / soak
 add_executable(ff_perf "${CMAKE_CURRENT_SOURCE_DIR}/perf/perf_main.cpp")

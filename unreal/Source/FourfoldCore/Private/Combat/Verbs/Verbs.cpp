@@ -29,7 +29,7 @@ const char* const kDefaultMat[] = {"stone", "water", "flame", "wind"};
 
 bool is_channel_verb(std::string_view verb) { return in_list(verb, kChannelVerbs); }
 
-void ensure() {}
+void ensure_ready() {}
 
 // ------------------------------------------------------------------ lifecycle
 
@@ -254,7 +254,7 @@ Mat mat_id(const Value& name) {
 }
 
 std::string fx_mat(const ActionInst& inst) {
-	const Value& f = Charge::pdef(inst).get("fx");
+	const Value f = Charge::pdef(inst).get("fx");
 	if (f.has("mat")) return vstr(f.get("mat"));
 	return kDefaultMat[clampi(inst.element, 0, 3)];
 }

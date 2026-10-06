@@ -36,7 +36,9 @@ double* MassLedger::field(std::string_view key) {
 }
 
 CombatWorld::CombatWorld(uint64_t seed_value) {
-	Moves::ensure();
+	static uint64_t s_next_uid = 1;
+	_uid = s_next_uid++;
+	Moves::ensure_ready();
 	arena = ArenaMap::make_lab();
 	rng.set_seed(seed_value);
 	pool = spawn_body(Mat::Water, Form::Pool, 2000.0, V3(10.0, arena.pool_level, -1.0), "pool");

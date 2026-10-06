@@ -157,4 +157,11 @@ struct TuningField {
 	bool overridden = false;
 };
 
+// ---- additions (core stream, additive)
+// A counter-rule cell of the Lab tuning page (Session::LabRuleCells); key = "<threat class>|<counter class>".
+struct RuleCellInfo {
+	std::string key, id, label;
+	int idx = 0;
+};
+
 }  // namespace ff

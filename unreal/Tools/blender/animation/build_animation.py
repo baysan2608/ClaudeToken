@@ -32,6 +32,7 @@ ART = os.path.join(UNREAL, "SourceArt", "Animation")
 PREV = os.path.join(ART, "previews")
 DATA = os.path.join(UNREAL, "Content", "Fourfold", "Data")
 ASSET_ROOT = "/Game/Fourfold/Characters/Fighter/Anims"
+BASE_CLIP = {"e_seize": "e_seize_loop", "air": "fall", "lying": "knockdown", "f_grip": "f_thermal_hold", "f_draw": "f_heat_draw"}       # base poses that are not clips -> the loop clip that holds them
 HAND_POSES = ["fist", "palm", "willow", "tiger", "crane", "sword", "oxtongue", "relaxed", "cup", "spread"]
 
 
@@ -57,6 +58,16 @@ def sheet_frames(res):
     return [(0, "start"), (antic, "antic"), (ct, "contact"), (follow, "follow"), (n, "end")]
 
 
+def _base_clip(c, name):
+    """clips.json 'base' must name a clip: pose-only bases map to the clip that holds that pose (a loop built on its
+    own pose names itself)."""
+    import clips as catalog
+    b = BASE_CLIP.get(c.base, c.base)
+    if b is not None and b not in catalog.CATALOG and c.loop:
+        return name
+    return b
+
+
 def clip_entry(res):
     c = res.clip
     contacts = list(c.contacts)
@@ -67,7 +78,7 @@ def clip_entry(res):
         "loop": bool(c.loop),
         "contact": contacts[0] if contacts else None,
         "contacts": contacts,
-        "base": c.base,
+        "base": _base_clip(c, res.name),
         "speed": float(c.speed),
         "hands": {"l": c.hands[0], "r": c.hands[1]},
         "foot_plants": {s: [list(r) for r in res.plants.get(s, [])] for s in rig.SIDES},
@@ -151,15 +162,30 @@ def main():
             ex.reset_scene()
     with open(report_path, "w") as f:
         json.dump(report, f, indent=1, sort_keys=True)
-    # ---------------------------------------------------------------- clips.json (full catalogue only)
-    if not a.no_json and not a.only:
-        clips = {n: clip_entry(results[n]) for n in names}
+    # ---------------------------------------------------------------- clips.json (merged) + anim_map.json
+    if not a.no_json and not a.no_export:
+        path = os.path.join(DATA, "clips.json")
+        clips = {}
+        if os.path.exists(path):
+            try:
+                clips = json.load(open(path)).get("clips", {})
+            except Exception:  # noqa: BLE001
+                clips = {}
+        for n in names:
+            if n in failed:
+                continue
+            clips[n] = clip_entry(results[n])
+        # drop entries whose clip left the catalogue or whose FBX is gone
+        clips = {n: c for n, c in clips.items() if n in cat and os.path.exists(os.path.join(ART, f"A_{n}.fbx"))}
+        clips = dict(sorted(clips.items()))
         doc = {"schema": "fourfold.clips/1", "fps": 60, "rig": "ff-manny-1.0", "asset_root": ASSET_ROOT,
                "clips": clips, "hand_poses": {h: "hand_" + h for h in HAND_POSES}}
         os.makedirs(DATA, exist_ok=True)
-        with open(os.path.join(DATA, "clips.json"), "w") as f:
+        with open(path, "w") as f:
             json.dump(doc, f, indent=1)
         print("wrote clips.json with", len(clips), "clips")
+        import anim_map_gen
+        anim_map_gen.main()
     sys.exit(1 if failed else 0)
 
 

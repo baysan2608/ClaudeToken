@@ -64,6 +64,43 @@ def ease(kind, u):
     raise ValueError(kind)
 
 
+# ------------------------------------------------------------------------------------------------ orientation blend
+def _frame(fv, mv):
+    """Hand frame columns (finger dir, palm normal re-orthogonalised, side) from a finger / palm pair."""
+    f = norm(np.asarray(fv, float))
+    if np.linalg.norm(f) < 1e-9:
+        f = np.array([0.0, 1.0, 0.0])
+    m = np.asarray(mv, float) - f * float(np.dot(mv, f))
+    if np.linalg.norm(m) < 1e-6:
+        m = np.cross(f, np.array([0.0, 0.0, 1.0]) if abs(f[2]) < 0.9 else np.array([1.0, 0.0, 0.0]))
+    m = norm(m)
+    return np.stack([f, m, np.cross(f, m)], axis=1)
+
+
+def hand_orient_lerp(oa, ob, u):
+    """Blend the (finger, palm, elbow-pole) part of two hand states: the hand ROTATION is slerped (so a palm turning
+    from down to up rolls through the side instead of collapsing through a zero vector) and the elbow pole is
+    slerped as a direction."""
+    from ffa_math import mat_slerp
+    Ra, Rb = _frame(oa[0:3], oa[3:6]), _frame(ob[0:3], ob[3:6])
+    R = mat_slerp(Ra, Rb, u)
+    ea, eb = np.asarray(oa[6:9], float), np.asarray(ob[6:9], float)
+    na, nb = np.linalg.norm(ea), np.linalg.norm(eb)
+    if na > 1e-9 and nb > 1e-9:
+        da, db = ea / na, eb / nb
+        c = float(np.dot(da, db))
+        if c < -0.999:                       # opposite poles: swing through the downward side
+            mid = norm(np.cross(da, np.array([1.0, 0.0, 0.0])) if abs(da[0]) < 0.9 else np.cross(da, np.array([0.0, 1.0, 0.0])))
+            e = norm(da * (1 - u) + mid * math.sin(math.pi * u) + db * u)
+        else:
+            om = math.acos(max(-1.0, min(1.0, c)))
+            e = da if om < 1e-6 else (math.sin((1 - u) * om) * da + math.sin(u * om) * db) / math.sin(om)
+        e = e * (na + (nb - na) * u)
+    else:
+        e = ea + (eb - ea) * u
+    return tuple(R[:, 0]) + tuple(R[:, 1]) + tuple(e)
+
+
 # ------------------------------------------------------------------------------------------------ spec helpers
 def H(p=None, f=None, m=None, e=None, dp=None):
     """Hand target in CHEST SPACE (A-frame axes carried by spine_05, origin at that side's shoulder).
@@ -297,6 +334,8 @@ def mirror_state(st):
         f[0], f[3], f[5], f[8] = -f[0], -f[3], -f[5], -f[8]
         out["foot_" + o] = tuple(f)
         out["fing_" + o] = st["fing_" + s]
+        if "tw_" + s in st:
+            out["tw_" + o] = (-st["tw_" + s][0],)
     return out
 
 
@@ -342,6 +381,8 @@ class Clip:
         self.start_pose_free = start_pose_free  # the first frame is not a base pose (getup starts lying)
         self.no_balance = no_balance          # skip the centre-of-mass warning (jumps, falls, spins)
         self.base_check = base_check          # False for gait loops (they blend from the base, not start on it)
+        self.max_hand_turn = 30.0             # deg / frame: hand orientations roll no faster (forearm roll speed)
+        self.max_joint_turn = 34.0            # deg / frame: arm joints turn no faster (key frames stay exact)
         self.antic = antic                    # anticipation-peak frame for the contact sheet
         self.follow = follow                  # follow-through frame for the contact sheet
         start_state = start if start is not None else (BASES[base] if base else neutral_state())
@@ -432,13 +473,16 @@ class Clip:
             # real pivot, so the free end never scrubs the floor
             dyaw = b[3] - a[3]
             if abs(dyaw) > 2.0 and a[2] < 0.002 and b[2] < 0.002 and abs(a[0] - b[0]) < 1e-3 and abs(a[1] - b[1]) < 1e-3:
-                amp = min(14.0, 0.45 * abs(dyaw) + 4.0) * math.sqrt(max(0.0, math.sin(math.pi * u)))
+                amp = min(14.0, 0.45 * abs(dyaw) + 4.0) * math.sin(math.pi * u) ** 2
                 if b[6] > -0.5:
                     out[4] -= amp           # heel up on the ball ...
                     out[7] += 0.6 * amp     # ... and the toes off the floor
                 else:
                     out[4] += amp           # toes up on the heel
             return tuple(out)
+        if ch in ("tw_l", "tw_r"):
+            e = ease("io" if eas == "sp" else eas, u)
+            return (a[0] + (b[0] - a[0]) * e,)
         if eas == "sp" and not ch.startswith("fing_"):
             ma = self._tangent(i, ch)
             mb = self._tangent(i + 1, ch)
@@ -449,20 +493,25 @@ class Clip:
             h10 = u ** 3 - 2 * u ** 2 + u
             h01 = -2 * u ** 3 + 3 * u ** 2
             h11 = u ** 3 - u ** 2
-            return tuple(h00 * x + h10 * dt * p + h01 * y + h11 * dt * q for x, y, p, q in zip(a, b, ma, mb))
+            out = tuple(h00 * x + h10 * dt * p + h01 * y + h11 * dt * q for x, y, p, q in zip(a, b, ma, mb))
+            if ch.startswith("hand_"):
+                out = out[0:3] + hand_orient_lerp(a[3:12], b[3:12], smoothstep(u))
+            return out
         e = ease("io" if eas == "sp" else eas, u)
-        if ch.startswith("hand_") and k1[3] == "arc":
-            pa, pb = np.array(a[0:3]), np.array(b[0:3])
-            ra, rb = np.linalg.norm(pa), np.linalg.norm(pb)
-            da, db = pa / max(ra, 1e-9), pb / max(rb, 1e-9)
-            om = math.acos(max(-1.0, min(1.0, float(np.dot(da, db)))))
-            if om > 1e-4:
-                d = (math.sin((1 - e) * om) * da + math.sin(e * om) * db) / math.sin(om)
+        if ch.startswith("hand_"):
+            if k1[3] == "arc":
+                pa, pb = np.array(a[0:3]), np.array(b[0:3])
+                ra, rb = np.linalg.norm(pa), np.linalg.norm(pb)
+                da, db = pa / max(ra, 1e-9), pb / max(rb, 1e-9)
+                om = math.acos(max(-1.0, min(1.0, float(np.dot(da, db)))))
+                if om > 1e-4:
+                    d = (math.sin((1 - e) * om) * da + math.sin(e * om) * db) / math.sin(om)
+                else:
+                    d = da + (db - da) * e
+                p = tuple(d * (ra + (rb - ra) * e))
             else:
-                d = da + (db - da) * e
-            p = d * (ra + (rb - ra) * e)
-            rest = tuple(x + (y - x) * e for x, y in zip(a[3:], b[3:]))
-            return tuple(p) + rest
+                p = tuple(x + (y - x) * e for x, y in zip(a[0:3], b[0:3]))
+            return p + hand_orient_lerp(a[3:12], b[3:12], e)
         return tuple(x + (y - x) * e for x, y in zip(a, b))
 
     def _envelope(self, f):
@@ -476,20 +525,35 @@ class Clip:
         keys = self.keys
         if self.loop:
             if keys[-1][0] != self.frames:
-                keys.append((self.frames, copy_state(keys[0][1]), keys[-1][2] if keys[-1][2] == "sp" else "io",
-                             None))
+                wrap = keys[-1][2] if keys[-1][2] in ("sp", "lin") else "io"
+                keys.append((self.frames, copy_state(keys[0][1]), wrap, None))
         elif keys[-1][0] < self.frames:
             keys.append((self.frames, copy_state(keys[-1][1]), "lin", None))
+        # anatomical forearm roll: every key's twist is solved fresh (the roll the author's pose needs, in +-180)
+        # and interpolated as a plain number between keys, so the forearm never takes the "short way" through the
+        # impossible half of the roll circle when the hand orientation is slerped
+        if "tw_l" not in keys[0][1]:
+            for i, (kf, kst, ke, kp) in enumerate(keys):
+                _, info = solver.solve(kst, None)
+                kst["tw_l"] = (info["twist_raw_l"],)
+                kst["tw_r"] = (info["twist_raw_r"],)
         out = []
         for f in range(self.frames + 1):
             env = self._envelope(f)
             st = {}
             for ch in keys[0][1].keys():
-                off = self.offsets.get(ch, 0.0) if ch in OFFSET_CHANNELS else 0.0
+                src = {"tw_l": "hand_l", "tw_r": "hand_r"}.get(ch, ch)
+                off = self.offsets.get(src, 0.0) if src in OFFSET_CHANNELS else 0.0
                 st[ch] = self._eval_channel(ch, f + off * env)
             out.append(st)
         for lay in self.layers:
             out = self._apply_layer(lay, out)
+        if not self.loop and self.max_hand_turn:
+            # orientation / roll may lag a little behind the keys (an invisible forearm-roll delay) rather than pop:
+            # only the clip ends are anchored
+            ends = [0, self.frames]
+            out = _limit_hand_turn(out, self.max_hand_turn, ends)
+            out = _limit_scalar(out, ("tw_l", "tw_r"), self.max_hand_turn, ends)
         if self.loop:
             out[-1] = copy_state(out[0])
         if self.mirror:
@@ -569,6 +633,26 @@ class Clip:
             p, info = solver.solve(st, ctx)
             poses.append(p)
             infos.append(info)
+        if not self.loop and self.max_joint_turn:
+            # anchored at the clip ends and the contact frames only (the strike pose is exact); other keys may be
+            # reached a frame early / late when the authored ease is faster than a real arm
+            anchors = sorted({0, self.frames} | {int(x) for x in self.contacts if 0 < x < self.frames})
+            _limit_joint_speed(poses, ARM_CHAIN, anchors, self.max_joint_turn)
+            # a leg is limited only while its foot is off the floor (kicks, hops): planted legs keep exact IK
+            for sd in rig.SIDES:
+                free = [st["foot_" + sd][2] > 0.012 for st in sts]
+                bones = [f"{b}_{sd}" for b in LEG_BONES]
+                before = [{b: p.q[b].copy() for b in bones} for p in poses]
+                _limit_joint_speed(poses, bones, anchors, self.max_joint_turn, free)
+                # a slowed leg must never push its foot through the floor: keep the IK pose on those frames
+                for f, p in enumerate(poses):
+                    if not free[f]:
+                        continue
+                    W, Hd, _ = rig.fk(p)
+                    low = min(float(Hd["ball_" + sd][2]) - 0.025, float(Hd["foot_" + sd][2]) - 0.085)
+                    if low < -0.004:
+                        for b in bones:
+                            p.q[b] = before[f][b]
         r = ClipResult()
         r.clip = self
         r.name = self.name
@@ -579,6 +663,90 @@ class Clip:
         r.infos = infos
         r.plants = self.plants_override or detect_plants(sts, self.loop, self.treadmill)
         return r
+
+
+def _limit_hand_turn(sts, max_deg, anchors):
+    """Key-anchored rate limit of each hand's orientation target (finger / palm frame), max_deg per frame (a physical
+    forearm-roll speed): over-fast authored rolls start earlier (backward pass from the later key) and finish later
+    (forward pass); the keyed orientations stay exact."""
+    from ffa_math import angle_of, mat_slerp
+    out = [dict(s) for s in sts]
+    for side in rig.SIDES:
+        ch = "hand_" + side
+        R = [_frame(s[ch][3:6], s[ch][6:9]) for s in sts]
+        for a0, a1 in _segments(anchors):
+            seg = R[a0:a1 + 1]
+            for i in range(len(seg) - 2, 0, -1):
+                a = angle_of(seg[i + 1].T @ seg[i])
+                if a > max_deg:
+                    seg[i] = mat_slerp(seg[i + 1], seg[i], max_deg / a)
+            for i in range(1, len(seg) - 1):
+                a = angle_of(seg[i - 1].T @ seg[i])
+                if a > max_deg:
+                    seg[i] = mat_slerp(seg[i - 1], seg[i], max_deg / a)
+            R[a0:a1 + 1] = seg
+        for f in range(len(R)):
+            h = list(out[f][ch])
+            h[3:6] = R[f][:, 0]
+            h[6:9] = R[f][:, 1]
+            out[f][ch] = tuple(float(x) for x in h)
+    return out
+
+
+ARM_CHAIN = [f"{b}_{s}" for s in ("l", "r") for b in ("clavicle", "upperarm", "lowerarm", "hand", "upperarm_twist_01",
+                                                    "upperarm_twist_02", "lowerarm_twist_01", "lowerarm_twist_02")]
+
+
+LEG_BONES = ("thigh", "calf", "foot", "ball", "thigh_twist_01", "thigh_twist_02", "calf_twist_01", "calf_twist_02")
+
+
+def _limit_joint_speed(poses, bones, anchors, max_deg, allowed=None):
+    """Speed limit on local joint rotations, anchored at the key frames: between two keys a bone may turn at most
+    max_deg per frame; when the authored ease asks for more (a 90 deg elbow snap squeezed into its last frame), the
+    motion is started earlier (backward pass from the later key) and, if still too fast, finished later (forward
+    pass) - the keyed poses themselves never move.  Only arm chains are limited (they carry no floor contacts)."""
+    from ffa_math import angle_of, mat_slerp
+    for b in bones:
+        Q = [p.q[b] for p in poses]
+        for a0, a1 in zip(anchors, anchors[1:]):
+            if a1 - a0 < 2:
+                continue
+            seg = [Q[f].copy() for f in range(a0, a1 + 1)]
+            ok = [True] * len(seg) if allowed is None else [bool(allowed[f]) for f in range(a0, a1 + 1)]
+            # backward from the later key: never arrive faster than max_deg / frame
+            for i in range(len(seg) - 2, 0, -1):
+                ang = angle_of(seg[i + 1].T @ seg[i])
+                if ang > max_deg and ok[i]:
+                    seg[i] = mat_slerp(seg[i + 1], seg[i], max_deg / ang)
+            # forward from the earlier key: never leave faster than max_deg / frame
+            for i in range(1, len(seg) - 1):
+                ang = angle_of(seg[i - 1].T @ seg[i])
+                if ang > max_deg and ok[i]:
+                    seg[i] = mat_slerp(seg[i - 1], seg[i], max_deg / ang)
+            for i in range(1, len(seg) - 1):
+                poses[a0 + i].q[b] = seg[i]
+
+
+def _segments(anchors):
+    return [(a0, a1) for a0, a1 in zip(anchors, anchors[1:]) if a1 - a0 >= 2]
+
+
+def _limit_scalar(sts, chans, max_step, anchors):
+    """Key-anchored rate limit of scalar channels: inside each key-to-key segment the value may change at most
+    max_step per frame - the change starts earlier (backward pass) / ends later (forward pass); keys stay exact."""
+    out = [dict(s) for s in sts]
+    for ch in chans:
+        v = [s[ch][0] for s in sts]
+        for a0, a1 in _segments(anchors):
+            seg = v[a0:a1 + 1]
+            for i in range(len(seg) - 2, 0, -1):
+                seg[i] = seg[i + 1] + max(-max_step, min(max_step, seg[i] - seg[i + 1]))
+            for i in range(1, len(seg) - 1):
+                seg[i] = seg[i - 1] + max(-max_step, min(max_step, seg[i] - seg[i - 1]))
+            v[a0:a1 + 1] = seg
+        for f in range(len(v)):
+            out[f][ch] = (v[f],)
+    return out
 
 
 def _auto_hips(sts, loop):
@@ -669,7 +837,9 @@ def detect_plants(sts, loop, treadmill=None, tol=0.0006, ground=0.004):
                 g = f
                 while g + 1 <= n and planted[g + 1]:
                     g += 1
-                ranges.append([f, min(g + 1, n) if g + 1 <= n else n])
+                a, b = f, min(g + 1, n)
+                if b > a:                       # [start, end) inside the clip; a lone planted last frame is dropped
+                    ranges.append([a, b])
                 f = g + 1
             else:
                 f += 1

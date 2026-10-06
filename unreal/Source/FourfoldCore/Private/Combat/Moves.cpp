@@ -36,7 +36,7 @@ std::string mv_key(int element, int sub, const std::string& slot) { return itos(
 
 }  // namespace
 
-void ensure() {
+void ensure_ready() {
 	MovesRegistry& r = mreg();
 	if (r.ensured) return;
 	r.ensured = true;
@@ -48,25 +48,25 @@ void ensure() {
 	r.techniques = data.get("techniques").as_dict().duplicate(true);
 	r.legacy = data.get("legacy_bindings").as_dict().duplicate(true);
 	r.def_defaults = data.get("def_defaults").as_dict().duplicate(true);
-	Interactions::ensure();
-	Status::ensure();
-	Hooks::ensure();
+	Interactions::ensure_ready();
+	Status::ensure_ready();
+	Hooks::ensure_ready();
 }
 
 Dict& defs() {
-	ensure();
+	ensure_ready();
 	return mreg().defs;
 }
 Dict& bindings() {
-	ensure();
+	ensure_ready();
 	return mreg().bindings;
 }
 const std::vector<std::string>& registered() {
-	ensure();
+	ensure_ready();
 	return mreg().registered;
 }
 const std::vector<std::string>& base_ids() {
-	ensure();
+	ensure_ready();
 	return mreg().base_ids;
 }
 bool is_base(const std::string& id) {
@@ -74,19 +74,19 @@ bool is_base(const std::string& id) {
 	return std::find(b.begin(), b.end(), id) != b.end();
 }
 const Dict& techniques() {
-	ensure();
+	ensure_ready();
 	return mreg().techniques;
 }
 
 std::string legacy_binding(int element, const std::string& slot) {
-	ensure();
+	ensure_ready();
 	return vstr(mreg().legacy.get(itos(element)).get(slot), "");
 }
 
 Dict get_def(const std::string& id) { return defs().get(id).as_dict(); }
 
 void register_def(const std::string& id, const Dict& def) {
-	ensure();
+	ensure_ready();
 	MovesRegistry& r = mreg();
 	if (is_base(id)) return;   // Godot: push_error (legacy moves are fixed)
 	Dict d = def.duplicate(true);
@@ -106,7 +106,7 @@ void register_def(const std::string& id, const Dict& def) {
 }
 
 void unregister(const std::string& id) {
-	ensure();
+	ensure_ready();
 	MovesRegistry& r = mreg();
 	if (is_base(id) || !r.defs.has(id)) return;
 	r.defs.erase(id);
@@ -152,7 +152,7 @@ std::string slot_of(int element, int sub, const std::string& id) {
 }
 
 void set_override(const std::string& id, const std::string& key, const Value& value) {
-	ensure();
+	ensure_ready();
 	MovesRegistry& r = mreg();
 	if (!r.defs.has(id)) return;
 	Dict d = r.defs.get(id).as_dict();
@@ -168,7 +168,7 @@ void set_override(const std::string& id, const std::string& key, const Value& va
 }
 
 void clear_overrides() {
-	ensure();
+	ensure_ready();
 	MovesRegistry& r = mreg();
 	for (const auto& it : r.orig) {
 		if (!r.defs.has(it.first)) continue;
@@ -183,12 +183,17 @@ void clear_overrides() {
 }
 
 Dict overrides() {
-	ensure();
+	ensure_ready();
 	return mreg().over.duplicate(true);
 }
 
+Dict originals() {
+	ensure_ready();
+	return mreg().orig.duplicate(true);
+}
+
 State save_state() {
-	ensure();
+	ensure_ready();
 	State s;
 	s.defs = mreg().defs.duplicate(true);
 	s.bindings = mreg().bindings.duplicate();
@@ -199,7 +204,7 @@ State save_state() {
 }
 
 void load_state(const State& st) {
-	ensure();
+	ensure_ready();
 	mreg().defs = st.defs.duplicate(true);
 	mreg().bindings = st.bindings.duplicate();
 	mreg().registered = st.registered;
@@ -208,7 +213,7 @@ void load_state(const State& st) {
 }
 
 void legacy_bindings_only() {
-	ensure();
+	ensure_ready();
 	Dict& b = mreg().bindings;
 	b.clear();
 	for (const auto& e : mreg().legacy)
