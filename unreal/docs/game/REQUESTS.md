@@ -43,7 +43,7 @@ file, the exact change and the reason. Nothing here blocks compiling; the game d
 
 - Data the runtime reads, all optional (each has built-in defaults and logs one warning when missing):
   `Content/Fourfold/Data/clips.json`, `anim_map.json` (schemas in ARCHITECTURE §8.3) and `character.json`
-  (`mesh`, `mesh_yaw_offset_deg`, `height_m`, `palettes.{player,rival,dummy}.{main,accent,trim}`).
+  (`mesh`, `mesh_yaw_offset_deg`, `height_m`, `palettes.{player,rival,dummy}.{FF_Main,FF_Accent,FF_Trim}` as linear [r, g, b, a]; matches the committed character.json).
 - Bones the runtime drives by name (UE5-Manny naming): `pelvis spine_01..05 neck_01 neck_02 head`,
   `clavicle/upperarm/lowerarm/hand_{l,r}`, `thigh/calf/foot/ball_{l,r}` (+ `thigh_twist_0x`, `calf_twist_0x`), the
   hand-shape fingers `thumb_0{1,2,3}_{l,r}` and `{index,middle,ring,pinky}_{metacarpal,01,02,03}_{l,r}`, and the

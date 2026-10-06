@@ -22,7 +22,7 @@ find "$R" -type d \( -name Public -o -name Classes -o -name Internal \) -not -pa
   -not -path "*/Internal/*" | sort > "$DIR/incdirs.txt"
 grep -rhoE "\b[A-Z][A-Z0-9_]*_API\b" "$R" --include=*.h --include=*.inl | sort -u > "$DIR/api_all.txt"
 grep -rhoE "#\s*define\s+[A-Z][A-Z0-9_]*_API\b" "$R" --include=*.h --include=*.inl | sed -E 's/#\s*define\s+//' | sort -u > "$DIR/api_defined.txt"
-{ echo "#pragma once"; comm -23 "$DIR/api_all.txt" "$DIR/api_defined.txt" | grep -v UE_VALIDATE_INTERNAL_API | sed 's/^/#define /'
+{ echo "#pragma once"; comm -23 "$DIR/api_all.txt" "$DIR/api_defined.txt" | grep -v -E "UE_VALIDATE_[A-Z]+_API" | sed 's/^/#define /'
   echo "#define FOURFOLD_API"; printf '#include <cstddef>\nusing std::nullptr_t;\n'; } > "$DIR/prelude.h"
 rm -rf "$DIR/gen"
 python3 "$HERE/mockuht.py" "$DIR/gen" "$R" "$SRC/Fourfold" "$SRC/FourfoldCore"

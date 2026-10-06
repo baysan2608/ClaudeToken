@@ -104,8 +104,11 @@ def gen_for(path, name):
                 out.append(f'#define {fid}_{ln}_GENERATED_BODY_LEGACY {body}')
                 continue
             base = cbase or 'UObject'
+            # UObject itself has no DECLARE_SERIALIZER (5.6+ declares UObject with GENERATED_BODY; a serializer there makes
+            # every `Ar << (UObject*&)` ambiguous with FArchive::operator<<(UObject*&)).
+            ser = '' if cname == 'UObject' else f'DECLARE_SERIALIZER({cname})'
             decl = (f'public: DECLARE_CLASS({cname}, {base}, COMPILED_IN_FLAGS(0), CASTCLASS_None, TEXT("/Script/Mock"), NO_API) '
-                    f'DECLARE_SERIALIZER({cname})')
+                    f'{ser}')
             has_ctor = re.search(r'\b' + re.escape(cname) + r'\s*\(\s*const\s+(class\s+)?FObjectInitializer', src) is not None
             legacy_ctor = '' if has_ctor else f' public: {cname}(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());'
             out.append(f'#define {fid}_{ln}_GENERATED_BODY {decl} private:')
