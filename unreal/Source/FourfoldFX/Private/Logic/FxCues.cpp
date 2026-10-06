@@ -165,7 +165,7 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 		if (tier >= 2) {
 			const Vec3 ft = a >= 0 ? feet(a) : BodyPos(c, body);
 			const float ftr = static_cast<float>(tier - 2);
-			RingOpts o = Opts(0.45f, 1.3f + 0.4f * ftr, tier >= 3 ? 2 : 1, false, false, 0.09f);
+			RingOpts o = Opts(0.35f, 1.1f + 0.3f * ftr, tier >= 3 ? 2 : 1, false, false, 0.09f);
 			fx_.Ring(c, ft + Vec3(0.0f, 0.05f, 0.0f), kUp, 0.4f, 1.6f + 0.9f * ftr, 0.35f + 0.1f * ftr, cfg_.TierColor(tier), o);
 			if (tier >= 3) fx_.Dust(c, ft, kUp, 1.3f, stoneDust);
 		}

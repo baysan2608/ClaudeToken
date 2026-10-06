@@ -44,15 +44,37 @@ def _fit_tile(img, tile=TILE, margin=0.0):
     return np.clip(out, 0.0, 1.0)
 
 
+def _crop_union(frames, pad=0.05, thresh=0.02):
+    """Crops every frame to the union of their alpha bounding boxes (square, centred), so the largest frame of the
+    sequence fills the tile: no texels are wasted on empty margins."""
+    h, w = frames[0].shape[:2]
+    mask = np.zeros((h, w), bool)
+    for f in frames:
+        mask |= f[..., 3] > thresh
+    ys, xs = np.nonzero(mask)
+    if len(xs) == 0:
+        return frames
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    side = int(max(y1 - y0, x1 - x0) * (1.0 + 2.0 * pad))
+    cy, cx = (y0 + y1) // 2, (x0 + x1) // 2
+    out = []
+    for f in frames:
+        canvas = np.zeros((side, side, 4), np.float32)
+        sy0, sx0 = cy - side // 2, cx - side // 2
+        a0, b0 = max(sy0, 0), max(sx0, 0)
+        a1, b1 = min(sy0 + side, h), min(sx0 + side, w)
+        canvas[a0 - sy0:a1 - sy0, b0 - sx0:b1 - sx0] = f[a0:a1, b0:b1]
+        out.append(canvas)
+    return out
+
+
 def _fade_edges(tile_img, px=3):
     """Zero alpha at the tile border so bilinear / mip sampling never bleeds a neighbour frame in."""
-    a = tile_img[:, :, 3]
-    ramp = np.clip(np.minimum.reduce([np.arange(TILE)[:, None] + 0 * np.arange(TILE)[None, :],
-                                      (TILE - 1 - np.arange(TILE))[:, None] + 0 * np.arange(TILE)[None, :],
-                                      np.arange(TILE)[None, :] + 0 * np.arange(TILE)[:, None],
-                                      (TILE - 1 - np.arange(TILE))[None, :] + 0 * np.arange(TILE)[:, None]]) / px,
-                   0.0, 1.0)
-    tile_img[:, :, 3] = a * ramp
+    h, w = tile_img.shape[:2]
+    yy = np.arange(h)[:, None] + 0 * np.arange(w)[None, :]
+    xx = np.arange(w)[None, :] + 0 * np.arange(h)[:, None]
+    ramp = np.clip(np.minimum.reduce([yy, h - 1 - yy, xx, w - 1 - xx]) / px, 0.0, 1.0)
+    tile_img[:, :, 3] = tile_img[:, :, 3] * ramp
     tile_img[:, :, 2] *= ramp
     return tile_img
 
@@ -84,14 +106,20 @@ def blackbody(t):
     return c
 
 
-def preview(atlas, path, lit=(0.92, 0.9, 0.86), shadow=(0.30, 0.31, 0.34), emissive=4.0, bg=(0.16, 0.18, 0.22)):
-    """Human-readable composite of a packed atlas over a flat background (what the shader roughly does)."""
+def preview(atlas, path, lit=(0.92, 0.9, 0.86), shadow=(0.30, 0.31, 0.34), emissive=4.0, bg=(0.16, 0.18, 0.22),
+            foam=False):
+    """Human-readable composite of a packed atlas over a flat background (what the shader roughly does). B is fire
+    temperature (black-body emission) or, with foam=True (splash), whiteness."""
     lit = np.array(lit, np.float32)
     shadow = np.array(shadow, np.float32)
     L = atlas[..., 0:1]
     col = shadow + (lit - shadow) * L
     a = atlas[..., 3:4]
-    em = blackbody(atlas[..., 2]) * emissive * (atlas[..., 2:3] > 0.02)
+    if foam:
+        col = col + (np.array([0.95, 0.97, 1.0], np.float32) - col) * atlas[..., 2:3]
+        em = 0.0
+    else:
+        em = blackbody(atlas[..., 2]) * emissive * (atlas[..., 2:3] > 0.02)
     out = np.array(bg, np.float32) * (1 - a) + col * a + em
     out = out / (1.0 + out * 0.25)   # mild tonemap for viewing
     img = (np.clip(out, 0, 1) ** (1 / 2.2) * 255).astype(np.uint8)
@@ -308,14 +336,15 @@ def water_splash(quick=False):
     """Crown splash: a rising ring sheet breaking into droplets, a central jet, falling drops; shaded soft blobs
     (refraction-like rim, specular dot), with a thin spray mist."""
     rng = np.random.default_rng(55)
-    k = 220 if not quick else 110
+    k = 170 if not quick else 90
     ang = rng.uniform(0, 2 * np.pi, k)
     kind = rng.uniform(0, 1, k)
-    crown = kind < 0.7
-    el = np.where(crown, rng.uniform(1.0, 1.32, k), rng.uniform(1.38, 1.55, k))
-    sp = np.where(crown, rng.uniform(0.8, 1.05, k), rng.uniform(1.0, 1.3, k))
+    crown = kind < 0.82
+    # crown: a ring of drops thrown outward at 35-65 degrees; jet: a few drops straight up from the centre
+    el = np.where(crown, rng.uniform(0.62, 1.12, k), rng.uniform(1.42, 1.55, k))
+    sp = np.where(crown, rng.uniform(0.85, 1.15, k), rng.uniform(1.05, 1.35, k))
     v = np.stack([np.cos(ang) * np.cos(el), np.sin(el), np.sin(ang) * np.cos(el)], 1) * sp[:, None]
-    size = np.where(crown, rng.uniform(0.9, 1.6, k), rng.uniform(1.2, 2.2, k))
+    size = np.where(crown, rng.uniform(0.3, 0.75, k), rng.uniform(0.5, 1.1, k))
     res = 256
     g = 2.3
     frames = []
@@ -333,9 +362,10 @@ def water_splash(quick=False):
             ys = (0.93 - yy / res) / 0.62
             band = np.clip(1.0 - np.abs(np.abs(xs) - rad) / 0.035, 0, 1) * (ys > 0) * (ys < sheet_h) * (np.abs(xs) < rad + 0.04)
             front = np.clip(1.0 - (xs / max(rad, 1e-3)) ** 2, 0, 1) * (ys > 0) * (ys < sheet_h * 0.8) * 0.35
-            a = np.clip(band * 0.8 + front, 0, 1) * (1.0 - f / 26.0) ** 0.5
+            a = np.clip(band * 0.55 + front, 0, 1) * (1.0 - f / 26.0) ** 0.5
             img[..., 0] = 0.55 + 0.35 * band
             img[..., 1] = a * 0.5
+            img[..., 2] = band * 0.6          # foam: the torn white rim of the crown
             img[..., 3] = a
         order = np.argsort(-p[:, 2])
         for i in order:
@@ -345,7 +375,7 @@ def water_splash(quick=False):
             s = size[i] * 1.5 * (res / 128.0) * (1.0 + 0.6 * (1 - life))
             vy = v[i, 1] - g * t
             stretch = 1.0 + 1.8 * min(abs(vy), 1.0) * life
-            px = res * (0.5 + x * 0.42)
+            px = res * (0.5 + x * 0.47)
             py = res * (0.93 - y * 0.75)
             rx, ry = s * 1.7, s * 1.7 * stretch
             x0, x1 = int(max(px - rx - 2, 0)), int(min(px + rx + 3, res))
@@ -365,12 +395,47 @@ def water_splash(quick=False):
             sl = img[y0:y1, x0:x1]
             sl[..., 0] = sl[..., 0] * (1 - a) + lit * a
             sl[..., 1] = np.maximum(sl[..., 1], a * (0.4 + 0.6 * nz))
+            # small fast droplets read white (aerated), big ones clear
+            sl[..., 2] = sl[..., 2] * (1 - a) + a * float(np.clip(1.3 - size[i] * 0.55, 0.0, 1.0)) * 0.7
             sl[..., 3] = sl[..., 3] + (1 - sl[..., 3]) * a
         mist = ndimage.gaussian_filter(img[..., 3], 7) * 0.45 * life
+        img[..., 2] = np.clip(img[..., 2] + mist * 0.8, 0, 1)   # spray mist is white
         img[..., 0] = np.where(img[..., 3] > 0.01, img[..., 0], 0.85)
         img[..., 3] = np.clip(img[..., 3] + mist * (1 - img[..., 3]), 0, 1)
         frames.append(_dissolve(img, f / (FRAMES - 1), erode=0.3, tail=4.0))
     return frames
+
+
+def puff_atlas(quick=False):
+    """2 x 2 static soft puffs (persistent clouds: fog, mist, steam, sand clouds pick one quadrant per puff): a noise-
+    carved ball of density, billowy on top, rendered once each with the same lighting as the flipbooks."""
+    n = 40 if quick else 64
+    tiles = []
+    for k in range(4):
+        sim = Smoke3D(n, n, n, seed=201 + k)
+        rng = np.random.default_rng(301 + k)
+        g = sim.grid
+        c = np.array([(n - 1) * 0.5, (n - 1) * 0.47, (n - 1) * 0.5])
+        d = np.sqrt(((g[0] - c[0]) / 1.0) ** 2 + ((g[1] - c[1]) / 0.82) ** 2 + ((g[2] - c[2]) / 1.0) ** 2) / (n * 0.36)
+        noise = np.zeros(sim.dens.shape, np.float32)
+        for octave, (sig, amp) in enumerate(((n / 9.0, 0.55), (n / 18.0, 0.3), (n / 36.0, 0.15))):
+            noise += amp * ndimage.gaussian_filter(rng.standard_normal(sim.dens.shape).astype(np.float32), sig,
+                                                   mode="wrap") / (0.25 / (octave + 1))
+        noise = noise / max(float(np.abs(noise).max()), 1e-6)
+        # billows: the surface is pushed out by the noise; a few lobes on the upper half
+        dens = np.clip((1.0 - d + noise * 0.5) * 2.0, 0.0, 1.0) ** 1.3
+        sim.dens = (dens * 0.9).astype(np.float32)
+        img = render(sim, extinction=2.2, ambient=0.3, key=1.0, shadow_ext=2.0, emit_temp_scale=0.0,
+                     upscale=(256 / n) if not quick else (128 / n))
+        img = np.array(Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8), "RGBA").resize((256, 256),
+                                                                                                     Image.LANCZOS),
+                       np.float32) / 255.0
+        tiles.append(_fade_edges(img, px=6))
+    atlas = np.zeros((512, 512, 4), np.float32)
+    for i, t in enumerate(tiles):
+        r, c2 = divmod(i, 2)
+        atlas[r * 256:(r + 1) * 256, c2 * 256:(c2 + 1) * 256] = t
+    return atlas
 
 
 PRESETS = {
@@ -402,18 +467,29 @@ def main():
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--out", default=OUT)
     a = ap.parse_args()
-    names = a.names or list(PRESETS)
+    names = a.names or list(PRESETS) + ["puff_atlas"]
     report = {}
     for nm in names:
+        if nm == "puff_atlas":
+            t0 = time.time()
+            atlas = puff_atlas(a.quick)
+            path = os.path.join(a.out, "T_FX_FB_puff_atlas.png")
+            save_png(atlas, path)
+            if a.preview:
+                preview(atlas, os.path.join(a.preview, "prev_puff_atlas.png"), lit=(0.95, 0.95, 0.96), shadow=(0.45, 0.47, 0.52))
+            report[nm] = {"file": os.path.relpath(path, os.path.join(HERE, "..", "..")), "frames": 4, "grid": 2,
+                          "tile": 256, "seconds": round(time.time() - t0, 1)}
+            print(f"{nm}: {report[nm]['seconds']} s -> {path}", flush=True)
+            continue
         t0 = time.time()
-        frames = PRESETS[nm](a.quick)
+        frames = _crop_union(PRESETS[nm](a.quick))
         tiles = [_fit_tile(f) for f in frames]
         atlas = pack_atlas(tiles)
         path = os.path.join(a.out, f"T_FX_FB_{nm}.png")
         save_png(atlas, path)
         if a.preview:
             lit, sh = LOOK[nm]
-            preview(atlas, os.path.join(a.preview, f"prev_{nm}.png"), lit=lit, shadow=sh)
+            preview(atlas, os.path.join(a.preview, f"prev_{nm}.png"), lit=lit, shadow=sh, foam=nm == "water_splash")
         report[nm] = {"file": os.path.relpath(path, os.path.join(HERE, "..", "..")), "frames": FRAMES, "grid": GRID,
                       "tile": TILE, "seconds": round(time.time() - t0, 1)}
         print(f"{nm}: {report[nm]['seconds']} s -> {path}", flush=True)

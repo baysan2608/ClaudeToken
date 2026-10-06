@@ -65,6 +65,10 @@ namespace
 		int32 SectionVerts = -1, SectionIdx = -1;
 		bool bHasSection = false;
 		UStaticMesh* BoundMesh = nullptr;
+		// static meshes: one dynamic instance per parent (the slot master, or the mesh's own instance of it that
+		// carries baked textures such as a rock's normal map); MID is the one in use
+		UMaterialInstanceDynamic* MasterMID = nullptr;
+		TArray<TPair<UMaterialInterface*, UMaterialInstanceDynamic*>> ParentMids;
 		// parameter cache
 		float S[ffx::kNumParams] = {};
 		uint64 SMask = 0;
@@ -170,6 +174,7 @@ namespace
 		if (Material)
 		{
 			St.MID = UMaterialInstanceDynamic::Create(Material, Owner);
+			St.MasterMID = St.MID;
 			PooledMids.Add(St.MID);
 		}
 		Pooled.Add(P);
@@ -368,6 +373,37 @@ void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* S
 			{
 				St.Static->SetStaticMesh(Asset);
 				St.BoundMesh = Asset;
+				// the mesh's own slot material wins when it is an instance of this slot's master (baked maps)
+				UMaterialInterface* Own = Asset->GetMaterial(0);
+				UMaterialInterface* Parent = (Own && Own != Mat && Own->GetBaseMaterial() == Mat->GetBaseMaterial()) ? Own : nullptr;
+				UMaterialInstanceDynamic* Want = St.MasterMID;
+				if (Parent)
+				{
+					Want = nullptr;
+					for (const TPair<UMaterialInterface*, UMaterialInstanceDynamic*>& P : St.ParentMids)
+					{
+						if (P.Key == Parent)
+						{
+							Want = P.Value;
+						}
+					}
+					if (!Want)
+					{
+						Want = UMaterialInstanceDynamic::Create(Parent, this);
+						PooledMaterials.Add(Want);
+						St.ParentMids.Add(TPair<UMaterialInterface*, UMaterialInstanceDynamic*>(Parent, Want));
+					}
+				}
+				if (Want && Want != St.MID)
+				{
+					// switching instance: reset it to its parent's defaults and forget the parameter cache (the item's
+					// values are pushed below)
+					Want->ClearParameterValues();
+					St.MID = Want;
+					St.SMask = 0;
+					St.VMask = 0;
+					St.Flipbook = 0;
+				}
 				if (St.MID)
 				{
 					for (int32 m = 0; m < St.Static->GetNumMaterials(); ++m)

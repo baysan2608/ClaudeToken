@@ -1,12 +1,19 @@
 {
  "schema": "fourfold.env.layout/1",
  "sun": {
-  "pitch": -34.0,
-  "yaw": 38.0,
+  "pitch": -55.2,
+  "yaw": -37.9,
   "color": [
    1.0,
    0.84,
    0.66
+  ]
+ },
+ "mask": {
+  "rect": [
+   -18.0,
+   -18.0,
+   36.0
   ]
  },
  "actors": [
@@ -545,7 +552,7 @@
    ],
    "tags": [],
    "group": "arena",
-   "mobility": "static",
+   "mobility": "movable",
    "cast_shadow": false,
    "expected_size_cm": [
     3360.0,
@@ -574,7 +581,7 @@
    ],
    "tags": [],
    "group": "arena",
-   "mobility": "static",
+   "mobility": "movable",
    "cast_shadow": false,
    "expected_size_cm": [
     1610.0,
@@ -852,6 +859,268 @@
    ],
    "lightmap_res": null,
    "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Gate",
+   "mesh": "SM_Env_Gate",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    1551.93,
+    739.01,
+    960.0
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  },
+  {
+   "actor": "FFScenery_Yard",
+   "mesh": "SM_Env_Yard",
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tags": [],
+   "group": "scenery",
+   "mobility": "movable",
+   "cast_shadow": false,
+   "expected_size_cm": [
+    839.54,
+    787.71,
+    211.42
+   ],
+   "lightmap_res": null,
+   "hidden_in_shadow_pass": false
+  }
+ ],
+ "lights": [
+  {
+   "kind": "lantern",
+   "pos": [
+    -4.0,
+    2.72,
+    -15.32
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    -400.0,
+    -1532.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "lantern",
+   "pos": [
+    4.0,
+    2.72,
+    -15.32
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    400.0,
+    -1532.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "lantern",
+   "pos": [
+    4.0,
+    2.72,
+    15.32
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    400.0,
+    1532.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "lantern",
+   "pos": [
+    -4.0,
+    2.72,
+    15.32
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    -400.0,
+    1532.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "lantern",
+   "pos": [
+    -15.32,
+    2.72,
+    4.0
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    -1532.0,
+    400.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "lantern",
+   "pos": [
+    -15.32,
+    2.72,
+    -4.0
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    -1532.0,
+    -400.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "lantern",
+   "pos": [
+    15.32,
+    2.72,
+    -4.0
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    1532.0,
+    -400.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "lantern",
+   "pos": [
+    15.32,
+    2.72,
+    4.0
+   ],
+   "color": [
+    1.0,
+    0.62,
+    0.3
+   ],
+   "intensity_cd": 2.4,
+   "radius_m": 7.0,
+   "location": [
+    1532.0,
+    400.0,
+    272.0
+   ]
+  },
+  {
+   "kind": "brazier",
+   "pos": [
+    13.0,
+    3.75,
+    -13.0
+   ],
+   "color": [
+    1.0,
+    0.5,
+    0.2
+   ],
+   "intensity_cd": 5.0,
+   "radius_m": 9.0,
+   "location": [
+    1300.0,
+    -1300.0,
+    375.0
+   ]
+  },
+  {
+   "kind": "brazier",
+   "pos": [
+    -13.0,
+    3.75,
+    13.0
+   ],
+   "color": [
+    1.0,
+    0.5,
+    0.2
+   ],
+   "intensity_cd": 5.0,
+   "radius_m": 9.0,
+   "location": [
+    -1300.0,
+    1300.0,
+    375.0
+   ]
   }
  ]
 }

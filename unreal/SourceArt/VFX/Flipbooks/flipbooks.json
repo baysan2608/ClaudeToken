@@ -1,0 +1,69 @@
+{
+  "schema": "fourfold.fx_flipbooks/1",
+  "format": "R light, G thickness, B temperature, A alpha",
+  "flipbooks": {
+    "smoke_puff": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_smoke_puff.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 39.6
+    },
+    "steam_puff": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_steam_puff.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 38.8
+    },
+    "dust_puff": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_dust_puff.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 18.8
+    },
+    "sand_burst": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_sand_burst.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 19.5
+    },
+    "fire_loop": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_fire_loop.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 153.6
+    },
+    "fire_burst": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_fire_burst.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 81.6
+    },
+    "explosion": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_explosion.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 64.7
+    },
+    "water_splash": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_water_splash.png",
+      "frames": 64,
+      "grid": 8,
+      "tile": 128,
+      "seconds": 1.9
+    },
+    "puff_atlas": {
+      "file": "SourceArt/VFX/Flipbooks/T_FX_FB_puff_atlas.png",
+      "frames": 4,
+      "grid": 2,
+      "tile": 256,
+      "seconds": 21.0
+    }
+  }
+}

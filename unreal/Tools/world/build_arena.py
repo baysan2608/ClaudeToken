@@ -119,6 +119,21 @@ def build_wall(face, half=16.0, top=3.5):
                 m.box((u - 0.22, 1.08, bd0), (u + 0.22, 1.32, bd1), "StoneCap", skip=("bottom",), col=grime_col(1.08, 0.6, 1.32, 0.3))
                 cd0, cd1 = sorted([s * 0.5, s * 0.70])
                 m.box((u - 0.24, 3.04, cd0), (u + 0.24, 3.3, cd1), "Timber", skip=("top",))
+        # blind roundel windows in the two end bays (a timber ring around a darkened plaster disc crossed by lattice bars)
+        for u0 in (-(h - 2.6), (h - 2.6)):
+            n = 20
+            cy = 2.15
+            for k in range(n):
+                a0, a1 = 2 * math.pi * k / n, 2 * math.pi * (k + 1) / n
+                P = lambda r, a, d: (u0 + r * math.cos(a), cy + r * math.sin(a), d)
+                m.face([P(0.52, a0, 0.57), P(0.64, a0, 0.57), P(0.64, a1, 0.57), P(0.52, a1, 0.57)][::-1], "Timber")          # ring face (+d)
+                m.face([P(0.64, a0, 0.5), P(0.64, a1, 0.5), P(0.64, a1, 0.57), P(0.64, a0, 0.57)][::-1], "Timber")             # ring outer wall
+                m.face([P(0.52, a0, 0.5), P(0.52, a0, 0.57), P(0.52, a1, 0.57), P(0.52, a1, 0.5)][::-1], "Timber")             # ring inner wall
+            disc = [(u0 + 0.52 * math.cos(2 * math.pi * k / n), cy + 0.52 * math.sin(2 * math.pi * k / n), 0.505) for k in range(n)]
+            m.face(disc[::-1], "Plaster", col=(1.0, 1.0, 0.0, 1.0))
+            for off in (-0.26, 0.0, 0.26):
+                m.box((u0 + off - 0.015, cy - 0.5, 0.506), (u0 + off + 0.015, cy + 0.5, 0.53), "Timber")
+                m.box((u0 - 0.5, cy + off - 0.015, 0.506), (u0 + 0.5, cy + off + 0.015, 0.53), "Timber")
         # banner rods + brackets (inner face only; the camera never sees the outside)
         for u in BANNER_U:
             if abs(u) > h - 0.8:
@@ -350,6 +365,23 @@ def build_rings(A):
     return m, (0.0, 0.0, 0.0)
 
 
+def light_points(A):
+    """Point lights of the level (sim metres): two hanging lanterns per wall + the two pillar braziers.  Intensity in candelas for
+    Unreal's fixed-exposure units (see docs/world/README.md), radius in metres."""
+    out = []
+    half = A["half"]
+    for face in "NSWE":
+        R, t = wall_local_frame(face)
+        for u in (-4.0, 4.0):
+            p = R @ np.array([u, 2.72, 1.18]) + t
+            out.append(dict(kind="lantern", pos=[float(p[0]), float(p[1]), float(p[2])], color=[1.0, 0.62, 0.30], intensity_cd=2.4, radius_m=7.0))
+    for name in ("pillar_ne", "pillar_sw"):
+        s = A["solids"][name]
+        cx, cz = (s["min"][0] + s["max"][0]) / 2, (s["min"][2] + s["max"][2]) / 2
+        out.append(dict(kind="brazier", pos=[cx, s["max"][1] + 0.55, cz], color=[1.0, 0.5, 0.2], intensity_cd=5.0, radius_m=9.0))
+    return out
+
+
 ARENA_BUILDERS = {
     "SM_Env_Floor": lambda A: build_floor(A),
     "SM_Env_WallN": lambda A: build_wall("N", A["half"]),
@@ -371,7 +403,7 @@ ARENA_BUILDERS = {
 
 # lightmap texel size (m) and resolution per mesh (None = no lightmap: dynamic / movable)
 LIGHTMAP = {
-    "SM_Env_Floor": (0.09, 1024), "SM_Env_WallN": (0.12, 512), "SM_Env_WallS": (0.12, 512), "SM_Env_WallW": (0.12, 512),
+    "SM_Env_Floor": (0.06, 1024), "SM_Env_WallN": (0.12, 512), "SM_Env_WallS": (0.12, 512), "SM_Env_WallW": (0.12, 512),
     "SM_Env_WallE": (0.12, 512), "SM_Env_CoverWall": (0.05, 256), "SM_Env_Terrace": (0.06, 256), "SM_Env_StepBlock": (0.05, 128),
     "SM_Env_HighLedge": (0.06, 256), "SM_Env_Pillar": (0.04, 256), "SM_Env_PoolBasin": (0.06, 256), "SM_Env_MetalPlate": (0.05, 256),
 }

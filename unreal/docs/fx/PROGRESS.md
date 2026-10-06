@@ -92,8 +92,42 @@ _Read this first when resuming. Update after every completed sub-step._
 - Look pass 1 done (flame licks/colour, lightning core+glow (BuildBoltMesh widthScale 2.4 default), pressure cone
   subtle, water foam lip, ground decal edges, ring band).
 
+- Look pass 2: release ring width capped in metres (FxOneShots RingFx), launch ring glow lower (FxCues), held water jet
+  (tag "jet") drawn as a tube from the caster instead of a giant orb (FxViews WaterView jet_), water wave foam lip
+  narrowed (uv2.y = cos of the cross-section angle). Logic tests 23/23 pass.
+- Flipbooks: Mantaflow re-tested in bpy -> still broken ('LevelsetGrid' has no setConst) -> numpy solver (ff_fluid)
+  + its ray-marcher kept. flipbooks.py: + puff_atlas (2x2, 512^2), splash B = foam, generic _fade_edges. Full run
+  started in background -> SourceArt/VFX/Flipbooks (log $SCR/fbfull2/log.txt, previews $SCR/fbfull2/prev).
+- Meshes DONE: Tools/vfx/meshes.py -> SourceArt/VFX/Meshes (8 rocks 900-1110 tris with baked DirectX normal maps
+  512^2 + BlobXY/BlobZRnd UVs, ice_shard, crystal_0/1, disc, lance, plate, spike, caltrop, chip), round-trip FBX
+  import checked, review render $SCR/meshprev/meshes.png looks good. Runs in ~18 s.
+
+- Builder DONE: Content/Python/fourfold/fx/__init__.py (textures, 19 masters from spec, meshes Interchange + legacy
+  fallback, MI_FX_Rock_k with RockNormal, slot-0 assignment). Shared mock dry run OK; stateful mock
+  Tools/vfx/py_mock_fx.py OK (62 assets, links/inputs/outputs checked, second run skips all).
+- Vertex alpha now travels in UV3.x (FxUeConvert) -> spec source "vca" = TexCoord3 + ComponentMask R (no reliance on
+  VertexColor "A" pin names).
+- Glue: static meshes use their own slot-0 instance (if it derives from the slot master) as MID parent
+  (FCompState.ParentMids). UE header check (check_fx.sh) passes after the change (~2 min, run in background).
+- Fire bursts: FireBurstFx adds up to 10 FireBurst-flipbook billows (MatSlot::FireSprite) racing along the jet.
+- Flipbooks rerun with _crop_union (largest frame fills the tile) + splash foam preview: $SCR/fbfull3 (running).
+
+- Flipbooks final (fbfull3): union-cropped, splash reworked (crown + jet, foam in B); raw copies for the preview in
+  $SCR/fbraw (`--fb $SCR/fbraw`). Fire bursts with billows reviewed ($SCR/prev/fire_fb.png); burst flames tear into
+  licks (thr by style).
+- Editor-Python names verified in the 5.8.2 mirror headers (sparse checkout extended in $SCR/ue58pmc/ue: Engine/
+  Public/Materials, MaterialEditingLibrary.cpp, Interchange pipelines, StaticMeshEditorSubsystem). Builder fixed:
+  build_nanite False (5.8 default True), collision False, PreSkinnedPosition (5.8 name) first in the fallback list.
+- meshlib::Prewarm() in the FxDirector constructor; soak: 2 frames > 2 ms (max 4.4 ms) of 135 600.
+- Docs DONE: README.md, API_NOTES.md, REQUESTS.md (+ world_audio sun / exposure).
+- All checks green: ffx_logic_tests 23/23 (g++ + clang), ffx_core_soak OK, check_shaders 116/116, py_mock_fx OK,
+  check_fx.sh (UE 5.8.2 headers) 0 diagnostics.
+
+- Shock rings toned down (RingFx width cap 0.14 m, opacity x0.85 / x0.55, launch ring glow 1.1 + 0.3 ftr, ring band
+  exp(-4x^2)). Final contact sheets: $SCR/prev/final_<el><sub>.png (with real flipbooks).
+
 ## Current item
-- Reviewing Lab sheets $SCR/prev/lab_<el><sub>.png (f4) for every family; then flipbooks (Blender), meshes, builder.
+- DONE (stream complete). Optional later: device tuning of emissive levels, more preview look passes.
 
 ## Next steps
 1. Logic tests dir Private/Logic/tests/ (FF_LOGIC_TESTS guard) + CMake/script build here (g++ + clang).

@@ -77,7 +77,7 @@ def layout_entries(A, info):
     for name in ("SM_Env_Floor", "SM_Env_PoolBasin", "SM_Env_PoolWater", "SM_Env_MetalPlate", "SM_Env_Banners", "SM_Env_Lanterns", "SM_Env_Rings"):
         if name in info:
             e = ent(f"FFArena_{name[7:]}", name, info[name]["pivot_sim"], group="arena",
-                    mobility="movable" if name in ("SM_Env_Banners", "SM_Env_PoolWater") else "static")
+                    mobility="static" if info[name].get("lightmap_res") else "movable")        # no lightmap UVs -> Movable
             ents.append(e)
     if BS is not None and hasattr(BS, "layout_entries"):
         ents += BS.layout_entries(A, info, ent)
@@ -127,7 +127,9 @@ def main():
                        meshes=info), f, indent=1)
     layout = layout_entries(A, info)
     with open(os.path.join(ES.ENV_ART, "level_layout.json"), "w", encoding="utf-8") as f:
-        json.dump(dict(schema="fourfold.env.layout/1", sun=dict(pitch=ES.SUN_PITCH, yaw=ES.SUN_YAW, color=list(ES.SUN_COLOR)), actors=layout), f, indent=1)
+        lights = [dict(l, location=[round(v, 3) for v in ES.sim_to_ue(l["pos"])]) for l in BA.light_points(A)]
+        json.dump(dict(schema="fourfold.env.layout/1", sun=dict(pitch=ES.SUN_PITCH, yaw=ES.SUN_YAW, color=list(ES.SUN_COLOR)),
+                       mask=dict(rect=[-18.0, -18.0, 36.0]), actors=layout, lights=lights), f, indent=1)
     print("total tris", total_tris, "meshes", len(info), "layout actors", len(layout))
 
 

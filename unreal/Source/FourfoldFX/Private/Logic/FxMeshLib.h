@@ -49,6 +49,9 @@ const MeshData& Crystal(uint32_t seed, CrystalMode mode);   // cached (16 seeds 
 const MeshData& Wall(uint32_t seed);                         // cached (16 seeds)
 const MeshData& Rock(uint32_t seed);                         // cached (seed % 64)
 
+// Builds every cached mesh once (rocks, walls, crystals, unit meshes) so no gameplay frame pays for it.
+void Prewarm();
+
 // Uncached builders (views that own their geometry).
 void BuildCrystal(MeshData& m, uint32_t seed, CrystalMode mode);
 void BuildWall(MeshData& m, uint32_t seed);

@@ -24,6 +24,8 @@ namespace {
 struct Totals {
 	int frames = 0, failures = 0, maxItems = 0, maxTris = 0, maxLights = 0, maxOneShots = 0, maxViews = 0;
 	double totalMs = 0.0, maxMs = 0.0;
+	std::string maxWhere;
+	int over2ms = 0;
 	std::map<std::string, int> events;
 	std::set<std::string> unmapped;
 	std::map<std::string, int> kinds;   // view kinds seen
@@ -176,7 +178,11 @@ void RunTicks(ff::Session& s, FxDirector& dir, int ticks, Totals& t, const char*
 			const DrawList& dl = dir.Update(fi);
 			const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
 			t.totalMs += ms;
-			t.maxMs = std::max(t.maxMs, ms);
+			if (ms > t.maxMs) {
+				t.maxMs = ms;
+				t.maxWhere = where;
+			}
+			if (ms > 2.0) ++t.over2ms;
 			++t.frames;
 			const FxStats& st = dir.Stats();
 			t.maxItems = std::max(t.maxItems, st.items);
@@ -254,6 +260,7 @@ int main(int argc, char** argv) {
 	std::printf("frames %d, avg %.3f ms, max %.3f ms per Update; max items %d, tris %d, lights %d, one-shots %d, views %d\n",
 	            t.frames, t.totalMs / std::max(t.frames, 1), t.maxMs, t.maxItems, t.maxTris, t.maxLights, t.maxOneShots,
 	            t.maxViews);
+	std::printf("slowest Update in: %s; frames over 2 ms: %d\n", t.maxWhere.c_str(), t.over2ms);
 	std::printf("event types seen (%zu):", t.events.size());
 	for (const auto& kv : t.events) std::printf(" %s=%d", kv.first.c_str(), kv.second);
 	std::printf("\nview kinds seen:");

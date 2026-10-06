@@ -34,11 +34,11 @@
     0.0
    ],
    "lightmap_res": 1024,
-   "lightmap_texel_m": 0.09
+   "lightmap_texel_m": 0.06
   },
   "SM_Env_WallN": {
    "file": "Meshes/SM_Env_WallN.fbx",
-   "tris": 380,
+   "tris": 800,
    "slots": [
     "StoneWall",
     "StoneCap",
@@ -50,8 +50,8 @@
    "slot_tris": {
     "StoneWall": 6,
     "StoneCap": 86,
-    "Plaster": 8,
-    "Timber": 190,
+    "Plaster": 44,
+    "Timber": 574,
     "RoofTile": 18,
     "Iron": 72
    },
@@ -82,7 +82,7 @@
   },
   "SM_Env_WallS": {
    "file": "Meshes/SM_Env_WallS.fbx",
-   "tris": 380,
+   "tris": 800,
    "slots": [
     "StoneWall",
     "StoneCap",
@@ -94,8 +94,8 @@
    "slot_tris": {
     "StoneWall": 6,
     "StoneCap": 86,
-    "Plaster": 8,
-    "Timber": 190,
+    "Plaster": 44,
+    "Timber": 574,
     "RoofTile": 18,
     "Iron": 72
    },
@@ -126,7 +126,7 @@
   },
   "SM_Env_WallW": {
    "file": "Meshes/SM_Env_WallW.fbx",
-   "tris": 380,
+   "tris": 800,
    "slots": [
     "StoneWall",
     "StoneCap",
@@ -138,8 +138,8 @@
    "slot_tris": {
     "StoneWall": 6,
     "StoneCap": 86,
-    "Plaster": 8,
-    "Timber": 190,
+    "Plaster": 44,
+    "Timber": 574,
     "RoofTile": 18,
     "Iron": 72
    },
@@ -170,7 +170,7 @@
   },
   "SM_Env_WallE": {
    "file": "Meshes/SM_Env_WallE.fbx",
-   "tris": 380,
+   "tris": 800,
    "slots": [
     "StoneWall",
     "StoneCap",
@@ -182,8 +182,8 @@
    "slot_tris": {
     "StoneWall": 6,
     "StoneCap": 86,
-    "Plaster": 8,
-    "Timber": 190,
+    "Plaster": 44,
+    "Timber": 574,
     "RoofTile": 18,
     "Iron": 72
    },
@@ -945,6 +945,90 @@
     6044.75,
     5677.63,
     1252.16
+   ],
+   "lightmap_res": null,
+   "lightmap_texel_m": null
+  },
+  "SM_Env_Gate": {
+   "file": "Meshes/SM_Env_Gate.fbx",
+   "tris": 340,
+   "slots": [
+    "Timber",
+    "RoofTile",
+    "StoneWall",
+    "StoneCap",
+    "Bronze",
+    "Plaster"
+   ],
+   "slot_tris": {
+    "StoneWall": 200,
+    "Timber": 68,
+    "Bronze": 12,
+    "Plaster": 12,
+    "RoofTile": 48
+   },
+   "pivot_sim": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "bounds_sim": [
+    [
+     4.2403,
+     -0.201,
+     -53.6951
+    ],
+    [
+     19.7597,
+     9.399,
+     -46.3049
+    ]
+   ],
+   "expected_size_cm": [
+    1551.93,
+    739.01,
+    960.0
+   ],
+   "lightmap_res": null,
+   "lightmap_texel_m": null
+  },
+  "SM_Env_Yard": {
+   "file": "Meshes/SM_Env_Yard.fbx",
+   "tris": 980,
+   "slots": [
+    "Timber",
+    "Bark",
+    "StoneWall",
+    "Iron",
+    "Plaster"
+   ],
+   "slot_tris": {
+    "Timber": 228,
+    "Bark": 576,
+    "StoneWall": 128,
+    "Iron": 48
+   },
+   "pivot_sim": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "bounds_sim": [
+    [
+     20.0,
+     -0.06,
+     -9.3771
+    ],
+    [
+     28.3954,
+     2.0542,
+     -1.5
+    ]
+   ],
+   "expected_size_cm": [
+    839.54,
+    787.71,
+    211.42
    ],
    "lightmap_res": null,
    "lightmap_texel_m": null

@@ -8,7 +8,8 @@ Read by the editor builder (fourfold.fx.build_all) AND by the container-side che
 
 Graph vocabulary (`inputs` values of a custom node):
   uv0 uv1 uv2        TextureCoordinate 0 / 1 / 2                                     float2
-  vc / vca           VertexColor RGB / alpha                                         float3 / float
+  vc                 VertexColor RGB                                                 float3
+  vca                vertex alpha = TextureCoordinate 3 .x (FxUeConvert copies the vertex alpha there)  float
   time               Time                                                            float
   lpos               PreSkinnedLocalPosition (vertex stage only; cm)                 float3
   lpos_ps            PreSkinnedLocalPosition through a VertexInterpolator (pixel)   float3
@@ -36,7 +37,8 @@ ENGINE_DEFAULT_NORMAL = "/Engine/EngineMaterials/DefaultNormal"
 
 # ------------------------------------------------------------------------------------------------ textures
 # name -> (source file under SourceArt/VFX, kind). kind: "noise" (linear masks), "flipbook" (linear RGBA, packed),
-# "normal" (tangent-space normal map, DirectX green = Blender bakes are OpenGL -> flip_green).
+# "normal" (tangent-space normal map; Tools/vfx/meshes.py writes it in the DirectX convention (green flipped from
+# Blender's OpenGL bake), so it imports with flip_green_channel off).
 TEXTURES = {
     "T_FX_Noise": ("Textures/T_FX_Noise.png", "noise"),
     "T_FX_FB_smoke_puff": ("Flipbooks/T_FX_FB_smoke_puff.png", "flipbook"),
@@ -51,8 +53,6 @@ TEXTURES = {
 }
 for _i in range(8):
     TEXTURES[f"T_FX_rock_{_i}_N"] = (f"Meshes/T_FX_rock_{_i}_N.png", "normal")
-for _n in ("crystal_0", "crystal_1", "ice_shard", "spike"):
-    TEXTURES[f"T_FX_{_n}_N"] = (f"Meshes/T_FX_{_n}_N.png", "normal")
 
 # ------------------------------------------------------------------------------------------------ meshes
 # Static meshes (FBX in SourceArt/VFX/Meshes). `mat` = the master their slot-0 instance derives from; `normal` = baked
@@ -62,7 +62,7 @@ MESHES = {}
 for _i in range(8):
     MESHES[f"SM_FX_rock_{_i}"] = {"fbx": f"Meshes/SM_FX_rock_{_i}.fbx", "mat": "M_FX_Rock",
                                   "normal": ("RockNormal", f"T_FX_rock_{_i}_N")}
-MESHES["SM_FX_spike"] = {"fbx": "Meshes/SM_FX_spike.fbx", "mat": "M_FX_Rock", "normal": ("RockNormal", "T_FX_spike_N")}
+MESHES["SM_FX_spike"] = {"fbx": "Meshes/SM_FX_spike.fbx", "mat": "M_FX_Rock", "normal": None}
 for _n in ("crystal_0", "crystal_1", "ice_shard"):
     MESHES[f"SM_FX_{_n}"] = {"fbx": f"Meshes/SM_FX_{_n}.fbx", "mat": "M_FX_Crystal", "normal": None}
 for _n in ("disc", "lance", "plate", "caltrop"):

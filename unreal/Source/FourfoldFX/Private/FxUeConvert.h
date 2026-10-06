@@ -2,8 +2,9 @@
 // converts; it builds on Fourfold/Public/FourfoldCoords.h (UE(X, Y, Z) = 100 * (sim.x, sim.z, sim.y)).
 //
 // Meshes: positions x 100 and Y/Z swapped; normals / tangents swapped; every triangle's winding is reversed (the
-// swap is a reflection, so without it the front faces would turn inward). UV channels are passed through unchanged
-// (the vector data some materials keep in UVs is documented in UE local axis order: see FxMesh.h).
+// swap is a reflection, so without it the front faces would turn inward). UV0..UV2 are passed through unchanged
+// (the vector data some materials keep in UVs is documented in UE local axis order: see FxMesh.h); UV3 = (vertex
+// alpha, 0) for the materials (spec.py source "vca").
 // Transforms: the logic's basis columns (images of the local x / y / z axes in sim space) become UE axes
 // X = swz(B.x), Y = swz(B.z), Z = swz(B.y) - the same reflection on both sides keeps the determinant positive.
 // Owner: stream `fx`.
@@ -64,7 +65,8 @@ namespace FFFx
 			UV2.SetNumUninitialized(N, EAllowShrinking::No);
 			Colors.SetNumUninitialized(N, EAllowShrinking::No);
 			Tangents.SetNum(N, EAllowShrinking::No);
-			UV3.Reset();
+			// UV3.x = vertex alpha (the materials read alpha here: 16-bit and independent of the vertex colour pins)
+			UV3.SetNumUninitialized(N, EAllowShrinking::No);
 			for (int32 i = 0; i < N; ++i)
 			{
 				const size_t s = size_t(i);
@@ -74,6 +76,7 @@ namespace FFFx
 				UV1[i] = FVector2D(M.uv1[s].x, M.uv1[s].y);
 				UV2[i] = FVector2D(M.uv2[s].x, M.uv2[s].y);
 				Colors[i] = ToLinear(M.col[s]);
+				UV3[i] = FVector2D(M.col[s].a, 0.0);
 				Tangents[i] = FProcMeshTangent(Swz(M.tan[s]), false);
 			}
 			if (bWithIndices)

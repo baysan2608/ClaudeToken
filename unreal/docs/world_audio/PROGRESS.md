@@ -94,7 +94,7 @@ UE 5.8.2 public-header mirror (for API verification, read-only, made by the game
   FBX export: Blender default axes + FBX_SCALE_ALL like the frozen character export; mesh_smooth_type EDGE; vertex colours R=-, G=grime gradient.
   Meshes are authored AT the real arena size (from sim.json) with pivot at box centre; builder also scales actor by expected/actual bounds (auto scale fix).
   Walls: plinth stone + plaster body + timber pilasters (symmetrical both faces, orientation-risk free) + tie beam + gabled tile cap; hanging lanterns at pilasters; banners separate mesh.
-  Sun (UE): Rotator(pitch=-34,yaw=38) = Godot (-34,-128): backlit courtyard from NW. Camera: vfov 62, pitch 18deg, dist 5.6, height 1.45.
+  Sun (UE): [superseded r4: pitch -55.2, yaw -37.9 = fx FFKeyDir toward-light (-0.45,0.35,0.82), front-lit from the camera side] (r3 had pitch -34, yaw 38 backlit). Camera: vfov 62, pitch 18deg, dist 5.6, height 1.45.
   NEXT: Tools/world/meshkit.py (pure numpy mesh builder, lightmap shelf packer) -> build_arena.py -> build_scenery.py -> mockup_render.py (Cycles) -> LOOK.
 - [r3] W1.b DONE (arena + scenery meshes): Tools/world/{env_spec,meshkit,build_arena,build_scenery,bpy_io,export_env,mockup_render}.py ; export_env.py writes
   SourceArt/Environment/Meshes/*.fbx (25 meshes, ~43k tris total) + meshes.json + level_layout.json. Mock-up renders (Cycles) LOOKED at: arena + scenery OK
@@ -103,7 +103,19 @@ UE 5.8.2 public-header mirror (for API verification, read-only, made by the game
   Vertex colours: R hang(banner)/tint(foliage)/1, G grime (walls) / flutter (pennants), B sway (foliage). Default (1,0,0,1).
   Material slot -> MI_Env_<Slot> (slots: Floor StoneWall StoneCap Plaster Timber RoofTile PoolTile Metal Iron Bronze Ground Rock Glow Banner Foliage Bark Ridge Water Sky).
   UE LIGHTING DECISIONS: fixed exposure EV100 = -0.263 (PPV auto_exposure_min=max=-0.263, project ExtendDefaultLuminanceRange=1) so exposure scale = 1 (emissive 1 = display 1;
-  sun ~3.2 lux warm; sky light 1.0 captured from the dome). Point lights candelas (3 cd lanterns). Sun Rotator(pitch -34, yaw 38).
+  sun ~3.2 lux warm; sky light 1.0 captured from the dome). Point lights candelas (3 cd lanterns). Sun Rotator(pitch -55.2, yaw -37.9) [changed in r4 to match fx FFKeyDir].
   AXIS INSURANCE: world builder checks PoolBasin bounds centre to detect a mirrored FBX import (Y sign) and mirrors actors (scale Y -1) if so.
   NEXT (W2): Shaders/Env/FFEnv.ush DONE (written; DXC check pending) -> Content/Python/fourfold/world/{common,textures,materials,meshes,level,__init__}.py ->
   Tools/world/check_hlsl.py (DXC at scratchpad/ue/character/dxc/bin/dxc) -> Tools/world/verify_props.py (property names vs UE header mirror) -> mock dry run.
+- [r3] W2 DONE (needs docs): Shaders/Env/FFEnv.ush (DXC ps_6_0 + spirv OK via Tools/world/check_hlsl.py), Content/Python/fourfold/world/{__init__,common,textures,materials,meshes,level}.py,
+  Tools/world/{dry_run_world.py (fake-unreal dry run incl. --mirror), verify_props.py (property names vs UE header mirror: all OK), check_hlsl.py}.
+  S1 DONE: Content/Python/fourfold_setup.py (main(force, only, lighting)) + init_unreal.py (Fourfold menu); mock dry runs OK.
+  NEXT: C1 Config review (Config/*.ini; requests: bShowConsoleOnFourFingerTap=False, 120 Hz + CADisableMinimumFrameDurationOnPhone, AudioMaxChannels, ExtendDefaultLuminanceRange),
+  then docs/world/{README,API_NOTES}.md, MAC_SETUP truth check (setup commands), art polish (wall roundel windows etc.), final run of all checks, final report.
+- [r3] C1 DONE: Config/{DefaultEngine,DefaultInput,IOS/IOSEngine,DefaultScalability}.ini rewritten + reviewed vs 5.8.2 headers (r.MSAACount fix, local lights, SM6, iOS keys, audio keys); docs/world/{README,API_NOTES,REQUESTS}.md written; previews in docs/world/previews (render running in bg b4wbpyx6z).
+  REMAINING: convert previews to jpg + fix README refs; MAC_SETUP truth check; final test sweep (audio logic tests, validate_audio, dry runs, py_compile, check_hlsl, verify_props, syntax check script);
+  update docs/audio README mention of config (AudioMaxChannels); art polish if time (rock texture, wall variety); final report (<350 words).
+- [r4] FINAL: sun switched to fx FFKeyDir (pitch -55.2, yaw -37.9; level.py, materials.py SunToward, env_spec, level_layout.json re-exported), README/REQUESTS/PROGRESS text updated,
+  previews re-rendered (Cycles, 9 views, docs/world/previews/view_*.jpg), dry_run_world.py now asserts the sun direction. Final sweep all green: audio Logic tests g++ + clang (24 tests, 1603 checks),
+  validate_audio PASS (233 files), check_hlsl (DXC ps_6_0 + spirv) OK, verify_props OK, dry_run_world (+ --mirror) OK, py_compile OK, orchestrator mock run (no raise, report written, mock outputs deleted).
+  Task COMPLETE. Only Mac-side steps remain (MAC_SETUP.md; world part bakes lighting, falls back to dynamic).

@@ -53,11 +53,11 @@ def sim_to_ue(p):
 
 
 # ---------------------------------------------------------------------------------------------------- lighting constants
-# Godot: sun rotation (-34, -128) deg  ->  Unreal Rotator(pitch=-34, yaw=38)  (warm, low, backlit toward the north-west)
-SUN_PITCH = -34.0
-SUN_YAW = 38.0
+# The fx stream's FFKeyDir (Shaders/Common/FFLighting.ush) = direction TOWARD the light in Unreal axes (-0.45, 0.35, 0.82): the sun
+# comes from the south-west, 55 degrees up, behind the default camera (fighters are front-lit, readable); the light travels the opposite way:
+SUN_PITCH = -55.2
+SUN_YAW = -37.9
 SUN_COLOR = (1.0, 0.84, 0.66)
-SUN_DIR_SIM = (0.653, -0.559, 0.511 * 1.0)      # direction the light travels, sim space (x, y, z) - for the Blender mock-up / sky shader
 
 
 def sun_dir_ue():

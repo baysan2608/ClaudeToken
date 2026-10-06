@@ -466,5 +466,27 @@ const MeshData& Rock(uint32_t seed) {
 	return Finish(m);
 }
 
+void Prewarm() {
+	GroundQuad();
+	FaceQuad();
+	for (int d = 0; d < 3; ++d) Sphere(d);
+	Chip();
+	Flame();
+	Cone();
+	Beam();
+	Crescent();
+	Sheet();
+	Disc();
+	Lance();
+	Rod();
+	Spike();
+	Caltrop();
+	for (uint32_t s = 0; s < 64u; ++s) Rock(s);
+	for (uint32_t s = 0; s < 16u; ++s) {
+		Wall(s);
+		for (int m = 0; m < 4; ++m) Crystal(s, static_cast<CrystalMode>(m));
+	}
+}
+
 }  // namespace meshlib
 }  // namespace ffx

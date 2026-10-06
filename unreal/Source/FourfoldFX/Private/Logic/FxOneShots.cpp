@@ -135,9 +135,9 @@ struct OneShots::RingFx final : OneShot {
 			it.params.Set(P::Cover, o.cover);
 			it.params.Set(P::Glow, o.glow);
 			it.params.Set(P::Style, o.style);
-			it.params.Set(P::Opacity, fade * o.alpha * (i == 0 ? 1.0f : 0.7f));
+			it.params.Set(P::Opacity, fade * o.alpha * (i == 0 ? 0.85f : 0.55f));
 			// the band width is relative to the quad: cap it in metres so big shock rings stay crisp bands
-			it.params.Set(P::Width, MinF(o.width * 0.8f * (1.0f + 0.5f * t), 0.22f / MaxF(sq, 1e-3f)));
+			it.params.Set(P::Width, MinF(o.width * 0.8f * (1.0f + 0.5f * t), 0.14f / MaxF(sq, 1e-3f)));
 			it.params.Set(P::Radius, 0.8f);
 			it.params.Set(P::Phase, age);
 			it.params.Set(P::Seed, seed + fi * 1.7f);
@@ -359,16 +359,43 @@ struct OneShots::BeamFx final : OneShot {
 
 struct OneShots::FireBurstFx final : OneShot {
 	static constexpr float kDur = 0.55f;
+	static constexpr int kBillows = 10;
 	Vec3 origin, dir;
 	float length = 3.0f, intensity = 1.0f, seed = 0.0f;
 	bool blue = false;
-	uint32_t keyOuter = 0, keyInner = 0, keyLight = 0;
+	uint32_t keyOuter = 0, keyInner = 0, keyLight = 0, keyBillows = 0;
+	// volume: fire-burst flipbook billows racing along the jet, growing and rising as they burn out
+	ParticleSet billows;
+	ParticleLook look;
+	ParticlePhysics ph;
+	MeshData billowMesh;
+	FireBurstFx() {
+		billows.Reset(kBillows, 29u);
+		look.frames = 64;
+		look.frameByLife = true;
+		look.fadeIn = 0.04f;
+		look.fadeOut = 0.3f;
+		ph.drag = 3.2f;
+		ph.buoyancy = 2.8f;
+	}
 	void Step(Ctx& c) override {
 		age += c.dt;
-		if (age >= kDur) {
+		billows.Step(c.dt, ph);
+		if (age >= kDur && !billows.AnyAlive()) {
 			active = false;
 			return;
 		}
+		if (billows.AnyAlive()) {
+			billows.Build(billowMesh, c.in.cam.pos, c.in.cam.up, look);
+			billowMesh.Commit();
+			DrawItem& s = c.out.Add(keyBillows, MatSlot::FireSprite, &billowMesh);
+			s.params.flipbook = Flipbook::FireBurst;
+			s.params.Set(P::Intensity, intensity);
+			s.params.Set(PV::Tint, blue ? Linear(Color(0.55f, 0.75f, 1.4f)) : Color(1, 1, 1, 1));
+			SetColors4(s.params, blue ? c.cfg.blueFlame : c.cfg.flame);
+			s.sortPriority = 1;
+		}
+		if (age >= kDur) return;
 		const float n = Sat(age / kDur);
 		const float w = length * 0.17f * (0.75f + 0.35f * intensity);
 		Xform x;
@@ -754,6 +781,31 @@ void OneShots::FireBurst(Ctx& c, const Vec3& origin, const Vec3& dir, float leng
 	f.keyOuter = c.keys.New();
 	f.keyInner = c.keys.New();
 	f.keyLight = c.keys.New();
+	f.keyBillows = c.keys.New();
+	// billows along the jet (fewer at low quality)
+	f.billows.Reset(FireBurstFx::kBillows, static_cast<uint32_t>(f.seed * 9973.0f) + 17u);
+	const int n = MinI(Scaled(8, c.q.particles), FireBurstFx::kBillows);
+	const float w = f.length * 0.17f * (0.75f + 0.35f * f.intensity);
+	const Vec3 side = Perp(f.dir);
+	const Vec3 side2 = f.dir.cross(side);
+	for (int i = 0; i < n; ++i) {
+		Particle* p = f.billows.Spawn();
+		if (!p) break;
+		Rng& r = f.billows.R();
+		const float t = (static_cast<float>(i) + r.F01()) / static_cast<float>(n);
+		const Vec3 jit = (side * r.Signed() + side2 * r.Signed()) * (w * 0.35f);
+		p->p = f.origin + f.dir * (f.length * 0.08f) + jit * 0.3f;
+		p->v = f.dir * (f.length * (1.2f + 1.6f * t)) + jit * 1.5f;
+		p->age = -0.12f * t;          // staggered: the far billows leave a little later
+		p->life = 0.38f + 0.22f * r.F01();
+		p->size0 = w * (0.7f + 0.4f * r.F01());
+		p->size1 = w * (2.0f + 1.4f * t);
+		p->rot = r.F01() * kFxTau;
+		p->rotSpeed = r.Signed() * 1.5f;
+		p->c0 = Color(1.0f, 1.0f, 1.0f, 1.0f);
+		p->c1 = Color(0.7f, 0.7f, 0.7f, 0.0f);
+		p->extra = 0.75f + 0.25f * r.F01() - 0.3f * t;   // heat bias: hotter near the fist
+	}
 }
 
 void OneShots::AirPush(Ctx& c, const Vec3& origin, const Vec3& dir, float radius, float length) {

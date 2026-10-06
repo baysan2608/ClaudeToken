@@ -98,7 +98,8 @@ float4 FFFlameShade(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float2 uv0, float4 
 	const float body = FFSmooth(tail - 0.02, tail + 0.22, y) * (tongues ? FFSmooth(0.0, 0.08, y) : 1.0);
 	const float taper = 1.0 - FFSmooth(tongues ? 0.7 : 0.78, 1.0, y + (n - 0.5) * (tongues ? 0.3 : 0.25));
 	// ragged tongues: the erosion threshold grows toward the tip, so the silhouette breaks into licks
-	const float thr = 0.10 + 0.62 * y * y;
+	// bursts tear into licks along the whole jet; held flames stay solid in the middle and lick at the tip
+	const float thr = looping ? 0.10 + 0.62 * y * y : 0.18 + 0.52 * y;
 	const float licks = FFSmooth(thr, thr + 0.1, n + 0.2 * (1.0 - y) * (1.0 - core * 0.35));
 	// soft silhouette so the surface reads volumetric rather than a hard shell
 	const float rimfade = FFSmooth(0.02, 0.55, ndv + (n - 0.5) * 0.45);

@@ -59,7 +59,7 @@ float4 FFRingShade(float2 uv0, float4 nA, float4 nB, float style, float radius, 
 	if (style < 0.5)
 	{
 		const float x = (d - radius + (n - 0.5) * 0.35 * w * 2.0) / w;
-		k = exp(-x * x * 3.0) * (0.75 + 0.5 * nB.x);
+		k = exp(-x * x * 4.0) * (0.7 + 0.6 * nB.x);
 	}
 	else if (style < 1.5)
 	{

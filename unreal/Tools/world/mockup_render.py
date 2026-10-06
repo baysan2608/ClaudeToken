@@ -26,11 +26,12 @@ VIEWS = {
     # name: (camera position sim (x, y, z), look-at sim, vertical fov deg)
     "default": ((0.0, 3.1, 12.8), (0.0, 1.5, 0.0), 62.0),              # behind the player (spawn z = +7) looking at the rival
     "high": ((0.0, 5.0, 12.5), (0.0, 1.2, -1.0), 62.0),
-    "wall": ((4.0, 2.2, 5.0), (-2.0, 2.2, -16.0), 62.0),                # north wall detail, banners and lanterns
+    "wall": ((8.0, 1.9, -6.0), (-2.0, 2.3, -16.0), 62.0),                # north wall detail, banners and lanterns
     "south": ((0.0, 3.1, -12.8), (0.0, 1.5, 0.0), 62.0),                 # from the rival's side
     "pool": ((3.0, 3.4, 12.0), (10.0, 0.0, -1.0), 62.0),
     "east": ((-6.0, 3.0, 3.0), (16.0, 2.0, -2.0), 62.0),
     "overview": ((0.0, 38.0, 46.0), (0.0, 0.0, -2.0), 45.0),
+    "gate": ((0.0, 4.5, 12.0), (10.0, 5.5, -50.0), 50.0),
     "ledge": ((-6.0, 3.6, -2.0), (-14.0, 1.2, -13.0), 62.0),
 }
 

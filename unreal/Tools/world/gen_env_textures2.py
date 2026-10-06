@@ -70,8 +70,8 @@ def gen_plaster(out=OUT):
     h -= crack * 1.4
     # fallen patches exposing the rubble masonry underneath
     pn = fbm(seed + 10, 2.6, 2, 7) + 0.12 * fbm(seed + 11, 1.5, 12, 80)
-    patch = smoothstep(1.85, 1.95, pn)
-    lip = smoothstep(1.7, 1.85, pn) * (1 - patch)                   # chipped plaster edge
+    patch = smoothstep(2.05, 2.15, pn)
+    lip = smoothstep(1.9, 2.05, pn) * (1 - patch)                   # chipped plaster edge
     # under-layer: coarse stone / brick
     under_h = fbm(seed + 12, 1.4, 8, 200) * 1.6 - 4.5
     h = h * (1 - patch) + under_h * patch - lip * 0.8
@@ -92,7 +92,7 @@ def gen_plaster(out=OUT):
     mould = smoothstep(2.0, 2.6, fbm(seed + 17, 0.9, 30, 300)) * damp
     alb = mix(alb, hexlin("#3f4a2a")[None, None, :] * np.ones((N, N, 1)), mould * 0.5)
     alb = alb * (1.0 - 0.55 * crack)[..., None]
-    ucol = mix(hexlin("#8d7a66")[None, None, :] * np.ones((N, N, 1)), hexlin("#6c5b4b")[None, None, :] * np.ones((N, N, 1)),
+    ucol = mix(hexlin("#a39079")[None, None, :] * np.ones((N, N, 1)), hexlin("#86735f")[None, None, :] * np.ones((N, N, 1)),
                smoothstep(-1, 1.5, fbm(seed + 18, 1.5, 6, 120)))
     ucol = ucol * (0.85 + 0.25 * (fbm(seed + 19, 1.0, 30, 300) * 0.5 + 0.5))[..., None]
     alb = mix(alb, ucol, patch)

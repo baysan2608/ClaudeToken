@@ -111,8 +111,9 @@ float4 FFWaterShade(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float2 uv0, float2 
 	{
 		const float crest = uv2.y;
 		// foam: a broken lip along the crest and a churning band at the leading front, streaked along the flow
-		const float lace = FFSmooth(0.3, 0.75, n1.z * 0.55 + n2.x * 0.45 + 0.1);
-		float foam = FFSmooth(0.86, 0.99, crest + (n2.y - 0.5) * 0.1) * 0.85
+		// (uv2.y = cos of the cross-section angle: 1 on the ridge line, 0 at the banks)
+		const float lace = FFSmooth(0.35, 0.7, n1.z * 0.6 + n1.x * 0.25 + n2.x * 0.15 + 0.1);
+		float foam = FFSmooth(0.975, 0.998, crest + (n2.y - 0.5) * 0.03) * 0.85
 			+ (1.0 - FFSmooth(0.0, 0.45, uv2.x + (n1.z - 0.5) * 0.3)) * 0.95;
 		foam = saturate(foam * lace) * (1.0 - fr);
 		const float3 body = lerp(float3(0.015, 0.09, 0.13), float3(0.07, 0.30, 0.38), FFSmooth(0.1, 0.9, crest) * 0.8 + n1.x * 0.2);

@@ -37,7 +37,14 @@ std::string_view StatusStyle(std::string_view s) {
 	return "";
 }
 
-FxDirector::FxDirector() : rng_(0x5eed1234u) {}
+FxDirector::FxDirector() : rng_(0x5eed1234u) {
+	// shared mesh caches are process-wide: build them before the first gameplay frame
+	static const bool kWarm = [] {
+		meshlib::Prewarm();
+		return true;
+	}();
+	(void)kWarm;
+}
 FxDirector::~FxDirector() = default;
 
 void FxDirector::Reset() {

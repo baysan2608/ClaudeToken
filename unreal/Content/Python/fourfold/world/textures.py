@@ -38,7 +38,7 @@ def apply_settings(tex, name, report):
         P(tex, "srgb", True, report)
         P(tex, "compression_settings", C.enum("TextureCompressionSettings", "TC_DEFAULT"), report)
         if kind == "color_alpha":
-            P(tex, "compress_without_alpha", False, report, quiet=True)
+            P(tex, "compression_no_alpha", False, report, quiet=True)
             P(tex, "mip_gen_settings", C.enum("TextureMipGenSettings", "TMGS_FROM_TEXTURE_GROUP"), report, quiet=True)
     elif kind == "normal":
         P(tex, "srgb", False, report)

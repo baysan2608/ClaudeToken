@@ -497,6 +497,70 @@ def build_pennants(A):
     return m, (0.0, 0.0, 0.0)
 
 
+# ------------------------------------------------------------------------------------------------------------------ gate + yard
+def build_gate(A):
+    """A timber ceremonial gate (three bays, tiled roofs, stone drum bases, a plaque) standing in front of the north hills."""
+    m = Mesh("SM_Env_Gate", slots("Timber", "RoofTile", "StoneWall", "StoneCap", "Bronze", "Plaster"))
+    cx, cz = 12.0, -50.0
+    by = float(ground_h(cx, cz))
+    yaw = math.atan2(-cx, -cz)
+    xs = [-4.8, -1.6, 1.6, 4.8]
+    heights = [6.6, 7.9, 7.9, 6.6]
+    with m.xf(rot_y(yaw), (cx, by, cz)):
+        for x, h in zip(xs, heights):
+            m.lathe([(0.55, 0.0), (0.55, 0.9), (0.5, 1.0), (0.0, 1.0)], (x, 0, 0), "StoneWall", segs=10, smooth=0)          # drum base
+            m.box((x - 0.26, 1.0, -0.26), (x + 0.26, h, 0.26), "Timber", uvrot={k: True for k in ("px", "nx", "pz", "nz")}, skip=("bottom", "top"))
+        # beams: main tie beam, lower beam, short rafters
+        m.box((xs[0] - 0.6, heights[1] - 0.9, -0.34), (xs[3] + 0.6, heights[1] - 0.2, 0.34), "Timber", skip=("top",))
+        m.box((xs[0] - 0.3, 5.1, -0.22), (xs[3] + 0.3, 5.6, 0.22), "Timber", skip=("top", "bottom"))
+        # plaque
+        m.box((-1.3, 5.7, -0.1), (1.3, 6.9, 0.1), "Timber")
+        m.box((-1.2, 5.8, 0.1), (1.2, 6.8, 0.12), "Bronze")
+        m.box((-1.1, 5.9, 0.12), (1.1, 6.7, 0.13), "Plaster")
+    # roofs (tiles): wide central roof, two lower side roofs
+    hip_roof(m, cx, cz, yaw, 5.6, 2.2, by + heights[1] - 0.2, 1.7, 1.2, ridge=True)
+    for sx in (-1, 1):
+        ox = sx * 4.8
+        px = cx + math.cos(yaw) * ox
+        pz = cz - math.sin(yaw) * ox
+        hip_roof(m, px, pz, yaw, 3.4, 2.0, by + heights[0] - 0.2, 1.3, 1.0, ridge=True)
+    return m, (0.0, 0.0, 0.0)
+
+
+def build_yard(A):
+    """Training yard props outside the east wall: wooden training posts with straw wraps, a stone-lock rack (no weapons), a bench."""
+    m = Mesh("SM_Env_Yard", slots("Timber", "Bark", "StoneWall", "Iron", "Plaster"))
+    rng = np.random.default_rng(1717)
+    x0, z0 = 24.0, -9.0
+    for i in range(6):
+        px = x0 + (i % 3) * 2.2 + rng.uniform(-0.2, 0.2)
+        pz = z0 + (i // 3) * 2.6 + rng.uniform(-0.2, 0.2)
+        h = rng.uniform(1.5, 2.1)
+        by = float(ground_h(px, pz))
+        m.lathe([(0.17, by), (0.15, by + h), (0.0, by + h + 0.02)], (px, 0, pz), "Timber", segs=8, smooth=1)
+        for k in range(3):
+            y = by + 0.7 + 0.28 * k
+            m.lathe([(0.19, y), (0.19, y + 0.2), (0.16, y + 0.22)], (px, 0, pz), "Bark", segs=8, smooth=1)
+    # stone-lock rack: two A-frames, a crossbar, four ring locks hanging on it
+    rx, rz = x0 + 1.0, z0 + 7.0
+    by = float(ground_h(rx, rz))
+    for sx in (-1.6, 1.6):
+        m.box((rx + sx - 0.07, by, rz - 0.5), (rx + sx + 0.07, by + 1.9, rz - 0.38), "Timber", skip=("bottom",))
+        m.box((rx + sx - 0.07, by, rz + 0.38), (rx + sx + 0.07, by + 1.9, rz + 0.5), "Timber", skip=("bottom",))
+    m.box((rx - 1.8, by + 1.75, rz - 0.07), (rx + 1.8, by + 1.9, rz + 0.07), "Timber")
+    for k in range(4):
+        x = rx - 1.2 + 0.8 * k
+        m.lathe([(0.2, by + 0.9), (0.2, by + 1.1), (0.05, by + 1.1)], (x, 0, rz), "StoneWall", segs=8, smooth=0)
+        m.box((x - 0.01, by + 1.1, rz - 0.01), (x + 0.01, by + 1.75, rz + 0.01), "Iron")
+    # bench
+    bx, bz = x0 - 3.0, z0 + 7.0
+    by = float(ground_h(bx, bz))
+    m.box((bx - 1.0, by + 0.42, bz - 0.2), (bx + 1.0, by + 0.5, bz + 0.2), "Timber")
+    for sx in (-0.8, 0.8):
+        m.box((bx + sx - 0.05, by, bz - 0.15), (bx + sx + 0.05, by + 0.42, bz + 0.15), "Timber", skip=("bottom",))
+    return m, (0.0, 0.0, 0.0)
+
+
 SCENERY_BUILDERS = {
     "SM_Env_Ground": build_ground,
     "SM_Env_Ridges": build_ridges,
@@ -507,6 +571,8 @@ SCENERY_BUILDERS = {
     "SM_Env_Trees": build_trees,
     "SM_Env_Rocks": build_rocks,
     "SM_Env_Pennants": build_pennants,
+    "SM_Env_Gate": build_gate,
+    "SM_Env_Yard": build_yard,
 }
 LIGHTMAP = {}          # scenery is Movable: no lightmaps (lit by the stationary sun + the sky light / volumetric lightmap)
 

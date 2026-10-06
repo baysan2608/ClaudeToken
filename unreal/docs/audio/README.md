@@ -14,6 +14,10 @@ phone-safe: nothing below ~70 Hz), a data-driven event table, and the `FourfoldA
 | `Source/FourfoldAudio/Private/FourfoldAudioSubsystem.cpp` | the Unreal glue (executes the logic's decisions) |
 | `Content/Python/fourfold/audio/__init__.py` | `build_all(force)`: WAV -> `/Game/Fourfold/Audio/{SFX,Ambience}/S_<name>`, loop flags, optional sound classes |
 
+Spectrogram sheets of the main families (looked at, per sound: time x 0-16 kHz): `docs/audio/spectrograms/sheet_<family>.jpg`
+(swing, kick, stomp, step, impact, charge, ui, ko, round, amb, lightning, thunder, water, fire, stone); regenerate with
+`validate_audio.py --sheet OUTDIR prefix...`.  Validation: 233 files, `RESULT: PASS` (peak -3 dBFS, no DC / clipping, loop seams < 0.005, fades).
+
 ## Run / test here
 ```bash
 PY=/home/user/tools/bpyenv/bin/python            # numpy + scipy + matplotlib
@@ -42,6 +46,12 @@ UI / ambience). Debug: console `ff.audio.dump`; log category `LogFourfoldAudio`.
 * Game: `OnUiCue` names `ui_tap ui_select ui_back ui_open ui_close ui_toggle ui_ring_open ui_ring_pick ui_error ui_pause ui_resume ui_toast`
   are all mapped (`manifest.ui`). `UFourfoldAudioSubsystem::PlaySoundByName / PlayUiCue` are available for direct calls.
 * The module only needs `Core CoreUObject Engine FourfoldCore Fourfold`; no plugin, no asset except the imported waves.
+
+## Project configuration (Config/, reviewed in docs/world/README.md)
+iOS audio mixer: `AudioSampleRate=48000` (same as the sound set, no resampling), `AudioCallbackBufferFrameSize=512` (~10.7 ms), `AudioNumBuffersToEnqueue=2`,
+`AudioMaxChannels=32`; the global audio quality level also caps at 32 channels (Project Settings > Audio > Quality Levels).  The module's own caps
+(28 one-shots + 14 loop voices in the manifest `mix`) sit around that: if `ff.audio.dump` shows many `dropped` plays, raise the quality-level
+MaxChannels or lower `mix.global_voices`.  Background audio is off; a pause menu keeps UI / ambience playing (`SetUISound`).
 
 ## Known gaps
 * No MetaSounds / submix effects (reverb): the courtyard "air" is baked into the beds. A reverb submix can be added later.
