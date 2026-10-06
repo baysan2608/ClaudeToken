@@ -1,0 +1,18 @@
+# Unreal generated
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Build/
+*.xcworkspace
+*.xcodeproj
+.vs/
+*.sln
+# Plugins build output
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+# CMake builds of the core
+CoreTests/build*/
+# Python caches
+__pycache__/
+*.pyc

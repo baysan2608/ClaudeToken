@@ -1,0 +1,49 @@
+// Force-included (-include) in the "poison" CMake build of FourfoldCore: every identifier that is a MACRO in Unreal
+// is defined here as an invalid token sequence, so any use of it as a name in ff code fails to compile HERE instead
+// of breaking the owner's Unreal build on the Mac. Do not include from real code.
+#pragma once
+#define check(...) @UE_MACRO_check
+#define checkf(...) @UE_MACRO_checkf
+#define checkSlow(...) @UE_MACRO_checkSlow
+#define verify(...) @UE_MACRO_verify
+#define verifyf(...) @UE_MACRO_verifyf
+#define ensure(...) @UE_MACRO_ensure
+#define ensureMsgf(...) @UE_MACRO_ensureMsgf
+#define ensureAlways(...) @UE_MACRO_ensureAlways
+#define TEXT(...) @UE_MACRO_TEXT
+#define PI @UE_MACRO_PI
+#define HALF_PI @UE_MACRO_HALF_PI
+#define INV_PI @UE_MACRO_INV_PI
+#define UE_PI @UE_MACRO_UE_PI
+#define SMALL_NUMBER @UE_MACRO_SMALL_NUMBER
+#define KINDA_SMALL_NUMBER @UE_MACRO_KINDA_SMALL_NUMBER
+#define BIG_NUMBER @UE_MACRO_BIG_NUMBER
+#define DELTA @UE_MACRO_DELTA
+#define MAX_FLT @UE_MACRO_MAX_FLT
+#define INDEX_NONE @UE_MACRO_INDEX_NONE
+#define IN @UE_MACRO_IN
+#define OUT @UE_MACRO_OUT
+#define OPTIONAL @UE_MACRO_OPTIONAL
+#define CONSTEXPR @UE_MACRO_CONSTEXPR
+#define FORCEINLINE @UE_MACRO_FORCEINLINE
+#define FORCENOINLINE @UE_MACRO_FORCENOINLINE
+#define RESTRICT @UE_MACRO_RESTRICT
+#define ABSTRACT @UE_MACRO_ABSTRACT
+#define LIKELY(...) @UE_MACRO_LIKELY
+#define UNLIKELY(...) @UE_MACRO_UNLIKELY
+#define DEPRECATED(...) @UE_MACRO_DEPRECATED
+#define TRUE @UE_MACRO_TRUE
+#define FALSE @UE_MACRO_FALSE
+#define nil @UE_MACRO_nil
+#define Nil @UE_MACRO_Nil
+#define YES @UE_MACRO_YES
+#define NO @UE_MACRO_NO
+#define int8 @UE_TYPEDEF_int8
+#define int16 @UE_TYPEDEF_int16
+#define int32 @UE_TYPEDEF_int32
+#define int64 @UE_TYPEDEF_int64
+#define uint8 @UE_TYPEDEF_uint8
+#define uint16 @UE_TYPEDEF_uint16
+#define uint32 @UE_TYPEDEF_uint32
+#define uint64 @UE_TYPEDEF_uint64
+#define TCHAR @UE_TYPEDEF_TCHAR

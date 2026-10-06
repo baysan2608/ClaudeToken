@@ -1,0 +1,446 @@
+{
+  "schema": "fourfold.sim/1",
+  "sim": {
+    "HZ": 60,
+    "DT": 0.016666666666666666,
+    "GRAVITY": 18.0,
+    "Element": {
+      "EARTH": 0,
+      "WATER": 1,
+      "FIRE": 2,
+      "AIR": 3
+    },
+    "ELEMENT_NAMES": ["Earth", "Water", "Fire", "Air"],
+    "SUB_NAMES": [
+      ["Stone", "Metal", "Sand", "Magma"],
+      ["Water", "Ice", "Mist", "Plant"],
+      ["Flame", "Blue", "Lightning", "Combustion"],
+      ["Gust", "Vortex", "Vacuum", "Sound"]
+    ],
+    "Gesture": {
+      "NONE": 0,
+      "UP": 1,
+      "DOWN": 2,
+      "SIDE": 3
+    },
+    "SLOTS": ["strike", "thrust", "ground", "sweep", "guard", "push", "sink", "tech", "evade", "evade_hold"],
+    "ATTACK_SLOTS": ["strike", "thrust", "ground", "sweep"],
+    "Mat": {
+      "STONE": 0,
+      "WATER": 1,
+      "STEAM": 2,
+      "METAL": 3,
+      "SAND": 4,
+      "GLASS": 5,
+      "PLANT": 6,
+      "FIRE": 7,
+      "AIR": 8
+    },
+    "MAT_NAMES": ["stone", "water", "steam", "metal", "sand", "glass", "plant", "fire", "air"],
+    "Phase": {
+      "SOLID": 0,
+      "SOFTENED": 1,
+      "MOLTEN": 2,
+      "LIQUID": 3,
+      "FROZEN": 4,
+      "GAS": 5
+    },
+    "PHASE_NAMES": ["solid", "softened", "molten", "liquid", "frozen", "gas"],
+    "Form": {
+      "CHUNK": 0,
+      "BLOB": 1,
+      "WAVE": 2,
+      "WALL": 3,
+      "STREAM": 4,
+      "SHARD": 5,
+      "PUDDLE": 6,
+      "POOL": 7,
+      "CLOUD": 8,
+      "ZONE": 9
+    },
+    "FORM_NAMES": ["chunk", "blob", "wave", "wall", "stream", "shard", "puddle", "pool", "cloud", "zone"],
+    "AMBIENT_C": 20.0,
+    "STONE_C": 0.01,
+    "STONE_MELT_C": 1000.0,
+    "STONE_LATENT": 10.0,
+    "WATER_C": 0.05,
+    "WATER_FREEZE_C": 0.0,
+    "WATER_BOIL_C": 100.0,
+    "WATER_LATENT_FUSION": 3.3,
+    "WATER_LATENT_VAPOR": 22.0,
+    "SOFTEN_UP": 0.15,
+    "MOLTEN_UP": 0.8,
+    "MOLTEN_DOWN": 0.55,
+    "SOLID_DOWN": 0.05,
+    "ICE_DOWN": 0.1,
+    "ICE_UP": 0.6,
+    "AMBIENT_LOSS": 0.6,
+    "HOLD_UPKEEP_FOCUS": 3.0,
+    "QUENCH_RATE": 1400.0,
+    "HOT_ROCK_C": 300.0,
+    "FOCUS_MAX": 100.0,
+    "FOCUS_REGEN": 14.0,
+    "FOCUS_REGEN_DELAY": 0.7,
+    "HU_PER_FOCUS": 10.0,
+    "DRAW_HU_PER_FOCUS": 25.0,
+    "RESERVE_MAX": 500.0,
+    "RESERVE_DISSIPATE": 12.0,
+    "BALANCE_MAX": 100.0,
+    "BALANCE_REGEN": 22.0,
+    "BALANCE_REGEN_DELAY": 1.0,
+    "HEALTH_MAX": 100.0,
+    "MAX_BODIES": 32,
+    "MAX_PUDDLES": 8,
+    "MAX_REMNANTS": 6,
+    "REMNANT_LIFETIME": 45.0,
+    "STONE_SHOT_MASS": 20.0,
+    "STONE_HEAVY_MASS": 45.0,
+    "WALL_MASS": 120.0,
+    "ACTOR_RADIUS": 0.35,
+    "ACTOR_HEIGHT": 1.75,
+    "ACTOR_MASS": 70.0,
+    "STEP_HEIGHT": 0.4,
+    "WAVE_STEP": 0.3
+  },
+  "materials": {
+    "PROPS": {
+      "$map": [
+        [
+          0,
+          {
+            "c": 0.01,
+            "melt": 1000.0,
+            "latent": 10.0,
+            "max_temp": 1350.0,
+            "hardness": 0.25,
+            "conductive": false,
+            "brittle": false,
+            "porous": false,
+            "flammable": false,
+            "magnetic": false,
+            "insulator": false
+          }
+        ],
+        [
+          1,
+          {
+            "c": 0.05,
+            "melt": 0.0,
+            "latent": 3.3,
+            "max_temp": 100.0,
+            "hardness": 1.0,
+            "hardness_frozen": 0.44,
+            "conductive": true,
+            "brittle": false,
+            "porous": false,
+            "flammable": false,
+            "magnetic": false,
+            "insulator": false
+          }
+        ],
+        [
+          2,
+          {
+            "c": 0.0,
+            "melt": 0.0,
+            "latent": 0.0,
+            "max_temp": 100.0,
+            "hardness": 0.0,
+            "conductive": false,
+            "brittle": false,
+            "porous": false,
+            "flammable": false,
+            "magnetic": false,
+            "insulator": false
+          }
+        ],
+        [
+          3,
+          {
+            "c": 0.02,
+            "melt": 1200.0,
+            "latent": 8.0,
+            "max_temp": 1600.0,
+            "hardness": 3.3,
+            "conductive": true,
+            "brittle": false,
+            "porous": false,
+            "flammable": false,
+            "magnetic": true,
+            "insulator": false
+          }
+        ],
+        [
+          4,
+          {
+            "c": 0.01,
+            "melt": 1200.0,
+            "latent": 10.0,
+            "max_temp": 1600.0,
+            "hardness": 0.25,
+            "conductive": false,
+            "brittle": false,
+            "porous": true,
+            "flammable": false,
+            "magnetic": false,
+            "insulator": true
+          }
+        ],
+        [
+          5,
+          {
+            "c": 0.01,
+            "melt": 1200.0,
+            "latent": 10.0,
+            "max_temp": 1600.0,
+            "hardness": 0.3,
+            "conductive": false,
+            "brittle": true,
+            "porous": false,
+            "flammable": false,
+            "magnetic": false,
+            "insulator": true
+          }
+        ],
+        [
+          6,
+          {
+            "c": 0.04,
+            "melt": 1000000000.0,
+            "latent": 0.0,
+            "max_temp": 600.0,
+            "hardness": 0.4,
+            "ignite": 250.0,
+            "burn_rate": 1.5,
+            "conductive": false,
+            "brittle": false,
+            "porous": true,
+            "flammable": true,
+            "magnetic": false,
+            "insulator": false
+          }
+        ],
+        [
+          7,
+          {
+            "c": 0.0,
+            "melt": 0.0,
+            "latent": 0.0,
+            "max_temp": 0.0,
+            "hardness": 0.0,
+            "fire_decay": 0.35,
+            "conductive": false,
+            "brittle": false,
+            "porous": false,
+            "flammable": false,
+            "magnetic": false,
+            "insulator": false
+          }
+        ],
+        [
+          8,
+          {
+            "c": 0.0,
+            "melt": 0.0,
+            "latent": 0.0,
+            "max_temp": 0.0,
+            "hardness": 0.0,
+            "conductive": false,
+            "brittle": false,
+            "porous": false,
+            "flammable": false,
+            "magnetic": false,
+            "insulator": false
+          }
+        ]
+      ]
+    },
+    "TAG_HARDNESS": {
+      "obsidian": 0.33,
+      "glass": 0.3,
+      "ice": 0.44,
+      "vine": 0.4,
+      "mud": 0.25,
+      "plate": 3.3,
+      "sand": 0.25
+    },
+    "BRITTLE_TAGS": ["obsidian", "glass", "ice", "crust"],
+    "CONDUCTIVE_TAGS": ["caltrops", "rod", "plate"],
+    "INSULATING_TAGS": ["vacuum", "vacuum_well", "null_bubble", "ice_floor", "glass", "ice", "sand"],
+    "FOG_CONDUCTION": 0.6
+  },
+  "combat_world": {
+    "GRIP_MARGIN": 0.12,
+    "RESIDUAL_START": 0.6,
+    "RESIDUAL_DECAY": 1.7,
+    "TURN_RATE": 14.0,
+    "RUN_SPEED": 5.5,
+    "RUN_MIN": 4.0,
+    "WALK_MAX": 1.8,
+    "RUN_STICK": 0.62,
+    "ACCEL": 34.0,
+    "DECEL": 42.0,
+    "WAVE_TURN_RATE": 32.0,
+    "MORPH_WINDOW": 0.12,
+    "EVADE_HOLD_TIME": 0.2,
+    "WEAVE_COST": 6.0,
+    "COUNTER_CANCEL_COST": 8.0,
+    "COUNTER_CANCEL_WINDOW": 0.5,
+    "CHAIN_MAX": 3,
+    "MAT_OF_KIND": {
+      "stone": "stone",
+      "water": "water",
+      "lava": "magma",
+      "fire": "flame",
+      "air": "wind",
+      "lightning": "lightning",
+      "blast": "blast",
+      "sound": "sound",
+      "ice": "ice",
+      "sand": "sand",
+      "steam": "steam",
+      "vacuum": "vacuum",
+      "metal": "metal",
+      "plant": "plant",
+      "blue": "blue",
+      "frost": "ice"
+    },
+    "WALL_THROUGH": ["weaken", "slow", "pass", "overwhelm", "bend"]
+  },
+  "arena_lab": {
+    "half_size": 16.0,
+    "solids": [
+      {
+        "min": {
+          "$v3": [-17.0, 0.0, -17.0]
+        },
+        "max": {
+          "$v3": [17.0, 3.5, -16.0]
+        },
+        "kind": "wall",
+        "surface": "stone",
+        "name": "north_wall"
+      },
+      {
+        "min": {
+          "$v3": [-17.0, 0.0, 16.0]
+        },
+        "max": {
+          "$v3": [17.0, 3.5, 17.0]
+        },
+        "kind": "wall",
+        "surface": "stone",
+        "name": "south_wall"
+      },
+      {
+        "min": {
+          "$v3": [-17.0, 0.0, -16.0]
+        },
+        "max": {
+          "$v3": [-16.0, 3.5, 16.0]
+        },
+        "kind": "wall",
+        "surface": "stone",
+        "name": "west_wall"
+      },
+      {
+        "min": {
+          "$v3": [16.0, 0.0, -16.0]
+        },
+        "max": {
+          "$v3": [17.0, 3.5, 16.0]
+        },
+        "kind": "wall",
+        "surface": "stone",
+        "name": "east_wall"
+      },
+      {
+        "min": {
+          "$v3": [-5.0, 0.0, -1.25]
+        },
+        "max": {
+          "$v3": [-2.5, 1.7, -0.75]
+        },
+        "kind": "wall",
+        "surface": "stone",
+        "name": "cover_wall"
+      },
+      {
+        "min": {
+          "$v3": [-4.0, 0.0, 10.0]
+        },
+        "max": {
+          "$v3": [4.0, 0.6, 14.0]
+        },
+        "kind": "ledge",
+        "surface": "stone",
+        "name": "terrace"
+      },
+      {
+        "min": {
+          "$v3": [9.0, 0.0, 9.0]
+        },
+        "max": {
+          "$v3": [12.0, 0.35, 12.0]
+        },
+        "kind": "ledge",
+        "surface": "stone",
+        "name": "step_block"
+      },
+      {
+        "min": {
+          "$v3": [-15.0, 0.0, -15.0]
+        },
+        "max": {
+          "$v3": [-10.5, 1.8, -10.5]
+        },
+        "kind": "ledge",
+        "surface": "stone",
+        "name": "high_ledge"
+      },
+      {
+        "min": {
+          "$v3": [12.5, 0.0, -13.5]
+        },
+        "max": {
+          "$v3": [13.5, 3.2, -12.5]
+        },
+        "kind": "pillar",
+        "surface": "stone",
+        "name": "pillar_ne"
+      },
+      {
+        "min": {
+          "$v3": [-13.5, 0.0, 12.5]
+        },
+        "max": {
+          "$v3": [-12.5, 3.2, 13.5]
+        },
+        "kind": "pillar",
+        "surface": "stone",
+        "name": "pillar_sw"
+      }
+    ],
+    "pool_min": {
+      "$v2": [7.0, -5.0]
+    },
+    "pool_max": {
+      "$v2": [13.0, 3.0]
+    },
+    "pool_floor": -0.3,
+    "pool_level": -0.05,
+    "metal_min": {
+      "$v2": [-12.0, -4.0]
+    },
+    "metal_max": {
+      "$v2": [-6.0, 2.0]
+    },
+    "metal_top": 0.02,
+    "player_spawn": {
+      "$v3": [0.0, 0.0, 7.0]
+    },
+    "opponent_spawn": {
+      "$v3": [0.0, 0.0, -7.0]
+    }
+  }
+}

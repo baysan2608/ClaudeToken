@@ -1,0 +1,317 @@
+{
+  "schema": "fourfold.hooks/1",
+  "body_ticks": {
+    "fuse": {
+      "$fn": "VerbVolume.fuse_tick"
+    },
+    "spike_line": {
+      "$fn": "EarthStone.spike_tick"
+    },
+    "crag": {
+      "$fn": "EarthStone.crag_tick"
+    },
+    "disc": {
+      "$fn": "EarthMetal.metal_tick"
+    },
+    "lance": {
+      "$fn": "EarthMetal.metal_tick"
+    },
+    "plate": {
+      "$fn": "EarthMetal.metal_tick"
+    },
+    "rod": {
+      "$fn": "EarthMetal.metal_tick"
+    },
+    "caltrops": {
+      "$fn": "EarthMetal.metal_tick"
+    },
+    "sand_surge": {
+      "$fn": "EarthSand.surge_tick"
+    },
+    "slug": {
+      "$fn": "EarthSand.slug_tick"
+    },
+    "mud": {
+      "$fn": "EarthSand.mud_tick"
+    },
+    "ice": {
+      "$fn": "WaterIce.wall_tick"
+    },
+    "ridge": {
+      "$fn": "WaterIce.wall_tick"
+    },
+    "rime": {
+      "$fn": "WaterIce.rime_tick"
+    },
+    "water_wave": {
+      "$fn": "WaterWater.wave_tick"
+    },
+    "geyser": {
+      "$fn": "WaterMist.geyser_tick"
+    },
+    "vine": {
+      "$fn": "WaterPlant.vine_tick"
+    },
+    "roots": {
+      "$fn": "WaterPlant.roots_tick"
+    },
+    "fireball": {
+      "$fn": "FireFlame.fireball_tick"
+    },
+    "comet": {
+      "$fn": "FireFlame.fireball_tick"
+    },
+    "fire_line": {
+      "$fn": "FireFlame.line_tick"
+    },
+    "magma_rift": {
+      "$fn": "FireBlue.rift_tick"
+    },
+    "ground_current": {
+      "$fn": "FireLightning.current_tick"
+    },
+    "ember": {
+      "$fn": "FireCombustion.ember_tick"
+    },
+    "crescent": {
+      "$fn": "AirGust.crescent_tick"
+    },
+    "twister": {
+      "$fn": "AirVortex.twister_tick"
+    },
+    "vacuum_well": {
+      "$fn": "AirVacuum.well_tick"
+    },
+    "tremor": {
+      "$fn": "AirSound.tremor_tick"
+    }
+  },
+  "zone_effects": {
+    "sand_cloud": {
+      "$fn": "EarthSand.cloud_effect"
+    },
+    "sandstorm": {
+      "$fn": "EarthSand.cloud_effect"
+    },
+    "quicksand": {
+      "$fn": "EarthSand.quicksand_effect"
+    },
+    "lava_pool": {
+      "$fn": "EarthMagma.pool_effect"
+    },
+    "melt_pit": {
+      "$fn": "EarthMagma.pit_effect"
+    },
+    "fog": {
+      "$fn": "WaterRules.fog_zone"
+    },
+    "mist": {
+      "$fn": "WaterRules.fog_zone"
+    },
+    "ice_floor": {
+      "$fn": "WaterRules.ice_floor_zone"
+    },
+    "steam": {
+      "$fn": "WaterRules.steam_zone"
+    },
+    "steam_screen": {
+      "$fn": "WaterRules.steam_zone"
+    },
+    "slick": {
+      "$fn": "WaterWater.slick_zone"
+    },
+    "fire_field": {
+      "$fn": "FireUtil.field_tick"
+    },
+    "kiln": {
+      "$fn": "FireBlue.kiln_tick"
+    },
+    "static_field": {
+      "$fn": "FireLightning.static_field_tick"
+    },
+    "fuse": {
+      "$fn": "FireCombustion.fuse_zone_tick"
+    },
+    "tornado": {
+      "$fn": "AirVortex.tornado_effect"
+    },
+    "vortex_wall": {
+      "$fn": "AirVortex.wall_effect"
+    },
+    "eddy": {
+      "$fn": "AirVortex.eddy_effect"
+    },
+    "vacuum_well": {
+      "$fn": "AirVacuum.well_effect"
+    },
+    "null_bubble": {
+      "$fn": "AirVacuum.bubble_effect"
+    },
+    "mine": {
+      "$fn": "AirVacuum.mine_effect"
+    },
+    "flight_field": {
+      "$fn": "AirSound.flight_effect"
+    }
+  },
+  "tech_previews": {
+    "0/1": {
+      "$fn": "EarthMetal.preview"
+    },
+    "0/2": {
+      "$fn": "EarthSand.preview"
+    },
+    "0/3": {
+      "$fn": "EarthMagma.preview"
+    },
+    "1/0": {
+      "$fn": "WaterWater.tech_preview"
+    },
+    "2/1": {
+      "$fn": "FireBlue.smelter_preview"
+    },
+    "2/2": {
+      "$fn": "FireLightning.hand_preview"
+    },
+    "2/3": {
+      "$fn": "FireCombustion.fuse_preview"
+    },
+    "3/0": {
+      "$fn": "AirGust.tech_preview"
+    },
+    "3/1": {
+      "$fn": "AirVortex.tech_preview"
+    },
+    "3/2": {
+      "$fn": "AirVacuum.tech_preview"
+    },
+    "3/3": {
+      "$fn": "AirSound.tech_preview"
+    }
+  },
+  "status_specs": {
+    "wet": {
+      "wet": true
+    },
+    "burning": {
+      "dps": 3.0
+    },
+    "chilled": {
+      "speed": 0.7,
+      "recovery": 1.15
+    },
+    "frozen": {
+      "speed": 0.0,
+      "rooted": true,
+      "recovery": 1.3
+    },
+    "rooted": {
+      "speed": 0.0,
+      "rooted": true
+    },
+    "slowed": {
+      "speed": 0.6
+    },
+    "muddy": {
+      "speed": 0.6,
+      "friction": 1.3
+    },
+    "slick": {
+      "friction": 0.12
+    },
+    "blinded": {
+      "no_lock": true
+    },
+    "concealed": {
+      "hidden": true
+    },
+    "deafened": {
+      "tech_cost": 1.5
+    },
+    "shocked": {
+      "speed": 0.8,
+      "recovery": 1.2
+    },
+    "anchored": {
+      "immune": ["knockback", "pull", "lift"]
+    },
+    "armored": {
+      "armor": 0.4
+    },
+    "levitating": {
+      "immune": ["ground"]
+    },
+    "charged": {
+      "speed": 1.3,
+      "recovery": 0.8
+    },
+    "mired": {
+      "speed": 0.3
+    },
+    "lava_wade": {
+      "immune": ["burn"],
+      "speed": 0.9
+    },
+    "fogbound": {
+      "hidden": true,
+      "ai_perception": 0.25
+    },
+    "fogwalk": {
+      "hidden": true,
+      "ai_perception": 0.3
+    },
+    "scalded": {
+      "dps": 2.5
+    },
+    "surfing": {},
+    "skating": {
+      "friction": 0.35
+    },
+    "icegrip": {
+      "friction": 8.0
+    },
+    "entangled": {
+      "speed": 0.45
+    },
+    "hooked": {
+      "speed": 0.8
+    },
+    "veiled": {
+      "hidden": true,
+      "ai_perception": 0.25
+    },
+    "grounding": {
+      "immune": ["conduct"]
+    },
+    "overcharged": {
+      "speed": 1.3,
+      "recovery": 0.8
+    },
+    "kiln_burn": {
+      "dps": 6.0
+    },
+    "dazed": {
+      "speed": 0.35,
+      "no_lock": false
+    },
+    "revealed": {},
+    "flight": {
+      "speed": 1.1,
+      "immune": ["ground"]
+    },
+    "windborne": {
+      "speed": 0.7,
+      "immune": ["ground"]
+    },
+    "slipstream": {
+      "speed": 1.3
+    },
+    "sandblasted": {
+      "no_lock": true,
+      "dps": 2.0
+    },
+    "storm_tossed": {
+      "speed": 0.8
+    }
+  }
+}

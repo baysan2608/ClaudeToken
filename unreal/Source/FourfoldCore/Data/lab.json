@@ -1,0 +1,3240 @@
+{
+  "schema": "fourfold.lab/1",
+  "spawn_groups": ["Earth", "Water", "Fire", "Air", "Volumes"],
+  "spawn_entries": [
+    {
+      "id": "stone_20",
+      "label": "Stone 20 kg",
+      "group": "Earth",
+      "build": "body",
+      "mat": "stone",
+      "form": "chunk",
+      "tag": "",
+      "source": "ground",
+      "damage": 12.0,
+      "balance": 24.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [20.0, 5.0, 300.0],
+      "speed": [15.0, 3.0, 30.0],
+      "param_specs": {
+        "mass": [20.0, 5.0, 300.0],
+        "speed": [15.0, 3.0, 30.0]
+      },
+      "defaults": {
+        "mass": 20.0,
+        "speed": 15.0
+      },
+      "describe_default": "20 kg, 15 m/s"
+    },
+    {
+      "id": "stone_45",
+      "label": "Stone 45 kg",
+      "group": "Earth",
+      "build": "body",
+      "mat": "stone",
+      "form": "chunk",
+      "tag": "",
+      "source": "ground",
+      "damage": 18.0,
+      "balance": 36.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [45.0, 5.0, 300.0],
+      "speed": [13.0, 3.0, 30.0],
+      "param_specs": {
+        "mass": [45.0, 5.0, 300.0],
+        "speed": [13.0, 3.0, 30.0]
+      },
+      "defaults": {
+        "mass": 45.0,
+        "speed": 13.0
+      },
+      "describe_default": "45 kg, 13 m/s"
+    },
+    {
+      "id": "stone_80",
+      "label": "Stone 80 kg",
+      "group": "Earth",
+      "build": "body",
+      "mat": "stone",
+      "form": "chunk",
+      "tag": "",
+      "source": "ground",
+      "damage": 24.0,
+      "balance": 48.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [80.0, 5.0, 300.0],
+      "speed": [11.0, 3.0, 30.0],
+      "param_specs": {
+        "mass": [80.0, 5.0, 300.0],
+        "speed": [11.0, 3.0, 30.0]
+      },
+      "defaults": {
+        "mass": 80.0,
+        "speed": 11.0
+      },
+      "describe_default": "80 kg, 11 m/s"
+    },
+    {
+      "id": "stone_200",
+      "label": "Stone 200 kg",
+      "group": "Earth",
+      "build": "body",
+      "mat": "stone",
+      "form": "chunk",
+      "tag": "",
+      "source": "ground",
+      "damage": 37.94733192202055,
+      "balance": 75.8946638440411,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [200.0, 5.0, 300.0],
+      "speed": [9.0, 3.0, 30.0],
+      "param_specs": {
+        "mass": [200.0, 5.0, 300.0],
+        "speed": [9.0, 3.0, 30.0]
+      },
+      "defaults": {
+        "mass": 200.0,
+        "speed": 9.0
+      },
+      "describe_default": "200 kg, 9 m/s"
+    },
+    {
+      "id": "hot_rock",
+      "label": "Hot rock",
+      "group": "Earth",
+      "build": "body",
+      "mat": "stone",
+      "form": "chunk",
+      "tag": "",
+      "source": "ground",
+      "damage": 14.0,
+      "balance": 20.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [20.0, 5.0, 120.0],
+      "speed": [14.0, 3.0, 30.0],
+      "temp": [450.0, 100.0, 900.0],
+      "param_specs": {
+        "mass": [20.0, 5.0, 120.0],
+        "speed": [14.0, 3.0, 30.0],
+        "temp": [450.0, 100.0, 900.0]
+      },
+      "defaults": {
+        "mass": 20.0,
+        "speed": 14.0,
+        "temp": 450.0
+      },
+      "describe_default": "20 kg, 14 m/s, 450 °C"
+    },
+    {
+      "id": "magma_blob",
+      "label": "Magma blob",
+      "group": "Earth",
+      "build": "body",
+      "mat": "stone",
+      "form": "blob",
+      "tag": "",
+      "source": "ground",
+      "damage": 16.0,
+      "balance": 20.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [25.0, 5.0, 120.0],
+      "speed": [13.0, 3.0, 30.0],
+      "temp": [1000.0, 1000.0, 1500.0],
+      "molten": true,
+      "param_specs": {
+        "mass": [25.0, 5.0, 120.0],
+        "speed": [13.0, 3.0, 30.0],
+        "temp": [1000.0, 1000.0, 1500.0]
+      },
+      "defaults": {
+        "mass": 25.0,
+        "speed": 13.0,
+        "temp": 1000.0
+      },
+      "describe_default": "25 kg, 13 m/s, 1000 °C"
+    },
+    {
+      "id": "lava_wave",
+      "label": "Lava wave",
+      "group": "Earth",
+      "build": "body",
+      "mat": "stone",
+      "form": "blob",
+      "tag": "",
+      "source": "ground",
+      "damage": 18.0,
+      "balance": 55.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [25.0, 8.0, 80.0],
+      "speed": [7.5, 3.0, 14.0],
+      "temp": [1000.0, 1000.0, 1500.0],
+      "molten": true,
+      "wave": true,
+      "param_specs": {
+        "mass": [25.0, 8.0, 80.0],
+        "speed": [7.5, 3.0, 14.0],
+        "temp": [1000.0, 1000.0, 1500.0]
+      },
+      "defaults": {
+        "mass": 25.0,
+        "speed": 7.5,
+        "temp": 1000.0
+      },
+      "describe_default": "25 kg, 8 m/s, 1000 °C"
+    },
+    {
+      "id": "metal_disc",
+      "label": "Metal disc",
+      "group": "Earth",
+      "build": "verb",
+      "move": "razor_disc",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [2.0, 0.5, 8.0],
+        "speed": [24.0, 9.600000000000001, 48.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 2.0,
+        "speed": 24.0
+      },
+      "describe_default": "2 kg, 24 m/s"
+    },
+    {
+      "id": "metal_lance",
+      "label": "Metal lance",
+      "group": "Earth",
+      "build": "verb",
+      "move": "iron_lance",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [6.0, 1.5, 24.0],
+        "speed": [30.0, 12.0, 60.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 6.0,
+        "speed": 30.0
+      },
+      "describe_default": "6 kg, 30 m/s"
+    },
+    {
+      "id": "metal_plate",
+      "label": "Metal plate",
+      "group": "Earth",
+      "build": "body",
+      "mat": "metal",
+      "form": "chunk",
+      "tag": "plate",
+      "source": "metal",
+      "damage": 12.0,
+      "balance": 20.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [12.0, 3.0, 40.0],
+      "speed": [20.0, 5.0, 30.0],
+      "param_specs": {
+        "mass": [12.0, 3.0, 40.0],
+        "speed": [20.0, 5.0, 30.0]
+      },
+      "defaults": {
+        "mass": 12.0,
+        "speed": 20.0
+      },
+      "describe_default": "12 kg, 20 m/s"
+    },
+    {
+      "id": "sand_slug",
+      "label": "Sand slug",
+      "group": "Earth",
+      "build": "verb",
+      "move": "grit_shot",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [5.0, 1.25, 20.0],
+        "speed": [22.0, 8.8, 44.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 5.0,
+        "speed": 22.0
+      },
+      "describe_default": "5 kg, 22 m/s"
+    },
+    {
+      "id": "sand_cloud",
+      "label": "Sand cloud",
+      "group": "Earth",
+      "build": "verb",
+      "move": "veil_of_grit",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [8.0, 2.0, 32.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 8.0
+      },
+      "describe_default": "8 kg"
+    },
+    {
+      "id": "sand_surge",
+      "label": "Sand surge",
+      "group": "Earth",
+      "build": "verb",
+      "move": "sand_surge",
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [30.0, 7.5, 120.0],
+        "speed": [9.0, 3.6, 18.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 30.0,
+        "speed": 9.0
+      },
+      "describe_default": "30 kg, 9 m/s"
+    },
+    {
+      "id": "spike_line",
+      "label": "Rising fangs",
+      "group": "Earth",
+      "build": "verb",
+      "move": "rising_fangs",
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [24.0, 6.0, 96.0],
+        "speed": [14.0, 5.6000000000000005, 28.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 24.0,
+        "speed": 14.0
+      },
+      "describe_default": "24 kg, 14 m/s"
+    },
+    {
+      "id": "water_blob",
+      "label": "Water blob",
+      "group": "Water",
+      "build": "body",
+      "mat": "water",
+      "form": "blob",
+      "tag": "",
+      "source": "moisture",
+      "damage": 8.0,
+      "balance": 20.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [8.0, 2.0, 60.0],
+      "speed": [14.0, 3.0, 30.0],
+      "temp": [20.0, 1.0, 95.0],
+      "param_specs": {
+        "mass": [8.0, 2.0, 60.0],
+        "speed": [14.0, 3.0, 30.0],
+        "temp": [20.0, 1.0, 95.0]
+      },
+      "defaults": {
+        "mass": 8.0,
+        "speed": 14.0,
+        "temp": 20.0
+      },
+      "describe_default": "8 kg, 14 m/s, 20 °C"
+    },
+    {
+      "id": "water_stream",
+      "label": "Water bullet",
+      "group": "Water",
+      "build": "verb",
+      "move": "water_bullet",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [1.5, 0.375, 6.0],
+        "speed": [30.0, 12.0, 60.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 1.5,
+        "speed": 30.0
+      },
+      "describe_default": "2 kg, 30 m/s"
+    },
+    {
+      "id": "water_wave",
+      "label": "Water wave",
+      "group": "Water",
+      "build": "verb",
+      "move": "tidal_rush",
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [6.0, 1.5, 24.0],
+        "speed": [9.0, 3.6, 18.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 6.0,
+        "speed": 9.0
+      },
+      "describe_default": "6 kg, 9 m/s"
+    },
+    {
+      "id": "water_puddle",
+      "label": "Puddle",
+      "group": "Water",
+      "build": "body",
+      "mat": "water",
+      "form": "puddle",
+      "tag": "",
+      "source": "moisture",
+      "damage": 10.0,
+      "balance": 20.0,
+      "inert_only": true,
+      "launch_only": false,
+      "mass": [10.0, 2.0, 40.0],
+      "param_specs": {
+        "mass": [10.0, 2.0, 40.0]
+      },
+      "defaults": {
+        "mass": 10.0
+      },
+      "describe_default": "10 kg"
+    },
+    {
+      "id": "ice_shard",
+      "label": "Ice shard",
+      "group": "Water",
+      "build": "verb",
+      "move": "frost_shard",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [1.0, 0.25, 4.0],
+        "speed": [26.0, 10.4, 52.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 1.0,
+        "speed": 26.0
+      },
+      "describe_default": "1 kg, 26 m/s"
+    },
+    {
+      "id": "ice_wall",
+      "label": "Ice wall",
+      "group": "Water",
+      "build": "body",
+      "mat": "water",
+      "form": "wall",
+      "tag": "ice",
+      "source": "moisture",
+      "damage": 10.0,
+      "balance": 20.0,
+      "inert_only": true,
+      "launch_only": false,
+      "frozen": true,
+      "mass": [70.0, 20.0, 160.0],
+      "param_specs": {
+        "mass": [70.0, 20.0, 160.0]
+      },
+      "defaults": {
+        "mass": 70.0
+      },
+      "describe_default": "70 kg"
+    },
+    {
+      "id": "mist",
+      "label": "Mist bank",
+      "group": "Water",
+      "build": "verb",
+      "move": "creeping_fog",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3]
+      },
+      "defaults": {
+        "tier": 0
+      },
+      "describe_default": ""
+    },
+    {
+      "id": "steam",
+      "label": "Steam cloud",
+      "group": "Water",
+      "build": "body",
+      "mat": "steam",
+      "form": "cloud",
+      "tag": "",
+      "source": "moisture",
+      "damage": 4.0,
+      "balance": 8.0,
+      "inert_only": false,
+      "launch_only": false,
+      "mass": [3.0, 1.0, 12.0],
+      "speed": [6.0, 0.0, 14.0],
+      "life": 5.0,
+      "param_specs": {
+        "mass": [3.0, 1.0, 12.0],
+        "speed": [6.0, 0.0, 14.0]
+      },
+      "defaults": {
+        "mass": 3.0,
+        "speed": 6.0
+      },
+      "describe_default": "3 kg, 6 m/s"
+    },
+    {
+      "id": "vines",
+      "label": "Burr seeds",
+      "group": "Water",
+      "build": "verb",
+      "move": "burr_shot",
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "speed": [25.0, 10.0, 50.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "speed": 25.0
+      },
+      "describe_default": "25 m/s"
+    },
+    {
+      "id": "fireball",
+      "label": "Fireball",
+      "group": "Fire",
+      "build": "verb",
+      "move": "fireball",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [0.5, 0.125, 2.0],
+        "speed": [18.0, 7.2, 36.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 0.5,
+        "speed": 18.0
+      },
+      "describe_default": "0 kg, 18 m/s"
+    },
+    {
+      "id": "comet",
+      "label": "Blue comet",
+      "group": "Fire",
+      "build": "verb",
+      "move": "comet_flame",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [0.4, 0.1, 1.6],
+        "speed": [26.0, 10.4, 52.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 0.4,
+        "speed": 26.0
+      },
+      "describe_default": "0 kg, 26 m/s"
+    },
+    {
+      "id": "fire_line",
+      "label": "Fire line",
+      "group": "Fire",
+      "build": "verb",
+      "move": "fire_line",
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "mass": [1.0, 0.25, 4.0],
+        "speed": [12.0, 4.800000000000001, 24.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "mass": 1.0,
+        "speed": 12.0
+      },
+      "describe_default": "1 kg, 12 m/s"
+    },
+    {
+      "id": "fire_field",
+      "label": "Fire field",
+      "group": "Fire",
+      "build": "zone",
+      "tag": "fire_field",
+      "mat": "fire",
+      "radius": 3.0,
+      "power": 6.0,
+      "life": 8.0,
+      "inert_only": true,
+      "launch_only": false,
+      "heat": 240.0,
+      "param_specs": {},
+      "defaults": {},
+      "describe_default": ""
+    },
+    {
+      "id": "tornado",
+      "label": "Tornado",
+      "group": "Air",
+      "build": "verb",
+      "move": "vortex_twister",
+      "inert_only": false,
+      "launch_only": false,
+      "tier": [1, 0, 3],
+      "param_specs": {
+        "tier": [1, 0, 3],
+        "speed": [12.0, 4.800000000000001, 24.0]
+      },
+      "defaults": {
+        "tier": 1,
+        "speed": 12.0
+      },
+      "describe_default": "12 m/s, T1"
+    },
+    {
+      "id": "wind_crescent",
+      "label": "Wind crescent",
+      "group": "Air",
+      "build": "verb",
+      "move": "gust_crescent",
+      "inert_only": false,
+      "launch_only": false,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "speed": [22.0, 8.8, 44.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "speed": 22.0
+      },
+      "describe_default": "22 m/s"
+    },
+    {
+      "id": "vacuum_well",
+      "label": "Vacuum well",
+      "group": "Air",
+      "build": "zone",
+      "tag": "vacuum_well",
+      "mat": "air",
+      "radius": 3.5,
+      "power": 12.0,
+      "life": 7.0,
+      "inert_only": true,
+      "launch_only": false,
+      "param_specs": {},
+      "defaults": {},
+      "describe_default": ""
+    },
+    {
+      "id": "tremor",
+      "label": "Tremor line",
+      "group": "Air",
+      "build": "verb",
+      "move": "sound_tremor",
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [0, 0, 3],
+        "speed": [18.0, 7.2, 36.0]
+      },
+      "defaults": {
+        "tier": 0,
+        "speed": 18.0
+      },
+      "describe_default": "18 m/s"
+    },
+    {
+      "id": "bolt",
+      "label": "Bolt (aimed)",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 2,
+      "sub": 2,
+      "slot": "strike",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    },
+    {
+      "id": "blast",
+      "label": "Blast",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 2,
+      "sub": 3,
+      "slot": "strike",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    },
+    {
+      "id": "flame_cone",
+      "label": "Flame cone",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 2,
+      "sub": 0,
+      "slot": "strike",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    },
+    {
+      "id": "gust_cone",
+      "label": "Gust",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 3,
+      "sub": 0,
+      "slot": "strike",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    },
+    {
+      "id": "sound_pulse",
+      "label": "Sound pulse",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 3,
+      "sub": 3,
+      "slot": "strike",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    },
+    {
+      "id": "steam_jet",
+      "label": "Scald puff",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 1,
+      "sub": 2,
+      "slot": "strike",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    },
+    {
+      "id": "frost_fan",
+      "label": "Frost fan",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 1,
+      "sub": 1,
+      "slot": "sweep",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    },
+    {
+      "id": "sandblast",
+      "label": "Sandblast",
+      "group": "Volumes",
+      "build": "perform",
+      "element": 0,
+      "sub": 2,
+      "slot": "thrust",
+      "tier": [1, 0, 3],
+      "inert_only": false,
+      "launch_only": true,
+      "param_specs": {
+        "tier": [1, 0, 3]
+      },
+      "defaults": {
+        "tier": 1
+      },
+      "describe_default": "T1"
+    }
+  ],
+  "combos": [
+    {
+      "n": 1,
+      "id": "melt_return",
+      "name": "Melt & Return",
+      "desc": "The rival's wall face slumps into lava; the lava runs back at the builder.",
+      "steps": [
+        {
+          "el": 2,
+          "sub": 1,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 1.0,
+          "within": 8.0,
+          "hint": "hold Smelter on the wall face"
+        },
+        {
+          "el": 0,
+          "sub": 3,
+          "slot": "ground",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Magma Surge"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "slump"
+          },
+          {
+            "type": "interaction",
+            "outcome": "transform"
+          },
+          {
+            "type": "transform",
+            "to": "lava"
+          }
+        ],
+        "text": "the wall slumps into lava and runs back",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "ice_wall",
+            "launch": false
+          }
+        ]
+      }
+    },
+    {
+      "n": 2,
+      "id": "thunder_through",
+      "name": "Thunder Through Stone",
+      "desc": "Storm Bolt (T2) blasts through a Bulwark: E 36 beats grounding 30.",
+      "steps": [
+        {
+          "el": 2,
+          "sub": 2,
+          "slot": "strike",
+          "tier": 2,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "hold ATTACK to T2, release at the wall"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "shatter"
+          },
+          {
+            "type": "wall_crumble"
+          },
+          {
+            "type": "interaction",
+            "outcome": "shatter"
+          }
+        ],
+        "text": "the wall shatters, the bolt lands",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "ice_wall",
+            "launch": false
+          }
+        ]
+      }
+    },
+    {
+      "n": 3,
+      "id": "split_return",
+      "name": "Split Return",
+      "desc": "Seize the incoming stone, split it, release aimed: three spikes fan back.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 0,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.6,
+          "within": 8.0,
+          "hint": "TECH on the incoming stone"
+        },
+        {
+          "el": 0,
+          "sub": 0,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "shape",
+          "hold": 0.0,
+          "within": 3.0,
+          "hint": "tap ATTACK while the technique is held"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "split"
+          },
+          {
+            "type": "shape"
+          }
+        ],
+        "text": "three spikes fan back at the thrower",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "stone_20",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 4,
+      "id": "swallow",
+      "name": "Swallow",
+      "desc": "Sink the stone into the ground just before impact (CP 22 >= 17).",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 0,
+          "slot": "sink",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "GUARD flick down just before impact"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "interaction",
+            "outcome": "sink"
+          },
+          {
+            "type": "sink"
+          }
+        ],
+        "text": "the stone sinks into the ground",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "stone_20",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 5,
+      "id": "wave_back",
+      "name": "Wave Back",
+      "desc": "Tidal Rush captures the incoming stone and carries it back.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 0,
+          "slot": "ground",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "ATTACK flick down as the stone arrives"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "interaction",
+            "outcome": "capture"
+          },
+          {
+            "type": "interaction",
+            "outcome": "reclaim"
+          },
+          {
+            "type": "capture"
+          }
+        ],
+        "text": "the wave carries the stone back",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "stone_20",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 6,
+      "id": "molten_exchange",
+      "name": "Molten Exchange",
+      "desc": "Magma-grip the stone, hold to molten, pour a lava wave at the thrower.",
+      "steps": [
+        {
+          "el": 2,
+          "sub": 0,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 1.4,
+          "within": 8.0,
+          "hint": "TECH on the stone, hold until molten, release aimed"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "transform",
+            "to": "wave"
+          },
+          {
+            "type": "transform",
+            "to": "lava"
+          }
+        ],
+        "text": "the stone becomes a lava wave",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "stone_20",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 7,
+      "id": "turn_the_wind",
+      "name": "Turn the Wind",
+      "desc": "A perfect Wind Guard (27 >= 17) sends the stone back.",
+      "steps": [
+        {
+          "el": 3,
+          "sub": 0,
+          "slot": "guard",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "tap GUARD just before contact"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "perfect_deflect"
+          },
+          {
+            "type": "interaction",
+            "outcome": "redirect"
+          },
+          {
+            "type": "interaction",
+            "outcome": "reflect"
+          }
+        ],
+        "text": "the stone returns to the thrower",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "stone_20",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 8,
+      "id": "live_wire",
+      "name": "Live Wire",
+      "desc": "A wet target chains the Spark through the spray's puddles.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 0,
+          "slot": "sweep",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Spray Fan wets the target"
+        },
+        {
+          "el": 2,
+          "sub": 2,
+          "slot": "strike",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 5.0,
+          "hint": "Spark"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "conduct"
+          }
+        ],
+        "text": "the arc chains through the wet ground",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 9,
+      "id": "flash_freeze",
+      "name": "Flash Freeze Lock",
+      "desc": "Wet, then frozen and rooted: the heave cannot be evaded.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 0,
+          "slot": "sweep",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": ""
+        },
+        {
+          "el": 1,
+          "sub": 1,
+          "slot": "sweep",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Hoarfrost"
+        },
+        {
+          "el": 0,
+          "sub": 0,
+          "slot": "strike",
+          "tier": 1,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 5.0,
+          "hint": "Heave at T1"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "status",
+            "status": "frozen"
+          },
+          {
+            "type": "hit"
+          }
+        ],
+        "text": "the rooted target takes the heave",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 10,
+      "id": "glass_shrapnel",
+      "name": "Glass Shrapnel",
+      "desc": "A bolt turns the Dune Wall to glass; a Sound Lance shatters it into shards.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 2,
+          "slot": "guard",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "Dune Wall takes the bolt"
+        },
+        {
+          "el": 3,
+          "sub": 3,
+          "slot": "thrust",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 6.0,
+          "hint": "Sound Lance into the glass"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "shatter"
+          },
+          {
+            "type": "interaction",
+            "outcome": "shatter"
+          }
+        ],
+        "text": "the glass wall shatters into shards",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "bolt",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 11,
+      "id": "fire_tornado",
+      "name": "Fire Tornado",
+      "desc": "A Fireball fed into a tornado makes a fire tornado you steer.",
+      "steps": [
+        {
+          "el": 3,
+          "sub": 1,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 1.0,
+          "within": 8.0,
+          "hint": "Eye of the Storm"
+        },
+        {
+          "el": 2,
+          "sub": 0,
+          "slot": "thrust",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 6.0,
+          "hint": "Fireball into it"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "interaction",
+            "outcome": "amplify"
+          },
+          {
+            "type": "convert"
+          }
+        ],
+        "text": "the tornado ignites",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 12,
+      "id": "sandstorm",
+      "name": "Sandstorm",
+      "desc": "A tornado through a grit cloud walks a sandstorm at the rival.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 2,
+          "slot": "sweep",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Veil of Grit"
+        },
+        {
+          "el": 3,
+          "sub": 1,
+          "slot": "strike",
+          "tier": 2,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 6.0,
+          "hint": "Tornado through the cloud"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "interaction",
+            "outcome": "amplify"
+          },
+          {
+            "type": "zone",
+            "kind": "sandstorm"
+          }
+        ],
+        "text": "a blinding sandstorm walks forward",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 13,
+      "id": "rod_bait",
+      "name": "Lightning Rod Bait",
+      "desc": "An embedded lance relays the bolt through the rival's wall.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 1,
+          "slot": "thrust",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Iron Lance into the wall"
+        },
+        {
+          "el": 2,
+          "sub": 2,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.8,
+          "within": 6.0,
+          "hint": "Conductor's Hand on the lance"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "conduct"
+          }
+        ],
+        "text": "the bolt relays through the lance",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 14,
+      "id": "recall_pincer",
+      "name": "Recall Pincer",
+      "desc": "Three discs past the rival fly back through them.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 1,
+          "slot": "strike",
+          "tier": 2,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "three discs past the rival"
+        },
+        {
+          "el": 0,
+          "sub": 1,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 5.0,
+          "hint": "Recall with no target"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "hit"
+          }
+        ],
+        "text": "the discs come back through the rival",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 15,
+      "id": "obsidian_fort",
+      "name": "Obsidian Fort",
+      "desc": "Water on your own Magma Curtain sets the face to obsidian: CP 28 to 38.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 3,
+          "slot": "guard",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Magma Curtain"
+        },
+        {
+          "el": 1,
+          "sub": 0,
+          "slot": "thrust",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 5.0,
+          "hint": "Water Bullet onto it"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "interaction",
+            "outcome": "transform",
+            "to": "obsidian"
+          },
+          {
+            "type": "transform",
+            "to": "obsidian"
+          }
+        ],
+        "text": "the face sets to obsidian",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 16,
+      "id": "mud_bog",
+      "name": "Mud Bog",
+      "desc": "Quicksand plus spray makes mud: a longer, stronger slow.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 2,
+          "slot": "sink",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Quicksand"
+        },
+        {
+          "el": 1,
+          "sub": 0,
+          "slot": "sweep",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 5.0,
+          "hint": "Spray into it"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "interaction",
+            "outcome": "transform",
+            "to": "mud"
+          },
+          {
+            "type": "status",
+            "status": "muddy"
+          }
+        ],
+        "text": "the bog turns to mud",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 17,
+      "id": "no_air_no_fire",
+      "name": "No Air, No Fire",
+      "desc": "The Null Bubble snuffs the rival's flames at the shell (x2).",
+      "steps": [
+        {
+          "el": 3,
+          "sub": 2,
+          "slot": "guard",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "Null Bubble as the flames arrive"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "interaction",
+            "outcome": "extinguish"
+          },
+          {
+            "type": "interaction",
+            "outcome": "neutralize"
+          }
+        ],
+        "text": "the flames die at the shell",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "flame_cone",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 18,
+      "id": "echo_bank",
+      "name": "Echo Bank Shot",
+      "desc": "A Sound Lance off a pillar reflects into the rival behind cover.",
+      "steps": [
+        {
+          "el": 3,
+          "sub": 3,
+          "slot": "thrust",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "aim at the pillar"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "hit"
+          },
+          {
+            "type": "interaction",
+            "outcome": "reflect"
+          }
+        ],
+        "text": "the pulse reflects into the rival",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 19,
+      "id": "geyser_launcher",
+      "name": "Geyser Launcher",
+      "desc": "Geyser launch, wind juggle, ground finisher on landing.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 2,
+          "slot": "strike",
+          "tier": 2,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Geyser"
+        },
+        {
+          "el": 3,
+          "sub": 0,
+          "slot": "thrust",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 3.0,
+          "hint": "Wind Crescent while airborne"
+        },
+        {
+          "el": 0,
+          "sub": 0,
+          "slot": "ground",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 3.0,
+          "hint": "Rising Fangs on landing"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "hit"
+          }
+        ],
+        "text": "an air juggle into a ground finisher",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 20,
+      "id": "ember_wade",
+      "name": "Ember Wade",
+      "desc": "Advance inside your own lava wave while the rival must evade it.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 3,
+          "slot": "ground",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Magma Surge"
+        },
+        {
+          "el": 0,
+          "sub": 3,
+          "slot": "evade_hold",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 3.0,
+          "hint": "Lava Wade behind the wave"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "stance"
+          },
+          {
+            "type": "mode"
+          }
+        ],
+        "text": "you wade behind the wave",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 21,
+      "id": "implosion_ignition",
+      "name": "Implosion Ignition",
+      "desc": "Burst at the centre of a collapsing Vacuum Well: combustion x1.5 in the inrush.",
+      "steps": [
+        {
+          "el": 3,
+          "sub": 2,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 1.0,
+          "within": 8.0,
+          "hint": "Vacuum Well pulls the rival, release"
+        },
+        {
+          "el": 2,
+          "sub": 3,
+          "slot": "strike",
+          "tier": 1,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Burst at the centre"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "hit"
+          },
+          {
+            "type": "interaction",
+            "outcome": "amplify"
+          }
+        ],
+        "text": "the burst is amplified in the inrush",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 22,
+      "id": "ice_bridge",
+      "name": "Ice Bridge",
+      "desc": "Skate across the pool; frozen water will not conduct the rival's bolt.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 1,
+          "slot": "evade_hold",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "hold EVADE toward the pool"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "mode"
+          },
+          {
+            "type": "stance"
+          }
+        ],
+        "text": "you skate across the pool",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 23,
+      "id": "quench_seize",
+      "name": "Quench & Seize",
+      "desc": "Quench the lava wave to hot rock, then catch it without burns.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 0,
+          "slot": "ground",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "Tidal Rush into the lava"
+        },
+        {
+          "el": 0,
+          "sub": 3,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.8,
+          "within": 5.0,
+          "hint": "Magma Hold on the hot rock"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "control_won"
+          },
+          {
+            "type": "transform"
+          }
+        ],
+        "text": "you hold the hot rock",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "lava_wave",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 24,
+      "id": "vine_slingshot",
+      "name": "Vine Slingshot",
+      "desc": "Vinegrip a far stone, wrap it, release: it roots the rival on hit.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 3,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.8,
+          "within": 8.0,
+          "hint": "Vinegrip on a stone"
+        },
+        {
+          "el": 1,
+          "sub": 3,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "shape",
+          "hold": 0.0,
+          "within": 3.0,
+          "hint": "tap ATTACK while the technique is held"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "status",
+            "status": "rooted"
+          },
+          {
+            "type": "shape"
+          }
+        ],
+        "text": "the wrapped stone roots the rival",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 25,
+      "id": "static_return",
+      "name": "Static Return",
+      "desc": "The Static Ward absorbs the bolt; Static Burst sends it back as a stun cone.",
+      "steps": [
+        {
+          "el": 2,
+          "sub": 2,
+          "slot": "guard",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "Static Ward as the bolt arrives"
+        },
+        {
+          "el": 2,
+          "sub": 2,
+          "slot": "push",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Static Burst"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "status",
+            "status": "shocked"
+          },
+          {
+            "type": "hit"
+          }
+        ],
+        "text": "the bolt returns as a stun cone",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "bolt",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 26,
+      "id": "frost_shatter",
+      "name": "Frost Shatter",
+      "desc": "Chill, frozen crust, then a Clap shatters it: bonus damage and stagger.",
+      "steps": [
+        {
+          "el": 1,
+          "sub": 1,
+          "slot": "strike",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Frost Shard"
+        },
+        {
+          "el": 1,
+          "sub": 1,
+          "slot": "sweep",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Hoarfrost"
+        },
+        {
+          "el": 3,
+          "sub": 3,
+          "slot": "strike",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Clap"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "shatter"
+          },
+          {
+            "type": "interaction",
+            "outcome": "shatter"
+          }
+        ],
+        "text": "the crust shatters",
+        "within": 6.0
+      },
+      "setup": {}
+    },
+    {
+      "n": 27,
+      "id": "reverse_tide",
+      "name": "Reverse Tide",
+      "desc": "Magma Hold on the rival's lava wave (contest won), release it back.",
+      "steps": [
+        {
+          "el": 0,
+          "sub": 3,
+          "slot": "tech",
+          "tier": 0,
+          "kind": "move",
+          "hold": 1.0,
+          "within": 8.0,
+          "hint": "Magma Hold on the wave"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "control_won"
+          },
+          {
+            "type": "transform"
+          }
+        ],
+        "text": "the wave turns back",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "lava_wave",
+            "launch": true
+          }
+        ]
+      }
+    },
+    {
+      "n": 28,
+      "id": "catch_unleash",
+      "name": "Catch & Unleash",
+      "desc": "The Vortex Wall captures the volley; Unleash flies every captured projectile back.",
+      "steps": [
+        {
+          "el": 3,
+          "sub": 1,
+          "slot": "guard",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 8.0,
+          "hint": "Vortex Wall as the volley arrives"
+        },
+        {
+          "el": 3,
+          "sub": 1,
+          "slot": "push",
+          "tier": 0,
+          "kind": "move",
+          "hold": 0.0,
+          "within": 4.0,
+          "hint": "Unleash"
+        }
+      ],
+      "result": {
+        "any": [
+          {
+            "type": "release_captured"
+          },
+          {
+            "type": "interaction",
+            "outcome": "capture"
+          }
+        ],
+        "text": "every captured projectile flies back",
+        "within": 6.0
+      },
+      "setup": {
+        "spawn": [
+          {
+            "id": "stone_20",
+            "launch": true
+          }
+        ]
+      }
+    }
+  ],
+  "matrix_counters": [
+    {
+      "id": "wall_stone",
+      "label": "Earth: Bulwark stone wall (120 kg)",
+      "kind": "legacy",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": "guard"
+    },
+    {
+      "id": "guard_earth",
+      "label": "Earth guard (plain)",
+      "kind": "legacy",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": "guard"
+    },
+    {
+      "id": "shield_water",
+      "label": "Water shield (held, 6 kg)",
+      "kind": "legacy",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": "guard"
+    },
+    {
+      "id": "aura_flame",
+      "label": "Flame guard (aura)",
+      "kind": "legacy",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": "guard"
+    },
+    {
+      "id": "guard_wind",
+      "label": "Wind guard",
+      "kind": "legacy",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": "guard"
+    },
+    {
+      "id": "rising_fangs",
+      "label": "Earth / Stone: Rising Fangs",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 0,
+      "slot": "ground"
+    },
+    {
+      "id": "ram_wall",
+      "label": "Earth / Stone: Ram Wall",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 0,
+      "slot": "push"
+    },
+    {
+      "id": "swallow",
+      "label": "Earth / Stone: Swallow",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 0,
+      "slot": "sink"
+    },
+    {
+      "id": "earth_tech",
+      "label": "Earth / Stone: Seize",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 0,
+      "slot": "tech"
+    },
+    {
+      "id": "stone_skin",
+      "label": "Earth / Stone: Stone Skin",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 0,
+      "slot": "evade_hold"
+    },
+    {
+      "id": "lodestone_line",
+      "label": "Earth / Metal: Lodestone Line",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 1,
+      "slot": "ground"
+    },
+    {
+      "id": "chain_arc",
+      "label": "Earth / Metal: Chain Arc",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 1,
+      "slot": "sweep"
+    },
+    {
+      "id": "aegis_plate",
+      "label": "Earth / Metal: Aegis Plate",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 1,
+      "slot": "guard"
+    },
+    {
+      "id": "rod_plant",
+      "label": "Earth / Metal: Rod Plant",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 1,
+      "slot": "sink"
+    },
+    {
+      "id": "lodestone_grip",
+      "label": "Earth / Metal: Lodestone Grip",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 1,
+      "slot": "tech"
+    },
+    {
+      "id": "iron_stance",
+      "label": "Earth / Metal: Iron Stance",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 1,
+      "slot": "evade_hold"
+    },
+    {
+      "id": "sandblast",
+      "label": "Earth / Sand: Sandblast",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 2,
+      "slot": "thrust"
+    },
+    {
+      "id": "sand_surge",
+      "label": "Earth / Sand: Sand Surge",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 2,
+      "slot": "ground"
+    },
+    {
+      "id": "veil_of_grit",
+      "label": "Earth / Sand: Veil of Grit",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 2,
+      "slot": "sweep"
+    },
+    {
+      "id": "dune_wall",
+      "label": "Earth / Sand: Dune Wall",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 2,
+      "slot": "guard"
+    },
+    {
+      "id": "dune_push",
+      "label": "Earth / Sand: Dune Push",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 2,
+      "slot": "push"
+    },
+    {
+      "id": "quicksand",
+      "label": "Earth / Sand: Quicksand",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 2,
+      "slot": "sink"
+    },
+    {
+      "id": "sandform",
+      "label": "Earth / Sand: Sandform",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 2,
+      "slot": "tech"
+    },
+    {
+      "id": "lava_lash",
+      "label": "Earth / Magma: Lava Lash",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 3,
+      "slot": "thrust"
+    },
+    {
+      "id": "magma_surge",
+      "label": "Earth / Magma: Magma Surge",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 3,
+      "slot": "ground"
+    },
+    {
+      "id": "magma_curtain",
+      "label": "Earth / Magma: Magma Curtain",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 3,
+      "slot": "guard"
+    },
+    {
+      "id": "melt_pit",
+      "label": "Earth / Magma: Melt Pit",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 0,
+      "sub": 3,
+      "slot": "sink"
+    },
+    {
+      "id": "magma_hold",
+      "label": "Earth / Magma: Magma Hold",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 0,
+      "sub": 3,
+      "slot": "tech"
+    },
+    {
+      "id": "water_attack",
+      "label": "Water / Water: Lash",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 0,
+      "slot": "strike"
+    },
+    {
+      "id": "water_bullet",
+      "label": "Water / Water: Water Bullet",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 0,
+      "slot": "thrust"
+    },
+    {
+      "id": "tidal_rush",
+      "label": "Water / Water: Tidal Rush",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 0,
+      "slot": "ground"
+    },
+    {
+      "id": "spray_fan",
+      "label": "Water / Water: Spray Fan",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 0,
+      "slot": "sweep"
+    },
+    {
+      "id": "surge_orb",
+      "label": "Water / Water: Surge Orb",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 0,
+      "slot": "push"
+    },
+    {
+      "id": "water_tech",
+      "label": "Water / Water: Draw & Shape",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 0,
+      "slot": "tech"
+    },
+    {
+      "id": "frost_shard",
+      "label": "Water / Ice: Frost Shard",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 1,
+      "slot": "strike"
+    },
+    {
+      "id": "icicle_volley",
+      "label": "Water / Ice: Icicle Volley",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 1,
+      "slot": "thrust"
+    },
+    {
+      "id": "rime_path",
+      "label": "Water / Ice: Rime Path",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 1,
+      "slot": "ground"
+    },
+    {
+      "id": "hoarfrost_fan",
+      "label": "Water / Ice: Hoarfrost Fan",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 1,
+      "slot": "sweep"
+    },
+    {
+      "id": "ice_wall",
+      "label": "Water / Ice: Ice Wall",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 1,
+      "slot": "guard"
+    },
+    {
+      "id": "glacier_shove",
+      "label": "Water / Ice: Glacier Shove",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 1,
+      "slot": "push"
+    },
+    {
+      "id": "freeze_draw",
+      "label": "Water / Ice: Freeze-Draw",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 1,
+      "slot": "tech"
+    },
+    {
+      "id": "scald_puff",
+      "label": "Water / Mist: Scald Puff",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 2,
+      "slot": "strike"
+    },
+    {
+      "id": "fog_lance",
+      "label": "Water / Mist: Fog Lance",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 2,
+      "slot": "thrust"
+    },
+    {
+      "id": "creeping_fog",
+      "label": "Water / Mist: Creeping Fog",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 2,
+      "slot": "ground"
+    },
+    {
+      "id": "veil",
+      "label": "Water / Mist: Veil",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 2,
+      "slot": "sweep"
+    },
+    {
+      "id": "steam_screen",
+      "label": "Water / Mist: Steam Screen",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 2,
+      "slot": "guard"
+    },
+    {
+      "id": "steam_blast",
+      "label": "Water / Mist: Steam Blast",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 2,
+      "slot": "push"
+    },
+    {
+      "id": "vapor_draw",
+      "label": "Water / Mist: Vapor Draw",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 2,
+      "slot": "tech"
+    },
+    {
+      "id": "bramble_lash",
+      "label": "Water / Plant: Bramble Lash",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 3,
+      "slot": "strike"
+    },
+    {
+      "id": "burr_shot",
+      "label": "Water / Plant: Burr Shot",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 3,
+      "slot": "thrust"
+    },
+    {
+      "id": "root_snare",
+      "label": "Water / Plant: Root Snare",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 3,
+      "slot": "ground"
+    },
+    {
+      "id": "thicket_fan",
+      "label": "Water / Plant: Thicket Fan",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 3,
+      "slot": "sweep"
+    },
+    {
+      "id": "living_lattice",
+      "label": "Water / Plant: Living Lattice",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 1,
+      "sub": 3,
+      "slot": "guard"
+    },
+    {
+      "id": "lattice_roll",
+      "label": "Water / Plant: Lattice Roll",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 3,
+      "slot": "push"
+    },
+    {
+      "id": "deep_roots",
+      "label": "Water / Plant: Deep Roots",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 3,
+      "slot": "sink"
+    },
+    {
+      "id": "vinegrip",
+      "label": "Water / Plant: Vinegrip",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 1,
+      "sub": 3,
+      "slot": "tech"
+    },
+    {
+      "id": "fire_attack",
+      "label": "Fire / Flame: Flare",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 0,
+      "slot": "strike"
+    },
+    {
+      "id": "fireball",
+      "label": "Fire / Flame: Fireball",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 0,
+      "slot": "thrust"
+    },
+    {
+      "id": "fire_line",
+      "label": "Fire / Flame: Fire Line",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 0,
+      "slot": "ground"
+    },
+    {
+      "id": "fire_fan",
+      "label": "Fire / Flame: Fire Fan",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 0,
+      "slot": "sweep"
+    },
+    {
+      "id": "flame_guard",
+      "label": "Fire / Flame: Flame Guard",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 0,
+      "slot": "guard"
+    },
+    {
+      "id": "backdraft",
+      "label": "Fire / Flame: Backdraft",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 0,
+      "slot": "push"
+    },
+    {
+      "id": "fire_tech",
+      "label": "Fire / Flame: Thermal (HEAT",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 0,
+      "slot": "tech"
+    },
+    {
+      "id": "blue_needle",
+      "label": "Fire / Blue: Blue Needle",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 1,
+      "slot": "strike"
+    },
+    {
+      "id": "comet_flame",
+      "label": "Fire / Blue: Comet Flame",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 1,
+      "slot": "thrust"
+    },
+    {
+      "id": "blue_furrow",
+      "label": "Fire / Blue: Blue Furrow",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 1,
+      "slot": "ground"
+    },
+    {
+      "id": "corona",
+      "label": "Fire / Blue: Corona",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 1,
+      "slot": "sweep"
+    },
+    {
+      "id": "blue_aegis",
+      "label": "Fire / Blue: Blue Aegis",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 1,
+      "slot": "guard"
+    },
+    {
+      "id": "flash_over",
+      "label": "Fire / Blue: Flash Over",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 1,
+      "slot": "push"
+    },
+    {
+      "id": "kiln",
+      "label": "Fire / Blue: Kiln",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 1,
+      "slot": "sink"
+    },
+    {
+      "id": "smelter",
+      "label": "Fire / Blue: Smelter",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 1,
+      "slot": "tech"
+    },
+    {
+      "id": "spark",
+      "label": "Fire / Lightning: Spark",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 2,
+      "slot": "strike"
+    },
+    {
+      "id": "rail_arc",
+      "label": "Fire / Lightning: Rail Arc",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 2,
+      "slot": "thrust"
+    },
+    {
+      "id": "ground_current",
+      "label": "Fire / Lightning: Ground Current",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 2,
+      "slot": "ground"
+    },
+    {
+      "id": "arc_fan",
+      "label": "Fire / Lightning: Arc Fan",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 2,
+      "slot": "sweep"
+    },
+    {
+      "id": "static_ward",
+      "label": "Fire / Lightning: Static Ward",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 2,
+      "slot": "guard"
+    },
+    {
+      "id": "static_burst",
+      "label": "Fire / Lightning: Static Burst",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 2,
+      "slot": "push"
+    },
+    {
+      "id": "conductors_hand",
+      "label": "Fire / Lightning: Conductor's Hand",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 2,
+      "slot": "tech"
+    },
+    {
+      "id": "pop",
+      "label": "Fire / Combustion: Pop",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 3,
+      "slot": "strike"
+    },
+    {
+      "id": "spark_mine",
+      "label": "Fire / Combustion: Spark Mine",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 3,
+      "slot": "thrust"
+    },
+    {
+      "id": "chain_blasts",
+      "label": "Fire / Combustion: Chain Blasts",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 3,
+      "slot": "ground"
+    },
+    {
+      "id": "scatter_charges",
+      "label": "Fire / Combustion: Scatter Charges",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 3,
+      "slot": "sweep"
+    },
+    {
+      "id": "reactive_blast",
+      "label": "Fire / Combustion: Reactive Blast",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 3,
+      "slot": "guard"
+    },
+    {
+      "id": "shockwave",
+      "label": "Fire / Combustion: Shockwave",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 3,
+      "slot": "push"
+    },
+    {
+      "id": "smother_blast",
+      "label": "Fire / Combustion: Smother Blast",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 2,
+      "sub": 3,
+      "slot": "sink"
+    },
+    {
+      "id": "fuse",
+      "label": "Fire / Combustion: Fuse",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 2,
+      "sub": 3,
+      "slot": "tech"
+    },
+    {
+      "id": "air_attack",
+      "label": "Air / Gust: Palm Gust",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 0,
+      "slot": "strike"
+    },
+    {
+      "id": "gust_crescent",
+      "label": "Air / Gust: Wind Crescent",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 0,
+      "slot": "thrust"
+    },
+    {
+      "id": "gust_dust_line",
+      "label": "Air / Gust: Dust Devil Line",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 0,
+      "slot": "ground"
+    },
+    {
+      "id": "gust_crosswind",
+      "label": "Air / Gust: Crosswind",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 0,
+      "slot": "sweep"
+    },
+    {
+      "id": "gust_wall",
+      "label": "Air / Gust: Wall of Wind",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 0,
+      "slot": "push"
+    },
+    {
+      "id": "gust_downdraft",
+      "label": "Air / Gust: Downdraft",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 0,
+      "slot": "sink"
+    },
+    {
+      "id": "air_tech",
+      "label": "Air / Gust: Updraft",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 0,
+      "slot": "tech"
+    },
+    {
+      "id": "vortex_twister",
+      "label": "Air / Vortex: Twister",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 1,
+      "slot": "strike"
+    },
+    {
+      "id": "vortex_spiral",
+      "label": "Air / Vortex: Spiral Lance",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 1,
+      "slot": "thrust"
+    },
+    {
+      "id": "vortex_funnel",
+      "label": "Air / Vortex: Dust Funnel",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 1,
+      "slot": "ground"
+    },
+    {
+      "id": "vortex_eddy",
+      "label": "Air / Vortex: Eddy Ring",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 1,
+      "slot": "sweep"
+    },
+    {
+      "id": "vortex_wall",
+      "label": "Air / Vortex: Vortex Wall",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 1,
+      "slot": "guard"
+    },
+    {
+      "id": "vortex_unleash",
+      "label": "Air / Vortex: Unleash",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 1,
+      "slot": "push"
+    },
+    {
+      "id": "vortex_funnel_down",
+      "label": "Air / Vortex: Funnel Down",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 1,
+      "slot": "sink"
+    },
+    {
+      "id": "vortex_eye",
+      "label": "Air / Vortex: Eye of the Storm",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 1,
+      "slot": "tech"
+    },
+    {
+      "id": "vortex_spin_step",
+      "label": "Air / Vortex: Spin Step",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 1,
+      "slot": "evade"
+    },
+    {
+      "id": "vortex_whirl",
+      "label": "Air / Vortex: Whirl Lift",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 1,
+      "slot": "evade_hold"
+    },
+    {
+      "id": "vacuum_palm",
+      "label": "Air / Vacuum: Pressure Palm",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 2,
+      "slot": "strike"
+    },
+    {
+      "id": "vacuum_suction",
+      "label": "Air / Vacuum: Suction Line",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 2,
+      "slot": "thrust"
+    },
+    {
+      "id": "vacuum_mine",
+      "label": "Air / Vacuum: Pressure Mine",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 2,
+      "slot": "ground"
+    },
+    {
+      "id": "vacuum_arc",
+      "label": "Air / Vacuum: Vacuum Arc",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 2,
+      "slot": "sweep"
+    },
+    {
+      "id": "vacuum_bubble",
+      "label": "Air / Vacuum: Null Bubble",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 2,
+      "slot": "guard"
+    },
+    {
+      "id": "vacuum_wave",
+      "label": "Air / Vacuum: Pressure Wave",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 2,
+      "slot": "push"
+    },
+    {
+      "id": "vacuum_anchor",
+      "label": "Air / Vacuum: Anchor",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 2,
+      "slot": "sink"
+    },
+    {
+      "id": "vacuum_well",
+      "label": "Air / Vacuum: Vacuum Well",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 2,
+      "slot": "tech"
+    },
+    {
+      "id": "sound_clap",
+      "label": "Air / Sound: Clap",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 3,
+      "slot": "strike"
+    },
+    {
+      "id": "sound_lance",
+      "label": "Air / Sound: Sound Lance",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 3,
+      "slot": "thrust"
+    },
+    {
+      "id": "sound_tremor",
+      "label": "Air / Sound: Tremor Hum",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 3,
+      "slot": "ground"
+    },
+    {
+      "id": "sound_echo_ring",
+      "label": "Air / Sound: Echo Ring",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 3,
+      "slot": "sweep"
+    },
+    {
+      "id": "sound_barrier",
+      "label": "Air / Sound: Sound Barrier",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 3,
+      "slot": "guard"
+    },
+    {
+      "id": "sound_thunder_step",
+      "label": "Air / Sound: Thunder Step",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 3,
+      "slot": "push"
+    },
+    {
+      "id": "sound_ping",
+      "label": "Air / Sound: Ground Ping",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 3,
+      "slot": "sink"
+    },
+    {
+      "id": "sound_flight",
+      "label": "Air / Sound: Flight",
+      "kind": "move",
+      "max_tier": 3,
+      "element": 3,
+      "sub": 3,
+      "slot": "tech"
+    },
+    {
+      "id": "sound_boom_step",
+      "label": "Air / Sound: Boom Step",
+      "kind": "move",
+      "max_tier": 0,
+      "element": 3,
+      "sub": 3,
+      "slot": "evade"
+    },
+    {
+      "id": "pool",
+      "label": "Environment: pool",
+      "kind": "env",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": ""
+    },
+    {
+      "id": "puddle",
+      "label": "Environment: puddle",
+      "kind": "env",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": ""
+    },
+    {
+      "id": "plate",
+      "label": "Environment: plate",
+      "kind": "env",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": ""
+    },
+    {
+      "id": "arena_wall",
+      "label": "Environment: arena_wall",
+      "kind": "env",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": ""
+    },
+    {
+      "id": "ground",
+      "label": "Environment: ground",
+      "kind": "env",
+      "max_tier": 0,
+      "element": -1,
+      "sub": 0,
+      "slot": ""
+    }
+  ],
+  "ai_presets": {
+    "TABLE": {
+      "novice": {
+        "reaction": 0.45,
+        "counter": 0.3,
+        "misjudge": 0.4,
+        "timing_err": 0.12,
+        "elements": 1,
+        "subs": 2,
+        "aggression": 0.35,
+        "chain": 1,
+        "weave": false,
+        "punish": false,
+        "env": false,
+        "tiers": 1,
+        "kit": {
+          "heat_draw": true
+        }
+      },
+      "adept": {
+        "reaction": 0.3,
+        "counter": 0.65,
+        "misjudge": 0.2,
+        "timing_err": 0.07,
+        "elements": 2,
+        "subs": 4,
+        "aggression": 0.55,
+        "chain": 2,
+        "weave": false,
+        "punish": false,
+        "env": true,
+        "tiers": 2,
+        "kit": {
+          "heat_draw": true,
+          "magma": true,
+          "lightning": true
+        }
+      },
+      "master": {
+        "reaction": 0.2,
+        "counter": 0.9,
+        "misjudge": 0.08,
+        "timing_err": 0.03,
+        "elements": 4,
+        "subs": 4,
+        "aggression": 0.75,
+        "chain": 3,
+        "weave": true,
+        "punish": true,
+        "env": true,
+        "tiers": 3,
+        "kit": {
+          "heat_draw": true,
+          "magma": true,
+          "lightning": true,
+          "redirect_current": true,
+          "glide": true
+        }
+      }
+    },
+    "ELEMENT_KEYS": {
+      "earth": 0,
+      "water": 1,
+      "fire": 2,
+      "air": 3
+    }
+  },
+  "lab_session": {
+    "AI_PRESETS": ["novice", "adept", "master"],
+    "AI_PRESET_LABELS": ["Easy", "Normal", "Hard"],
+    "AI_KITS": ["mixed", "earth", "water", "fire", "air", "all"],
+    "AI_DRILLS": ["", "passive", "matrix"],
+    "TIME_SCALES": [0.1, 0.25, 0.5, 1.0]
+  }
+}
