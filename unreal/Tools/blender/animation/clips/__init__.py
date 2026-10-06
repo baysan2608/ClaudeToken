@@ -17,6 +17,6 @@ def load():
     from . import bases
     bases.build_bases()
     bases.build_bases_2()
-    from . import shared, reactions, earth, water, fire, air, hand_shapes  # noqa: F401
+    from . import shared, reactions, earth, water, fire, air, p2, hand_shapes  # noqa: F401
     _LOADED.append(True)
     return CATALOG

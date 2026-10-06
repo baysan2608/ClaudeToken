@@ -439,8 +439,8 @@ def hover():
     # lotus-like hover: knees open, the soles drawn together under the body, palms floating slowly at waist height
     return _air_loop("hover", dict(
         pel=(0.0, 0.0, 0.06, 2.0, 0.0, 0.0), spine=(0.0, 0.0, 0.0), neck=(-2.0, 0.0, 0.0),
-        foot_l=F(at=(0.04, 0.10), yaw=-50.0, pv=0.0, lift=0.42, pitch=-10.0, kyaw=70.0, kup=0.4),
-        foot_r=F(at=(-0.04, 0.10), yaw=50.0, pv=0.0, lift=0.42, pitch=-10.0, kyaw=-70.0, kup=0.4),
+        foot_l=F(at=(-0.09, 0.17), yaw=-70.0, pv=0.0, lift=0.47, pitch=-10.0, kyaw=125.0, kup=0.5),
+        foot_r=F(at=(0.09, 0.13), yaw=70.0, pv=0.0, lift=0.44, pitch=-10.0, kyaw=-125.0, kup=0.5),
         hand_l=HW(p=(0.30, 0.22, 1.10), f=(0.3, 0.8, 0.0), m=(0.0, 0.1, -1.0), e=(0.5, -0.6, -0.6)),
         hand_r=HW(p=(-0.30, 0.22, 1.10), f=(-0.3, 0.8, 0.0), m=(0.0, 0.1, -1.0), e=(-0.5, -0.6, -0.6)),
         fing="relaxed"),

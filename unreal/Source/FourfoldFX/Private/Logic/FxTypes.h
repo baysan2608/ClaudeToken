@@ -66,20 +66,26 @@ inline constexpr std::array<std::string_view, kNumMatSlots> kMatSlotNames = {
 	"splash", "spark", "lightning", "beam", "ring", "shell", "vortex", "wind", "ground"};
 inline std::string_view MatSlotName(MatSlot s) { return kMatSlotNames[static_cast<size_t>(s)]; }
 
-// Scalar material parameters (FName = kParamNames[i]). Every material ignores the ones it does not declare.
+// Scalar material parameters (FName = kParamNames[i]). Every material ignores the ones it does not declare; the
+// Python material builder (Content/Python/fourfold/fx) creates exactly these names. Append only.
 enum class P : uint8_t {
 	Heat, Melt, Crust, Frost, Damage, Rise, RiseHeight, Seed, Age, Fade, Intensity, Tier, Spin, Glass, Detail, Cover,
-	Core, Shape, Phase, Boil, Flow, Wet, Power, Shatter, Style, Burn, Frozen, Foam, Emissive, Count
+	Core, Shape, Phase, Boil, Flow, Wet, Power, Shatter, Style, Burn, Frozen, Foam, EmissiveScale, Opacity, Glow,
+	Width, Rim, Streak, Crackle, Pulse, Absorb, Erosion, Taper, Grain, Scroll, Dusty, Height, Radius, Billboard, Count
 };
 inline constexpr int kNumParams = static_cast<int>(P::Count);
 inline constexpr std::array<std::string_view, kNumParams> kParamNames = {
 	"Heat", "Melt", "Crust", "Frost", "Damage", "Rise", "RiseHeight", "Seed", "Age", "Fade", "Intensity", "Tier",
 	"Spin", "Glass", "Detail", "Cover", "Core", "Shape", "Phase", "Boil", "Flow", "Wet", "Power", "Shatter", "Style",
-	"Burn", "Frozen", "Foam", "EmissiveScale"};
-// Vector material parameters.
-enum class PV : uint8_t { Color, Color2, Tint, Count };
+	"Burn", "Frozen", "Foam", "EmissiveScale", "Opacity", "Glow", "Width", "Rim", "Streak", "Crackle", "Pulse",
+	"Absorb", "Erosion", "Taper", "Grain", "Scroll", "Dusty", "Height", "Radius", "Billboard"};
+static_assert(kNumParams <= 64, "ParamBlock uses a 64-bit mask");
+// Vector material parameters (linear colours). Flames use Color..Color4 as the deep / mid / hot / white ramp.
+enum class PV : uint8_t { Color, Color2, Color3, Color4, Tint, Count };
 inline constexpr int kNumVParams = static_cast<int>(PV::Count);
-inline constexpr std::array<std::string_view, kNumVParams> kVParamNames = {"Color", "Color2", "Tint"};
+inline constexpr std::array<std::string_view, kNumVParams> kVParamNames = {"Color", "Color2", "Color3", "Color4", "Tint"};
+// The one texture parameter the logic switches per draw item (flipbook atlas); FName "Flipbook".
+inline constexpr std::string_view kFlipbookParamName = "Flipbook";
 
 // Static meshes made in Blender (Tools/vfx/meshes.py -> SourceArt/VFX/Meshes/SM_FX_*.fbx).
 enum class MeshAsset : uint8_t {
@@ -117,11 +123,15 @@ inline Burst BurstOfFam(Fam f) {
 }
 
 // Flipbooks (Tools/vfx/flipbooks.py -> SourceArt/VFX/Flipbooks/T_FX_FB_*.png).
-enum class Flipbook : uint8_t { None, SmokePuff, SteamPuff, DustPuff, SandBurst, FireLoop, FireBurst, Explosion, WaterSplash, Count };
+// Flipbook frames per atlas: 8 x 8 = 64 (row-major from the top-left); PuffAtlas is a static 2 x 2 atlas of soft
+// puff shapes (persistent clouds pick one quadrant per puff).
+enum class Flipbook : uint8_t { None, SmokePuff, SteamPuff, DustPuff, SandBurst, FireLoop, FireBurst, Explosion, WaterSplash, PuffAtlas, Count };
 inline constexpr int kNumFlipbooks = static_cast<int>(Flipbook::Count);
 inline constexpr std::array<std::string_view, kNumFlipbooks> kFlipbookNames = {
 	"none", "smoke_puff", "steam_puff", "dust_puff", "sand_burst", "fire_loop", "fire_burst", "explosion",
-	"water_splash"};
+	"water_splash", "puff_atlas"};
+inline int FlipbookFrames(Flipbook f) { return f == Flipbook::None ? 1 : (f == Flipbook::PuffAtlas ? 4 : 64); }
+inline int FlipbookGrid(Flipbook f) { return f == Flipbook::None ? 1 : (f == Flipbook::PuffAtlas ? 2 : 8); }
 
 // Fighter bones the logic asks the scene for (UE5 Manny names in the Unreal glue).
 enum class Bone : uint8_t { Pelvis, Spine, Chest, Head, HandL, HandR, FootL, FootR, Count };

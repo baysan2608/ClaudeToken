@@ -16,11 +16,11 @@
  },
  "reactions": {
   "light": "hit_light_front",
-  "light_back": "hit_light_front",
+  "light_back": "hit_light_back",
   "heavy": "hit_heavy",
   "knockdown": "knockdown",
   "getup": "getup",
-  "guard_break": "stagger",
+  "guard_break": "guard_break",
   "bound": "stagger",
   "stagger": "stagger",
   "block": "block_impact",
@@ -42,10 +42,10 @@
   ]
  },
  "modes": {
-  "flight": "glide",
-  "hover": "fall",
-  "skate": "glide",
-  "surf": "glide"
+  "flight": "flight",
+  "hover": "hover",
+  "skate": "skate",
+  "surf": "surf"
  },
  "moves": {
   "earth_attack": {
@@ -299,7 +299,7 @@
    }
   },
   "sand_ride": {
-   "hold": "glide",
+   "hold": "surf",
    "hands": {
     "l": "relaxed",
     "r": "relaxed"
@@ -327,7 +327,7 @@
    }
   },
   "spatter_arc": {
-   "startup": "e_sweep",
+   "startup": "e_spatter",
    "hands": {
     "l": "spread",
     "r": "spread"
@@ -400,7 +400,7 @@
      }
     },
     "3": {
-     "release": "w_lash",
+     "release": "w_maelstrom",
      "hands": {
       "l": "willow",
       "r": "willow"
@@ -468,7 +468,7 @@
    }
   },
   "wave_ride": {
-   "hold": "glide",
+   "hold": "surf",
    "hands": {
     "l": "willow",
     "r": "willow"
@@ -547,7 +547,7 @@
    }
   },
   "skate": {
-   "hold": "glide",
+   "hold": "skate",
    "hands": {
     "l": "relaxed",
     "r": "relaxed"
@@ -568,7 +568,7 @@
    }
   },
   "creeping_fog": {
-   "startup": "w_ground",
+   "startup": "w_crane",
    "hands": {
     "l": "willow",
     "r": "willow"
@@ -634,7 +634,7 @@
    },
    "tiers": {
     "3": {
-     "release": "w_lash"
+     "release": "w_maelstrom"
     }
    }
   },
@@ -668,7 +668,7 @@
    }
   },
   "lattice_roll": {
-   "startup": "w_push",
+   "startup": "w_shuttle",
    "hands": {
     "l": "palm",
     "r": "palm"
@@ -698,7 +698,7 @@
    }
   },
   "canopy": {
-   "hold": "fall",
+   "hold": "hover",
    "hands": {
     "l": "relaxed",
     "r": "relaxed"
@@ -757,7 +757,7 @@
    },
    "tiers": {
     "3": {
-     "release": "f_crescent_kick"
+     "release": "f_tornado_kick"
     }
    }
   },
@@ -862,7 +862,7 @@
    }
   },
   "corona": {
-   "startup": "f_crescent_kick",
+   "startup": "f_corona",
    "hands": {
     "l": "sword",
     "r": "sword"
@@ -945,7 +945,7 @@
    }
   },
   "arc_fan": {
-   "startup": "l_release",
+   "startup": "l_fan",
    "hands": {
     "l": "spread",
     "r": "spread"
@@ -1013,21 +1013,21 @@
    }
   },
   "spark_mine": {
-   "startup": "e_disc_flick",
+   "startup": "c_toss",
    "hands": {
     "l": "crane",
     "r": "crane"
    }
   },
   "chain_blasts": {
-   "startup": "f_stomp",
+   "startup": "c_chain_stomp",
    "hands": {
     "l": "fist",
     "r": "fist"
    }
   },
   "scatter_charges": {
-   "startup": "e_disc_flick",
+   "startup": "c_toss",
    "hands": {
     "l": "spread",
     "r": "spread"
@@ -1056,7 +1056,7 @@
    }
   },
   "fuse": {
-   "hold": "l_charge",
+   "hold": "c_fuse_loop",
    "release": "c_point",
    "hands": {
     "l": "sword",
@@ -1071,7 +1071,7 @@
    }
   },
   "afterglow": {
-   "hold": "fall",
+   "hold": "hover",
    "hands": {
     "l": "palm",
     "r": "palm"
@@ -1199,7 +1199,7 @@
    }
   },
   "vortex_wall": {
-   "startup": "a_guard",
+   "startup": "a_rising_guard",
    "hold": "a_guard",
    "perfect": "deflect",
    "hands": {
@@ -1236,7 +1236,7 @@
    }
   },
   "vortex_whirl": {
-   "hold": "fall",
+   "hold": "hover",
    "hands": {
     "l": "oxtongue",
     "r": "oxtongue"
@@ -1383,7 +1383,7 @@
   },
   "sound_flight": {
    "startup": "a_updraft",
-   "hold": "glide",
+   "hold": "flight",
    "hands": {
     "l": "oxtongue",
     "r": "oxtongue"
@@ -1397,7 +1397,7 @@
    }
   },
   "sound_hover": {
-   "hold": "fall",
+   "hold": "hover",
    "hands": {
     "l": "relaxed",
     "r": "relaxed"
@@ -1417,28 +1417,6 @@
    "evade": "evade_fwd",
    "evade_hold": "run"
   },
-  "clips": {
-   "a_rising_guard": "a_guard",
-   "c_chain_stomp": "f_stomp",
-   "c_fuse_loop": "l_charge",
-   "c_toss": "e_disc_flick",
-   "e_shadowless_kick": "f_snap_kick",
-   "e_spatter": "e_sweep",
-   "f_corona": "f_crescent_kick",
-   "f_tornado_kick": "f_crescent_kick",
-   "flight": "glide",
-   "guard_break": "stagger",
-   "hit_light_back": "hit_light_front",
-   "hover": "fall",
-   "l_fan": "l_release",
-   "salute": "idle",
-   "skate": "glide",
-   "surf": "glide",
-   "turn_l90": "idle",
-   "turn_r90": "idle",
-   "w_crane": "w_ground",
-   "w_maelstrom": "w_lash",
-   "w_shuttle": "w_push"
-  }
+  "clips": {}
  }
 }

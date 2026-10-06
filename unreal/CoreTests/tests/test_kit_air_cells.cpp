@@ -1,7 +1,8 @@
 // Port of game/tests/sim/test_kit_air_cells.gd: the Air column of the counter matrix (docs/MOVESET.md §8.4). AirRules.CELLS
 // is rebuilt from Data/rules.json (every rule with owner "air", registration order). The per-cell reference metadata
 // (move / tier / expect) is not part of the exported data: the reference test reads CoreTests/data/kit_cell_refs.json when
-// present (Tools/godot_export), else it notes the skip - test_golden_matrix pins every move's counter at every tier.
+// present (not generated - see docs/core/PORT_STATUS.md), else it notes the skip; test_golden_matrix pins every move's
+// counter at every tier.
 #include "ff_test.h"
 #include "kit_air_util.h"
 #include "kit_cells.h"

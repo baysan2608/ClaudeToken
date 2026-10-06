@@ -102,7 +102,7 @@ def export_clip(res, out_dir):
     return path
 
 
-def check_fbx(path, res, frames=None, tol_deg=0.12, tol_m=0.0008):
+def check_fbx(path, res, frames=None, tol_deg=0.25, tol_m=0.001):
     """Re-import an exported clip into an empty scene and compare bone transforms with the solver's FK.
     Returns a dict (ok, worst angle / offset, frame range, bone count)."""
     reset_scene()

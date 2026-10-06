@@ -66,7 +66,7 @@ def _swing_lift(u, lift, peak=0.38):
 def gait(name, frames, v, d, s, *, base, z=-0.03, lift=0.09, hs=14.0, to=-28.0, lane=0.09, lean=3.0, bob=0.012,
          sway=0.012, yaw_amp=6.0, arms="swing", foot_yaw=6.0, phase_r=0.5, arm_amp=0.13, toe_first=False,
          technique="", priority="P0", hands=("relaxed", "relaxed"), spec_fn=None, lane_y=(0.0, 0.0), knee_out=0.0,
-         cycles=1, offsets=None):
+         cycles=1, offsets=None, bias=0.0):
     """Procedural in-place gait loop.  frames per cycle, v ground speed (m/s), d travel direction (A-frame x, y),
     s stance fraction.  Stance footprints move backwards at exactly v (no foot sliding at the design speed); the
     pelvis is lowered automatically where a planted leg would overstretch."""
@@ -111,7 +111,7 @@ def gait(name, frames, v, d, s, *, base, z=-0.03, lift=0.09, hs=14.0, to=-28.0, 
                     pv = PIVOTS["ball"] if u < 0.5 else PIVOTS["heel"]
             lx = sx * lane + perp[0] * 0.0
             ly = lane_y[0] if side == "l" else lane_y[1]
-            fx, fy = lx + d[0] * o, ly + d[1] * o
+            fx, fy = lx + d[0] * (o - bias), ly + d[1] * (o - bias)   # bias: stance window behind the hips
             st = _solver.footprint(side, fx, fy, yaw=yaw, pv=pv, lift=zl, pitch=pitch, kyaw=knee_out * sx)
             # footprint() puts the pivot at pv along a FLAT foot; re-place it so a pitched foot rolls about it
             spec["foot_" + side] = st
@@ -177,9 +177,9 @@ def walk():
 
 @clip("run")
 def run():
-    return gait("run", 36, 5.5, (0.0, 1.0), 0.34, base="idle", z=-0.06, lift=0.16, hs=8.0, to=-34.0, lane=0.07,
+    return gait("run", 36, 5.5, (0.0, 1.0), 0.30, base="idle", z=-0.05, lift=0.20, hs=8.0, to=-46.0, lane=0.07,
                 lean=12.0, bob=0.03, sway=0.01, yaw_amp=9.0, spec_fn=_run_arms(), technique="run 5.5 m/s, 12 deg lean",
-                foot_yaw=4.0, hands=("fist", "fist"))
+                foot_yaw=4.0, hands=("fist", "fist"), bias=0.16)
 
 
 def _ground_footprint(side, f):

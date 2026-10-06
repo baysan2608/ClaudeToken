@@ -1,0 +1,47 @@
+// Fourfold FX - lighting helpers for unlit / translucent effects on the mobile forward renderer (stream `fx`):
+// Schlick fresnel, rims, a fixed key light + sky ambient that matches the arena's sun direction (FFKeyDir; the world
+// stream's sun points the same way), soft wrap diffuse.
+#ifndef FF_LIGHTING_USH
+#define FF_LIGHTING_USH
+
+#include "FFCommon.ush"
+
+// Arena sun direction (toward the light, UE world space, Z up) used by unlit translucent effects.
+float3 FFKeyDir()
+{
+	return normalize(float3(-0.45, 0.35, 0.82));
+}
+
+float FFFresnel(float ndv, float f0, float power)
+{
+	return f0 + (1.0 - f0) * pow(saturate(1.0 - ndv), power);
+}
+
+float FFRim(float ndv, float power)
+{
+	return pow(saturate(1.0 - ndv), power);
+}
+
+float FFWrapDiffuse(float ndl, float wrap)
+{
+	return saturate((ndl + wrap) / (1.0 + wrap));
+}
+
+// Sky colour seen along a world normal (Z up): horizon blue-grey to zenith pale.
+float3 FFSky(float nz)
+{
+	return lerp(float3(0.30, 0.42, 0.55), float3(0.85, 0.92, 1.0), saturate(nz * 0.5 + 0.5));
+}
+
+// Simple lit term for unlit effects: ambient + wrapped key light + soft specular. n, v world space unit vectors.
+float3 FFFakeLit(float3 albedo, float3 n, float3 v, float gloss, float wrap)
+{
+	const float3 l = FFKeyDir();
+	const float ndl = dot(n, l);
+	const float3 h = normalize(l + v);
+	const float spec = pow(saturate(dot(n, h)), lerp(8.0, 96.0, saturate(gloss))) * gloss;
+	const float3 amb = FFSky(n.z) * 0.35;
+	return albedo * (amb + FFWrapDiffuse(ndl, wrap) * float3(1.0, 0.96, 0.9)) + float3(spec, spec, spec);
+}
+
+#endif  // FF_LIGHTING_USH

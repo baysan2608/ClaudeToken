@@ -68,16 +68,26 @@ NOT started: Private/App (Session), Private/AI, Lab, Scenarios, Progression, Pla
   COMPLETE (crescent_execute/tick, crosswind, downdraft, grip, preview). WRITTEN (run 4): AirOutcomes.cpp, AirVortex.cpp,
   AirVacuum.cpp, AirSound.cpp, AirRegistry.cpp -> BUILT: 227 tests green, golden 13300/13300, 0/212 hooks unported.
   Air tests: WRITTEN CoreTests/src/kit_air_util.{h,cpp} (AirCase), tests/test_kit_air_{gust 23, vortex 19, vacuum 13, sound 16, cells 5}.cpp GREEN. ALL FOUR KITS + KIT TESTS DONE.
-  NEXT: remaining core suites (see list), then AI suites, lab/scenario suites, perf, docs. Registry covers (handlers: vortex_eye after/tick, vortex_whirl after/phase/interrupt,
-  vacuum_well phase/interrupt, vacuum_hop phase, vacuum_slipstream tick, sound_thunder_step+sound_boom_step phase=boom_phase,
-  sound_flight start/after, sound_hover after; hooks: all 46 Air names), then port test_kit_air_* suites.
-  Then Air kit (AirGust already partially in Kits/Air/AirGust.cpp; AirRegistry empty).
-
-## Next steps
-1. Lab/LabTuning (port lab_tuning.gd; JSON {schema, moves{"id/path":v}, rules{"key#idx/field":v}}).
-2. App/Session.cpp (Impl: load/step/KO/launcher/vents/challenges/autoplay duel+soak/lab/script/events) + App/HudBuilder +
-   App/SnapshotBuilder; add Session::SetLabMode/LabMode + LabRuleCells/LabRuleFields/LabSetRuleValue (game REQUESTS).
-3. facade tests + facade_link_test; then port remaining core suites; then AI (step 6); then kits.
+  AI SUITES (run 4): CoreTests/src/ai_util.h (AiRig + ff::AiTestAccess, a friend added to AiBrain.h), test_ai_planner 7/7 GREEN.
+  + test_ai_{duel 3, offense 5, drills 5, flagship 2}, test_regressions_ai 12: ALL AI SUITES GREEN.
+  API NOTE for docs: GDScript think() returns the brain's shared ActorIntent object; C++ think() returns const& and
+  harness/Session copy it -> after calling brain internals between think and step, re-copy ai->intent.
+  CORE SUITES (run 4): test_flagship 8, test_integration_matrix 2, test_core_examples 8, test_review_fixes 12,
+  test_contest 11, test_waves 9, test_core_verbs 3, test_thermal 20, test_lightning 22, test_regressions_sim 18, test_water_ice 21, test_energy_and_soak 15, test_combat_rules 31, test_scenarios 6, test_regressions_game 8 GREEN (7 ported + 1 documented skip: quality/PerfMonitor = presentation). REFACTOR: Session::Impl body moved to Private/App/SessionCore.h (struct SessionCore; Impl derives) so tests drive scenario_tick/ko_tick/challenges like GameProbe. FIX: Session soak_frame rng compares now double (GDScript float) - 0.06f etc rounded down.(soak 36000 ticks ~0.2 s; OBSERVED: ~131k "impact" events per soak = bodies resting against arena walls re-emit impact every tick - same code path as Godot, note in PORT_STATUS).
+  ALL SIM SUITES PORTED (run 4): full ff_tests = 531 tests, 0 failed, 2.1 s. Per-suite counts == Godot except:
+  test_kit_earth_moves 5/6 (test_anim_clips_exist = Godot anim library, presentation), test_regressions_game 8/10
+  (3 quality/PerfMonitor cases folded into 1 documented-skip test), test_regressions_views 0/21 (presentation:
+  FxDirector/BodyViews/FighterView/camera - not FourfoldCore). Extra C++ suites: test_data 3, test_facade 5, test_golden_matrix 1.
+  PERF DONE: CoreTests/perf/perf_main.cpp (ff_perf [all|core|air|session|determinism] [secs]); test kit moved to
+  CoreTests/src/test_kit.{h,cpp} (shared by test_core_verbs + ff_perf). g++ -O2, 120 s: core mean 0.003 ms p99 0.029 max 0.13;
+  air mean 0.004 p99 0.034 max 0.11 OK (exact ledgers); Session duel mean 0.019 p99 0.28 max 1.4 ms; determinism identical.
+  DOCS: PORT_STATUS.md WRITTEN (run 4). test_data hook test now strict (fails on unresolved). Cells tests' comments fixed
+  (no extract_cell_refs.py). Background: full g++ build -> scratch gcc_full.log (GCC_DONE), then clang -> clang_build.log.
+  DOCS DONE: README.md, PORT_STATUS.md, API_NOTES.md (no REQUESTS.md needed; game REQUESTS for core all done).
+  CoreTests/run_all.sh added (one command: embed --check, both compilers, ff_all, tests, link test, perf 10 s).
+  g++ FULL BUILD GREEN (GCC_DONE 0) + ff_tests 531/531 + link test ok (run 4).
+  CLANG FULL BUILD GREEN (CLANG_DONE 0): ff_tests 531/531, link test ok, ff_perf OK (run 4). run_all.sh validated (g++).
+  STREAM COMPLETE. Only the final report remains (if resumed: just report).
 
 ## Decisions
 - Test framework uses `check()` names (tests are never compiled by UE).

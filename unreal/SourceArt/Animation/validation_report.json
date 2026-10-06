@@ -171,6 +171,19 @@
   },
   "warnings": []
  },
+ "a_rising_guard": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 1.76,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 52.4,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
  "a_roar": {
   "errors": [],
   "n_errors": 0,
@@ -263,6 +276,32 @@
   },
   "warnings": []
  },
+ "c_chain_stomp": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 53.4,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "c_fuse_loop": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.228,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 1.2,
+   "max_wrist_deg": 22.3,
+   "seam_ratio": 0.63,
+   "seam_vel_deg": 0.77,
+   "start_base_deg": 0.228
+  },
+  "warnings": []
+ },
  "c_point": {
   "errors": [],
   "n_errors": 0,
@@ -271,6 +310,19 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 31.0,
    "max_wrist_deg": 52.3,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "c_toss": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.484,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 39.1,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -491,6 +543,19 @@
   },
   "warnings": []
  },
+ "e_shadowless_kick": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.727,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 41.2,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
  "e_sink": {
   "errors": [],
   "n_errors": 0,
@@ -500,6 +565,19 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 67.3,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
+ "e_spatter": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.372,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 54.9,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -690,6 +768,18 @@
    "arm_r short of its target by 4.9 cm at frame 14",
    "centre of mass outside the support box on 9 frames"
   ]
+ },
+ "f_corona": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 66.7,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
  },
  "f_crescent_kick": {
   "errors": [],
@@ -931,6 +1021,30 @@
    "start_base_deg": 0.441
   },
   "warnings": []
+ },
+ "f_tornado_kick": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 1.197,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 60.2,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "arm_r short of its target by 3.9 cm at frame 15",
+   "arm_r short of its target by 3.9 cm at frame 16",
+   "arm_r short of its target by 3.9 cm at frame 17",
+   "arm_r short of its target by 3.9 cm at frame 18",
+   "arm_r short of its target by 3.9 cm at frame 19",
+   "arm_r short of its target by 3.9 cm at frame 20",
+   "arm_r short of its target by 3.9 cm at frame 21",
+   "arm_r short of its target by 3.9 cm at frame 22",
+   "arm_r short of its target by 3.9 cm at frame 23",
+   "arm_r short of its target by 3.9 cm at frame 24"
+  ]
  },
  "fall": {
   "errors": [],
@@ -1218,6 +1332,19 @@
   },
   "warnings": []
  },
+ "l_fan": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.619,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 31.5,
+   "max_wrist_deg": 48.4,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
  "l_ground": {
   "errors": [],
   "n_errors": 0,
@@ -1288,13 +1415,24 @@
  },
  "run": {
   "errors": [],
+  "fbx": "SourceArt/Animation/A_run.fbx",
+  "fbx_bytes": 878396,
+  "fbx_check": {
+   "bones": 103,
+   "bones_match": true,
+   "first_frame": 0,
+   "keys": 37,
+   "ok": true,
+   "worst_deg": 0.0664,
+   "worst_mm": 0.001
+  },
   "n_errors": 0,
   "stats": {
    "max_slide_mm": 0.0,
-   "max_step_deg": 21.5,
+   "max_step_deg": 34.7,
    "max_wrist_deg": 76.0,
-   "seam_ratio": 1.65,
-   "seam_vel_deg": 7.34
+   "seam_ratio": 1.0,
+   "seam_vel_deg": 8.7
   },
   "warnings": []
  },
@@ -1377,6 +1515,28 @@
   },
   "warnings": []
  },
+ "turn_l90": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 28.0,
+   "max_wrist_deg": 17.2
+  },
+  "warnings": []
+ },
+ "turn_r90": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 28.0,
+   "max_wrist_deg": 17.2
+  },
+  "warnings": []
+ },
  "w_clench": {
   "errors": [],
   "n_errors": 0,
@@ -1388,6 +1548,24 @@
    "start_base_deg": 0.0
   },
   "warnings": []
+ },
+ "w_crane": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 67.2,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "arm_r short of its target by 4.2 cm at frame 15",
+   "arm_r short of its target by 4.2 cm at frame 16",
+   "arm_r short of its target by 4.2 cm at frame 17",
+   "arm_r short of its target by 4.2 cm at frame 18",
+   "centre of mass outside the support box on 16 frames"
+  ]
  },
  "w_draw": {
   "errors": [],
@@ -1493,6 +1671,19 @@
    "centre of mass outside the support box on 12 frames"
   ]
  },
+ "w_maelstrom": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.535,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.0,
+   "max_step_deg": 35.4,
+   "max_wrist_deg": 76.0,
+   "start_base_deg": 0.0
+  },
+  "warnings": []
+ },
  "w_press": {
   "errors": [],
   "n_errors": 0,
@@ -1569,6 +1760,21 @@
    "start_base_deg": 0.0
   },
   "warnings": []
+ },
+ "w_shuttle": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.617,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.43,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 53.8,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "centre of mass outside the support box on 9 frames"
+  ]
  },
  "w_single_whip": {
   "errors": [],

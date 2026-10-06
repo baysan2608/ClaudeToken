@@ -456,6 +456,38 @@
    "priority": "P1",
    "technique": "pluck (cai), pulling to the body"
   },
+  "a_rising_guard": {
+   "asset": "A_a_rising_guard",
+   "frames": 24,
+   "duration": 0.4,
+   "loop": false,
+   "contact": 10,
+   "contacts": [
+    10
+   ],
+   "base": "a_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      24
+     ]
+    ],
+    "r": [
+     [
+      0,
+      24
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "rising crossed forearms"
+  },
   "a_roar": {
    "asset": "A_a_roar",
    "frames": 36,
@@ -625,7 +657,7 @@
     "l": [
      [
       0,
-      7
+      6
      ]
     ],
     "r": [
@@ -714,6 +746,82 @@
    "priority": "P0",
    "technique": "block shudder (additive on guards)"
   },
+  "c_chain_stomp": {
+   "asset": "A_c_chain_stomp",
+   "frames": 60,
+   "duration": 1.0,
+   "loop": false,
+   "contact": 12,
+   "contacts": [
+    12,
+    24,
+    36
+   ],
+   "base": "f_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      14
+     ],
+     [
+      25,
+      60
+     ]
+    ],
+    "r": [
+     [
+      13,
+      26
+     ],
+     [
+      37,
+      38
+     ],
+     [
+      42,
+      60
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "stepping stomps (three)"
+  },
+  "c_fuse_loop": {
+   "asset": "A_c_fuse_loop",
+   "frames": 72,
+   "duration": 1.2,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "base": "c_fuse_loop",
+   "speed": 0.0,
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      72
+     ]
+    ],
+    "r": [
+     [
+      0,
+      72
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "focus with sword fingers (fuse)"
+  },
   "c_point": {
    "asset": "A_c_point",
    "frames": 24,
@@ -745,6 +853,38 @@
    },
    "priority": "P1",
    "technique": "point, then fist snap (detonate)"
+  },
+  "c_toss": {
+   "asset": "A_c_toss",
+   "frames": 20,
+   "duration": 0.333333,
+   "loop": false,
+   "contact": 8,
+   "contacts": [
+    8
+   ],
+   "base": "f_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "fist",
+    "r": "spread"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      20
+     ]
+    ],
+    "r": [
+     [
+      0,
+      20
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "ember flick (underhand)"
   },
   "deflect": {
    "asset": "A_deflect",
@@ -1288,6 +1428,42 @@
    "priority": "P0",
    "technique": "embrace the mountain (holding a mass)"
   },
+  "e_shadowless_kick": {
+   "asset": "A_e_shadowless_kick",
+   "frames": 30,
+   "duration": 0.5,
+   "loop": false,
+   "contact": 12,
+   "contacts": [
+    12
+   ],
+   "base": "e_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "tiger",
+    "r": "tiger"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      1
+     ],
+     [
+      22,
+      30
+     ]
+    ],
+    "r": [
+     [
+      0,
+      30
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "shadowless low snap kick"
+  },
   "e_sink": {
    "asset": "A_e_sink",
    "frames": 24,
@@ -1319,6 +1495,38 @@
    },
    "priority": "P1",
    "technique": "pressing the earth (palms down)"
+  },
+  "e_spatter": {
+   "asset": "A_e_spatter",
+   "frames": 30,
+   "duration": 0.5,
+   "loop": false,
+   "contact": 12,
+   "contacts": [
+    12
+   ],
+   "base": "e_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "tiger",
+    "r": "spread"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      30
+     ]
+    ],
+    "r": [
+     [
+      0,
+      30
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "low crescent arm spray"
   },
   "e_stance": {
    "asset": "A_e_stance",
@@ -1822,6 +2030,46 @@
    "priority": "P1",
    "technique": "rising palm (uppercut palm)"
   },
+  "f_corona": {
+   "asset": "A_f_corona",
+   "frames": 36,
+   "duration": 0.6,
+   "loop": false,
+   "contact": 14,
+   "contacts": [
+    14
+   ],
+   "base": "f_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      3
+     ],
+     [
+      16,
+      36
+     ]
+    ],
+    "r": [
+     [
+      0,
+      3
+     ],
+     [
+      20,
+      36
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "arms-extended spin (corona ring)"
+  },
   "f_crescent_kick": {
    "asset": "A_f_crescent_kick",
    "frames": 30,
@@ -1987,7 +2235,7 @@
     "l": [
      [
       0,
-      4
+      3
      ]
     ],
     "r": []
@@ -2084,9 +2332,9 @@
    "frames": 36,
    "duration": 0.6,
    "loop": false,
-   "contact": 16,
+   "contact": 17,
    "contacts": [
-    16
+    17
    ],
    "base": "f_stance",
    "speed": 0.0,
@@ -2101,7 +2349,11 @@
       9
      ],
      [
-      26,
+      22,
+      23
+     ],
+     [
+      27,
       36
      ]
     ],
@@ -2111,7 +2363,7 @@
       5
      ],
      [
-      31,
+      32,
       36
      ]
     ]
@@ -2379,6 +2631,38 @@
    "priority": "P0",
    "technique": "magma grip (cupped hands, heat tremble)"
   },
+  "f_tornado_kick": {
+   "asset": "A_f_tornado_kick",
+   "frames": 48,
+   "duration": 0.8,
+   "loop": false,
+   "contact": 28,
+   "contacts": [
+    28
+   ],
+   "base": "f_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      35,
+      48
+     ]
+    ],
+    "r": [
+     [
+      39,
+      48
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "tornado kick (xuan feng jiao)"
+  },
   "fall": {
    "asset": "A_fall",
    "frames": 48,
@@ -2398,6 +2682,26 @@
    },
    "priority": "P0",
    "technique": "airborne, arms balancing"
+  },
+  "flight": {
+   "asset": "A_flight",
+   "frames": 72,
+   "duration": 1.2,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "base": "flight",
+   "speed": 0.0,
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   },
+   "foot_plants": {
+    "l": [],
+    "r": []
+   },
+   "priority": "P1",
+   "technique": "upright flight, palms pressing down"
   },
   "getup": {
    "asset": "A_getup",
@@ -2478,6 +2782,46 @@
    },
    "priority": "P0",
    "technique": "long-fist guard (fists up, bladed)"
+  },
+  "guard_break": {
+   "asset": "A_guard_break",
+   "frames": 36,
+   "duration": 0.6,
+   "loop": false,
+   "contact": 6,
+   "contacts": [
+    6
+   ],
+   "base": "guard",
+   "speed": 0.0,
+   "hands": {
+    "l": "spread",
+    "r": "spread"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      3
+     ],
+     [
+      12,
+      19
+     ],
+     [
+      28,
+      36
+     ]
+    ],
+    "r": [
+     [
+      0,
+      36
+     ]
+    ]
+   },
+   "priority": "P1",
+   "technique": "guard broken open, backstep"
   },
   "hand_crane": {
    "asset": "A_hand_crane",
@@ -2819,6 +3163,38 @@
    "priority": "P0",
    "technique": "heavy hit: thrown back, stumble, recover"
   },
+  "hit_light_back": {
+   "asset": "A_hit_light_back",
+   "frames": 22,
+   "duration": 0.366667,
+   "loop": false,
+   "contact": 3,
+   "contacts": [
+    3
+   ],
+   "base": "idle",
+   "speed": 0.0,
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      22
+     ]
+    ],
+    "r": [
+     [
+      0,
+      22
+     ]
+    ]
+   },
+   "priority": "P1",
+   "technique": "light hit from behind"
+  },
   "hit_light_front": {
    "asset": "A_hit_light_front",
    "frames": 22,
@@ -2850,6 +3226,26 @@
    },
    "priority": "P0",
    "technique": "light hit from the front"
+  },
+  "hover": {
+   "asset": "A_hover",
+   "frames": 72,
+   "duration": 1.2,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "base": "hover",
+   "speed": 0.0,
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   },
+   "foot_plants": {
+    "l": [],
+    "r": []
+   },
+   "priority": "P1",
+   "technique": "lotus-like hover, floating arms"
   },
   "idle": {
    "asset": "A_idle",
@@ -2986,6 +3382,38 @@
    },
    "priority": "P0",
    "technique": "circular gathering with sword fingers (Tai Chi sword energy)"
+  },
+  "l_fan": {
+   "asset": "A_l_fan",
+   "frames": 30,
+   "duration": 0.5,
+   "loop": false,
+   "contact": 12,
+   "contacts": [
+    12
+   ],
+   "base": "f_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "spread",
+    "r": "sword"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      30
+     ]
+    ],
+    "r": [
+     [
+      0,
+      30
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "fingers-spread arc (lightning fan)"
   },
   "l_ground": {
    "asset": "A_l_ground",
@@ -3193,18 +3621,68 @@
     "l": [
      [
       0,
-      6
+      5
      ]
     ],
     "r": [
      [
       19,
-      24
+      23
      ]
     ]
    },
    "priority": "P0",
    "technique": "run 5.5 m/s, 12 deg lean"
+  },
+  "salute": {
+   "asset": "A_salute",
+   "frames": 60,
+   "duration": 1.0,
+   "loop": false,
+   "contact": null,
+   "contacts": [],
+   "base": "idle",
+   "speed": 0.0,
+   "hands": {
+    "l": "palm",
+    "r": "fist"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      60
+     ]
+    ],
+    "r": [
+     [
+      0,
+      60
+     ]
+    ]
+   },
+   "priority": "P1",
+   "technique": "fist-and-palm salute (bao quan li)"
+  },
+  "skate": {
+   "asset": "A_skate",
+   "frames": 48,
+   "duration": 0.8,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "base": "skate",
+   "speed": 0.0,
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   },
+   "foot_plants": {
+    "l": [],
+    "r": []
+   },
+   "priority": "P1",
+   "technique": "ice skating push-glide"
   },
   "stagger": {
    "asset": "A_stagger",
@@ -3334,6 +3812,116 @@
    "priority": "P0",
    "technique": "guard-up side shuffle to the right, feet never cross"
   },
+  "surf": {
+   "asset": "A_surf",
+   "frames": 48,
+   "duration": 0.8,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "base": "surf",
+   "speed": 0.0,
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      48
+     ]
+    ],
+    "r": [
+     [
+      0,
+      48
+     ]
+    ]
+   },
+   "priority": "P1",
+   "technique": "riding the wave, knees bent, arms balancing"
+  },
+  "turn_l90": {
+   "asset": "A_turn_l90",
+   "frames": 30,
+   "duration": 0.5,
+   "loop": false,
+   "contact": 18,
+   "contacts": [
+    18
+   ],
+   "base": "idle",
+   "speed": 0.0,
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      4
+     ],
+     [
+      12,
+      30
+     ]
+    ],
+    "r": [
+     [
+      0,
+      11
+     ],
+     [
+      19,
+      30
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "in-place turn 90 deg (two steps)"
+  },
+  "turn_r90": {
+   "asset": "A_turn_r90",
+   "frames": 30,
+   "duration": 0.5,
+   "loop": false,
+   "contact": 18,
+   "contacts": [
+    18
+   ],
+   "base": "idle",
+   "speed": 0.0,
+   "hands": {
+    "l": "relaxed",
+    "r": "relaxed"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      11
+     ],
+     [
+      19,
+      30
+     ]
+    ],
+    "r": [
+     [
+      0,
+      4
+     ],
+     [
+      12,
+      30
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "in-place turn 90 deg (two steps)"
+  },
   "w_clench": {
    "asset": "A_w_clench",
    "frames": 18,
@@ -3365,6 +3953,46 @@
    },
    "priority": "P1",
    "technique": "sharp double clench (freeze the shape)"
+  },
+  "w_crane": {
+   "asset": "A_w_crane",
+   "frames": 30,
+   "duration": 0.5,
+   "loop": false,
+   "contact": 15,
+   "contacts": [
+    15
+   ],
+   "base": "w_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      7
+     ],
+     [
+      16,
+      18
+     ],
+     [
+      25,
+      30
+     ]
+    ],
+    "r": [
+     [
+      0,
+      30
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "White Crane Spreads Its Wings"
   },
   "w_draw": {
    "asset": "A_w_draw",
@@ -3584,6 +4212,58 @@
    "priority": "P0",
    "technique": "Part the Wild Horse's Mane"
   },
+  "w_maelstrom": {
+   "asset": "A_w_maelstrom",
+   "frames": 48,
+   "duration": 0.8,
+   "loop": false,
+   "contact": 26,
+   "contacts": [
+    26
+   ],
+   "base": "w_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "willow",
+    "r": "willow"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      2
+     ],
+     [
+      7,
+      10
+     ],
+     [
+      15,
+      18
+     ],
+     [
+      23,
+      48
+     ]
+    ],
+    "r": [
+     [
+      0,
+      6
+     ],
+     [
+      11,
+      14
+     ],
+     [
+      19,
+      48
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "turning whip (full turn)"
+  },
   "w_press": {
    "asset": "A_w_press",
    "frames": 24,
@@ -3773,6 +4453,46 @@
    },
    "priority": "P0",
    "technique": "Cloud Hands (yun shou) guard"
+  },
+  "w_shuttle": {
+   "asset": "A_w_shuttle",
+   "frames": 30,
+   "duration": 0.5,
+   "loop": false,
+   "contact": 14,
+   "contacts": [
+    14
+   ],
+   "base": "w_stance",
+   "speed": 0.0,
+   "hands": {
+    "l": "willow",
+    "r": "palm"
+   },
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      9
+     ]
+    ],
+    "r": [
+     [
+      0,
+      7
+     ],
+     [
+      15,
+      16
+     ],
+     [
+      24,
+      30
+     ]
+    ]
+   },
+   "priority": "P2",
+   "technique": "Fair Lady Works the Shuttles"
   },
   "w_single_whip": {
    "asset": "A_w_single_whip",

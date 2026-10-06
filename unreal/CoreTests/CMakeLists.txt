@@ -60,7 +60,8 @@ target_compile_options(ff_tests PRIVATE ${FF_TEST_WARN} ${FF_LANG})
 target_compile_definitions(ff_tests PRIVATE FF_DATA_DIR="${FF_DATA_DIR}" FF_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 # ---------------------------------------------------------------- perf / soak
-add_executable(ff_perf "${CMAKE_CURRENT_SOURCE_DIR}/perf/perf_main.cpp")
+add_executable(ff_perf "${CMAKE_CURRENT_SOURCE_DIR}/perf/perf_main.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_harness.cpp"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/src/test_kit.cpp")
 target_link_libraries(ff_perf PRIVATE ff_core)
 target_include_directories(ff_perf PRIVATE "${FF_MODULE}/Private" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(ff_perf PRIVATE ${FF_TEST_WARN} ${FF_LANG})

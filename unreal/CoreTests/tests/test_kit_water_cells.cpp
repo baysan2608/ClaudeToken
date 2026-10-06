@@ -1,7 +1,7 @@
 // Port of game/tests/sim/test_kit_water_cells.gd: the Water column of the counter matrix (docs/MOVESET.md §8.2).
 // WaterRules.CELLS is rebuilt from Data/rules.json (every rule with owner "water", registration order). The per-cell
 // reference metadata (move / tier / expect) is not part of the exported data: the reference test reads it from
-// CoreTests/data/kit_cell_refs.json when present (Tools/godot_export/extract_cell_refs.py), else it notes the skip.
+// CoreTests/data/kit_cell_refs.json when present (not generated - see docs/core/PORT_STATUS.md), else it notes the skip.
 #include "ff_test.h"
 #include "kit_cells.h"
 #include "kit_water_util.h"

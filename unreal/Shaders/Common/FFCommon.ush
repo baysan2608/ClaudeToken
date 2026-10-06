@@ -1,0 +1,154 @@
+// Fourfold FX - common HLSL helpers (stream `fx`). Included from material Custom nodes as "/Fourfold/Common/FFCommon.ush"
+// (the FourfoldShaders module maps unreal/Shaders to /Fourfold).
+//
+// Portability rules for every file under Shaders/Common and Shaders/FX (they must compile for Metal (mobile ES3.1 /
+// iOS) and SM6 (Mac), AND as C++ through Private/Logic/tests/hlsl_shim.h, where their math is unit-tested):
+//   * pure functions; out-parameters through FF_OUT(T) / FF_INOUT(T); loops without attributes or with FF_UNROLL
+//   * component access .x .y .z .w only (no multi-letter swizzles), constructors float2(a, b) etc.
+//   * no wave intrinsics, no SM6-only features, no derivatives (ddx / ddy) in shared code, no matrices
+//   * textures only through the FF_TEX2D / FF_SAMPLER parameter macros and FFSample (noise texture lookups)
+#ifndef FF_COMMON_USH
+#define FF_COMMON_USH
+
+#ifndef FF_OUT
+#define FF_OUT(T) out T
+#define FF_INOUT(T) inout T
+#define FF_UNROLL [unroll]
+// Texture parameters: a Texture2D + its SamplerState (in a Custom node, input "Noise" gives Noise and NoiseSampler).
+#define FF_TEX2D Texture2D
+#define FF_SAMPLER SamplerState
+#endif
+
+#define FF_PI 3.14159265
+#define FF_TAU 6.28318531
+
+// ---------------------------------------------------------------------------------------------------- hashing
+// Integer hash (low-bias 32-bit mix, public-domain constants by C. Wellons). Lattice coordinates are integers stored
+// in floats (floor()), converted exactly.
+uint FFHashU(uint x)
+{
+	x ^= x >> 16;
+	x *= 0x7feb352du;
+	x ^= x >> 15;
+	x *= 0x846ca68bu;
+	x ^= x >> 16;
+	return x;
+}
+
+float FFHashToFloat(uint h)
+{
+	return float(h >> 8) * (1.0 / 16777216.0);
+}
+
+float FFHash1i(float x)
+{
+	return FFHashToFloat(FFHashU(uint(int(x)) * 747796405u + 2891336453u));
+}
+
+float FFHash2i(float x, float y)
+{
+	return FFHashToFloat(FFHashU(uint(int(x)) * 1597334677u ^ FFHashU(uint(int(y)) * 3812015801u + 1u)));
+}
+
+float FFHash3i(float x, float y, float z)
+{
+	uint h = FFHashU(uint(int(x)) * 1597334677u);
+	h = FFHashU(h ^ (uint(int(y)) * 3812015801u + 2u));
+	h = FFHashU(h ^ (uint(int(z)) * 2654435761u + 3u));
+	return FFHashToFloat(h);
+}
+
+// Three decorrelated random values for one integer lattice point.
+float3 FFHash33i(float3 c)
+{
+	uint h = FFHashU(uint(int(c.x)) * 1597334677u);
+	h = FFHashU(h ^ (uint(int(c.y)) * 3812015801u + 2u));
+	h = FFHashU(h ^ (uint(int(c.z)) * 2654435761u + 3u));
+	const uint h2 = FFHashU(h + 0x9e3779b9u);
+	const uint h3 = FFHashU(h2 + 0x9e3779b9u);
+	return float3(FFHashToFloat(h), FFHashToFloat(h2), FFHashToFloat(h3));
+}
+
+float2 FFHash22i(float2 c)
+{
+	const uint h = FFHashU(uint(int(c.x)) * 1597334677u ^ FFHashU(uint(int(c.y)) * 3812015801u + 1u));
+	const uint h2 = FFHashU(h + 0x9e3779b9u);
+	return float2(FFHashToFloat(h), FFHashToFloat(h2));
+}
+
+// Float hash for continuous inputs (seeds, per-vertex randoms): fract-based, no sine (stable on half/float GPUs).
+float FFHash11(float p)
+{
+	p = frac(p * 0.1031);
+	p *= p + 33.33;
+	p *= p + p;
+	return frac(p);
+}
+
+// ---------------------------------------------------------------------------------------------------- shaping
+float FFRemap(float x, float a, float b, float c, float d)
+{
+	return c + (d - c) * saturate((x - a) / max(b - a, 1e-5));
+}
+
+// smoothstep that is defined for e0 >= e1 too (returns a step) - GLSL / HLSL smoothstep is undefined there.
+float FFSmooth(float e0, float e1, float x)
+{
+	const float t = saturate((x - e0) / max(e1 - e0, 1e-5));
+	return t * t * (3.0 - 2.0 * t);
+}
+
+float FFSmoother(float t)
+{
+	t = saturate(t);
+	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+float FFEaseOutCubic(float t)
+{
+	const float u = 1.0 - saturate(t);
+	return 1.0 - u * u * u;
+}
+
+float FFLuminance(float3 c)
+{
+	return dot(c, float3(0.2126, 0.7152, 0.0722));
+}
+
+float2 FFRotate2(float2 p, float a)
+{
+	const float c = cos(a);
+	const float s = sin(a);
+	return float2(p.x * c - p.y * s, p.x * s + p.y * c);
+}
+
+// ---------------------------------------------------------------------------------------------------- colour
+// Black-body-ish emission ramp (linear, HDR-ready). t 0..1: 0 cold / black, 0.25 dull red, 0.5 orange-red,
+// 0.75 orange-yellow, 1 hot yellow-white (VFX palette of the Godot build).
+float3 FFBlackbody(float t)
+{
+	t = saturate(t);
+	float3 c = float3(0.0, 0.0, 0.0);
+	c = lerp(c, float3(0.30, 0.012, 0.0), FFSmooth(0.0, 0.28, t));
+	c = lerp(c, float3(0.95, 0.15, 0.012), FFSmooth(0.22, 0.55, t));
+	c = lerp(c, float3(1.0, 0.46, 0.06), FFSmooth(0.5, 0.8, t));
+	c = lerp(c, float3(1.0, 0.82, 0.38), FFSmooth(0.78, 1.0, t));
+	return c;
+}
+
+// Incandescence of a heated solid (glass, metal): 0 none .. 1 orange-yellow glow. n = 0..1 noise for unevenness.
+float3 FFHeatGlow(float h, float n)
+{
+	const float t = saturate(h * (0.85 + 0.3 * n));
+	return FFBlackbody(t * 0.92) * FFSmooth(0.05, 0.4, t) * (1.2 + 1.6 * t);
+}
+
+// Four-colour flame ramp (deep -> mid -> hot -> white) by heat 0..1.
+float3 FFFlameRamp(float heat, float3 deep, float3 mid, float3 hot, float3 white)
+{
+	float3 c = lerp(deep, mid, FFSmooth(0.12, 0.48, heat));
+	c = lerp(c, hot, FFSmooth(0.48, 0.80, heat));
+	return lerp(c, white, FFSmooth(0.93, 1.0, heat) * 0.6);
+}
+
+#endif  // FF_COMMON_USH

@@ -1,0 +1,7901 @@
+{
+ "schema": "fourfold.sfx/1",
+ "generator": "unreal/Tools/audio (render_audio.py + build_manifest.py); every sound is synthesised, original",
+ "mix": {
+  "global_voices": 28,
+  "loop_voices": 14,
+  "steal_fade_s": 0.03,
+  "bus_gain_db": {
+   "sfx": 0.0,
+   "ui": 0.0,
+   "ambience": -4.0
+  },
+  "fade_db_per_s": {
+   "body_in": 90.0,
+   "body_out": 60.0,
+   "zone_in": 30.0,
+   "zone_out": 24.0,
+   "floor_db": -40.0
+  },
+  "limiters": {
+   "sting": {
+    "gap_s": 0.1
+   },
+   "swing": {
+    "gap_s": 0.16,
+    "per": "actor"
+   },
+   "breath": {
+    "gap_s": 0.45,
+    "per": "actor"
+   },
+   "cloth": {
+    "gap_s": 0.3,
+    "per": "actor"
+   },
+   "status": {
+    "gap_s": 0.2,
+    "per": "actor"
+   },
+   "insufficient": {
+    "gap_s": 0.25
+   },
+   "pops": {
+    "gap_s": 0.08
+   },
+   "scene": {
+    "gap_s": 1.5
+   },
+   "zone": {
+    "gap_s": 0.12
+   },
+   "ui_tick": {
+    "gap_s": 0.15
+   }
+  },
+  "attenuation": {
+   "near": {
+    "inner_cm": 600.0,
+    "max_cm": 2800.0,
+    "db_at_max": -22.0
+   },
+   "mid": {
+    "inner_cm": 1000.0,
+    "max_cm": 4500.0,
+    "db_at_max": -24.0
+   },
+   "far": {
+    "inner_cm": 1800.0,
+    "max_cm": 8000.0,
+    "db_at_max": -26.0
+   },
+   "feel": {
+    "inner_cm": 2500.0,
+    "max_cm": 6500.0,
+    "db_at_max": -9.0
+   }
+  },
+  "duck": {
+   "bus": "ambience",
+   "db": -4.0,
+   "attack_s": 0.04,
+   "hold_s": 0.5,
+   "release_s": 0.9,
+   "triggers": [
+    "guard_break",
+    "knockdown",
+    "lightning_strike",
+    "fire_release",
+    "thunderclap",
+    "explosion_large",
+    "ko_bell"
+   ]
+  }
+ },
+ "sounds": {
+  "air_gust": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_air_gust",
+   "gain_db": -7.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 0.91,
+   "priority": 2,
+   "stinger": false
+  },
+  "air_push": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_air_push",
+   "gain_db": -4.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 0.56,
+   "priority": 2,
+   "stinger": false
+  },
+  "amb_courtyard_air_loop": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_amb_courtyard_air_loop",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 12.0,
+   "priority": 0,
+   "stinger": false
+  },
+  "amb_courtyard_loop": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_amb_courtyard_loop",
+   "gain_db": -22.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 3.0,
+   "priority": 0,
+   "stinger": false
+  },
+  "amb_water_distant_loop": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_amb_water_distant_loop",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 16.0,
+   "priority": 0,
+   "stinger": false
+  },
+  "amb_wind_trees_loop": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_amb_wind_trees_loop",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 14.0,
+   "priority": 0,
+   "stinger": false
+  },
+  "armor_up": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_armor_up",
+   "gain_db": -9.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 0.649,
+   "priority": 2,
+   "stinger": false
+  },
+  "bamboo_knock": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_bamboo_knock",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 0.789,
+   "priority": 0,
+   "stinger": false
+  },
+  "block": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_block",
+   "gain_db": -2.5,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.339,
+   "priority": 3,
+   "stinger": false
+  },
+  "blue_ignite": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_blue_ignite",
+   "gain_db": -4.0,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.65,
+   "priority": 2,
+   "stinger": false
+  },
+  "blue_roar_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_blue_roar_loop",
+   "gain_db": -14.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "breath_exhale_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_breath_exhale_heavy",
+   "gain_db": -14.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.5,
+   "priority": 2,
+   "stinger": false
+  },
+  "breath_exhale_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_breath_exhale_light",
+   "gain_db": -15.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.28,
+   "priority": 2,
+   "stinger": false
+  },
+  "breath_inhale": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_breath_inhale",
+   "gain_db": -19.0,
+   "pitch_var": 0.05,
+   "max_voices": 1,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.396,
+   "priority": 2,
+   "stinger": false
+  },
+  "breath_sharp": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_breath_sharp",
+   "gain_db": -7.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.169,
+   "priority": 2,
+   "stinger": false
+  },
+  "challenge_done": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_challenge_done",
+   "gain_db": -12.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 1.1,
+   "priority": 4,
+   "stinger": false
+  },
+  "challenge_fail": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_challenge_fail",
+   "gain_db": -5.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.799,
+   "priority": 4,
+   "stinger": false
+  },
+  "charge_air_t1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_air_t1",
+   "gain_db": -15.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.5,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_air_t2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_air_t2",
+   "gain_db": -12.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.7,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_air_t3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_air_t3",
+   "gain_db": -8.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.919,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_earth_t1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_earth_t1",
+   "gain_db": -14.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.5,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_earth_t2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_earth_t2",
+   "gain_db": -10.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.7,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_earth_t3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_earth_t3",
+   "gain_db": -6.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.949,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_fire_t1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_fire_t1",
+   "gain_db": -14.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.424,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_fire_t2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_fire_t2",
+   "gain_db": -12.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.589,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_fire_t3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_fire_t3",
+   "gain_db": -7.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.859,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_t1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_t1",
+   "gain_db": -11.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.349,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_t2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_t2",
+   "gain_db": -7.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.539,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_t3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_t3",
+   "gain_db": -5.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.819,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_water_t1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_water_t1",
+   "gain_db": -14.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.5,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_water_t2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_water_t2",
+   "gain_db": -11.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.7,
+   "priority": 3,
+   "stinger": true
+  },
+  "charge_water_t3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_charge_water_t3",
+   "gain_db": -8.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 1.004,
+   "priority": 3,
+   "stinger": true
+  },
+  "chime_wind_1": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_chime_wind_1",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 1.8,
+   "priority": 0,
+   "stinger": false
+  },
+  "chime_wind_2": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_chime_wind_2",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 1.8,
+   "priority": 0,
+   "stinger": false
+  },
+  "chime_wind_3": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_chime_wind_3",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 1.8,
+   "priority": 0,
+   "stinger": false
+  },
+  "chime_wind_4": {
+   "asset": "/Game/Fourfold/Audio/Ambience/S_chime_wind_4",
+   "gain_db": -24.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ambience",
+   "attenuation": "2d",
+   "bus": "ambience",
+   "family": "ambience",
+   "duration_s": 1.8,
+   "priority": 0,
+   "stinger": false
+  },
+  "clash_energy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_clash_energy",
+   "gain_db": -1.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.594,
+   "priority": 3,
+   "stinger": true
+  },
+  "clash_solid": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_clash_solid",
+   "gain_db": -1.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.434,
+   "priority": 3,
+   "stinger": true
+  },
+  "cloth_flap": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_cloth_flap",
+   "gain_db": -18.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.5,
+   "priority": 2,
+   "stinger": false
+  },
+  "cloth_rustle_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_cloth_rustle_1",
+   "gain_db": -23.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.29,
+   "priority": 2,
+   "stinger": false
+  },
+  "cloth_rustle_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_cloth_rustle_2",
+   "gain_db": -23.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.339,
+   "priority": 2,
+   "stinger": false
+  },
+  "cloth_rustle_3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_cloth_rustle_3",
+   "gain_db": -23.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.39,
+   "priority": 2,
+   "stinger": false
+  },
+  "cloth_snap": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_cloth_snap",
+   "gain_db": -10.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.199,
+   "priority": 2,
+   "stinger": false
+  },
+  "cloth_wrap": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_cloth_wrap",
+   "gain_db": -17.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.489,
+   "priority": 2,
+   "stinger": false
+  },
+  "combo_fail": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_combo_fail",
+   "gain_db": -15.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.3,
+   "priority": 4,
+   "stinger": false
+  },
+  "combo_start": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_combo_start",
+   "gain_db": -16.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.22,
+   "priority": 4,
+   "stinger": false
+  },
+  "combo_step": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_combo_step",
+   "gain_db": -16.5,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.26,
+   "priority": 4,
+   "stinger": false
+  },
+  "combo_success": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_combo_success",
+   "gain_db": -13.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.824,
+   "priority": 4,
+   "stinger": false
+  },
+  "conduct_buzz": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_conduct_buzz",
+   "gain_db": -4.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "lightning",
+   "duration_s": 0.6,
+   "priority": 2,
+   "stinger": false
+  },
+  "control_lost": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_control_lost",
+   "gain_db": -5.5,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.584,
+   "priority": 3,
+   "stinger": false
+  },
+  "cool_crack": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_cool_crack",
+   "gain_db": -5.5,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 0.664,
+   "priority": 3,
+   "stinger": false
+  },
+  "counter_fail": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_counter_fail",
+   "gain_db": -4.5,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.7,
+   "priority": 3,
+   "stinger": true
+  },
+  "counter_success": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_counter_success",
+   "gain_db": -1.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 1.0,
+   "priority": 3,
+   "stinger": true
+  },
+  "crescent_whoosh": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_crescent_whoosh",
+   "gain_db": -7.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 0.489,
+   "priority": 2,
+   "stinger": false
+  },
+  "crust_hiss": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_crust_hiss",
+   "gain_db": -10.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 1.05,
+   "priority": 2,
+   "stinger": false
+  },
+  "dash_air": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_dash_air",
+   "gain_db": -6.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.58,
+   "priority": 2,
+   "stinger": false
+  },
+  "deflect": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_deflect",
+   "gain_db": -4.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.864,
+   "priority": 3,
+   "stinger": false
+  },
+  "disc_whirr_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_disc_whirr_loop",
+   "gain_db": -16.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "metal",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "echo_ping": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_echo_ping",
+   "gain_db": -9.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 0.764,
+   "priority": 2,
+   "stinger": false
+  },
+  "element_air": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_element_air",
+   "gain_db": -11.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.34,
+   "priority": 4,
+   "stinger": false
+  },
+  "element_earth": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_element_earth",
+   "gain_db": -10.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.34,
+   "priority": 4,
+   "stinger": false
+  },
+  "element_fire": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_element_fire",
+   "gain_db": -8.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.34,
+   "priority": 4,
+   "stinger": false
+  },
+  "element_water": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_element_water",
+   "gain_db": -10.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.34,
+   "priority": 4,
+   "stinger": false
+  },
+  "evade_whoosh": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_evade_whoosh",
+   "gain_db": -8.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.409,
+   "priority": 2,
+   "stinger": false
+  },
+  "explosion_large": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_explosion_large",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 1.2,
+   "priority": 3,
+   "stinger": false
+  },
+  "explosion_small": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_explosion_small",
+   "gain_db": -3.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.689,
+   "priority": 3,
+   "stinger": false
+  },
+  "fire_charge_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fire_charge_loop",
+   "gain_db": -12.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "fire_field_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fire_field_loop",
+   "gain_db": -17.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "fire_ignite": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fire_ignite",
+   "gain_db": -6.0,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.894,
+   "priority": 2,
+   "stinger": false
+  },
+  "fire_jab": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fire_jab",
+   "gain_db": -3.0,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.32,
+   "priority": 2,
+   "stinger": false
+  },
+  "fire_release": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fire_release",
+   "gain_db": 0.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 1.2,
+   "priority": 2,
+   "stinger": false
+  },
+  "fireball_whoosh": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fireball_whoosh",
+   "gain_db": -3.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.87,
+   "priority": 2,
+   "stinger": false
+  },
+  "flight_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_flight_loop",
+   "gain_db": -13.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "freeze": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_freeze",
+   "gain_db": -7.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 1.2,
+   "priority": 2,
+   "stinger": false
+  },
+  "frost_hiss": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_frost_hiss",
+   "gain_db": -10.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "ice",
+   "duration_s": 0.799,
+   "priority": 2,
+   "stinger": false
+  },
+  "fuse_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fuse_loop",
+   "gain_db": -23.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "fuse_tick": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_fuse_tick",
+   "gain_db": -11.0,
+   "pitch_var": 0.04,
+   "max_voices": 4,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.22,
+   "priority": 2,
+   "stinger": false
+  },
+  "geyser": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_geyser",
+   "gain_db": -2.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 1.2,
+   "priority": 2,
+   "stinger": false
+  },
+  "geyser_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_geyser_loop",
+   "gain_db": -15.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "glass_fuse": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_glass_fuse",
+   "gain_db": -7.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "sand",
+   "duration_s": 1.1,
+   "priority": 2,
+   "stinger": false
+  },
+  "glass_shatter": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_glass_shatter",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "sand",
+   "duration_s": 0.914,
+   "priority": 3,
+   "stinger": false
+  },
+  "glide_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_glide_loop",
+   "gain_db": -17.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "guard_break": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_guard_break",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 1.079,
+   "priority": 3,
+   "stinger": false
+  },
+  "heat_crackle_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_heat_crackle_loop",
+   "gain_db": -12.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "heat_draw_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_heat_draw_loop",
+   "gain_db": -14.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "hit_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_hit_heavy",
+   "gain_db": -1.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.399,
+   "priority": 3,
+   "stinger": false
+  },
+  "hit_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_hit_light",
+   "gain_db": -1.5,
+   "pitch_var": 0.06,
+   "max_voices": 4,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.229,
+   "priority": 3,
+   "stinger": false
+  },
+  "ice_crack": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ice_crack",
+   "gain_db": -0.5,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "ice",
+   "duration_s": 0.319,
+   "priority": 3,
+   "stinger": false
+  },
+  "ice_melt_drip": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ice_melt_drip",
+   "gain_db": -12.0,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 0.869,
+   "priority": 2,
+   "stinger": false
+  },
+  "ice_shatter": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ice_shatter",
+   "gain_db": -1.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 0.974,
+   "priority": 3,
+   "stinger": false
+  },
+  "ice_slide_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ice_slide_loop",
+   "gain_db": -16.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "ice",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "ice_wall_raise": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ice_wall_raise",
+   "gain_db": -2.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "ice",
+   "duration_s": 1.095,
+   "priority": 2,
+   "stinger": false
+  },
+  "impact_fire_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_fire_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.539,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_fire_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_fire_light",
+   "gain_db": -4.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.4,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_glass_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_glass_heavy",
+   "gain_db": -1.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.719,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_glass_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_glass_light",
+   "gain_db": -5.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.499,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_ice_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_ice_heavy",
+   "gain_db": -0.5,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.484,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_ice_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_ice_light",
+   "gain_db": -4.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.349,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_metal_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_metal_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.759,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_metal_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_metal_light",
+   "gain_db": -7.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.549,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_plant_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_plant_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.389,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_plant_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_plant_light",
+   "gain_db": -3.5,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.269,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_sand_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_sand_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.419,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_sand_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_sand_light",
+   "gain_db": -4.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.339,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_stone_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_stone_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.419,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_stone_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_stone_light",
+   "gain_db": -5.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.299,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_water_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_water_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.539,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_water_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_water_light",
+   "gain_db": -4.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.4,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_wind_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_wind_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.409,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_wind_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_wind_light",
+   "gain_db": -4.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.329,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_wood_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_wood_heavy",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.419,
+   "priority": 3,
+   "stinger": false
+  },
+  "impact_wood_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_impact_wood_light",
+   "gain_db": -4.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.289,
+   "priority": 3,
+   "stinger": false
+  },
+  "kick_air": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_kick_air",
+   "gain_db": -9.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.645,
+   "priority": 2,
+   "stinger": false
+  },
+  "kick_earth": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_kick_earth",
+   "gain_db": -6.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.574,
+   "priority": 2,
+   "stinger": false
+  },
+  "kick_fire": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_kick_fire",
+   "gain_db": -7.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.495,
+   "priority": 2,
+   "stinger": false
+  },
+  "kick_water": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_kick_water",
+   "gain_db": -9.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.705,
+   "priority": 2,
+   "stinger": false
+  },
+  "knockdown": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_knockdown",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 1.2,
+   "priority": 3,
+   "stinger": false
+  },
+  "ko_bell": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ko_bell",
+   "gain_db": -7.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "element",
+   "attenuation": "2d",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 2.2,
+   "priority": 3,
+   "stinger": true
+  },
+  "land": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_land",
+   "gain_db": -3.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.419,
+   "priority": 3,
+   "stinger": false
+  },
+  "land_ice": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_land_ice",
+   "gain_db": -9.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.554,
+   "priority": 2,
+   "stinger": false
+  },
+  "land_metal": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_land_metal",
+   "gain_db": -8.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.524,
+   "priority": 2,
+   "stinger": false
+  },
+  "land_mud": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_land_mud",
+   "gain_db": -9.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.594,
+   "priority": 2,
+   "stinger": false
+  },
+  "land_sand": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_land_sand",
+   "gain_db": -10.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.524,
+   "priority": 2,
+   "stinger": false
+  },
+  "land_water": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_land_water",
+   "gain_db": -8.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.699,
+   "priority": 2,
+   "stinger": false
+  },
+  "land_wood": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_land_wood",
+   "gain_db": -9.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.589,
+   "priority": 2,
+   "stinger": false
+  },
+  "lava_bubble_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_lava_bubble_loop",
+   "gain_db": -14.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "lava_hiss_quench": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_lava_hiss_quench",
+   "gain_db": -4.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "magma",
+   "duration_s": 1.184,
+   "priority": 2,
+   "stinger": false
+  },
+  "lava_splat": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_lava_splat",
+   "gain_db": -2.5,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 0.699,
+   "priority": 3,
+   "stinger": false
+  },
+  "lava_wave_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_lava_wave_loop",
+   "gain_db": -13.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "lightning_charge_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_lightning_charge_loop",
+   "gain_db": -11.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "lightning",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "lightning_redirect": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_lightning_redirect",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "lightning",
+   "duration_s": 1.2,
+   "priority": 3,
+   "stinger": false
+  },
+  "lightning_strike": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_lightning_strike",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "lightning",
+   "duration_s": 1.2,
+   "priority": 3,
+   "stinger": false
+  },
+  "magma_glob": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_magma_glob",
+   "gain_db": -5.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "magma",
+   "duration_s": 0.379,
+   "priority": 3,
+   "stinger": false
+  },
+  "magma_surge": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_magma_surge",
+   "gain_db": -2.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "magma",
+   "duration_s": 1.2,
+   "priority": 2,
+   "stinger": false
+  },
+  "magnet_hum_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_magnet_hum_loop",
+   "gain_db": -19.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "metal",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "melt_rise": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_melt_rise",
+   "gain_db": -5.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 1.15,
+   "priority": 2,
+   "stinger": false
+  },
+  "metal_clang": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_metal_clang",
+   "gain_db": -3.5,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "metal",
+   "duration_s": 0.829,
+   "priority": 3,
+   "stinger": false
+  },
+  "metal_recall": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_metal_recall",
+   "gain_db": -6.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "metal",
+   "duration_s": 0.695,
+   "priority": 2,
+   "stinger": false
+  },
+  "metal_scrape": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_metal_scrape",
+   "gain_db": -6.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "metal",
+   "duration_s": 0.749,
+   "priority": 2,
+   "stinger": false
+  },
+  "mist_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_mist_loop",
+   "gain_db": -23.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "mist",
+   "duration_s": 3.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "obsidian_set": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_obsidian_set",
+   "gain_db": -7.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "magma",
+   "duration_s": 0.669,
+   "priority": 2,
+   "stinger": false
+  },
+  "perfect_deflect": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_perfect_deflect",
+   "gain_db": -1.5,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "feel",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.944,
+   "priority": 3,
+   "stinger": false
+  },
+  "quicksand_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_quicksand_loop",
+   "gain_db": -17.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "sand",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "roar_wave": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_roar_wave",
+   "gain_db": -2.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 1.15,
+   "priority": 2,
+   "stinger": false
+  },
+  "rod_hum_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_rod_hum_loop",
+   "gain_db": -21.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "metal",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "round_reset": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_round_reset",
+   "gain_db": -13.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "element",
+   "attenuation": "2d",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 0.954,
+   "priority": 3,
+   "stinger": true
+  },
+  "round_start": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_round_start",
+   "gain_db": -10.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "element",
+   "attenuation": "2d",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 1.284,
+   "priority": 3,
+   "stinger": true
+  },
+  "sand_burst": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_sand_burst",
+   "gain_db": -3.0,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "sand",
+   "duration_s": 0.429,
+   "priority": 2,
+   "stinger": false
+  },
+  "sand_hiss": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_sand_hiss",
+   "gain_db": -8.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "sand",
+   "duration_s": 0.794,
+   "priority": 2,
+   "stinger": false
+  },
+  "sand_surge_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_sand_surge_loop",
+   "gain_db": -17.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "sand",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "sandstorm_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_sandstorm_loop",
+   "gain_db": -15.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "sand",
+   "duration_s": 3.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "scenario_start": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_scenario_start",
+   "gain_db": -17.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.909,
+   "priority": 4,
+   "stinger": false
+  },
+  "sonic_boom": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_sonic_boom",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 0.989,
+   "priority": 3,
+   "stinger": false
+  },
+  "spark_snap": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_spark_snap",
+   "gain_db": -3.0,
+   "pitch_var": 0.06,
+   "max_voices": 4,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.149,
+   "priority": 3,
+   "stinger": false
+  },
+  "stance_settle": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stance_settle",
+   "gain_db": -16.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.449,
+   "priority": 2,
+   "stinger": false
+  },
+  "static_crackle_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_static_crackle_loop",
+   "gain_db": -20.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "status_burn_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_status_burn_loop",
+   "gain_db": -23.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "status_off": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_status_off",
+   "gain_db": -16.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.3,
+   "priority": 2,
+   "stinger": false
+  },
+  "status_wet_on": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_status_wet_on",
+   "gain_db": -14.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 0.45,
+   "priority": 2,
+   "stinger": false
+  },
+  "steam_hiss": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_steam_hiss",
+   "gain_db": -7.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 1.0,
+   "priority": 2,
+   "stinger": false
+  },
+  "steam_jet": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_steam_jet",
+   "gain_db": -6.0,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "mist",
+   "duration_s": 0.9,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_ice_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_ice_1",
+   "gain_db": -14.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.179,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_ice_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_ice_2",
+   "gain_db": -15.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.184,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_metal_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_metal_1",
+   "gain_db": -15.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.359,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_metal_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_metal_2",
+   "gain_db": -15.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.364,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_metal_3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_metal_3",
+   "gain_db": -13.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.359,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_mud_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_mud_1",
+   "gain_db": -13.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.4,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_mud_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_mud_2",
+   "gain_db": -13.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.4,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_puddle_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_puddle_1",
+   "gain_db": -15.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.214,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_puddle_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_puddle_2",
+   "gain_db": -15.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.214,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_sand_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_sand_1",
+   "gain_db": -14.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.249,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_sand_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_sand_2",
+   "gain_db": -15.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.244,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_sand_3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_sand_3",
+   "gain_db": -14.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.254,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_stone_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_stone_1",
+   "gain_db": -8.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.174,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_stone_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_stone_2",
+   "gain_db": -8.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.184,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_stone_3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_stone_3",
+   "gain_db": -5.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.164,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_stone_4": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_stone_4",
+   "gain_db": -9.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.184,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_water_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_water_1",
+   "gain_db": -12.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.539,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_water_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_water_2",
+   "gain_db": -12.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.544,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_water_3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_water_3",
+   "gain_db": -12.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.539,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_wood_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_wood_1",
+   "gain_db": -11.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.264,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_wood_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_wood_2",
+   "gain_db": -13.0,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.284,
+   "priority": 2,
+   "stinger": false
+  },
+  "step_wood_3": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_step_wood_3",
+   "gain_db": -11.5,
+   "pitch_var": 0.05,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.264,
+   "priority": 2,
+   "stinger": false
+  },
+  "stomp_earth": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stomp_earth",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.594,
+   "priority": 3,
+   "stinger": false
+  },
+  "stomp_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stomp_light",
+   "gain_db": -5.5,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.219,
+   "priority": 3,
+   "stinger": false
+  },
+  "stone_impact_1": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stone_impact_1",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 4,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 0.679,
+   "priority": 3,
+   "stinger": false
+  },
+  "stone_impact_2": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stone_impact_2",
+   "gain_db": -1.0,
+   "pitch_var": 0.06,
+   "max_voices": 4,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 0.729,
+   "priority": 3,
+   "stinger": false
+  },
+  "stone_launch": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stone_launch",
+   "gain_db": -5.0,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 0.754,
+   "priority": 2,
+   "stinger": false
+  },
+  "stone_rip": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stone_rip",
+   "gain_db": -3.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 0.994,
+   "priority": 2,
+   "stinger": false
+  },
+  "stone_roll_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_stone_roll_loop",
+   "gain_db": -12.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "swing_air_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_air_heavy",
+   "gain_db": -7.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.65,
+   "priority": 2,
+   "stinger": false
+  },
+  "swing_air_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_air_light",
+   "gain_db": -12.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.399,
+   "priority": 2,
+   "stinger": false
+  },
+  "swing_earth_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_earth_heavy",
+   "gain_db": -5.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.619,
+   "priority": 2,
+   "stinger": false
+  },
+  "swing_earth_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_earth_light",
+   "gain_db": -10.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.34,
+   "priority": 2,
+   "stinger": false
+  },
+  "swing_fire_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_fire_heavy",
+   "gain_db": -6.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.4,
+   "priority": 2,
+   "stinger": false
+  },
+  "swing_fire_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_fire_light",
+   "gain_db": -9.0,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.24,
+   "priority": 2,
+   "stinger": false
+  },
+  "swing_water_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_water_heavy",
+   "gain_db": -7.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.745,
+   "priority": 2,
+   "stinger": false
+  },
+  "swing_water_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swing_water_light",
+   "gain_db": -11.5,
+   "pitch_var": 0.05,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.42,
+   "priority": 2,
+   "stinger": false
+  },
+  "swirl_air": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_swirl_air",
+   "gain_db": -17.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.619,
+   "priority": 2,
+   "stinger": false
+  },
+  "thunderclap": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_thunderclap",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 1.2,
+   "priority": 3,
+   "stinger": false
+  },
+  "tornado_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_tornado_loop",
+   "gain_db": -15.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 3.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "ui_back": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_back",
+   "gain_db": -16.5,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.454,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_close": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_close",
+   "gain_db": -17.0,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.529,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_error": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_error",
+   "gain_db": -13.0,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.319,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_open": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_open",
+   "gain_db": -16.0,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.584,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_pause": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_pause",
+   "gain_db": -15.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.879,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_resume": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_resume",
+   "gain_db": -15.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.714,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_ring_open": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_ring_open",
+   "gain_db": -15.0,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.399,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_ring_pick": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_ring_pick",
+   "gain_db": -13.5,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.364,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_select": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_select",
+   "gain_db": -15.0,
+   "pitch_var": 0.0,
+   "max_voices": 3,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.494,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_tap": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_tap",
+   "gain_db": -12.0,
+   "pitch_var": 0.0,
+   "max_voices": 4,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.14,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_toast": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_toast",
+   "gain_db": -16.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.569,
+   "priority": 4,
+   "stinger": false
+  },
+  "ui_toggle": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_ui_toggle",
+   "gain_db": -14.0,
+   "pitch_var": 0.0,
+   "max_voices": 4,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 0.16,
+   "priority": 4,
+   "stinger": false
+  },
+  "unlock": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_unlock",
+   "gain_db": -4.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "ui",
+   "attenuation": "2d",
+   "bus": "ui",
+   "family": "ui",
+   "duration_s": 1.45,
+   "priority": 4,
+   "stinger": false
+  },
+  "vacuum_implode": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_vacuum_implode",
+   "gain_db": -4.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 0.895,
+   "priority": 2,
+   "stinger": false
+  },
+  "vacuum_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_vacuum_loop",
+   "gain_db": -16.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "vent_heat": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_vent_heat",
+   "gain_db": -5.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "thermal",
+   "duration_s": 0.939,
+   "priority": 2,
+   "stinger": false
+  },
+  "victory": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_victory",
+   "gain_db": -9.5,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": false,
+   "category": "element",
+   "attenuation": "2d",
+   "bus": "sfx",
+   "family": "system",
+   "duration_s": 1.939,
+   "priority": 3,
+   "stinger": true
+  },
+  "vine_burn": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_vine_burn",
+   "gain_db": -9.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "plant",
+   "duration_s": 1.0,
+   "priority": 2,
+   "stinger": false
+  },
+  "vine_creak": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_vine_creak",
+   "gain_db": -7.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "plant",
+   "duration_s": 0.794,
+   "priority": 2,
+   "stinger": false
+  },
+  "vine_snap": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_vine_snap",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 3,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "plant",
+   "duration_s": 0.169,
+   "priority": 3,
+   "stinger": false
+  },
+  "wall_crumble": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_wall_crumble",
+   "gain_db": -2.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 1.2,
+   "priority": 3,
+   "stinger": false
+  },
+  "wall_raise": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_wall_raise",
+   "gain_db": 0.0,
+   "pitch_var": 0.06,
+   "max_voices": 2,
+   "loop": false,
+   "category": "impact",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 1.11,
+   "priority": 3,
+   "stinger": false
+  },
+  "water_draw_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_water_draw_loop",
+   "gain_db": -12.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "water_jet": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_water_jet",
+   "gain_db": -14.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 0.8,
+   "priority": 2,
+   "stinger": false
+  },
+  "water_jet_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_water_jet_loop",
+   "gain_db": -14.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "water_shield_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_water_shield_loop",
+   "gain_db": -15.0,
+   "pitch_var": 0.0,
+   "max_voices": 1,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "water_splash": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_water_splash",
+   "gain_db": -4.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 0.874,
+   "priority": 2,
+   "stinger": false
+  },
+  "water_whip": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_water_whip",
+   "gain_db": -4.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 0.456,
+   "priority": 2,
+   "stinger": false
+  },
+  "wave_rush_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_wave_rush_loop",
+   "gain_db": -13.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "far",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "weight_shift": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_weight_shift",
+   "gain_db": -20.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "near",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.414,
+   "priority": 2,
+   "stinger": false
+  },
+  "whoosh_heavy": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_whoosh_heavy",
+   "gain_db": -7.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.59,
+   "priority": 2,
+   "stinger": false
+  },
+  "whoosh_light": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_whoosh_light",
+   "gain_db": -6.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "combat",
+   "duration_s": 0.295,
+   "priority": 2,
+   "stinger": false
+  }
+ },
+ "tables": {
+  "class_mat": {
+   "stone": "stone",
+   "stone_heavy": "stone",
+   "boulder": "stone",
+   "hot_rock": "magma",
+   "magma": "magma",
+   "lava_wave": "magma",
+   "metal": "metal",
+   "molten_metal": "metal",
+   "sand": "sand",
+   "sand_cloud": "sand",
+   "sand_surge": "sand",
+   "glass": "glass",
+   "water": "water",
+   "water_wave": "water",
+   "puddle": "water",
+   "pool": "water",
+   "ice": "ice",
+   "mist": "mist",
+   "steam": "steam",
+   "vine": "plant",
+   "flame": "flame",
+   "blue_fire": "blue",
+   "fire_field": "flame",
+   "ember": "blast",
+   "lightning": "lightning",
+   "blast": "blast",
+   "gust": "wind",
+   "tornado": "vortex",
+   "vacuum": "vacuum",
+   "sound": "sound",
+   "frost": "ice",
+   "guard_earth": "stone",
+   "wall_stone": "stone",
+   "wall_obsidian": "stone",
+   "wall_glass": "glass",
+   "wall_sand": "sand",
+   "wall_mud": "stone",
+   "wall_ice": "ice",
+   "wall_vine": "plant",
+   "plate_metal": "metal",
+   "shield_water": "water",
+   "screen_steam": "steam",
+   "fog": "mist",
+   "aura_flame": "flame",
+   "aura_blue": "blue",
+   "ward_static": "lightning",
+   "guard_blast": "blast",
+   "guard_wind": "wind",
+   "wall_vortex": "vortex",
+   "bubble_null": "vacuum",
+   "barrier_sound": "sound",
+   "spikes": "stone",
+   "rod": "metal",
+   "anchor": "stone",
+   "swallow": "stone",
+   "quicksand": "sand",
+   "melt_pit": "magma",
+   "heat_grip": "flame",
+   "heat_ranged": "flame",
+   "draw_heat": "flame",
+   "freeze": "ice",
+   "condense": "water",
+   "wave_water": "water",
+   "wave_sand": "sand",
+   "wave_lava": "magma",
+   "rime": "ice",
+   "vacuum_well": "vacuum",
+   "suction": "vacuum",
+   "water_jet": "water",
+   "spray": "water",
+   "plate": "metal",
+   "arena_wall": "stone",
+   "ground": "stone"
+  },
+  "mat_release": {
+   "stone": "stone_launch",
+   "metal": "metal_scrape",
+   "sand": "sand_hiss",
+   "glass": "glass_shatter",
+   "magma": "magma_glob",
+   "water": "water_whip",
+   "ice": "frost_hiss",
+   "mist": "steam_hiss",
+   "steam": "steam_jet",
+   "plant": "vine_creak",
+   "flame": "fireball_whoosh",
+   "blue": "blue_ignite",
+   "lightning": "spark_snap",
+   "blast": "explosion_small",
+   "wind": "crescent_whoosh",
+   "vortex": "crescent_whoosh",
+   "vacuum": "vacuum_implode",
+   "sound": "echo_ping"
+  },
+  "beam": {
+   "blue": "blue_ignite",
+   "flame": "fire_release",
+   "sand": "sand_hiss",
+   "water": "water_jet",
+   "sound": "sonic_boom",
+   "vacuum": "vacuum_implode"
+  },
+  "erupt": {
+   "stone": "wall_raise",
+   "magma": "magma_surge",
+   "water": "geyser",
+   "steam": "geyser",
+   "mist": "geyser",
+   "ice": "ice_wall_raise",
+   "flame": "fire_release",
+   "blue": "fire_release",
+   "plant": "vine_creak",
+   "sand": "sand_burst"
+  },
+  "burst_simple": {
+   "sand": "sand_burst",
+   "stone": "stone_impact_1",
+   "water": "water_splash",
+   "steam": "steam_jet",
+   "mist": "steam_jet",
+   "ice": "ice_shatter",
+   "glass": "glass_shatter",
+   "metal": "metal_clang",
+   "sound": "sonic_boom",
+   "vacuum": "vacuum_implode"
+  },
+  "transform_sting": {
+   "steam": "steam_hiss",
+   "glass": "glass_fuse",
+   "ice": "frost_hiss",
+   "snow": "frost_hiss",
+   "rock": "lava_hiss_quench",
+   "obsidian": "obsidian_set",
+   "lava": "magma_surge",
+   "molten_metal": "magma_surge",
+   "mud": "water_splash",
+   "ash": "vine_burn",
+   "water": "ice_melt_drip",
+   "mist": "steam_hiss",
+   "hot_rock": "melt_rise",
+   "sandstone": "sand_burst"
+  },
+  "break": {
+   "stone": "wall_crumble",
+   "sand": "wall_crumble",
+   "metal": "wall_crumble",
+   "plant": "vine_snap"
+  },
+  "launch_kind": {
+   "stream": "water_whip",
+   "water": "water_whip",
+   "ice": "freeze",
+   "seed": "vine_snap",
+   "disc_storm": "metal_scrape",
+   "grip": "stone_rip",
+   "split": "stone_launch",
+   "hot_stone": "fire_ignite",
+   "fireball": "fireball_whoosh",
+   "comet": "fireball_whoosh",
+   "ember": "fireball_whoosh",
+   "bomb": "fireball_whoosh",
+   "glob": "magma_glob",
+   "disc": "metal_scrape",
+   "lance": "metal_scrape",
+   "rod": "metal_scrape",
+   "plate": "metal_scrape",
+   "caltrops": "metal_scrape",
+   "crescent": "crescent_whoosh",
+   "twister": "crescent_whoosh",
+   "spiral": "crescent_whoosh",
+   "needle": "spark_snap",
+   "molten_stone": "magma_glob",
+   "molten_metal": "magma_glob",
+   "molten_sand": "magma_glob"
+  },
+  "body_impact": {
+   "stone": [
+    "stone_impact_1",
+    "stone_impact_2"
+   ],
+   "metal": [
+    "impact_metal_heavy"
+   ],
+   "sand": [
+    "impact_sand_heavy"
+   ],
+   "glass": [
+    "impact_glass_heavy"
+   ],
+   "ice": [
+    "impact_ice_heavy"
+   ],
+   "water": [
+    "impact_water_heavy"
+   ],
+   "magma": [
+    "lava_splat"
+   ],
+   "plant": [
+    "impact_plant_heavy"
+   ],
+   "flame": [
+    "impact_fire_heavy"
+   ],
+   "blue": [
+    "impact_fire_heavy"
+   ],
+   "blast": [
+    "impact_fire_heavy"
+   ],
+   "mist": [
+    "impact_water_light"
+   ],
+   "steam": [
+    "impact_water_light"
+   ],
+   "wind": [
+    "impact_wind_heavy"
+   ],
+   "vortex": [
+    "impact_wind_heavy"
+   ],
+   "vacuum": [
+    "impact_wind_heavy"
+   ],
+   "sound": [
+    "impact_wind_heavy"
+   ],
+   "lightning": [
+    "spark_snap"
+   ]
+  },
+  "hit_layer_light": {
+   "stone": "impact_stone_light",
+   "metal": "impact_metal_light",
+   "sand": "impact_sand_light",
+   "glass": "impact_glass_light",
+   "ice": "impact_ice_light",
+   "water": "impact_water_light",
+   "mist": "impact_water_light",
+   "steam": "impact_water_light",
+   "plant": "impact_plant_light",
+   "flame": "impact_fire_light",
+   "blue": "impact_fire_light",
+   "blast": "impact_fire_light",
+   "magma": "impact_fire_light",
+   "wind": "impact_wind_light",
+   "vortex": "impact_wind_light",
+   "vacuum": "impact_wind_light",
+   "sound": "impact_wind_light",
+   "lightning": "spark_snap"
+  },
+  "hit_layer_heavy": {
+   "stone": "impact_stone_heavy",
+   "metal": "impact_metal_heavy",
+   "sand": "impact_sand_heavy",
+   "glass": "impact_glass_heavy",
+   "ice": "impact_ice_heavy",
+   "water": "impact_water_heavy",
+   "mist": "impact_water_heavy",
+   "steam": "impact_water_heavy",
+   "plant": "impact_plant_heavy",
+   "flame": "impact_fire_heavy",
+   "blue": "impact_fire_heavy",
+   "blast": "impact_fire_heavy",
+   "magma": "impact_fire_heavy",
+   "wind": "impact_wind_heavy",
+   "vortex": "impact_wind_heavy",
+   "vacuum": "impact_wind_heavy",
+   "sound": "impact_wind_heavy",
+   "lightning": "lightning_redirect"
+  },
+  "land_surface": {
+   "stone": "land",
+   "sand": "land_sand",
+   "wood": "land_wood",
+   "metal": "land_metal",
+   "ice": "land_ice",
+   "mud": "land_mud",
+   "water": "land_water",
+   "puddle": "land_water"
+  },
+  "status_on": {
+   "chilled": "frost_hiss",
+   "frozen": "frost_hiss",
+   "shocked": "spark_snap",
+   "charged": "spark_snap",
+   "overcharged": "spark_snap",
+   "rooted": "vine_creak",
+   "icegrip": "ice_crack",
+   "scalded": "steam_hiss",
+   "wet": "status_wet_on",
+   "anchored": "armor_up",
+   "armored": "armor_up"
+  },
+  "status_on_gain": {
+   "icegrip": -4.0,
+   "scalded": -6.0
+  },
+  "zone_open": {
+   "sand_cloud": "sand_burst",
+   "sandstorm": "sand_burst",
+   "quicksand": "sand_burst",
+   "fog": "steam_jet",
+   "mist": "steam_jet",
+   "steam": "steam_jet",
+   "steam_screen": "steam_jet",
+   "geyser": "geyser",
+   "fire_field": "fire_ignite",
+   "melt_pit": "magma_glob",
+   "lava_pool": "magma_glob",
+   "mine": "fuse_tick",
+   "fuse": "fuse_tick",
+   "ice_floor": "frost_hiss",
+   "vacuum_well": "vacuum_implode",
+   "null_bubble": "vacuum_implode",
+   "static_field": "spark_snap",
+   "corona": "blue_ignite",
+   "sound_barrier": "echo_ping",
+   "briar": "vine_creak",
+   "caltrops": "metal_clang",
+   "tornado": "crescent_whoosh",
+   "eddy": "crescent_whoosh",
+   "vortex_wall": "crescent_whoosh",
+   "wind_guard": "air_push",
+   "mud": "water_splash"
+  },
+  "element_ui": {
+   "0": "element_earth",
+   "1": "element_water",
+   "2": "element_fire",
+   "3": "element_air"
+  }
+ },
+ "events": {
+  "hit": [
+   {
+    "id": "hit.heavy",
+    "play": [
+     {
+      "sound": "hit_heavy",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "result",
+      "eq": "knockdown"
+     }
+    ]
+   },
+   {
+    "id": "hit.heavy_dmg",
+    "play": [
+     {
+      "sound": "hit_heavy",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "result",
+      "ne": "knockdown"
+     },
+     {
+      "f": "damage",
+      "gte": 15
+     }
+    ]
+   },
+   {
+    "id": "hit.light",
+    "play": [
+     {
+      "sound": "hit_light",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "result",
+      "ne": "knockdown"
+     },
+     {
+      "f": "damage",
+      "lt": 15
+     }
+    ]
+   },
+   {
+    "id": "hit.lava",
+    "play": [
+     {
+      "sound": "lava_splat",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "kind",
+      "eq": "lava"
+     }
+    ]
+   },
+   {
+    "id": "hit.layer_heavy",
+    "play": [
+     {
+      "sound": {
+       "table": "hit_layer_heavy",
+       "key": "mat"
+      },
+      "at": [
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "mat",
+      "nin": [
+       "",
+       "magma"
+      ]
+     },
+     {
+      "f": "$weight",
+      "eq": "heavy"
+     }
+    ]
+   },
+   {
+    "id": "hit.layer_light",
+    "play": [
+     {
+      "sound": {
+       "table": "hit_layer_light",
+       "key": "mat"
+      },
+      "at": [
+       "actor"
+      ],
+      "gain_db": -2.0
+     }
+    ],
+    "when": [
+     {
+      "f": "mat",
+      "nin": [
+       "",
+       "magma"
+      ]
+     },
+     {
+      "f": "$weight",
+      "eq": "light"
+     }
+    ]
+   },
+   {
+    "id": "hit.knockdown",
+    "play": [
+     {
+      "sound": "knockdown",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "result",
+      "eq": "knockdown"
+     }
+    ]
+   },
+   {
+    "id": "hit.breath_heavy",
+    "play": [
+     {
+      "sound": "breath_exhale_heavy",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -5.0,
+      "chance": 0.7,
+      "limit": "breath"
+     }
+    ],
+    "when": [
+     {
+      "f": "$weight",
+      "eq": "heavy"
+     }
+    ]
+   },
+   {
+    "id": "hit.breath_light",
+    "play": [
+     {
+      "sound": "breath_exhale_light",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -4.0,
+      "chance": 0.5,
+      "limit": "breath"
+     }
+    ],
+    "when": [
+     {
+      "f": "$weight",
+      "eq": "light"
+     }
+    ]
+   }
+  ],
+  "block": [
+   {
+    "id": "block.thud",
+    "play": [
+     {
+      "sound": "block",
+      "at": [
+       "actor",
+       "body"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "block.steam",
+    "play": [
+     {
+      "sound": "steam_hiss",
+      "at": [
+       "actor",
+       "body"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "kind",
+      "eq": "fire_water"
+     }
+    ]
+   }
+  ],
+  "guard_break": [
+   {
+    "id": "guard_break",
+    "play": [
+     {
+      "sound": "guard_break",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "deflect": [
+   {
+    "id": "deflect",
+    "play": [
+     {
+      "sound": "deflect",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "perfect_deflect": [
+   {
+    "id": "perfect_deflect",
+    "play": [
+     {
+      "sound": "perfect_deflect",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "intercept": [
+   {
+    "id": "intercept",
+    "play": [
+     {
+      "sound": "block",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -4.0
+     }
+    ]
+   }
+  ],
+  "control_won": [
+   {
+    "id": "control_won.seize",
+    "play": [
+     {
+      "sound": "stone_rip",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -6.0
+     }
+    ],
+    "when": [
+     {
+      "f": "verb",
+      "in": [
+       "seize",
+       "magma_grip",
+       "acquire"
+      ]
+     }
+    ]
+   }
+  ],
+  "control_fail": [
+   {
+    "id": "control_fail.mass",
+    "play": [
+     {
+      "sound": "control_lost",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "reason",
+      "eq": "mass"
+     }
+    ]
+   }
+  ],
+  "control_lost": [
+   {
+    "id": "control_lost",
+    "play": [
+     {
+      "sound": "control_lost",
+      "at": [
+       "body",
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "conversion_interrupted": [
+   {
+    "id": "conversion_interrupted",
+    "play": [
+     {
+      "sound": "control_lost",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -4.0
+     }
+    ]
+   }
+  ],
+  "insufficient": [
+   {
+    "id": "insufficient",
+    "play": [
+     {
+      "sound": "challenge_fail",
+      "gain_db": -8.0,
+      "limit": "insufficient",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "$player",
+      "truthy": true
+     }
+    ]
+   }
+  ],
+  "rip": [
+   {
+    "id": "rip",
+    "play": [
+     {
+      "sound": "stone_rip",
+      "at": [
+       "body",
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "launch": [
+   {
+    "id": "launch.kind",
+    "play": [
+     {
+      "sound": {
+       "table": "launch_kind",
+       "key": "kind",
+       "default": "stone_launch"
+      },
+      "at": [
+       "body",
+       "actor"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "launch.whoosh_heavy",
+    "play": [
+     {
+      "sound": "whoosh_heavy",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "kind",
+      "nin": [
+       "stream",
+       "water",
+       "ice",
+       "seed",
+       "fireball",
+       "comet",
+       "ember",
+       "bomb",
+       "glob",
+       "crescent",
+       "twister",
+       "spiral",
+       "needle"
+      ]
+     },
+     {
+      "f": "heavy",
+      "truthy": true
+     }
+    ]
+   },
+   {
+    "id": "launch.whoosh_light",
+    "play": [
+     {
+      "sound": "whoosh_light",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "kind",
+      "nin": [
+       "stream",
+       "water",
+       "ice",
+       "seed",
+       "fireball",
+       "comet",
+       "ember",
+       "bomb",
+       "glob",
+       "crescent",
+       "twister",
+       "spiral",
+       "needle"
+      ]
+     },
+     {
+      "f": "heavy",
+      "falsy": true
+     }
+    ]
+   }
+  ],
+  "impact": [
+   {
+    "id": "impact.body",
+    "play": [
+     {
+      "sound": {
+       "table": "body_impact",
+       "key": "$body_mat",
+       "default": "stone_impact_1"
+      },
+      "at": [
+       "body"
+      ],
+      "gain_map": {
+       "f": "speed",
+       "in": [
+        3.0,
+        16.0
+       ],
+       "db": [
+        -9.0,
+        0.0
+       ]
+      }
+     }
+    ],
+    "when": [
+     {
+      "f": "speed",
+      "gt": 3.0
+     }
+    ]
+   }
+  ],
+  "wall": [
+   {
+    "id": "wall",
+    "play": [
+     {
+      "sound": "wall_raise",
+      "at": [
+       "body",
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "wall_crumble": [
+   {
+    "id": "wall_crumble",
+    "play": [
+     {
+      "sound": "wall_crumble",
+      "at": [
+       "body"
+      ]
+     }
+    ]
+   }
+  ],
+  "wall_cut": [
+   {
+    "id": "wall_cut",
+    "play": [
+     {
+      "sound": "wall_crumble",
+      "at": [
+       "body"
+      ],
+      "gain_db": -6.0
+     }
+    ]
+   }
+  ],
+  "wall_crack": [
+   {
+    "id": "wall_crack",
+    "play": [
+     {
+      "sound": "wall_crumble",
+      "at": [
+       "body"
+      ],
+      "gain_db": -8.0
+     }
+    ]
+   }
+  ],
+  "transform": [
+   {
+    "id": "transform.molten",
+    "play": [
+     {
+      "sound": "melt_rise",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "eq": "molten"
+     }
+    ]
+   },
+   {
+    "id": "transform.wave",
+    "play": [
+     {
+      "sound": "lava_splat",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "eq": "wave"
+     }
+    ]
+   },
+   {
+    "id": "transform.rock",
+    "play": [
+     {
+      "sound": "crust_hiss",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ]
+     },
+     {
+      "sound": "cool_crack",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "eq": "rock"
+     }
+    ]
+   },
+   {
+    "id": "transform.ice",
+    "play": [
+     {
+      "sound": "freeze",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "eq": "ice"
+     }
+    ]
+   },
+   {
+    "id": "transform.frozen",
+    "play": [
+     {
+      "sound": "freeze",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "eq": "frozen"
+     }
+    ]
+   },
+   {
+    "id": "transform.water",
+    "play": [
+     {
+      "sound": "ice_melt_drip",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "eq": "water"
+     }
+    ]
+   },
+   {
+    "id": "transform.puddle",
+    "play": [
+     {
+      "sound": "water_splash",
+      "at": [
+       "at",
+       "body",
+       "actor"
+      ],
+      "gain_db": -4.0
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "eq": "puddle"
+     }
+    ]
+   }
+  ],
+  "shatter": [
+   {
+    "id": "shatter.glass",
+    "play": [
+     {
+      "sound": "glass_shatter",
+      "at": [
+       "body"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "$body_mat",
+      "eq": "glass"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "shatter.ice",
+    "play": [
+     {
+      "sound": "ice_shatter",
+      "at": [
+       "body"
+      ]
+     }
+    ]
+   }
+  ],
+  "wave_blocked": [
+   {
+    "id": "wave_blocked",
+    "play": [
+     {
+      "sound": "lava_splat",
+      "at": [
+       "body"
+      ]
+     }
+    ]
+   }
+  ],
+  "wave_drop": [
+   {
+    "id": "wave_drop",
+    "play": [
+     {
+      "sound": "lava_splat",
+      "at": [
+       "body"
+      ]
+     }
+    ]
+   }
+  ],
+  "steam": [
+   {
+    "id": "steam",
+    "play": [
+     {
+      "sound": "steam_hiss",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ]
+   }
+  ],
+  "steam_block": [
+   {
+    "id": "steam_block",
+    "play": [
+     {
+      "sound": "steam_hiss",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ]
+   }
+  ],
+  "flare": [
+   {
+    "id": "flare.heavy",
+    "play": [
+     {
+      "sound": "fire_release",
+      "at": [
+       "hand",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "heavy",
+      "truthy": true
+     }
+    ]
+   },
+   {
+    "id": "flare.light",
+    "play": [
+     {
+      "sound": "fire_jab",
+      "at": [
+       "hand",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "heavy",
+      "falsy": true
+     }
+    ]
+   }
+  ],
+  "vent": [
+   {
+    "id": "vent",
+    "play": [
+     {
+      "sound": "vent_heat",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "lightning": [
+   {
+    "id": "lightning",
+    "play": [
+     {
+      "sound": "lightning_strike",
+      "at": [
+       "path_end",
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "lightning_redirect": [
+   {
+    "id": "lightning_redirect",
+    "play": [
+     {
+      "sound": "lightning_redirect",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "conduct": [
+   {
+    "id": "conduct",
+    "play": [
+     {
+      "sound": "conduct_buzz",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "gust": [
+   {
+    "id": "gust.heavy",
+    "play": [
+     {
+      "sound": "air_gust",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "heavy",
+      "truthy": true
+     }
+    ]
+   },
+   {
+    "id": "gust.light",
+    "play": [
+     {
+      "sound": "air_push",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "heavy",
+      "falsy": true
+     }
+    ]
+   }
+  ],
+  "lash": [
+   {
+    "id": "lash",
+    "play": [
+     {
+      "sound": "water_whip",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "shield": [
+   {
+    "id": "shield",
+    "play": [
+     {
+      "sound": "water_splash",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -6.0
+     }
+    ]
+   }
+  ],
+  "evade": [
+   {
+    "id": "evade.dash",
+    "play": [
+     {
+      "sound": "dash_air",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "dash",
+      "truthy": true
+     }
+    ]
+   },
+   {
+    "id": "evade.step",
+    "play": [
+     {
+      "sound": "evade_whoosh",
+      "at": [
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "dash",
+      "falsy": true
+     }
+    ]
+   },
+   {
+    "id": "evade.cloth",
+    "play": [
+     {
+      "sound": "cloth_flap",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -6.0,
+      "limit": "cloth"
+     }
+    ]
+   },
+   {
+    "id": "evade.water",
+    "play": [
+     {
+      "sound": "weight_shift",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -2.0,
+      "limit": "cloth"
+     }
+    ],
+    "when": [
+     {
+      "f": "dash",
+      "falsy": true
+     },
+     {
+      "f": "$el",
+      "eq": "water"
+     }
+    ]
+   },
+   {
+    "id": "evade.air",
+    "play": [
+     {
+      "sound": "swirl_air",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -3.0,
+      "limit": "cloth"
+     }
+    ],
+    "when": [
+     {
+      "f": "dash",
+      "falsy": true
+     },
+     {
+      "f": "$el",
+      "eq": "air"
+     }
+    ]
+   }
+  ],
+  "updraft": [
+   {
+    "id": "updraft",
+    "play": [
+     {
+      "sound": "air_gust",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -4.0
+     }
+    ]
+   }
+  ],
+  "land": [
+   {
+    "id": "land.surface",
+    "play": [
+     {
+      "sound": {
+       "table": "land_surface",
+       "key": "$surface",
+       "default": "land"
+      },
+      "at": [
+       "feet",
+       "actor"
+      ],
+      "gain_map": {
+       "f": "speed",
+       "in": [
+        3.0,
+        14.0
+       ],
+       "db": [
+        -6.0,
+        0.0
+       ]
+      }
+     }
+    ],
+    "when": [
+     {
+      "f": "speed",
+      "gt": 3.0
+     }
+    ]
+   }
+  ],
+  "element": [
+   {
+    "id": "element",
+    "play": [
+     {
+      "sound": {
+       "table": "element_ui",
+       "key": "element"
+      },
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "$player",
+      "truthy": true
+     }
+    ]
+   }
+  ],
+  "burn": [
+   {
+    "id": "burn",
+    "play": [
+     {
+      "sound": "fire_ignite",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -6.0
+     }
+    ]
+   }
+  ],
+  "getup": [
+   {
+    "id": "getup",
+    "play": [
+     {
+      "sound": "cloth_wrap",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -3.0,
+      "limit": "cloth"
+     }
+    ]
+   }
+  ],
+  "slam": [
+   {
+    "id": "slam",
+    "play": [
+     {
+      "sound": "stone_impact_2",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "thunder": [
+   {
+    "id": "thunder",
+    "play": [
+     {
+      "sound": "thunderclap",
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "gain_db": -2.0
+     }
+    ]
+   }
+  ],
+  "mine_detonate": [
+   {
+    "id": "mine_detonate",
+    "play": [
+     {
+      "sound": "explosion_small",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "mine_burst": [
+   {
+    "id": "mine_burst",
+    "play": [
+     {
+      "sound": "explosion_small",
+      "at": [
+       "pos",
+       "body"
+      ],
+      "gain_db": -2.0
+     }
+    ]
+   }
+  ],
+  "collapse": [
+   {
+    "id": "collapse",
+    "play": [
+     {
+      "sound": "vacuum_implode",
+      "at": [
+       "pos",
+       "body"
+      ]
+     }
+    ]
+   }
+  ],
+  "magma_surge": [
+   {
+    "id": "magma_surge",
+    "play": [
+     {
+      "sound": "magma_surge",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "magma_rift": [
+   {
+    "id": "magma_rift",
+    "play": [
+     {
+      "sound": "magma_surge",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ]
+   }
+  ],
+  "fire_column": [
+   {
+    "id": "fire_column",
+    "play": [
+     {
+      "sound": "fire_release",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "fire_burst": [
+   {
+    "id": "fire_burst.blue",
+    "play": [
+     {
+      "sound": "blue_ignite",
+      "at": [
+       "pos",
+       "body"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "blue",
+      "truthy": true
+     }
+    ]
+   },
+   {
+    "id": "fire_burst.flame",
+    "play": [
+     {
+      "sound": "fire_ignite",
+      "at": [
+       "pos",
+       "body"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "blue",
+      "falsy": true
+     }
+    ]
+   }
+  ],
+  "fire_ring": [
+   {
+    "id": "fire_ring",
+    "play": [
+     {
+      "sound": "fire_release",
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ]
+   }
+  ],
+  "ember_pop": [
+   {
+    "id": "ember_pop",
+    "play": [
+     {
+      "sound": "spark_snap",
+      "at": [
+       "pos",
+       "body"
+      ],
+      "gain_db": -4.0,
+      "limit": "pops"
+     }
+    ]
+   }
+  ],
+  "static_burst": [
+   {
+    "id": "static_burst",
+    "play": [
+     {
+      "sound": "spark_snap",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -3.0,
+      "limit": "pops"
+     }
+    ]
+   }
+  ],
+  "discharge": [
+   {
+    "id": "discharge",
+    "play": [
+     {
+      "sound": "conduct_buzz",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -4.0
+     }
+    ]
+   }
+  ],
+  "jet": [
+   {
+    "id": "jet.on",
+    "play": [
+     {
+      "sound": "water_jet",
+      "at": [
+       "hand",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "truthy": true
+     }
+    ]
+   }
+  ],
+  "dive": [
+   {
+    "id": "dive.on",
+    "play": [
+     {
+      "sound": "water_splash",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "truthy": true
+     }
+    ]
+   }
+  ],
+  "revealed": [
+   {
+    "id": "revealed",
+    "play": [
+     {
+      "sound": "echo_ping",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -6.0
+     }
+    ]
+   }
+  ],
+  "recall": [
+   {
+    "id": "recall",
+    "play": [
+     {
+      "sound": "metal_recall",
+      "at": [
+       "body",
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "hook": [
+   {
+    "id": "hook",
+    "play": [
+     {
+      "sound": "vine_snap",
+      "at": [
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "reactive_blast": [
+   {
+    "id": "reactive_blast",
+    "play": [
+     {
+      "sound": "explosion_small",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -2.0
+     }
+    ]
+   }
+  ],
+  "grapple": [
+   {
+    "id": "grapple",
+    "play": [
+     {
+      "sound": "dash_air",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ]
+   }
+  ],
+  "vacuum_catch": [
+   {
+    "id": "vacuum_catch",
+    "play": [
+     {
+      "sound": "vacuum_implode",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -6.0
+     }
+    ]
+   }
+  ],
+  "kiln": [
+   {
+    "id": "kiln",
+    "play": [
+     {
+      "sound": "crust_hiss",
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -6.0
+     }
+    ]
+   }
+  ],
+  "zone": [
+   {
+    "id": "zone.open",
+    "play": [
+     {
+      "sound": {
+       "table": "zone_open",
+       "key": "kind"
+      },
+      "at": [
+       "pos",
+       "body"
+      ],
+      "gain_db": -5.0,
+      "limit": "zone"
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "open"
+     }
+    ]
+   },
+   {
+    "id": "zone.close",
+    "play": [
+     {
+      "sound": "status_off",
+      "at": [
+       "pos",
+       "body"
+      ],
+      "gain_db": -5.0,
+      "limit": "zone"
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "close"
+     }
+    ]
+   }
+  ],
+  "clash": [
+   {
+    "id": "clash.energy",
+    "play": [
+     {
+      "sound": "clash_energy",
+      "at": [
+       "pos"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "mat",
+      "in": [
+       "flame",
+       "blue",
+       "lightning",
+       "blast",
+       "vacuum",
+       "sound",
+       "wind",
+       "vortex"
+      ]
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "clash.solid",
+    "play": [
+     {
+      "sound": "clash_solid",
+      "at": [
+       "pos"
+      ]
+     }
+    ]
+   }
+  ],
+  "action": [
+   {
+    "id": "action.swing",
+    "play": [
+     {
+      "sound": "swing_{$el}_{$weight}",
+      "at": [
+       "hand",
+       "actor"
+      ],
+      "limit": "swing",
+      "expect": {
+       "$el": [
+        "earth",
+        "water",
+        "fire",
+        "air"
+       ],
+       "$weight": [
+        "light",
+        "heavy"
+       ]
+      }
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "active"
+     },
+     {
+      "f": "slot",
+      "in": [
+       "strike",
+       "thrust",
+       "push"
+      ]
+     },
+     {
+      "f": "$el",
+      "ne": ""
+     }
+    ]
+   },
+   {
+    "id": "action.kick",
+    "play": [
+     {
+      "sound": "kick_{$el}",
+      "at": [
+       "feet",
+       "actor"
+      ],
+      "limit": "swing",
+      "expect": {
+       "$el": [
+        "earth",
+        "water",
+        "fire",
+        "air"
+       ]
+      }
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "active"
+     },
+     {
+      "f": "slot",
+      "eq": "sweep"
+     },
+     {
+      "f": "$el",
+      "ne": ""
+     }
+    ]
+   },
+   {
+    "id": "action.stomp_earth",
+    "play": [
+     {
+      "sound": "stomp_earth",
+      "at": [
+       "feet",
+       "actor"
+      ],
+      "limit": "swing"
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "active"
+     },
+     {
+      "f": "slot",
+      "eq": "ground"
+     },
+     {
+      "f": "$el",
+      "eq": "earth"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "action.stomp",
+    "play": [
+     {
+      "sound": "stomp_light",
+      "at": [
+       "feet",
+       "actor"
+      ],
+      "limit": "swing"
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "active"
+     },
+     {
+      "f": "slot",
+      "eq": "ground"
+     }
+    ]
+   },
+   {
+    "id": "action.snap_fire",
+    "play": [
+     {
+      "sound": "cloth_snap",
+      "at": [
+       "hand",
+       "actor"
+      ],
+      "gain_db": -3.0,
+      "limit": "cloth"
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "recovery"
+     },
+     {
+      "f": "$el",
+      "eq": "fire"
+     },
+     {
+      "f": "slot",
+      "in": [
+       "strike",
+       "thrust"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "action.breath_fire",
+    "play": [
+     {
+      "sound": "breath_sharp",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -2.0,
+      "limit": "breath"
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "startup"
+     },
+     {
+      "f": "$el",
+      "eq": "fire"
+     },
+     {
+      "f": "slot",
+      "in": [
+       "strike",
+       "thrust",
+       "sweep"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "action.breath_inhale",
+    "play": [
+     {
+      "sound": "breath_inhale",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -3.0,
+      "limit": "breath"
+     }
+    ],
+    "when": [
+     {
+      "f": "phase",
+      "eq": "charge"
+     },
+     {
+      "f": "tier",
+      "eq": 0
+     }
+    ]
+   }
+  ],
+  "fx": [
+   {
+    "id": "fx.release",
+    "play": [
+     {
+      "sound": {
+       "table": "mat_release",
+       "key": "mat",
+       "default": "whoosh_light"
+      },
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "gain_db": -2.0
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "release"
+     }
+    ]
+   },
+   {
+    "id": "fx.release_heavy",
+    "play": [
+     {
+      "sound": "whoosh_heavy",
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "gain_db": -4.0
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "release"
+     },
+     {
+      "f": "tier",
+      "gte": 3
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.flame",
+    "play": [
+     {
+      "sound": "fire_release",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "flame"
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.blue",
+    "play": [
+     {
+      "sound": "blue_ignite",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "blue"
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.wind_big",
+    "play": [
+     {
+      "sound": "air_gust",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "wind",
+       "vortex"
+      ]
+     },
+     {
+      "f": "tier",
+      "gte": 2
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.wind",
+    "play": [
+     {
+      "sound": "air_push",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "wind",
+       "vortex"
+      ]
+     },
+     {
+      "f": "tier",
+      "lt": 2
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.sand",
+    "play": [
+     {
+      "sound": "sand_burst",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "sand"
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.water",
+    "play": [
+     {
+      "sound": "water_splash",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "water"
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.steam",
+    "play": [
+     {
+      "sound": "steam_jet",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "steam",
+       "mist"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.ice",
+    "play": [
+     {
+      "sound": "frost_hiss",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "ice"
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.sound_big",
+    "play": [
+     {
+      "sound": "roar_wave",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "sound"
+     },
+     {
+      "f": "tier",
+      "gte": 2
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.sound",
+    "play": [
+     {
+      "sound": "echo_ping",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "sound"
+     },
+     {
+      "f": "tier",
+      "lt": 2
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.vacuum",
+    "play": [
+     {
+      "sound": "vacuum_implode",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "vacuum"
+     }
+    ]
+   },
+   {
+    "id": "fx.cone.lightning",
+    "play": [
+     {
+      "sound": "spark_snap",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "cone"
+     },
+     {
+      "f": "mat",
+      "eq": "lightning"
+     }
+    ]
+   },
+   {
+    "id": "fx.beam.skybreak",
+    "play": [
+     {
+      "sound": "thunderclap",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "beam"
+     },
+     {
+      "f": "mat",
+      "eq": "lightning"
+     },
+     {
+      "f": "shape",
+      "eq": "down"
+     }
+    ]
+   },
+   {
+    "id": "fx.beam.lightning",
+    "play": [
+     {
+      "sound": "lightning_strike",
+      "at": [
+       "path_end",
+       "pos",
+       "actor"
+      ],
+      "gain_db": -2.0
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "beam"
+     },
+     {
+      "f": "mat",
+      "eq": "lightning"
+     },
+     {
+      "f": "shape",
+      "ne": "down"
+     }
+    ]
+   },
+   {
+    "id": "fx.beam.other",
+    "play": [
+     {
+      "sound": {
+       "table": "beam",
+       "key": "mat"
+      },
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "gain_db": -2.0
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "beam"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "blue",
+       "flame",
+       "sand",
+       "water",
+       "sound",
+       "vacuum"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "fx.ring.sonic",
+    "play": [
+     {
+      "sound": "sonic_boom",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "ring"
+     },
+     {
+      "f": "mat",
+      "eq": "sound"
+     },
+     {
+      "f": "tier",
+      "gte": 2
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.ring",
+    "play": [
+     {
+      "sound": {
+       "table": "mat_release",
+       "key": "mat",
+       "default": "air_push"
+      },
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "ring"
+     }
+    ]
+   },
+   {
+    "id": "fx.burst.big_radius",
+    "play": [
+     {
+      "sound": "explosion_large",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "blast",
+       "flame",
+       "blue"
+      ]
+     },
+     {
+      "f": "radius",
+      "gte": 2.0
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.burst.big_blast_power",
+    "play": [
+     {
+      "sound": "explosion_large",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "eq": "blast"
+     },
+     {
+      "f": "power",
+      "gte": 30.0
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.burst.big_flame_power",
+    "play": [
+     {
+      "sound": "explosion_large",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "flame",
+       "blue"
+      ]
+     },
+     {
+      "f": "radius",
+      "gte": 1.2
+     },
+     {
+      "f": "power",
+      "gte": 30.0
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.burst.blast",
+    "play": [
+     {
+      "sound": "explosion_small",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "eq": "blast"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.burst.flame_mid",
+    "play": [
+     {
+      "sound": "explosion_small",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "flame",
+       "blue"
+      ]
+     },
+     {
+      "f": "radius",
+      "gte": 1.2
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.burst.flame_small",
+    "play": [
+     {
+      "sound": "fire_ignite",
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "flame",
+       "blue"
+      ]
+     },
+     {
+      "f": "radius",
+      "lt": 1.2
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.burst.lightning",
+    "play": [
+     {
+      "sound": "thunderclap",
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "eq": "lightning"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "fx.burst.simple",
+    "play": [
+     {
+      "sound": {
+       "table": "burst_simple",
+       "key": "mat"
+      },
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "burst"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "sand",
+       "stone",
+       "water",
+       "steam",
+       "mist",
+       "ice",
+       "glass",
+       "metal",
+       "sound",
+       "vacuum"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "fx.erupt",
+    "play": [
+     {
+      "sound": {
+       "table": "erupt",
+       "key": "mat"
+      },
+      "at": [
+       "pos",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "fx",
+      "eq": "erupt"
+     },
+     {
+      "f": "mat",
+      "in": [
+       "stone",
+       "magma",
+       "water",
+       "steam",
+       "mist",
+       "ice",
+       "flame",
+       "blue",
+       "plant",
+       "sand"
+      ]
+     }
+    ]
+   }
+  ],
+  "interaction": [
+   {
+    "id": "ix.perfect",
+    "play": [
+     {
+      "sound": "counter_success",
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "perfect",
+      "truthy": true
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "ix.block_metal",
+    "play": [
+     {
+      "sound": "metal_clang",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "block"
+     },
+     {
+      "f": "$threat_mat",
+      "eq": "metal"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "ix.block_metal2",
+    "play": [
+     {
+      "sound": "metal_clang",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "block"
+     },
+     {
+      "f": "$counter_mat",
+      "eq": "metal"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "ix.deflect",
+    "play": [
+     {
+      "sound": "deflect",
+      "at": [
+       "pos",
+       "actor"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "in": [
+       "deflect",
+       "redirect",
+       "reflect"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "ix.reclaim_metal",
+    "play": [
+     {
+      "sound": "metal_recall",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "reclaim"
+     },
+     {
+      "f": "$threat_mat",
+      "eq": "metal"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "ix.reclaim",
+    "play": [
+     {
+      "sound": "stone_rip",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "reclaim"
+     }
+    ]
+   },
+   {
+    "id": "ix.absorb_vacuum",
+    "play": [
+     {
+      "sound": "vacuum_implode",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "in": [
+       "absorb",
+       "capture"
+      ]
+     },
+     {
+      "f": "$counter_mat",
+      "eq": "vacuum"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "ix.absorb",
+    "play": [
+     {
+      "sound": "water_splash",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "in": [
+       "absorb",
+       "capture"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "ix.transform",
+    "play": [
+     {
+      "sound": {
+       "table": "transform_sting",
+       "key": "to",
+       "default": "melt_rise"
+      },
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "transform"
+     }
+    ]
+   },
+   {
+    "id": "ix.shatter_glass",
+    "play": [
+     {
+      "sound": "glass_shatter",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "shatter"
+     },
+     {
+      "f": "$threat_mat",
+      "eq": "glass"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "ix.shatter_ice",
+    "play": [
+     {
+      "sound": "ice_shatter",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "shatter"
+     },
+     {
+      "f": "$threat_mat",
+      "eq": "ice"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "ix.shatter",
+    "play": [
+     {
+      "sound": "stone_impact_2",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "shatter"
+     }
+    ]
+   },
+   {
+    "id": "ix.sink",
+    "play": [
+     {
+      "sound": "stone_impact_1",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "sink"
+     }
+    ]
+   },
+   {
+    "id": "ix.conduct",
+    "play": [
+     {
+      "sound": "conduct_buzz",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "in": [
+       "ground",
+       "conduct"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "ix.extinguish",
+    "play": [
+     {
+      "sound": "steam_hiss",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "in": [
+       "extinguish",
+       "neutralize",
+       "disperse"
+      ]
+     },
+     {
+      "f": "$threat_mat",
+      "in": [
+       "flame",
+       "blue"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "ix.amplify",
+    "play": [
+     {
+      "sound": "fire_ignite",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "amplify"
+     }
+    ]
+   },
+   {
+    "id": "ix.overwhelm",
+    "play": [
+     {
+      "sound": "counter_fail",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     },
+     {
+      "sound": {
+       "table": "break",
+       "key": "$counter_mat"
+      },
+      "at": [
+       "pos"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "overwhelm"
+     }
+    ]
+   },
+   {
+    "id": "ix.disrupt",
+    "play": [
+     {
+      "sound": "echo_ping",
+      "at": [
+       "pos"
+      ],
+      "limit": "sting"
+     }
+    ],
+    "when": [
+     {
+      "f": "outcome",
+      "eq": "disrupt"
+     }
+    ]
+   }
+  ],
+  "charge": [
+   {
+    "id": "charge.tier",
+    "play": [
+     {
+      "sound": "charge_{$el}_t{tier}",
+      "at": [
+       "hand",
+       "actor"
+      ],
+      "gain_db": -3.0,
+      "expect": {
+       "$el": [
+        "earth",
+        "water",
+        "fire",
+        "air"
+       ],
+       "tier": [
+        "1",
+        "2",
+        "3"
+       ]
+      }
+     }
+    ],
+    "when": [
+     {
+      "f": "tier",
+      "gte": 1
+     },
+     {
+      "f": "$el",
+      "ne": ""
+     }
+    ]
+   },
+   {
+    "id": "charge.generic",
+    "play": [
+     {
+      "sound": "charge_t{tier}",
+      "at": [
+       "hand",
+       "actor"
+      ],
+      "gain_db": -3.0,
+      "expect": {
+       "tier": [
+        "1",
+        "2",
+        "3"
+       ]
+      }
+     }
+    ],
+    "when": [
+     {
+      "f": "tier",
+      "gte": 1
+     },
+     {
+      "f": "$el",
+      "eq": ""
+     }
+    ]
+   }
+  ],
+  "status": [
+   {
+    "id": "status.on",
+    "play": [
+     {
+      "sound": {
+       "table": "status_on",
+       "key": "status"
+      },
+      "at": [
+       "actor"
+      ],
+      "limit": "status"
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "truthy": true
+     },
+     {
+      "f": "status",
+      "in": [
+       "chilled",
+       "frozen",
+       "shocked",
+       "charged",
+       "overcharged",
+       "rooted",
+       "wet",
+       "anchored",
+       "armored"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "status.on_quiet",
+    "play": [
+     {
+      "sound": {
+       "table": "status_on",
+       "key": "status"
+      },
+      "at": [
+       "actor"
+      ],
+      "gain_db": -5.0,
+      "limit": "status"
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "truthy": true
+     },
+     {
+      "f": "status",
+      "in": [
+       "icegrip",
+       "scalded"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "status.off",
+    "play": [
+     {
+      "sound": "status_off",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -4.0,
+      "limit": "status"
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "falsy": true
+     },
+     {
+      "f": "status",
+      "in": [
+       "burning",
+       "frozen",
+       "chilled",
+       "rooted",
+       "shocked",
+       "anchored",
+       "armored",
+       "blinded",
+       "concealed",
+       "slowed",
+       "muddy",
+       "levitating",
+       "wet"
+      ]
+     }
+    ]
+   }
+  ],
+  "stance": [
+   {
+    "id": "stance.heavy",
+    "play": [
+     {
+      "sound": "armor_up",
+      "at": [
+       "actor"
+      ],
+      "limit": "status"
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "truthy": true
+     },
+     {
+      "f": "stance",
+      "in": [
+       "stone_skin",
+       "iron",
+       "anchor",
+       "roots"
+      ]
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "stance.on",
+    "play": [
+     {
+      "sound": "stance_settle",
+      "at": [
+       "actor"
+      ],
+      "limit": "status"
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "truthy": true
+     },
+     {
+      "f": "stance",
+      "ne": ""
+     }
+    ]
+   }
+  ],
+  "mode": [
+   {
+    "id": "mode.on",
+    "play": [
+     {
+      "sound": "cloth_flap",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -5.0,
+      "limit": "cloth"
+     }
+    ],
+    "when": [
+     {
+      "f": "on",
+      "truthy": true
+     }
+    ]
+   }
+  ],
+  "weave": [
+   {
+    "id": "weave",
+    "play": [
+     {
+      "sound": "charge_t1",
+      "at": [
+       "hand",
+       "actor"
+      ],
+      "gain_db": -6.0,
+      "limit": "sting"
+     }
+    ]
+   }
+  ],
+  "slump": [
+   {
+    "id": "slump",
+    "play": [
+     {
+      "sound": "melt_rise",
+      "at": [
+       "body",
+       "actor"
+      ]
+     }
+    ]
+   }
+  ],
+  "convert": [
+   {
+    "id": "convert.glass",
+    "play": [
+     {
+      "sound": "glass_fuse",
+      "at": [
+       "body",
+       "actor"
+      ]
+     }
+    ],
+    "when": [
+     {
+      "f": "to",
+      "in": [
+       "glass",
+       "Glass",
+       "GLASS"
+      ]
+     }
+    ]
+   }
+  ],
+  "ricochet": [
+   {
+    "id": "ricochet",
+    "play": [
+     {
+      "sound": "metal_clang",
+      "at": [
+       "at"
+      ]
+     }
+    ]
+   }
+  ],
+  "inrush": [
+   {
+    "id": "inrush",
+    "play": [
+     {
+      "sound": "vacuum_implode",
+      "at": [
+       "pos"
+      ],
+      "gain_db": -3.0
+     }
+    ]
+   }
+  ],
+  "extinguish": [
+   {
+    "id": "extinguish.time",
+    "play": [
+     {
+      "sound": "steam_hiss",
+      "at": [
+       "body"
+      ],
+      "gain_db": -6.0
+     }
+    ],
+    "when": [
+     {
+      "f": "by",
+      "eq": "time"
+     }
+    ],
+    "stop": true
+   },
+   {
+    "id": "extinguish.quench",
+    "play": [
+     {
+      "sound": "lava_hiss_quench",
+      "at": [
+       "body"
+      ],
+      "gain_db": -6.0
+     }
+    ]
+   }
+  ],
+  "app_ko": [
+   {
+    "id": "app_ko.bell",
+    "play": [
+     {
+      "sound": "ko_bell",
+      "two_d": true
+     }
+    ]
+   },
+   {
+    "id": "app_ko.victory",
+    "play": [
+     {
+      "sound": "victory",
+      "delay_s": 0.9,
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "$player",
+      "falsy": true
+     }
+    ]
+   }
+  ],
+  "app_round_reset": [
+   {
+    "id": "app_round_reset",
+    "play": [
+     {
+      "sound": "round_start",
+      "limit": "scene",
+      "two_d": true
+     }
+    ]
+   }
+  ],
+  "app_scenario_loaded": [
+   {
+    "id": "app_scenario_loaded",
+    "play": [
+     {
+      "sound": "scenario_start",
+      "delay_s": 0.08,
+      "limit": "scene",
+      "two_d": true
+     }
+    ]
+   }
+  ],
+  "target": [
+   {
+    "id": "target.lock",
+    "play": [
+     {
+      "sound": "ui_ring_pick",
+      "gain_db": -9.0,
+      "limit": "ui_tick",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "$player",
+      "truthy": true
+     },
+     {
+      "f": "target",
+      "gte": 0
+     }
+    ]
+   }
+  ],
+  "whiff": [
+   {
+    "id": "whiff",
+    "play": [
+     {
+      "sound": "status_off",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -2.0,
+      "limit": "status"
+     }
+    ]
+   }
+  ],
+  "swing": [
+   {
+    "id": "swing.grapple",
+    "play": [
+     {
+      "sound": "dash_air",
+      "at": [
+       "actor"
+      ],
+      "gain_db": -4.0
+     }
+    ]
+   }
+  ],
+  "app_toast": [
+   {
+    "id": "app_toast.mastery",
+    "play": [
+     {
+      "sound": "unlock",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "kind",
+      "eq": "mastery"
+     }
+    ]
+   }
+  ],
+  "app_challenge": [
+   {
+    "id": "app_challenge.done",
+    "play": [
+     {
+      "sound": "challenge_done",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "done",
+      "truthy": true
+     }
+    ]
+   }
+  ],
+  "app_combo": [
+   {
+    "id": "combo.started",
+    "play": [
+     {
+      "sound": "combo_start",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "state",
+      "eq": "started"
+     }
+    ]
+   },
+   {
+    "id": "combo.step",
+    "play": [
+     {
+      "sound": "combo_step",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "state",
+      "eq": "step"
+     }
+    ]
+   },
+   {
+    "id": "combo.success",
+    "play": [
+     {
+      "sound": "combo_success",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "state",
+      "eq": "success"
+     }
+    ]
+   },
+   {
+    "id": "combo.fail",
+    "play": [
+     {
+      "sound": "combo_fail",
+      "two_d": true
+     }
+    ],
+    "when": [
+     {
+      "f": "state",
+      "eq": "fail"
+     }
+    ]
+   }
+  ]
+ },
+ "loops": {
+  "bodies": [
+   {
+    "id": "tag.sand_cloud",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "sand_cloud"
+     }
+    ],
+    "sound": "sandstorm_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.sandstorm",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "sandstorm"
+     }
+    ],
+    "sound": "sandstorm_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.quicksand",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "quicksand"
+     }
+    ],
+    "sound": "quicksand_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.fire_field",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "fire_field"
+     }
+    ],
+    "sound": "fire_field_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.tornado",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "tornado"
+     }
+    ],
+    "sound": "tornado_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.vortex_wall",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "vortex_wall"
+     }
+    ],
+    "sound": "tornado_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.eddy",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "eddy"
+     }
+    ],
+    "sound": "tornado_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.vacuum_well",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "vacuum_well"
+     }
+    ],
+    "sound": "vacuum_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.null_bubble",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "null_bubble"
+     }
+    ],
+    "sound": "vacuum_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.fog",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "fog"
+     }
+    ],
+    "sound": "mist_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.mist",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "mist"
+     }
+    ],
+    "sound": "mist_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.static_field",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "static_field"
+     }
+    ],
+    "sound": "static_crackle_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.corona",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "corona"
+     }
+    ],
+    "sound": "blue_roar_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "tag.disc",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "disc"
+     }
+    ],
+    "sound": "disc_whirr_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "tag.water_wave",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "water_wave"
+     }
+    ],
+    "sound": "wave_rush_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.sand_surge",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "sand_surge"
+     }
+    ],
+    "sound": "sand_surge_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.rod",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "rod"
+     }
+    ],
+    "sound": "rod_hum_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "tag.geyser",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "geyser"
+     }
+    ],
+    "sound": "geyser_loop",
+    "gain_db": -4.0,
+    "fade": "zone",
+    "at": "body"
+   },
+   {
+    "id": "tag.flight_field",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "flight_field"
+     }
+    ],
+    "sound": "flight_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "tag.fuse",
+    "when": [
+     {
+      "f": "tag",
+      "eq": "fuse"
+     }
+    ],
+    "sound": "fuse_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "lava.wave",
+    "when": [
+     {
+      "f": "mat",
+      "eq": "stone"
+     },
+     {
+      "f": "form",
+      "eq": "wave"
+     },
+     {
+      "f": "$speed",
+      "gt": 0.3
+     },
+     {
+      "f": "tag",
+      "eq": ""
+     }
+    ],
+    "sound": "lava_wave_loop",
+    "gain_db": 0.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "lava.blob",
+    "when": [
+     {
+      "f": "mat",
+      "eq": "stone"
+     },
+     {
+      "f": "form",
+      "eq": "blob"
+     },
+     {
+      "f": "liquid",
+      "gt": 0.3
+     }
+    ],
+    "sound": "lava_bubble_loop",
+    "gain_db": 0.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "stone.roll",
+    "when": [
+     {
+      "f": "mat",
+      "eq": "stone"
+     },
+     {
+      "f": "form",
+      "eq": "chunk"
+     },
+     {
+      "f": "on_ground",
+      "truthy": true
+     },
+     {
+      "f": "$speed",
+      "gt": 2.5
+     },
+     {
+      "f": "liquid",
+      "lt": 0.2
+     }
+    ],
+    "sound": "stone_roll_loop",
+    "gain_db": -2.0,
+    "fade": "body",
+    "at": "body"
+   },
+   {
+    "id": "stone.hot",
+    "when": [
+     {
+      "f": "mat",
+      "eq": "stone"
+     },
+     {
+      "f": "controller",
+      "gte": 0
+     },
+     {
+      "f": "temp",
+      "gt": 350.0
+     },
+     {
+      "f": "liquid",
+      "lt": 0.3
+     }
+    ],
+    "sound": "heat_crackle_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "body"
+   }
+  ],
+  "actors": [
+   {
+    "id": "charge.bolt",
+    "when": [
+     {
+      "f": "action.id",
+      "eq": "fire_attack"
+     },
+     {
+      "f": "action.phase",
+      "eq": "charge"
+     },
+     {
+      "f": "action.data.bolt_ready",
+      "truthy": true
+     }
+    ],
+    "sound": "lightning_charge_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "chest"
+   },
+   {
+    "id": "charge.fire",
+    "when": [
+     {
+      "f": "action.id",
+      "eq": "fire_attack"
+     },
+     {
+      "f": "action.phase",
+      "eq": "charge"
+     },
+     {
+      "f": "action.data.bolt_ready",
+      "falsy": true
+     }
+    ],
+    "sound": "fire_charge_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "chest"
+   },
+   {
+    "id": "glide",
+    "when": [
+     {
+      "f": "gliding",
+      "truthy": true
+     }
+    ],
+    "sound": "glide_loop",
+    "gain_db": 0.0,
+    "fade": "body",
+    "at": "chest"
+   },
+   {
+    "id": "flight",
+    "when": [
+     {
+      "f": "flying",
+      "truthy": true
+     }
+    ],
+    "sound": "flight_loop",
+    "gain_db": -3.0,
+    "fade": "body",
+    "at": "chest"
+   },
+   {
+    "id": "water.draw",
+    "when": [
+     {
+      "f": "action.id",
+      "eq": "water_tech"
+     },
+     {
+      "f": "action.phase",
+      "eq": "channel"
+     }
+    ],
+    "sound": "water_draw_loop",
+    "gain_db": -6.0,
+    "fade": "body",
+    "at": "chest"
+   },
+   {
+    "id": "ice.slide",
+    "when": [
+     {
+      "f": "surface",
+      "eq": "zone:ice"
+     },
+     {
+      "f": "grounded",
+      "truthy": true
+     },
+     {
+      "f": "$speed",
+      "gt": 1.5
+     }
+    ],
+    "sound": "ice_slide_loop",
+    "gain_db": -2.0,
+    "fade": "body",
+    "at": "feet"
+   },
+   {
+    "id": "water.shield",
+    "when": [
+     {
+      "f": "element",
+      "eq": "water"
+     },
+     {
+      "f": "guarding",
+      "truthy": true
+     }
+    ],
+    "sound": "water_shield_loop",
+    "gain_db": -4.0,
+    "fade": "body",
+    "at": "chest"
+   },
+   {
+    "id": "burning",
+    "when": [
+     {
+      "f": "$status",
+      "has": "burning"
+     }
+    ],
+    "sound": "status_burn_loop",
+    "gain_db": 0.0,
+    "fade": "body",
+    "at": "chest"
+   }
+  ],
+  "events": [
+   {
+    "event": "heating",
+    "sound": "heat_crackle_loop",
+    "key": [
+     "heat",
+     "body"
+    ],
+    "hold_s": 0.35,
+    "gain_db": -2.0,
+    "at": "body",
+    "fade": "body"
+   },
+   {
+    "event": "drawing",
+    "sound": "heat_draw_loop",
+    "key": [
+     "draw",
+     "body"
+    ],
+    "hold_s": 0.2,
+    "gain_db": 0.0,
+    "at": "body",
+    "fade": "body"
+   },
+   {
+    "event": "draw_water",
+    "sound": "water_draw_loop",
+    "key": [
+     "wdraw",
+     "actor"
+    ],
+    "hold_s": 0.3,
+    "gain_db": -6.0,
+    "at": "actor",
+    "fade": "body"
+   }
+  ]
+ },
+ "steps": {
+  "min_speed": 0.8,
+  "cadence_base": 1.2,
+  "cadence_per_speed": 0.45,
+  "gain_db": [
+   -1.5,
+   0.5
+  ],
+  "speed_gain": {
+   "in": [
+    0.8,
+    5.5
+   ],
+   "db": [
+    -5.0,
+    0.0
+   ]
+  },
+  "pitch_var": 0.04,
+  "default": "stone",
+  "surfaces": {
+   "stone": [
+    "step_stone_1",
+    "step_stone_2",
+    "step_stone_3",
+    "step_stone_4"
+   ],
+   "sand": [
+    "step_sand_1",
+    "step_sand_2",
+    "step_sand_3"
+   ],
+   "wood": [
+    "step_wood_1",
+    "step_wood_2",
+    "step_wood_3"
+   ],
+   "metal": [
+    "step_metal_1",
+    "step_metal_2",
+    "step_metal_3"
+   ],
+   "water": [
+    "step_water_1",
+    "step_water_2",
+    "step_water_3"
+   ],
+   "puddle": [
+    "step_puddle_1",
+    "step_puddle_2"
+   ],
+   "ice": [
+    "step_ice_1",
+    "step_ice_2"
+   ],
+   "mud": [
+    "step_mud_1",
+    "step_mud_2"
+   ]
+  },
+  "surface_exact": {
+   "stone": "stone",
+   "water": "water",
+   "puddle": "puddle",
+   "metal": "metal"
+  },
+  "surface_contains": [
+   [
+    "ice",
+    "ice"
+   ],
+   [
+    "mud",
+    "mud"
+   ],
+   [
+    "quicksand",
+    "mud"
+   ],
+   [
+    "swamp",
+    "mud"
+   ],
+   [
+    "sand",
+    "sand"
+   ],
+   [
+    "wood",
+    "wood"
+   ],
+   [
+    "plate",
+    "metal"
+   ],
+   [
+    "metal",
+    "metal"
+   ],
+   [
+    "water",
+    "water"
+   ]
+  ],
+  "cloth_every": 3,
+  "cloth_sounds": [
+   "cloth_rustle_1",
+   "cloth_rustle_2",
+   "cloth_rustle_3"
+  ]
+ },
+ "ambience": {
+  "beds": [
+   {
+    "sound": "amb_courtyard_air_loop",
+    "gain_db": 0.0
+   },
+   {
+    "sound": "amb_wind_trees_loop",
+    "gain_db": -2.0
+   },
+   {
+    "sound": "amb_water_distant_loop",
+    "gain_db": -2.0
+   },
+   {
+    "sound": "amb_courtyard_loop",
+    "gain_db": -9.0
+   }
+  ],
+  "accents": [
+   {
+    "sounds": [
+     "chime_wind_1",
+     "chime_wind_2",
+     "chime_wind_3",
+     "chime_wind_4"
+    ],
+    "min_gap_s": 14.0,
+    "max_gap_s": 38.0,
+    "gain_db": 0.0,
+    "pitch_var": 0.0
+   },
+   {
+    "sounds": [
+     "bamboo_knock"
+    ],
+    "min_gap_s": 35.0,
+    "max_gap_s": 80.0,
+    "gain_db": 0.0,
+    "pitch_var": 0.02
+   }
+  ],
+  "fade_in_s": 2.5
+ },
+ "ui": {
+  "ui_tap": "ui_tap",
+  "ui_select": "ui_select",
+  "ui_back": "ui_back",
+  "ui_open": "ui_open",
+  "ui_close": "ui_close",
+  "ui_toggle": "ui_toggle",
+  "ui_ring_open": "ui_ring_open",
+  "ui_ring_pick": "ui_ring_pick",
+  "ui_error": "ui_error",
+  "ui_pause": "ui_pause",
+  "ui_resume": "ui_resume",
+  "ui_toast": "ui_toast"
+ }
+}

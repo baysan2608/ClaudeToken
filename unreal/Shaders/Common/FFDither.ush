@@ -1,0 +1,26 @@
+// Fourfold FX - dithering and soft-particle fades (stream `fx`).
+#ifndef FF_DITHER_USH
+#define FF_DITHER_USH
+
+#include "FFCommon.ush"
+
+// Interleaved gradient noise (Jimenez 2014) at a pixel position: 0..1, blue-noise-like.
+float FFIgn(float2 pixel)
+{
+	return frac(52.9829189 * frac(0.06711056 * pixel.x + 0.00583715 * pixel.y));
+}
+
+// Dithered fade mask: 1 = keep, 0 = clip (opacity mask for masked materials fading out without blending).
+float FFDitherMask(float fade, float2 pixel)
+{
+	return fade > FFIgn(pixel) ? 1.0 : 0.0;
+}
+
+// Soft-particle fade from the scene depth behind the pixel and the pixel's own depth (same units, e.g. cm):
+// 0 where the particle touches geometry, 1 at `distance` in front of it.
+float FFSoftFade(float sceneDepth, float pixelDepth, float distance)
+{
+	return saturate((sceneDepth - pixelDepth) / max(distance, 1e-3));
+}
+
+#endif  // FF_DITHER_USH

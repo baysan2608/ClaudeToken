@@ -1,0 +1,40 @@
+// Fourfold FX - flipbook atlases (stream `fx`). Atlas layout (Tools/vfx/flipbooks.py): `grid` x `grid` frames,
+// row-major from the top-left (frame f at column f % grid, row f / grid), each frame faded to zero alpha at its
+// border (no neighbour bleeding). Packed RGBA: R lighting, G optical thickness, B emission temperature, A coverage.
+#ifndef FF_FLIPBOOK_USH
+#define FF_FLIPBOOK_USH
+
+#include "FFCommon.ush"
+
+// UV of `uv` (0..1 in the quad) inside frame `frame` (integer part used, wrapped to the frame count).
+float2 FFFlipbookFrameUV(float2 uv, float frame, float grid)
+{
+	const float count = grid * grid;
+	const float f = floor(frame) - count * floor(floor(frame) / count);
+	const float col = f - grid * floor(f / grid);
+	const float row = floor(f / grid);
+	const float2 inset = float2(clamp(uv.x, 0.002, 0.998), clamp(uv.y, 0.002, 0.998));
+	return float2((col + inset.x) / grid, (row + inset.y) / grid);
+}
+
+// Two neighbouring frames and their blend weight for smooth playback: sample both and lerp(A, B, Blend).
+void FFFlipbookUV2(float2 uv, float frame, float grid, FF_OUT(float2) uvA, FF_OUT(float2) uvB, FF_OUT(float) blend)
+{
+	uvA = FFFlipbookFrameUV(uv, frame, grid);
+	uvB = FFFlipbookFrameUV(uv, frame + 1.0, grid);
+	blend = frame - floor(frame);
+}
+
+// Frame from a 0..1 life fraction (one-shot) or from time at `fps` (loop), for `count` frames.
+float FFFlipbookFrame(float life01, float count)
+{
+	return saturate(life01) * (count - 1.001);
+}
+
+float FFFlipbookLoopFrame(float time, float fps, float count, float offset)
+{
+	const float f = time * fps + offset;
+	return f - count * floor(f / count);
+}
+
+#endif  // FF_FLIPBOOK_USH

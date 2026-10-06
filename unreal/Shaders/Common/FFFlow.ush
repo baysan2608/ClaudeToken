@@ -1,0 +1,22 @@
+// Fourfold FX - flow / panning helpers (stream `fx`).
+#ifndef FF_FLOW_USH
+#define FF_FLOW_USH
+
+#include "FFCommon.ush"
+
+float2 FFPan(float2 uv, float2 speed, float time)
+{
+	return float2(uv.x + speed.x * time, uv.y + speed.y * time);
+}
+
+// Two-phase flow (no visible reset): sample at uvA and uvB and lerp(A, B, blend). `dir` = flow vector (uv units / s).
+void FFFlowUV(float2 uv, float2 dir, float time, float period, FF_OUT(float2) uvA, FF_OUT(float2) uvB, FF_OUT(float) blend)
+{
+	const float p0 = frac(time / period);
+	const float p1 = frac(time / period + 0.5);
+	uvA = float2(uv.x - dir.x * p0 * period, uv.y - dir.y * p0 * period);
+	uvB = float2(uv.x - dir.x * p1 * period + 0.37, uv.y - dir.y * p1 * period + 0.21);
+	blend = abs(p0 * 2.0 - 1.0);
+}
+
+#endif  // FF_FLOW_USH

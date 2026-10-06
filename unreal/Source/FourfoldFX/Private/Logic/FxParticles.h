@@ -17,7 +17,7 @@ namespace ffx {
 
 struct Particle {
 	Vec3 p, v;
-	float age = 0.0f, life = 1.0f;
+	float age = 0.0f, life = 1.0f;   // age < 0: born later (staggered spawns)
 	float size0 = 0.1f, size1 = 0.2f;
 	float rot = 0.0f, rotSpeed = 0.0f;
 	Color c0, c1;

@@ -27,6 +27,7 @@ void ParticleSet::Step(float dt, const ParticlePhysics& ph) {
 	for (Particle& p : ps_) {
 		if (!p.alive) continue;
 		p.age += dt;
+		if (p.age < 0.0f) continue;   // not born yet (staggered spawns)
 		if (p.age >= p.life) {
 			p.alive = false;
 			continue;
@@ -58,7 +59,7 @@ void ParticleSet::Build(MeshData& m, const Vec3& camPos, const Vec3& camUp, cons
 	m.Clear();
 	const Vec3 worldUp(0.0f, 1.0f, 0.0f);
 	for (const Particle& p : ps_) {
-		if (!p.alive) {
+		if (!p.alive || p.age < 0.0f) {
 			// degenerate quad keeps the vertex / index counts fixed
 			const int a = m.Add(Vec3(), Vec3(0.0f, 1.0f, 0.0f), Vec2(), Color(0.0f, 0.0f, 0.0f, 0.0f));
 			m.Add(Vec3(), Vec3(0.0f, 1.0f, 0.0f), Vec2(), Color(0.0f, 0.0f, 0.0f, 0.0f));

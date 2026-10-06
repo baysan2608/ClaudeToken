@@ -32,7 +32,7 @@ C: P1 clips. DONE+exported: earth P1 (13 clips, clips/earth.py). water P1 (7 cli
 - [x] B  P0 clips (all 66 exported + validated; w_draw retimed c14/24f, a_updraft c10/26f to fit sim startups): shared(strafe_r walk_back evade_l/r/back/fwd jump fall land hit_light_front hit_heavy knockdown getup stagger block_impact deflect glide)
          water(w_lash w_freeze w_push w_shield w_draw w_hold w_release) fire(f_jab f_cross f_charge f_palm_burst f_snap_kick f_heat_draw f_thermal_hold f_pour l_charge l_release)
          air(a_palm a_double_palm a_updraft a_dash a_guard)
-- [ ] C  P1 clips   - [ ] D P2 clips   - [ ] E final docs / previews / MP4s
+- [x] C  P1 clips   - [x] D P2 clips   - [x] E final docs / previews / MP4s
 
 ## How to run (resume cheat-sheet)
   B=/home/user/tools/bpyenv/bin/python; cd /home/user/ClaudeToken/unreal
@@ -55,6 +55,14 @@ C: P1 clips. DONE+exported: earth P1 (13 clips, clips/earth.py). water P1 (7 cli
   frames) and on airborne legs (lift > 1.2 cm, reverted where the foot would go through the floor); gaze fades for
   look targets behind the shoulder (spins); f_low_sweep re-authored on a true arc (contact 17); f_hop / a_updraft /
   a_spin pelvis offsets 0. ALL 117 CLIPS VALIDATE (no pops > 40 deg/f, seams, bases).
-- NEXT: full re-export (build_animation.py) + data tests; then re-render P0 MP4s (motion changed); then P2 clips.
+- DONE: full re-export; P2 clips (clips/p2.py: turn_l90/r90 e_spatter e_shadowless_kick w_maelstrom w_crane w_shuttle f_tornado_kick f_corona l_fan c_toss c_fuse_loop c_chain_stomp a_rising_guard) exported. 131 clips (P0 66, P1 51, P2 14), anim_map 0 stand-ins, data test + fake-editor import test pass. check_fbx tol 0.25 deg (FBX float precision).
+- DONE: README.md complete, CLIPS.md generated (anim_map_gen.py), hover re-authored cross-legged. P0 MP4 re-render running in background (build --videos P0 --no-export --no-json --no-sheets).
+- DONE: run re-authored (was lunge-like): gait() got `bias` (stance window behind hips); run s=0.30 z=-0.05 lift=0.20
+  to=-46 bias=0.16 -> validates (step 34.7, seam 8.7/1.0). NOT yet exported; background MP4 job rendered OLD run.
+- DONE (stream complete): run exported (+ --check-fbx 0.07 deg), sheet + MP4 refreshed; all 56 non-hand P0 MP4s
+  (640x360, 60 fps) present; test_anim_data OK (131 clips, 160 moves, 4 timing warnings), test_unreal_import OK,
+  mock dry run OK; frozen files untouched; IP term scan clean. Final report delivered.
+- If resumed: nothing pending. Optional polish ideas: R1 (a_circle_walk for air run modes once game lands it),
+  shrink FBX size (frozen exporter writes ~0.9 MB/clip), use turn_l90/r90 + e_shadowless_kick in the map.
 - Shared P1 clips (hit_light_back guard_break salute flight hover skate surf) are authored in clips/reactions.py but
   NOT exported yet (skate needs its arm fix verified).

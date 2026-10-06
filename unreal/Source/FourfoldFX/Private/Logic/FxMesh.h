@@ -9,9 +9,10 @@
 // Channel conventions (the HLSL in unreal/Shaders/FX reads them):
 //   uv0  ribbons / strips: (across 0..1, distance along in metres); shells / cones: (angle 0..1, along 0..1);
 //        particles: corner (0..1, 0..1)
-//   uv1  ribbons: (along 0..1, per-strand random); particles: (flipbook frame, extra); rocks: blob offset (x, y)
+//   uv1  ribbons: (along 0..1, per-strand random); particles: (flipbook frame, extra); rocks: blob offset
+//        (sim x, sim z) = UE local (X, Y)
 //   uv2  strips: (distance to the front in m, cross-section -1..1); particles: (age 0..1, per-particle random);
-//        rocks: (blob offset z, per-vertex random)
+//        rocks: (blob offset sim y = UE local Z, per-vertex random). Rock offsets are in mesh units (unit rock: m).
 //   col  linear RGBA tint / alpha (particles: colour over life; ribbons: width / life data where documented)
 // Owner: stream `fx`.
 #pragma once
@@ -33,6 +34,8 @@ struct MeshData {
 	// Unreal glue then recreates the section instead of updating vertices in place).
 	uint32_t version = 0;
 	uint32_t topo = 0;
+	// Process-unique id assigned by the first Commit() (the glue keys uploads on (pointer, uid, version)).
+	uint32_t uid = 0;
 
 	void Clear();
 	int NumVerts() const { return static_cast<int>(pos.size()); }

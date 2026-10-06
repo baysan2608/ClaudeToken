@@ -1,0 +1,271 @@
+// Fourfold FX - procedural noise (stream `fx`): value / gradient / simplex noise 2D-3D, fbm, ridged, curl, analytic
+// Voronoi with gradient, and the noise-texture lookup used by most effects (T_FX_Noise: RGBA tileable noise, R low /
+// G streaky / B ridged / A grain - Tools/vfx/noise_textures.py). Portability rules: FFCommon.ush.
+#ifndef FF_NOISE_USH
+#define FF_NOISE_USH
+
+#include "FFCommon.ush"
+
+// ---------------------------------------------------------------------------------------------------- texture noise
+float4 FFSample(FF_TEX2D Tex, FF_SAMPLER Samp, float2 uv)
+{
+	return Tex.Sample(Samp, uv);
+}
+
+// For vertex-stage code (world position offset): no implicit derivatives there.
+float4 FFSampleLevel(FF_TEX2D Tex, FF_SAMPLER Samp, float2 uv)
+{
+	return Tex.SampleLevel(Samp, uv, 0.0);
+}
+
+// ---------------------------------------------------------------------------------------------------- value noise
+float FFValueNoise2(float2 p)
+{
+	const float2 i = floor(p);
+	const float2 f = p - i;
+	const float2 u = float2(FFSmoother(f.x), FFSmoother(f.y));
+	const float a = FFHash2i(i.x, i.y);
+	const float b = FFHash2i(i.x + 1.0, i.y);
+	const float c = FFHash2i(i.x, i.y + 1.0);
+	const float d = FFHash2i(i.x + 1.0, i.y + 1.0);
+	return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+float FFValueNoise3(float3 p)
+{
+	const float3 i = floor(p);
+	const float3 f = p - i;
+	const float3 u = float3(FFSmoother(f.x), FFSmoother(f.y), FFSmoother(f.z));
+	const float a = FFHash3i(i.x, i.y, i.z);
+	const float b = FFHash3i(i.x + 1.0, i.y, i.z);
+	const float c = FFHash3i(i.x, i.y + 1.0, i.z);
+	const float d = FFHash3i(i.x + 1.0, i.y + 1.0, i.z);
+	const float e = FFHash3i(i.x, i.y, i.z + 1.0);
+	const float g = FFHash3i(i.x + 1.0, i.y, i.z + 1.0);
+	const float h = FFHash3i(i.x, i.y + 1.0, i.z + 1.0);
+	const float k = FFHash3i(i.x + 1.0, i.y + 1.0, i.z + 1.0);
+	const float lo = lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+	const float hi = lerp(lerp(e, g, u.x), lerp(h, k, u.x), u.y);
+	return lerp(lo, hi, u.z);
+}
+
+// ---------------------------------------------------------------------------------------------------- gradient noise
+float2 FFGrad2(float2 cell)
+{
+	const float a = FFHash2i(cell.x, cell.y) * FF_TAU;
+	return float2(cos(a), sin(a));
+}
+
+// Perlin-style gradient noise, roughly -1..1.
+float FFGradNoise2(float2 p)
+{
+	const float2 i = floor(p);
+	const float2 f = p - i;
+	const float2 u = float2(FFSmoother(f.x), FFSmoother(f.y));
+	const float a = dot(FFGrad2(i), f);
+	const float b = dot(FFGrad2(i + float2(1.0, 0.0)), f - float2(1.0, 0.0));
+	const float c = dot(FFGrad2(i + float2(0.0, 1.0)), f - float2(0.0, 1.0));
+	const float d = dot(FFGrad2(i + float2(1.0, 1.0)), f - float2(1.0, 1.0));
+	return 1.41421356 * lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+// 2D simplex noise (Gustavson's formulation), roughly -1..1.
+float FFSimplex2(float2 v)
+{
+	const float F2 = 0.36602540378;   // (sqrt(3) - 1) / 2
+	const float G2 = 0.21132486540;   // (3 - sqrt(3)) / 6
+	const float s = (v.x + v.y) * F2;
+	const float2 i = floor(float2(v.x + s, v.y + s));
+	const float t = (i.x + i.y) * G2;
+	const float2 x0 = float2(v.x - (i.x - t), v.y - (i.y - t));
+	const float2 i1 = x0.x > x0.y ? float2(1.0, 0.0) : float2(0.0, 1.0);
+	const float2 x1 = float2(x0.x - i1.x + G2, x0.y - i1.y + G2);
+	const float2 x2 = float2(x0.x - 1.0 + 2.0 * G2, x0.y - 1.0 + 2.0 * G2);
+	float n = 0.0;
+	float t0 = 0.5 - dot(x0, x0);
+	if (t0 > 0.0)
+	{
+		t0 *= t0;
+		n += t0 * t0 * dot(FFGrad2(i), x0);
+	}
+	float t1 = 0.5 - dot(x1, x1);
+	if (t1 > 0.0)
+	{
+		t1 *= t1;
+		n += t1 * t1 * dot(FFGrad2(i + i1), x1);
+	}
+	float t2 = 0.5 - dot(x2, x2);
+	if (t2 > 0.0)
+	{
+		t2 *= t2;
+		n += t2 * t2 * dot(FFGrad2(i + float2(1.0, 1.0)), x2);
+	}
+	return 70.0 * n;
+}
+
+// ---------------------------------------------------------------------------------------------------- fractal sums
+// Value-noise fbm 0..1 with `octaves` 1..6 (lacunarity 2.03, gain 0.5).
+float FFFbm2(float2 p, float octaves)
+{
+	float sum = 0.0;
+	float amp = 0.5;
+	float norm = 0.0;
+	const int n = int(clamp(octaves, 1.0, 6.0));
+	for (int o = 0; o < 6; o++)
+	{
+		if (o >= n)
+		{
+			break;
+		}
+		sum += amp * FFValueNoise2(p);
+		norm += amp;
+		p = float2(p.x * 2.03 + 17.1, p.y * 2.03 - 9.7);
+		amp *= 0.5;
+	}
+	return sum / max(norm, 1e-4);
+}
+
+float FFFbm3(float3 p, float octaves)
+{
+	float sum = 0.0;
+	float amp = 0.5;
+	float norm = 0.0;
+	const int n = int(clamp(octaves, 1.0, 6.0));
+	for (int o = 0; o < 6; o++)
+	{
+		if (o >= n)
+		{
+			break;
+		}
+		sum += amp * FFValueNoise3(p);
+		norm += amp;
+		p = float3(p.x * 2.03 + 17.1, p.y * 2.03 - 9.7, p.z * 2.03 + 4.3);
+		amp *= 0.5;
+	}
+	return sum / max(norm, 1e-4);
+}
+
+// Ridged multifractal 0..1 (sharp creases: lightning-like veins, crackle).
+float FFRidged2(float2 p, float octaves)
+{
+	float sum = 0.0;
+	float amp = 0.5;
+	float norm = 0.0;
+	const int n = int(clamp(octaves, 1.0, 6.0));
+	for (int o = 0; o < 6; o++)
+	{
+		if (o >= n)
+		{
+			break;
+		}
+		const float r = 1.0 - abs(FFGradNoise2(p));
+		sum += amp * r * r;
+		norm += amp;
+		p = float2(p.x * 2.1 + 3.3, p.y * 2.1 - 7.9);
+		amp *= 0.5;
+	}
+	return sum / max(norm, 1e-4);
+}
+
+// Divergence-free 2D curl of the gradient-noise potential (smoke swirls, flow distortion). Magnitude ~0..3.
+float2 FFCurl2(float2 p)
+{
+	const float e = 0.07;
+	const float n1 = FFGradNoise2(float2(p.x, p.y + e));
+	const float n2 = FFGradNoise2(float2(p.x, p.y - e));
+	const float n3 = FFGradNoise2(float2(p.x + e, p.y));
+	const float n4 = FFGradNoise2(float2(p.x - e, p.y));
+	return float2(n1 - n2, n4 - n3) / (2.0 * e);
+}
+
+// ---------------------------------------------------------------------------------------------------- Voronoi
+// Analytic 2D Voronoi (9 cells): returns (F1, F2 - F1 edge distance, nearest cell id 0..1, edge id 0..1 identical on both
+// sides of a border) and the gradient of (F2 - F1) in `grad` (derivative-free relief). Cell size 1.
+float4 FFVoronoi2(float2 p, FF_OUT(float2) grad)
+{
+	const float2 ip = floor(p);
+	const float2 fp = p - ip;
+	float f1 = 9.0;
+	float f2 = 9.0;
+	float id1 = 0.0;
+	float id2 = 0.0;
+	float2 v1 = float2(0.0, 0.0);
+	float2 v2 = float2(0.0, 0.0);
+	for (int j = -1; j <= 1; j++)
+	{
+		for (int i = -1; i <= 1; i++)
+		{
+			const float2 g = float2(float(i), float(j));
+			const float2 h = FFHash22i(ip + g);
+			const float2 d = float2(g.x + 0.5 + (h.x - 0.5) * 0.92 - fp.x, g.y + 0.5 + (h.y - 0.5) * 0.92 - fp.y);
+			const float dd = dot(d, d);
+			if (dd < f1)
+			{
+				f2 = f1;
+				id2 = id1;
+				v2 = v1;
+				f1 = dd;
+				id1 = h.x;
+				v1 = d;
+			}
+			else if (dd < f2)
+			{
+				f2 = dd;
+				id2 = h.x;
+				v2 = d;
+			}
+		}
+	}
+	f1 = sqrt(f1);
+	f2 = sqrt(f2);
+	grad = v1 / max(f1, 1e-4) - v2 / max(f2, 1e-4);
+	return float4(f1, f2 - f1, id1, frac((id1 + id2) * 7.31 + id1 * id2 * 13.7));
+}
+
+// Analytic 3D Voronoi (27 cells), same outputs as FFVoronoi2.
+float4 FFVoronoi3(float3 p, FF_OUT(float3) grad)
+{
+	const float3 ip = floor(p);
+	const float3 fp = p - ip;
+	float f1 = 9.0;
+	float f2 = 9.0;
+	float id1 = 0.0;
+	float id2 = 0.0;
+	float3 v1 = float3(0.0, 0.0, 0.0);
+	float3 v2 = float3(0.0, 0.0, 0.0);
+	for (int k = -1; k <= 1; k++)
+	{
+		for (int j = -1; j <= 1; j++)
+		{
+			for (int i = -1; i <= 1; i++)
+			{
+				const float3 g = float3(float(i), float(j), float(k));
+				const float3 h = FFHash33i(ip + g);
+				const float3 d = float3(g.x + 0.5 + (h.x - 0.5) * 0.92 - fp.x, g.y + 0.5 + (h.y - 0.5) * 0.92 - fp.y,
+					g.z + 0.5 + (h.z - 0.5) * 0.92 - fp.z);
+				const float dd = dot(d, d);
+				if (dd < f1)
+				{
+					f2 = f1;
+					id2 = id1;
+					v2 = v1;
+					f1 = dd;
+					id1 = h.x;
+					v1 = d;
+				}
+				else if (dd < f2)
+				{
+					f2 = dd;
+					id2 = h.x;
+					v2 = d;
+				}
+			}
+		}
+	}
+	f1 = sqrt(f1);
+	f2 = sqrt(f2);
+	grad = v1 / max(f1, 1e-4) - v2 / max(f2, 1e-4);
+	return float4(f1, f2 - f1, id1, frac((id1 + id2) * 7.31 + id1 * id2 * 13.7));
+}
+
+#endif  // FF_NOISE_USH

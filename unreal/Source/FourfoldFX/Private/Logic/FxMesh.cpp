@@ -102,6 +102,8 @@ void MeshData::PadTo(int vertCapacity, int idxCapacity) {
 }
 
 void MeshData::Commit() {
+	static uint32_t s_nextUid = 1;   // game thread only
+	if (uid == 0) uid = s_nextUid++;
 	uint64_t h = 1469598103934665603ULL ^ static_cast<uint64_t>(pos.size());
 	for (int32_t i : idx) {
 		h ^= static_cast<uint64_t>(static_cast<uint32_t>(i));
@@ -137,11 +139,11 @@ void AppendQuad(MeshData& m, const Vec3& c, const Vec3& hx, const Vec3& hy, cons
 	m.Quad(a, b, d, e);
 }
 
-static float PickF(const std::vector<float>& v, size_t i, float def) {
+static float MeshPickF(const std::vector<float>& v, size_t i, float def) {
 	if (v.empty()) return def;
 	return v.size() == 1 ? v[0] : v[std::min(i, v.size() - 1)];
 }
-static Color PickC(const std::vector<Color>& v, size_t i) {
+static Color MeshPickC(const std::vector<Color>& v, size_t i) {
 	if (v.empty()) return Color();
 	return v.size() == 1 ? v[0] : v[std::min(i, v.size() - 1)];
 }
@@ -163,12 +165,12 @@ void AppendRibbon(MeshData& m, const std::vector<Vec3>& pts, const std::vector<f
 		side = side.length_squared() > 1e-10f ? Norm(side) : lastSide;
 		if (i > 0 && side.dot(lastSide) < 0.0f) side = side * -1.0f;
 		lastSide = side;
-		const float hw = 0.5f * PickF(w, i, 0.1f);
-		const Color c = PickC(cols, i);
+		const float hw = 0.5f * MeshPickF(w, i, 0.1f);
+		const Color c = MeshPickC(cols, i);
 		const float along = total > 0.0f ? s / total : 0.0f;
-		const Vec3 n = Norm(side.cross(t), toCam);   // faces the camera
-		m.Add(pts[i] - side * hw, n, Vec2(0.0f, s), c, Vec2(along, strand), Vec2(), t);
-		m.Add(pts[i] + side * hw, n, Vec2(1.0f, s), c, Vec2(along, strand), Vec2(), t);
+		const Vec3 nf = Norm(side.cross(t), toCam);   // faces the camera
+		m.Add(pts[i] - side * hw, nf, Vec2(0.0f, s), c, Vec2(along, strand), Vec2(), t);
+		m.Add(pts[i] + side * hw, nf, Vec2(1.0f, s), c, Vec2(along, strand), Vec2(), t);
 	}
 	for (size_t i = 0; i + 1 < n; ++i) {
 		const int a = base + static_cast<int>(i) * 2;
@@ -191,7 +193,7 @@ void AppendFlatRibbon(MeshData& m, const std::vector<Vec3>& pts, const std::vect
 		if (i > 0) s += pts[i].distance_to(pts[i - 1]);
 		const Vec3 t = Norm(pts[std::min(i + 1, n - 1)] - pts[i > 0 ? i - 1 : 0], Vec3(1.0f, 0.0f, 0.0f));
 		const Vec3 side = Norm(t.cross(nu), Perp(nu));
-		const float hw = 0.5f * PickF(w, i, 0.1f);
+		const float hw = 0.5f * MeshPickF(w, i, 0.1f);
 		const float along = total > 0.0f ? s / total : 0.0f;
 		m.Add(pts[i] - side * hw, nu, Vec2(0.0f, s), col, Vec2(along, 0.0f), Vec2(), t);
 		m.Add(pts[i] + side * hw, nu, Vec2(1.0f, s), col, Vec2(along, 0.0f), Vec2(), t);
@@ -252,7 +254,7 @@ void AppendTube(MeshData& m, const std::vector<Vec3>& pts, const std::vector<flo
 	};
 	int prev = -1;
 	if (capStart) {
-		const float rad = PickF(r, 0, 0.05f);
+		const float rad = MeshPickF(r, 0, 0.05f);
 		for (int j = 0; j < capRings; ++j) {
 			const float phi = (kFxPi * 0.5f) * (1.0f - static_cast<float>(j) / static_cast<float>(capRings));
 			const float cr = rad * std::cos(phi);
@@ -263,12 +265,12 @@ void AppendTube(MeshData& m, const std::vector<Vec3>& pts, const std::vector<flo
 		}
 	}
 	for (size_t i = 0; i < n; ++i) {
-		const int ring = ringAt(pts[i], T[i], U[i], PickF(r, i, 0.05f), sAt[i], total > 0.0f ? sAt[i] / total : 0.0f, 0.0f);
+		const int ring = ringAt(pts[i], T[i], U[i], MeshPickF(r, i, 0.05f), sAt[i], total > 0.0f ? sAt[i] / total : 0.0f, 0.0f);
 		if (prev >= 0) stitch(prev, ring);
 		prev = ring;
 	}
 	if (capEnd) {
-		const float rad = PickF(r, n - 1, 0.05f);
+		const float rad = MeshPickF(r, n - 1, 0.05f);
 		for (int j = 1; j <= capRings; ++j) {
 			const float phi = (kFxPi * 0.5f) * static_cast<float>(j) / static_cast<float>(capRings);
 			const Vec3 c = pts[n - 1] + T[n - 1] * (rad * std::sin(phi));
@@ -304,7 +306,7 @@ void AppendPathStrip(MeshData& m, const std::vector<Vec3>& pts, const std::vecto
 		if (t.length_squared() < 1e-8f) t = Flat(pts[static_cast<size_t>(n - 1)] - pts[0]);
 		t = Norm(t, Vec3(0.0f, 0.0f, 1.0f));
 		const float k = arc[static_cast<size_t>(i)] / MaxF(total, 0.001f);
-		float hw = MaxF(PickF(widths, static_cast<size_t>(i), 1.0f), 0.05f) * 0.5f;
+		float hw = MaxF(MeshPickF(widths, static_cast<size_t>(i), 1.0f), 0.05f) * 0.5f;
 		float h = Lerp(sp.heightTail, sp.heightFront, Smooth(0.0f, 1.0f, k));
 		h *= 1.0f + sp.frontBulge * Smooth(0.55f, 1.0f, k);
 		hw *= 1.0f + sp.widthBulge * Smooth(0.7f, 1.0f, k);
@@ -591,7 +593,7 @@ void AppendRock(MeshData& m, uint32_t seed, float radius, const Vec3& c) {
 			const Vec3 blob = Vec3(v[s].x * sc.x, v[s].y * sc.y * 0.92f, v[s].z * sc.z) * 0.9f;
 			const Vec3 off = (blob - p[s]) * radius;   // blob offset in mesh units
 			ids[j] = m.Add(c + p[s] * radius, fn, Vec2(0.5f + 0.5f * v[s].x, 0.5f - 0.5f * v[s].y), Color(),
-			               Vec2(off.x, off.y), Vec2(off.z, rnd[s]), Perp(fn));
+			               Vec2(off.x, off.z), Vec2(off.y, rnd[s]), Perp(fn));
 		}
 		const Vec3 wn = (m.pos[static_cast<size_t>(ids[1])] - m.pos[static_cast<size_t>(ids[0])])
 		                    .cross(m.pos[static_cast<size_t>(ids[2])] - m.pos[static_cast<size_t>(ids[0])]);

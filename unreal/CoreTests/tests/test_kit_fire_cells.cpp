@@ -1,7 +1,7 @@
 // Port of game/tests/sim/test_kit_fire_cells.gd: the Fire column of the counter matrix (MOVESET §8.3). FireRules.CELLS is
 // rebuilt from Data/rules.json (every rule with owner "fire", registration order). The per-cell reference metadata
 // (move / tier / expect) is not part of the exported data: test_every_reference_cell_gives_its_documented_outcome reads it
-// from CoreTests/data/kit_cell_refs.json when present (Tools/godot_export/extract_cell_refs.py), else it notes the skip.
+// from CoreTests/data/kit_cell_refs.json when present (not generated - see docs/core/PORT_STATUS.md), else it notes the skip.
 #include "ff_test.h"
 #include "kit_cells.h"
 #include "kit_fire_util.h"

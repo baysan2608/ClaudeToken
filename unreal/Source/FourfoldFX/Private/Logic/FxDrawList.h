@@ -1,8 +1,12 @@
 // FourfoldFX logic island - the per-frame output of the FX director: what to draw and which lights to light.
 // The Unreal glue (FourfoldFxRenderer) binds every DrawItem.key to a pooled component (procedural mesh, static mesh
-// or instanced static mesh) with a dynamic material instance of `mat`, uploads geometry only when the mesh version
-// changes (recreating the section when the topology changed), pushes changed parameters, and hides / returns
-// components whose key did not appear this frame. Keys are never reused. Everything is in SIM space.
+// or instanced static mesh) with a dynamic material instance of `mat`, uploads geometry only when the bound mesh or
+// its version changes (recreating the section when the topology changed), pushes changed parameters, and hides /
+// returns components whose key did not appear this frame. Keys are never reused. Everything is in SIM space.
+//
+// Attached items (attachActor >= 0) follow a fighter bone exactly: the glue attaches the component to the fighter's
+// body mesh at `attachBone` with absolute rotation / scale; the item's geometry is then relative to the bone position
+// in world axes (xform.pos is ignored, xform.basis is the world rotation / scale).
 // Owner: stream `fx`.
 #pragma once
 
@@ -23,6 +27,7 @@ struct ParamBlock {
 	std::array<Color, kNumVParams> v{};
 	uint64_t sMask = 0;   // which scalars are set
 	uint32_t vMask = 0;
+	Flipbook flipbook = Flipbook::None;   // texture parameter "Flipbook" (None = leave the material default)
 
 	void Set(P id, float value) {
 		const int i = static_cast<int>(id);
@@ -45,7 +50,6 @@ struct DrawItem {
 	DrawKind kind = DrawKind::ProcMesh;
 	MatSlot mat = MatSlot::Rock;
 	MeshAsset asset = MeshAsset::None;         // StaticMesh / Instanced
-	MeshAsset fallbackAsset = MeshAsset::None; // unused: the glue falls back to `fallbackMesh` when the asset is missing
 	const MeshData* mesh = nullptr;            // ProcMesh geometry (or the fallback for a missing static mesh)
 	const std::vector<Xform>* instances = nullptr;   // Instanced: per-instance transforms (component space)
 	uint32_t instVersion = 0;
@@ -53,6 +57,8 @@ struct DrawItem {
 	ParamBlock params;
 	bool castShadow = false;
 	int sortPriority = 0;                      // translucency sort priority (higher draws later)
+	int attachActor = -1;                      // >= 0: follow this sim actor's bone (see header)
+	Bone attachBone = Bone::Pelvis;
 };
 
 struct LightReq {
@@ -104,6 +110,7 @@ struct DrawList {
 		return it;
 	}
 	void Light(uint32_t key, const Vec3& p, const Color& c, float intensity, float radius, float priority) {
+		if (intensity <= 0.0f) return;
 		LightReq& l = lights.emplace_back();
 		l.key = key;
 		l.pos = p;

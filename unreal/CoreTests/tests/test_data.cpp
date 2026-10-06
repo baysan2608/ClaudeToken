@@ -39,5 +39,7 @@ FF_TEST(test_data, test_hook_names_listed) {
 	const auto ref = Hooks::referenced();
 	check(ref.size() >= 212, S("212 referenced hook names (", ref.size(), ")"));
 	const auto un = Hooks::unresolved();
-	note(S(un.size(), " of ", ref.size(), " hook names not ported yet"));
+	std::string names;
+	for (const auto& n : un) names += (names.empty() ? "" : ", ") + n.first + " " + n.second;
+	check(un.empty(), S(un.size(), " of ", ref.size(), " hook names have no C++ function: ", names));
 }
