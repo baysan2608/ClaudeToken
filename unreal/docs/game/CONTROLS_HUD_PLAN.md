@@ -56,7 +56,12 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
    variants (new moves per sub = design work with the owner), sim inputs. ~3+ sessions.
 4. C (prompts) - after B (pull / draw).
 
-## Questions for the owner
+## Owner decisions (2026-10-07)
+- First: A (context counters) + D (world HUD). Then B.
+- Predicted outcome colours on the petals: always on.
+- Touch forms start on the ATTACK / TECHNIQUE buttons; one-finger camera drag on the right half stays.
+
+## Questions for the owner (answered above)
 - Start with A + D (readability of the physics), or B (more moves / shapes) first?
 - Petals: show predicted outcome colours always, or only in the Lab / on easy difficulty?
 - Forms on touch: one-finger drawing on the right half (replacing the camera drag there; camera moves to two fingers),
