@@ -488,6 +488,25 @@ FxConfig::FxConfig() {
 	slot(NCue::Dust, "FX_Explosions/NS_Dirt_Explosion_Small", 0.35f, false, dirt, 0.0f, 0.6f);
 	slot(NCue::Ember, "FX_Sparks/NS_Spark_Burst", 0.5f, false, sparks);
 	slot(NCue::Steam, "FX_Smoke/NS_Smoke_Plume", 0.3f, false, {{"Smoke Color", "color"}}, 0.5f);
+
+	// ---- persistent slots (views keep them alive): fire fields / lines, steam / smoke columns, fireball trails.
+	// LoopReq colours: fire `color` = flame, `color2` = smoke; steam / smoke `color` = puff colour; trails `color2` = smoke.
+	auto loop = [this](LCue cue, const char* path, float scale, bool replace, PL params) {
+		NiagaraSlot& s = niagaraLoops[static_cast<size_t>(cue)];
+		s.path = std::string("/Game/NiagaraExamples/") + path;
+		s.scale = scale;
+		s.replace = replace;
+		s.params = std::move(params);
+	};
+	// NS_Fire's own lights stay off (the procedural fire already lights the field; they cost ~1 ms per field)
+	const PL fire = {{"Flame Color", "color*6"}, {"Smoke Color", "color2"}, {"Base Light Intentsity", "0"},
+	                 {"Smoke Spawn Scale", "0.6"}};
+	loop(LCue::Fire, "FX_Misc/NS_Fire", 1.0f, true, fire);
+	loop(LCue::FireBlue, "FX_Misc/NS_Fire", 1.0f, true, fire);
+	loop(LCue::Steam, "FX_Smoke/NS_Chimney_Smoke", 0.6f, false, {{"Smoke Color", "color"}});
+	loop(LCue::Smoke, "FX_Smoke/NS_Chimney_Smoke", 0.6f, false, {{"Smoke Color", "color"}});
+	loop(LCue::TrailFire, "FX_Weapons/Trails/NS_RocketTrail", 0.8f, false, {{"Smoke Color", "color2"}, {"Flare Active", "1"}});
+	loop(LCue::TrailBlue, "FX_Weapons/Trails/NS_RocketTrail", 0.8f, false, {{"Smoke Color", "color2"}, {"Flare Active", "1"}});
 }
 
 std::string FxConfig::ToJson() const {
@@ -555,10 +574,10 @@ std::string FxConfig::ToJson() const {
 		for (int i = 1; i < kNumFlipbooks; ++i) fb.set(kFlipbookNames[static_cast<size_t>(i)], ff::Value(flipbooks[static_cast<size_t>(i)]));
 		root.set("flipbooks", ff::Value(fb));
 	}
-	{
+	auto slotsToDict = [](const NiagaraSlot* slots, const std::string_view* names, int count) {
 		ff::Dict n;
-		for (int i = 0; i < kNumNCues; ++i) {
-			const NiagaraSlot& s = niagara[static_cast<size_t>(i)];
+		for (int i = 0; i < count; ++i) {
+			const NiagaraSlot& s = slots[i];
 			ff::Dict d;
 			d.set("path", ff::Value(s.path));
 			d.set("scale", ff::Value(Round4(s.scale)));
@@ -569,10 +588,12 @@ std::string FxConfig::ToJson() const {
 			ff::Dict p;
 			for (const auto& kv : s.params) p.set(kv.first, ff::Value(kv.second));
 			d.set("params", ff::Value(p));
-			n.set(kNCueNames[static_cast<size_t>(i)], ff::Value(d));
+			n.set(std::string(names[i]), ff::Value(d));
 		}
-		root.set("niagara", ff::Value(n));
-	}
+		return n;
+	};
+	root.set("niagara", ff::Value(slotsToDict(niagara.data(), kNCueNames.data(), kNumNCues)));
+	root.set("niagara_loops", ff::Value(slotsToDict(niagaraLoops.data(), kLCueNames.data(), kNumLCues)));
 	std::string out;
 	WriteJson(ff::Value(root), 0, out);
 	return out + "\n";
@@ -662,17 +683,20 @@ bool FxConfig::LoadJson(std::string_view text, std::string* error, std::string* 
 	readPaths(v["materials"], c.materials, kMatSlotNames, 0, "materials");
 	readPaths(v["meshes"], c.meshes, kMeshAssetNames, 1, "meshes");
 	readPaths(v["flipbooks"], c.flipbooks, kFlipbookNames, 1, "flipbooks");
-	if (const ff::Dict* nd = v["niagara"].dict_ptr()) {
+	auto readSlots = [warnings](const ff::Value& section, NiagaraSlot* slots, const std::string_view* names, int count,
+	                            const std::string& where) {
+		const ff::Dict* nd = section.dict_ptr();
+		if (!nd) return;
 		for (const auto& kv : nd->items()) {
 			int idx = -1;
-			for (int i = 0; i < kNumNCues; ++i)
-				if (kNCueNames[static_cast<size_t>(i)] == kv.first) idx = i;
+			for (int i = 0; i < count; ++i)
+				if (names[i] == kv.first) idx = i;
 			const ff::Dict* sd = kv.second.dict_ptr();
 			if (idx < 0 || !sd) {
-				if (warnings) *warnings += "unknown entry niagara." + kv.first + "\n";
+				if (warnings) *warnings += "unknown entry " + where + "." + kv.first + "\n";
 				continue;
 			}
-			NiagaraSlot& s = c.niagara[static_cast<size_t>(idx)];
+			NiagaraSlot& s = slots[idx];
 			for (const auto& f : sd->items()) {
 				const ff::Value& fv = f.second;
 				if (f.first == "path" && fv.is_string()) s.path = fv.as_string();
@@ -689,12 +713,14 @@ bool FxConfig::LoadJson(std::string_view text, std::string* error, std::string* 
 							char buf[32];
 							std::snprintf(buf, sizeof(buf), "%g", p.second.as_float());
 							s.params.emplace_back(p.first, buf);
-						} else if (warnings) *warnings += "bad entry niagara." + kv.first + ".params." + p.first + "\n";
+						} else if (warnings) *warnings += "bad entry " + where + "." + kv.first + ".params." + p.first + "\n";
 					}
-				} else if (warnings) *warnings += "unknown key niagara." + kv.first + "." + f.first + "\n";
+				} else if (warnings) *warnings += "unknown key " + where + "." + kv.first + "." + f.first + "\n";
 			}
 		}
-	}
+	};
+	readSlots(v["niagara"], c.niagara.data(), kNCueNames.data(), kNumNCues, "niagara");
+	readSlots(v["niagara_loops"], c.niagaraLoops.data(), kLCueNames.data(), kNumLCues, "niagara_loops");
 	return true;
 }
 

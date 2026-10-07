@@ -178,6 +178,8 @@ struct FxConfig {
 	std::array<std::string, kNumMeshAssets> meshes{};     // MeshAsset -> static mesh asset path ("" = procedural)
 	std::array<std::string, kNumFlipbooks> flipbooks{};   // Flipbook -> texture asset path
 	std::array<NiagaraSlot, kNumNCues> niagara{};         // NCue -> Niagara system + parameter bindings
+	std::array<NiagaraSlot, kNumLCues> niagaraLoops{};    // LCue -> persistent system (`life` unused; `replace` = the
+	                                                      // view tones its procedural look down while the system runs)
 
 	FxConfig();   // defaults
 
@@ -192,6 +194,7 @@ struct FxConfig {
 	const BeamLook& Beam(BeamStyle s) const { return beams[static_cast<size_t>(s)]; }
 	const StripLook& Strip(StripStyle s) const { return strips[static_cast<size_t>(s)]; }
 	const NiagaraSlot& Niagara(NCue c) const { return niagara[static_cast<size_t>(c)]; }
+	const NiagaraSlot& Loop(LCue c) const { return niagaraLoops[static_cast<size_t>(c)]; }
 
 	// Overrides from JSON text (any subset). Returns false on a parse error (config unchanged then); unknown keys are
 	// ignored and listed in `warnings` (one per line) when given.

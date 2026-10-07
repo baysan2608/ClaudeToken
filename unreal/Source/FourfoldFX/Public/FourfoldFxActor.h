@@ -53,6 +53,8 @@ public:
 	FString GetDebugLine() const;
 	/** Bit per ffx::NCue: the cue's Niagara system loaded (fed back to the logic as FxFrameIn::niagaraLoaded). */
 	uint64 GetNiagaraLoadedMask() const;
+	/** Bit per ffx::LCue: persistent Niagara slot loaded (FxFrameIn::niagaraLoopsLoaded). */
+	uint64 GetNiagaraLoopsLoadedMask() const;
 	/** True while a loaded Niagara cue system has not been pre-warmed in this world. */
 	bool NeedsNiagaraPrewarm() const;
 	/** Plays each loaded Niagara cue system once, small, at Location (a point hidden behind the floor) so its first-use

@@ -808,8 +808,9 @@ void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* S
 			L->SetVisibility(true);
 		}
 	}
-	// Niagara cue systems (fire and forget; timed stops run even while new spawns are off)
+	// Niagara cue systems (fire and forget; timed stops run even while new spawns are off) and persistent ones
 	Niagara->Spawn(this, List, bNiagara);
+	Niagara->UpdateLoops(this, List, bNiagara);
 	// physics debris of broken stones / walls, and the raised walls they bounce off
 	Debris->UpdateColliders(this, Root, List, DebrisObjects);
 	Debris->Update(this, List, SlotMaterials, GetWorld() ? GetWorld()->GetDeltaSeconds() : 1.0f / 60.0f, DebrisObjects);
@@ -838,6 +839,11 @@ FString AFourfoldFxActor::GetDebugLine() const
 uint64 AFourfoldFxActor::GetNiagaraLoadedMask() const
 {
 	return Niagara ? Niagara->LoadedMask() : 0;
+}
+
+uint64 AFourfoldFxActor::GetNiagaraLoopsLoadedMask() const
+{
+	return Niagara ? Niagara->LoopsLoadedMask() : 0;
 }
 
 bool AFourfoldFxActor::NeedsNiagaraPrewarm() const

@@ -135,4 +135,79 @@ FXT_TEST(niagara_prewarm_point_behind_floor) {
 	FXT_CHECK(!PointBehindFloor(nullptr, cam, Norm(Vec3(0.0f, 0.3f, -1.0f)), 3.5f, 1.5f, 40.0f, p));
 }
 
+namespace {
+
+ff::BodyView LBody(int id, ff::Mat m, ff::Form f, const std::string& tag) {
+	ff::BodyView b;
+	b.id = id;
+	b.mat = m;
+	b.form = f;
+	b.tag = tag;
+	b.pos = Vec3(1.0f, 0.5f, -2.0f);
+	b.radius = 0.4f;
+	b.mass = 10.0f;
+	b.props = ff::Value(ff::Dict());
+	return b;
+}
+
+}  // namespace
+
+FXT_TEST(niagara_loops_follow_views) {
+	ff::BodyView field = LBody(1, ff::Mat::Fire, ff::Form::Zone, "fire_field");
+	field.zone_radius = 2.0f;
+	field.age = 1.0f;   // past its 0.3 s fade-in
+	field.max_life = 6.0f;
+	ff::BodyView ball = LBody(2, ff::Mat::Fire, ff::Form::Chunk, "fireball");
+	ball.vel = Vec3(0.0f, 0.0f, 8.0f);
+	ff::BodyView steam = LBody(3, ff::Mat::Steam, ff::Form::Cloud, "");
+	auto run = [&](uint64_t loaded, DrawList& out1, DrawList& out2) {
+		FxDirector d;
+		ff::Snapshot prev, curr;
+		curr.bodies = {field, ball, steam};
+		prev = curr;
+		FxFrameIn in;
+		in.prev = &prev;
+		in.curr = &curr;
+		in.niagaraLoopsLoaded = loaded;
+		out1 = d.Update(in);
+		++curr.tick;
+		out2 = d.Update(in);
+	};
+	DrawList a1, a2, b1, b2;
+	run(0, a1, a2);
+	FXT_CHECK(a1.loops.empty());   // nothing loaded: procedural only
+	run(~0ULL, b1, b2);
+	std::set<int> cues;
+	for (const LoopReq& l : b1.loops) {
+		cues.insert(static_cast<int>(l.cue));
+		FXT_CHECK(l.scale > 0.0f && l.scale < 3.0f);
+		FXT_NEAR(l.dir.length(), 1.0f, 1e-3);
+	}
+	FXT_CHECK(cues.count(static_cast<int>(LCue::Fire)) == 1);
+	FXT_CHECK(cues.count(static_cast<int>(LCue::TrailFire)) == 1);
+	FXT_CHECK(cues.count(static_cast<int>(LCue::Steam)) == 1);
+	int fires = 0;
+	for (const LoopReq& l : b1.loops) fires += l.cue == LCue::Fire ? 1 : 0;
+	FXT_CHECK(fires >= 2 && fires <= 4);   // a 2 m field: centre + ring (GPU budget: <= 4 systems)
+	// keys are stable frame to frame (the glue keeps one component per key)
+	FXT_CHECK(b1.loops.size() == b2.loops.size());
+	for (size_t i = 0; i < b1.loops.size() && i < b2.loops.size(); ++i) FXT_CHECK(b1.loops[i].key == b2.loops[i].key);
+	// the fireball trail turns back along the flight (smoothed from straight up on its first frame)
+	for (const LoopReq& l : b2.loops)
+		if (l.cue == LCue::TrailFire) FXT_CHECK(l.dir.z < -0.3f);
+}
+
+FXT_TEST(niagara_loops_json) {
+	FxConfig c;
+	FXT_CHECK(c.Loop(LCue::Fire).path.find("NS_Fire") != std::string::npos);
+	std::string err, warn;
+	FXT_CHECK(c.LoadJson(R"({"niagara_loops": {"steam": {"path": "", "scale": 2}, "lava": {}}})", &err, &warn));
+	FXT_CHECK(c.Loop(LCue::Steam).path.empty());
+	FXT_NEAR(c.Loop(LCue::Steam).scale, 2.0f, 1e-6);
+	FXT_CHECK(warn.find("niagara_loops.lava") != std::string::npos);
+	FxConfig r;
+	FXT_CHECK(r.LoadJson(c.ToJson(), &err, &warn));
+	FXT_CHECK(r.ToJson() == c.ToJson());
+}
+
 #endif  // FF_LOGIC_TESTS

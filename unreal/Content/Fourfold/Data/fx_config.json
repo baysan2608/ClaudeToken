@@ -1201,5 +1201,81 @@
       "min_intensity": 0.0,
       "params": {}
     }
+  },
+  "niagara_loops": {
+    "fire": {
+      "path": "/Game/NiagaraExamples/FX_Misc/NS_Fire",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": true,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Flame Color": "color*6",
+        "Smoke Color": "color2",
+        "Base Light Intentsity": "0",
+        "Smoke Spawn Scale": "0.6"
+      }
+    },
+    "fire_blue": {
+      "path": "/Game/NiagaraExamples/FX_Misc/NS_Fire",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": true,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Flame Color": "color*6",
+        "Smoke Color": "color2",
+        "Base Light Intentsity": "0",
+        "Smoke Spawn Scale": "0.6"
+      }
+    },
+    "steam": {
+      "path": "/Game/NiagaraExamples/FX_Smoke/NS_Chimney_Smoke",
+      "scale": 0.6,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Smoke Color": "color"
+      }
+    },
+    "smoke": {
+      "path": "/Game/NiagaraExamples/FX_Smoke/NS_Chimney_Smoke",
+      "scale": 0.6,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Smoke Color": "color"
+      }
+    },
+    "trail_fire": {
+      "path": "/Game/NiagaraExamples/FX_Weapons/Trails/NS_RocketTrail",
+      "scale": 0.8,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Smoke Color": "color2",
+        "Flare Active": "1"
+      }
+    },
+    "trail_blue": {
+      "path": "/Game/NiagaraExamples/FX_Weapons/Trails/NS_RocketTrail",
+      "scale": 0.8,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Smoke Color": "color2",
+        "Flare Active": "1"
+      }
+    }
   }
 }

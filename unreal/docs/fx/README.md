@@ -129,8 +129,18 @@ so the Fab plugin is signed in, open Fourfold, Window > Fab > My Library > Niaga
   queries off so it draws whenever it has particles, ManualRelease then back to the pool), bit 2 draws a small
   triangle per FX material and each static FX mesh there for 4 frames (rocks / walls with shadows). The cost moves
   into the load frames; measured below in PROGRESS.md (Lab: first blast 164 -> 17 ms frame, first metal 49 -> 17 ms).
-* Pooling: fire-and-forget cues use AutoRelease; systems the layer stops itself (slot `life`, pre-warm) are
+* Pooling: fire-and-forget cues use AutoRelease; systems the layer stops itself (slot `life`, pre-warm, loops) are
   ManualRelease, so a stop never hits a component the pool already handed to another cue.
+* Persistent slots (`fx_config.json` "niagara_loops", `ffx::LCue`, same fields as the cue slots; `replace` = the
+  view tones its procedural look down): views send a `LoopReq` (stable key, position, +Z direction, scale,
+  intensity, colours) every frame while their body lives; `FFourfoldFxNiagara::UpdateLoops` keeps one component per
+  key, moves and re-binds it, and stops it gently (`ReleaseToPool`: live particles finish) on the first frame the key
+  is missing. Current: fire fields / lines -> NS_Fire at up to 4 sites (field centre + ring, line every 1.8 m;
+  `Flame Color` = flame palette x 6, grey smoke, its own lights off: the procedural fire lights the scene, tongues
+  at 0.55), steam / geyser / steam screen / smoke clouds -> NS_Chimney_Smoke at the base, fireballs / comets ->
+  NS_RocketTrail (flare on) following the ball along its tail. GPU (Mac, 75 %, 60 fps cap): a burning fire field
+  plus a steam cloud +1.7 ms (13.35 vs 11.66 ms median; +2.9 ms before the trim to 4 sites without lights). Loop
+  systems are pre-warmed with the cue slots.
 * GPU budget: the Mac game is GPU-bound; slots are one-shot bursts only (no persistent Niagara), the pack's own
   Effect Types handle significance / culling, `min_quality` 1 keeps them off on low.
 * Profiling: `-csvCaptureFrames=2400 -ExecCmds="ff.fx.Showcase 2.5"` then `python3 unreal/Tools/vfx/csv_fx.py <csv>`

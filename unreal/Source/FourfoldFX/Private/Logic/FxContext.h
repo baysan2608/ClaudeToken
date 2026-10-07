@@ -52,6 +52,7 @@ struct FxFrameIn {
 	float flashes = 1.0f;             // Settings.Flashes 0..1
 	bool reducedMotion = false;
 	uint64_t niagaraLoaded = 0;       // bit per NCue: the glue has the slot's Niagara system loaded
+	uint64_t niagaraLoopsLoaded = 0;  // bit per LCue: persistent slot systems loaded (0 = procedural looks only)
 	bool physicsDebris = false;       // the glue simulates FractureReq pieces (arena collision built)
 	const std::vector<DebrisImpact>* debrisImpacts = nullptr;   // pieces landing hard since the last frame
 };
@@ -119,6 +120,10 @@ struct Ctx {
 	bool NiagaraReplaces(NCue cue, float intensity) const {
 		const NiagaraSlot& s = cfg.Niagara(cue);
 		return s.replace && s.Wants(intensity, in.quality) && ((in.niagaraLoaded >> static_cast<int>(cue)) & 1ULL) != 0;
+	}
+	// A view keeps this persistent slot's system alive (loaded in the glue, wanted at this quality).
+	bool LoopOn(LCue cue) const {
+		return cfg.Loop(cue).Wants(1.0f, in.quality) && ((in.niagaraLoopsLoaded >> static_cast<int>(cue)) & 1ULL) != 0;
 	}
 
 	// Basis whose +Z faces the camera from p (+Y as close to the camera's up as possible).

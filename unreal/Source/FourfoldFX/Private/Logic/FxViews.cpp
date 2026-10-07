@@ -596,7 +596,9 @@ public:
 		for (int i = 0; i < kNumCloudStyles; ++i)
 			if (kCloudStyleNames[static_cast<size_t>(i)] == sel.style) cs = static_cast<CloudStyle>(i);
 		cloud_.Configure(c, cs, SeedOf(f.b.id));
+		style_ = cs;
 		m0_ = MaxF(f.b.mass, 0.01f);
+		keyLoop_ = c.keys.New();
 	}
 	void Update(const BodyFrame& f, Ctx& c) override {
 		const ff::BodyView& b = f.b;
@@ -635,16 +637,31 @@ public:
 			}
 			cloud_.SetShape(r, h, sq);
 		}
-		cloud_.SetAmount(b.form == Form::Zone ? Life01(b) : Clamp(b.mass / m0_, 0.25f, 1.0f));
+		amount_ = b.form == Form::Zone ? Life01(b) : Clamp(b.mass / m0_, 0.25f, 1.0f);
+		cloud_.SetAmount(amount_);
+		radius_ = b.zone_radius > 0.0f ? b.zone_radius : MaxF(b.radius, 0.6f);
 	}
-	void Draw(Ctx& c, float fade) override { cloud_.Draw(c, x_, fade); }
+	void Draw(Ctx& c, float fade) override {
+		// steam / smoke columns get a persistent Niagara plume rising from the base (fx_config "niagara_loops")
+		const bool steam = style_ == CloudStyle::Steam || style_ == CloudStyle::Geyser || style_ == CloudStyle::SteamScreen;
+		const LCue cue = steam ? LCue::Steam : LCue::Smoke;
+		if ((steam || style_ == CloudStyle::Smoke) && fade >= 1.0f && amount_ > 0.1f && c.LoopOn(cue)) {
+			LoopReq& l = c.out.Loop(keyLoop_, cue, x_.pos);
+			l.scale = Clamp(radius_ * 0.8f, 0.6f, 2.0f) * (style_ == CloudStyle::Geyser ? 1.4f : 1.0f);
+			l.intensity = amount_;
+			l.color = c.cfg.Cloud(style_).top;
+		}
+		cloud_.Draw(c, x_, fade);
+	}
 	float FadeTime() const override { return 0.4f; }
 
 private:
 	PuffCloud cloud_;
 	Xform x_;
 	Basis slugBasis_;
-	float m0_ = 1.0f;
+	CloudStyle style_ = CloudStyle::Mist;
+	float m0_ = 1.0f, amount_ = 1.0f, radius_ = 1.0f;
+	uint32_t keyLoop_ = 0;
 };
 
 // --------------------------------------------------------------------------------------------- crystals
@@ -900,31 +917,85 @@ public:
 	using BodyView::BodyView;
 	void Init(const BodyFrame& f, Ctx& c) override {
 		const ff::BodyView& b = f.b;
-		const bool blue = b.props.get("blue", ff::Value(false)).truthy();
+		blue_ = b.props.get("blue", ff::Value(false)).truthy();
 		const float tier = static_cast<float>(b.tier);
 		if (sel.style == "field")
-			flames_.Setup(c, FlameTongues::Mode::Field, SeedOf(b.id), MaxF(b.zone_radius, 0.5f), Clamp(0.75f + 0.15f * tier, 0.7f, 1.25f), blue);
+			flames_.Setup(c, FlameTongues::Mode::Field, SeedOf(b.id), MaxF(b.zone_radius, 0.5f), Clamp(0.75f + 0.15f * tier, 0.7f, 1.25f), blue_);
 		else
-			flames_.Setup(c, FlameTongues::Mode::Line, SeedOf(b.id), 0.6f, Clamp(0.8f + 0.15f * tier, 0.8f, 1.4f), blue);
+			flames_.Setup(c, FlameTongues::Mode::Line, SeedOf(b.id), 0.6f, Clamp(0.8f + 0.15f * tier, 0.8f, 1.4f), blue_);
+		for (uint32_t& k : loopKeys_) k = c.keys.New();
 	}
 	void Update(const BodyFrame& f, Ctx& c) override {
 		const ff::BodyView& b = f.b;
 		x_ = Xform();
 		if (sel.style == "field") {
 			x_.pos = Vec3(b.pos.x, c.Ground(b.pos), b.pos.z);
-			flames_.SetIntensity(Life01(b) * Clamp(0.6f + b.power / 30.0f, 0.6f, 1.0f));
+			radius_ = MaxF(b.zone_radius, 0.5f);
+			intensity_ = Life01(b) * Clamp(0.6f + b.power / 30.0f, 0.6f, 1.0f);
 		} else {
-			std::vector<Vec3> pts = PathWithHead(b, b.pos, true);
-			if (pts.size() >= 2) flames_.SetPath(c, pts);
-			flames_.SetIntensity(b.form == Form::Wave ? 1.0f : Clamp(b.heat_payload / 200.0f, 0.3f, 1.0f));
+			path_ = PathWithHead(b, b.pos, true);
+			for (Vec3& p : path_) p.y = c.Ground(p);
+			if (path_.size() >= 2) flames_.SetPath(c, path_);
+			intensity_ = b.form == Form::Wave ? 1.0f : Clamp(b.heat_payload / 200.0f, 0.3f, 1.0f);
 		}
 	}
-	void Draw(Ctx& c, float fade) override { flames_.Draw(c, x_, fade, true); }
+	void Draw(Ctx& c, float fade) override {
+		// persistent Niagara fire on top (fx_config "niagara_loops"): sites on the field / along the line; the tongues
+		// stay underneath, toned down when the slot replaces them. A fading view lets its systems burn out.
+		const LCue cue = blue_ ? LCue::FireBlue : LCue::Fire;
+		const bool loops = c.LoopOn(cue) && fade >= 1.0f && intensity_ > 0.05f;
+		if (loops) {
+			const std::array<Color, 4>& cols = blue_ ? c.cfg.blueFlame : c.cfg.flame;
+			const Color smoke = blue_ ? Color(0.40f, 0.42f, 0.48f) : Color(0.42f, 0.40f, 0.38f);
+			std::array<Vec3, kSites> sites{};
+			const int n = Sites(sites);
+			for (int k = 0; k < n; ++k) {
+				LoopReq& l = c.out.Loop(loopKeys_[static_cast<size_t>(k)], cue, sites[static_cast<size_t>(k)]);
+				l.scale = (sel.style == "field" ? Clamp(radius_ * 0.45f, 0.6f, 1.2f) : 0.75f) * (0.75f + 0.25f * intensity_);
+				l.intensity = intensity_;
+				l.color = cols[1];
+				l.color2 = smoke;
+			}
+		}
+		flames_.SetIntensity(intensity_ * (loops && c.cfg.Loop(cue).replace ? 0.55f : 1.0f));
+		flames_.Draw(c, x_, fade, true);
+	}
 	float FadeTime() const override { return 0.35f; }
 
 private:
+	static constexpr int kSites = 4;   // GPU: each NS_Fire costs ~0.3-0.5 ms on the Mac
+	// fire sites: a field's centre + a ring at 0.6 r; a line every ~1.8 m along its path
+	int Sites(std::array<Vec3, kSites>& out) const {
+		int n = 0;
+		if (sel.style == "field") {
+			out[static_cast<size_t>(n++)] = x_.pos;
+			const int ring = ClampI(static_cast<int>(kFxTau * radius_ * 0.6f / 1.8f), 0, kSites - 2);
+			for (int i = 0; i < ring; ++i) {
+				const float a = kFxTau * (static_cast<float>(i) + 0.5f) / static_cast<float>(ring);
+				out[static_cast<size_t>(n++)] = x_.pos + Vec3(std::cos(a), 0.0f, std::sin(a)) * (radius_ * 0.6f);
+			}
+			return n;
+		}
+		float carry = 0.9f;   // first site half a spacing in
+		for (size_t i = 1; i < path_.size() && n < kSites; ++i) {
+			const Vec3 a = path_[i - 1], b = path_[i];
+			const float len = (b - a).length();
+			float t = carry;
+			while (t <= len && n < kSites) {
+				out[static_cast<size_t>(n++)] = LerpV(a, b, t / MaxF(len, 1e-4f));
+				t += 1.8f;
+			}
+			carry = t - len;
+		}
+		return n;
+	}
+
 	FlameTongues flames_;
 	Xform x_;
+	std::vector<Vec3> path_;
+	std::array<uint32_t, kSites> loopKeys_{};
+	float radius_ = 1.0f, intensity_ = 1.0f;
+	bool blue_ = false;
 };
 
 // --------------------------------------------------------------------------------------------- fireballs
@@ -936,6 +1007,7 @@ public:
 		keyTongues_ = c.keys.New();
 		keyCore_ = c.keys.New();
 		keyLight_ = c.keys.New();
+		keyTrail_ = c.keys.New();
 		kind_ = b.tag == "comet" ? 1 : (b.tag == "ember" ? 2 : 0);
 		radius_ = kind_ == 2 ? 0.09f : Clamp(0.16f + 0.05f * static_cast<float>(b.tier) + b.heat_payload / 4000.0f, 0.16f, 0.55f);
 		blue_ = b.props.get("blue", ff::Value(false)).truthy() || kind_ == 1;
@@ -992,11 +1064,21 @@ public:
 			c.out.Light(keyLight_, pos_, blue_ ? Color(0.5f, 0.7f, 1.0f) : Color(1.0f, 0.55f, 0.2f),
 			            (kind_ == 1 ? 1.2f : 1.5f) * power_ * (0.85f + 0.15f * std::sin(scroll_ * 17.0f)) * fade,
 			            Clamp(radius_ * 10.0f, 2.0f, 6.0f), 2.0f);
+		// a smoke / flare trail follows the ball (the system's particles stay in the world as it moves)
+		const LCue cue = blue_ ? LCue::TrailBlue : LCue::TrailFire;
+		if (kind_ != 2 && fade >= 1.0f && c.LoopOn(cue)) {
+			LoopReq& l = c.out.Loop(keyTrail_, cue, pos_);
+			l.dir = tail_;
+			l.scale = Clamp(radius_ * 2.5f, 0.5f, 1.4f);
+			l.intensity = power_;
+			l.color = cols[1];
+			l.color2 = blue_ ? Color(0.55f, 0.58f, 0.66f) : Color(0.56f, 0.54f, 0.52f);
+		}
 	}
 	float FadeTime() const override { return 0.12f; }
 
 private:
-	uint32_t keyTongues_ = 0, keyCore_ = 0, keyLight_ = 0;
+	uint32_t keyTongues_ = 0, keyCore_ = 0, keyLight_ = 0, keyTrail_ = 0;
 	int kind_ = 0;   // 0 fireball, 1 comet, 2 ember
 	float radius_ = 0.3f, power_ = 1.0f, scroll_ = 0.0f, seed_ = 0.0f;
 	bool blue_ = false;

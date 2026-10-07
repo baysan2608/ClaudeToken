@@ -20,6 +20,7 @@ namespace ffx
 {
 	struct DrawList;
 	struct FxConfig;
+	struct NiagaraSlot;
 	struct SystemReq;
 }
 
@@ -39,6 +40,11 @@ struct FFourfoldFxNiagara
 	int32 Prewarm(AActor* Owner, const FVector& Location);
 	/** True while a loaded slot system usable at the current quality has not been pre-warmed. */
 	bool NeedsPrewarm() const;
+	/** Persistent systems (ffx::LoopReq): one ManualRelease component per key, moved and re-bound every frame; keys
+	 *  missing this frame (or everything, when bEnabled is false) stop gently and go back to the pool. */
+	void UpdateLoops(AActor* Owner, const ffx::DrawList& List, bool bEnabled);
+	/** Bit per ffx::LCue: the persistent slot's system loaded (FxFrameIn::niagaraLoopsLoaded). */
+	uint64 LoopsLoadedMask() const { return LoopMask; }
 
 	uint64 LoadedMask() const { return Mask; }
 	FString GetDebugLine() const;
@@ -69,11 +75,31 @@ private:
 		bool bKill = false;   // pre-warm: particles go too (DeactivateImmediate)
 	};
 
-	void Bind(UNiagaraComponent& Comp, const FSlot& Slot, const ffx::SystemReq& Req, const FVector& Location, const FVector& Dir) const;
+	struct FBindIn
+	{
+		FVector Location;
+		FVector Dir;
+		float Scale = 1.0f;
+		float Intensity = 1.0f;
+		ffx::Color Color;
+		ffx::Color Color2;
+	};
+	struct FLoop
+	{
+		TWeakObjectPtr<UNiagaraComponent> Comp;
+		int32 Cue = 0;
+	};
+
+	bool LoadSlot(const ffx::NiagaraSlot& Cfg, FSlot& S, const FString& Where, TMap<FString, UNiagaraSystem*>& Loaded,
+		TArray<TObjectPtr<UObject>>& OutRefs);
+	void Bind(UNiagaraComponent& Comp, const FSlot& Slot, const FBindIn& Req) const;
 
 	bool Usable(const FSlot& S) const { return S.System && Quality >= S.MinQuality; }
 
 	FSlot Slots[ffx::kNumNCues];
+	FSlot LoopSlots[ffx::kNumLCues];
+	TMap<uint32, FLoop> Loops;
+	uint64 LoopMask = 0;
 	TArray<FTimed> Timed;
 	TArray<TWeakObjectPtr<UNiagaraComponent>> Live;
 	TSet<TObjectKey<UNiagaraSystem>> Prewarmed;

@@ -239,3 +239,19 @@ _Read this first when resuming. Update after every completed sub-step._
 - Next: persistent Niagara looks (fire fields: NS_Fire with Flame Color for blue fire; steam / smoke columns:
   NS_Chimney_Smoke; lightning arcs: NS_TeslaCoil `PositionTarget`; fireball trails: NS_RocketTrail), Niagara Fluids
   (engine plugin, enabled: Grid3D_Gas_Fire / Flip_Splash) for the Mac high tier, then the iOS check.
+
+## Persistent Niagara looks (2026-10-07)
+- `LCue` slots + "niagara_loops" config (shared JSON helpers with "niagara"), `LoopReq` in the draw list,
+  `FxFrameIn::niagaraLoopsLoaded`, `Ctx::LoopOn`; FlamesView (fire fields / lines -> NS_Fire sites), CloudView
+  (steam / geyser / steam screen / smoke -> NS_Chimney_Smoke), FireballView (NS_RocketTrail) send them; glue
+  `UpdateLoops` (one ManualRelease component per key, gentle stop), loop systems join the pre-warm. Tests
+  `niagara_loops_follow_views`, `niagara_loops_json`.
+- Look check (`-FFLabSpawn=fire_field@2,steam@6,fireball@10,fire_line@13,comet@17`): fields burn with real
+  flipbook flames + smoke over the procedural tongues, the fire line burns along its path, trails follow the balls.
+  Smoke was black at first (dark `Smoke Color`): now grey; trails got `Flare Active`.
+- GPU A/B (`run_loopab`: fire field + steam alive, `r.DynamicRes.OperationMode 0`, 75 %, 60 fps cap, 300 frames):
+  Niagara on 14.54 ms vs off 11.66 ms with 6 fire sites and NS_Fire's own lights; trimmed to <= 4 sites, lights off
+  (`Base Light Intentsity` 0), `Smoke Spawn Scale` 0.6 -> 13.35 ms (+1.7 ms, inside the 2 ms FX budget).
+- Next: lightning arcs (NS_TeslaCoil with `PositionTarget`) for ground currents / static fields, water (pack has
+  no splash; Niagara Fluids Flip_Splash / a ribbon system for streams on the Mac high tier), wind wisps, then the
+  iOS check of every slot.

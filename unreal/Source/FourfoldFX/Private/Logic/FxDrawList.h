@@ -101,6 +101,20 @@ struct FractureReq {
 	uint32_t seed = 0;
 };
 
+// A persistent Niagara system kept alive by a view (LCue slot, fx_config.json "niagara_loops"): the glue spawns it on
+// the key's first frame, then moves / re-binds it every frame (+Z along `dir`), and stops it gently (live particles
+// finish) on the first frame the key is missing. Colours as SystemReq (alpha 0 = keep the system's own).
+struct LoopReq {
+	uint32_t key = 0;
+	LCue cue = LCue::Fire;
+	Vec3 pos;
+	Vec3 dir{0.0f, 1.0f, 0.0f};
+	float scale = 1.0f;
+	float intensity = 1.0f;
+	Color color{0.0f, 0.0f, 0.0f, 0.0f};
+	Color color2{0.0f, 0.0f, 0.0f, 0.0f};
+};
+
 // A solid the physics debris bounces off (a raised stone wall body): an oriented box, xform.pos = centre and the basis
 // columns = half extents along its axes. Only sent while FxFrameIn::physicsDebris is set; keys are stable per body.
 struct ColliderReq {
@@ -114,12 +128,21 @@ struct DrawList {
 	std::vector<SystemReq> systems;
 	std::vector<FractureReq> fractures;
 	std::vector<ColliderReq> colliders;
+	std::vector<LoopReq> loops;
 	void Clear() {
 		items.clear();
 		lights.clear();
 		systems.clear();
 		fractures.clear();
 		colliders.clear();
+		loops.clear();
+	}
+	LoopReq& Loop(uint32_t key, LCue cue, const Vec3& pos) {
+		LoopReq& l = loops.emplace_back();
+		l.key = key;
+		l.cue = cue;
+		l.pos = pos;
+		return l;
 	}
 	FractureReq& Fracture() { return fractures.emplace_back(); }
 	SystemReq& System(NCue cue, const Vec3& pos, const Vec3& dir, float scale, float intensity) {

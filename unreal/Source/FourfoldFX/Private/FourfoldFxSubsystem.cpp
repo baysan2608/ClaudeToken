@@ -385,6 +385,7 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 	In.anchors = &Impl->Anchors;
 	const bool bNiagara = CVarFourfoldFxNiagara.GetValueOnGameThread() != 0;
 	In.niagaraLoaded = bNiagara ? FxActor->GetNiagaraLoadedMask() : 0;
+	In.niagaraLoopsLoaded = bNiagara ? FxActor->GetNiagaraLoopsLoadedMask() : 0;
 	// pre-warm: Niagara cue systems and FX materials drawn once on the view ray behind the floor (in the frustum, so
 	// their pipelines get built, but hidden); retried every frame until the camera looks at the floor
 	const int32 Prewarm = CVarFourfoldFxPrewarm.GetValueOnGameThread();
