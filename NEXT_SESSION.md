@@ -91,9 +91,9 @@ CURRENT STATE (2026-10-07, end of the first Mac session) — details: unreal/doc
 - Open: owner to choose fighter outfit (bare-chested + training pants suggested / own MetaHuman / keep hoodie).
 
 WHAT TO DO (priority order)
-1. Perf to 60 fps on the Mac (16.6 ms): measure with the CSV profiler; Lumen High (done in FourfoldSettings
-   for tier 2 if committed), fog/clouds, find the 4.6 ms "Unaccounted"; then iOS budget (mobile renderer,
-   MetaHuman LODs / groom cards, no volumetrics).
+1. Perf to 60 fps on the Mac (16.6 ms, now ~18.4): measure with the CSV profiler; find the 3.8 ms
+   "Unaccounted", clouds / shadow depths; then iOS budget (mobile renderer, MetaHuman LODs / groom cards,
+   no volumetrics).
 2. Locomotion quality: starts / stops / pivots / turn-in-place from GASP (motion matching or clip selection),
    foot planting check on the MetaHuman, element stances on MetaHuman proportions.
 3. Fighter outfit per the owner's answer; martial-arts strikes still hand-keyed (mocap pack later).
