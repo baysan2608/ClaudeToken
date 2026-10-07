@@ -26,3 +26,23 @@ root bone (root scale 100, every bone offset in metres). That collapsed IK-retar
 on a 1.7 cm fighter. `Tools/blender/common/ff_fbx_export.py` now exports a centimetre copy (FBX unit factor 1);
 `convert_fbx_to_cm.py` re-wrote the 3 meshes + 131 clips; SK_Fighter / SKEL_Fighter / all clips were re-imported
 from scratch (root scale 1, pelvis at 96 cm).
+
+## Mac performance (2026-10-07)
+Target 60 fps (16.6 ms) in a duel, Mac game window 1600x900, M4 Pro. Measure with
+`bash Tools/mac/shot.sh <dir> 30,66 -scenario=spar -autoplay=duel -csvGpuStats -FFExec="31:csvprofile frames=300|..."`
+(`-FFExec` runs console commands at given seconds, so one run can A/B several settings) and summarise with
+`python3 Tools/mac/csv_gpu.py [a.csv [b.csv]]`. `ProfileGPU` in `-FFExec` dumps the pass tree to the game log.
+
+- **The "75 % TSR" never applied:** `r.ScreenPercentage.Default.Desktop.Mode=1` is "based on display resolution" (not manual),
+  and `Scalability::FQualityLevels::SetFromSingleQualityLevel(3)` also sets `sg.ResolutionQuality=100`, i.e. `r.ScreenPercentage
+  100`. The game rendered at 100 %: ~18 ms GPU. Fixed: Mode 0 (manual 75 %), the settings subsystem keeps
+  `ResolutionQuality=0` on the Mac and turns on **dynamic resolution** (50..100 %, budget = 1000 / frame-rate cap).
+- Result (60 fps cap): fixed 75 % = 12.4-13.2 ms GPU median; dynamic resolution settles at ~81 % = 14.5 ms, 0 dropped frames
+  in 4 x 270-frame windows. With the 120 fps cap (owner's saved setting on this Mac) the budget is 8.3 ms and the picture drops
+  to the 50 % floor.
+- The GPU work is almost purely per-pixel (50 % = 9 ms, 100 % = 18 ms). On Apple GPUs the per-pass split is unreliable: pass
+  timestamps overlap (TBDR), so a ~3 ms block lands on whatever pass follows translucency ("VSM Log Stats And Status", TSR,
+  "Unaccounted"). Only A/B toggles give real savings. Measured at 100 %: volumetric fog -0.9 ms, cheaper cloud sky capture
+  (cloud resolution divider 4, 1 face / frame) -0.25, Lumen probe downsample 24 -0.3, cloud ray cap 96 / VSM off / skin
+  cache off ~0. Volumetric clouds cost ~1.7 ms at any resolution (traced at 1/4 res).
+- iOS note: the same scalability call maps iOS levels 0 / 1 / 2 to 50 / 71 / 87 % screen percentage; decide in the iOS budget.

@@ -6,7 +6,7 @@ set -uo pipefail
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 UE="${UE_ROOT:-/Users/Shared/Epic Games/UE_5.8}"
 OUT="${1:-$REPO/logs/shots}"; TIMES="${2:-45}"; shift $(( $# > 2 ? 2 : $# ))
-mkdir -p "$OUT"; rm -f "$OUT"/shot_*.png
+mkdir -p "$OUT"; OUT="$(cd "$OUT" && pwd)"; rm -f "$OUT"/shot_*.png   # absolute: the game runs from Engine/Binaries/Mac
 LOGNAME_="FourfoldShot_$$.log"                       # one log per run: several sessions may capture at once
 LOG="$HOME/Library/Logs/Fourfold/$LOGNAME_"
 "$UE/Engine/Binaries/Mac/UnrealEditor.app/Contents/MacOS/UnrealEditor" "$REPO/unreal/Fourfold.uproject" /Game/Fourfold/Maps/L_Lab \

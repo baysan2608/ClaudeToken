@@ -69,18 +69,31 @@ void ParseBurstSpecs()
 // Dev capture for automated look checks (works with a locked screen, unlike an OS screenshot):
 //   -FFShot=<seconds after start>[,<seconds>...]  -FFShotDir=<folder>  [-FFShotQuit]
 // Writes <folder>/shot_<n>.png from the game viewport; -FFShotQuit exits after the last one.
+//   -FFExec="<seconds>:<console command>|<seconds>:<command>..." runs console commands at those times (perf A/B in one
+//   run, e.g. "30:csvprofile frames=300|36:r.VolumetricCloud 0|37:csvprofile frames=300").
 class FFourfoldModule final : public FDefaultGameModuleImpl
 {
 public:
 	virtual void StartupModule() override
 	{
 		ParseBurstSpecs();
-		if (GBurstSpecs.Num() > 0)
+		FString Spec;
+		if (FParse::Value(FCommandLine::Get(), TEXT("-FFExec="), Spec, false))
+		{
+			TArray<FString> Parts;
+			Spec.ParseIntoArray(Parts, TEXT("|"));
+			for (const FString& P : Parts)
+			{
+				FString When, Cmd;
+				if (P.Split(TEXT(":"), &When, &Cmd)) Execs.Add({FCString::Atod(*When), Cmd.TrimStartAndEnd()});
+			}
+			Execs.Sort([](const FTimedExec& A, const FTimedExec& B) { return A.Time < B.Time; });
+		}
+		if (GBurstSpecs.Num() > 0 || Execs.Num() > 0)
 		{
 			Start = FPlatformTime::Seconds();
 			Handle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FFourfoldModule::Tick));
 		}
-		FString Spec;
 		if (!FParse::Value(FCommandLine::Get(), TEXT("-FFShot="), Spec, false)) return;
 		TArray<FString> Parts;
 		Spec.ParseIntoArray(Parts, TEXT(","));
@@ -126,6 +139,11 @@ private:
 			GEngine->DeferredCommands.Add(TEXT("QUIT"));
 		}
 		const double T = FPlatformTime::Seconds() - Start;
+		while (NextExec < Execs.Num() && T >= Execs[NextExec].Time && GEngine)
+		{
+			UE_LOG(LogFourfold, Display, TEXT("FFExec at %.1fs: %s"), T, *Execs[NextExec].Cmd);
+			GEngine->DeferredCommands.Add(Execs[NextExec++].Cmd);
+		}
 		if (Next < Times.Num() && T >= Times[Next])
 		{
 			const FString File = Dir / FString::Printf(TEXT("shot_%d.png"), Next);
@@ -142,6 +160,13 @@ private:
 		return true;
 	}
 
+	struct FTimedExec
+	{
+		double Time;
+		FString Cmd;
+	};
+	TArray<FTimedExec> Execs;
+	int32 NextExec = 0;
 	TArray<double> Times;
 	FString Dir;
 	bool bQuit = false;

@@ -137,6 +137,20 @@ void UFourfoldSettingsSubsystem::ApplyEngineSettings()
 			MaxFps->Set(float(Settings.FrameRateCap), ECVF_SetByGameSetting);
 			AppliedFrameRate = Settings.FrameRateCap;
 		}
+#if !(PLATFORM_IOS || PLATFORM_ANDROID)
+		// Dynamic resolution (TSR reconstructs to the window size): the renderer picks 50..100 % per frame to hold the
+		// cap. The Mac is pixel-bound (duel at 1600x900, M4 Pro: 100 % = ~18 ms GPU, 75 % = ~12 ms), so this keeps 60 fps
+		// and spends any headroom on sharpness instead of a fixed low percentage.
+		IConsoleManager& CM = IConsoleManager::Get();
+		const auto SetCVar = [&CM](const TCHAR* Name, float Value)
+		{
+			if (IConsoleVariable* V = CM.FindConsoleVariable(Name)) V->Set(Value, ECVF_SetByGameSetting);
+		};
+		SetCVar(TEXT("r.DynamicRes.FrameTimeBudget"), 1000.f / float(FMath::Max(Settings.FrameRateCap, 30)));
+		SetCVar(TEXT("r.DynamicRes.MinScreenPercentage"), 50.f);
+		SetCVar(TEXT("r.DynamicRes.MaxScreenPercentage"), 100.f);
+		SetCVar(TEXT("r.DynamicRes.OperationMode"), 2.f);
+#endif
 	}
 	// Scalability: 0 low .. 2 high. Desktop maps to Medium / High / Epic, mobile to Low / Medium / High.
 	const int32 Q = GetEffectiveQuality();
@@ -157,6 +171,14 @@ void UFourfoldSettingsSubsystem::ApplyEngineSettings()
 			Levels.GlobalIlluminationQuality = 2;
 			Levels.ReflectionQuality = 2;
 			Levels.AntiAliasingQuality = 2;
+		}
+		// SetFromSingleQualityLevel also maps the level to sg.ResolutionQuality 50 / 71 / 87 / 100, which sets
+		// r.ScreenPercentage and so overrode the project default (75): Epic rendered at 100 %. Leave the resolution to
+		// dynamic resolution / r.ScreenPercentage.Default (r.ScreenPercentage 0 = project default).
+		Levels.ResolutionQuality = 0.f;
+		if (IConsoleVariable* SP = IConsoleManager::Get().FindConsoleVariable(TEXT("r.ScreenPercentage")))
+		{
+			SP->Set(0.f, ECVF_SetByGameSetting);
 		}
 #endif
 		Scalability::SetQualityLevels(Levels);
