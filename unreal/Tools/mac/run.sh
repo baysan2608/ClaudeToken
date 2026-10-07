@@ -32,6 +32,8 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
 fi
 
 echo "== Build OK. Opening Unreal; asset setup runs automatically (watch Window > Output Log for [Fourfold])."
-open -a "$UE/Engine/Binaries/Mac/UnrealEditor.app" --args "$UPROJ" \
-  -ExecutePythonScript="$REPO/unreal/Content/Python/fourfold_setup.py"
+# -ExecCmds keeps the editor open afterwards (-ExecutePythonScript quits once the script ends).
+# -n: a new instance, so the arguments are not dropped when an editor from the launcher is already open.
+open -n -a "$UE/Engine/Binaries/Mac/UnrealEditor.app" --args "$UPROJ" \
+  -ExecCmds="py $REPO/unreal/Content/Python/fourfold_setup.py"
 echo "   When setup finishes: Content Browser > Fourfold/Maps/L_Lab, then Play."
