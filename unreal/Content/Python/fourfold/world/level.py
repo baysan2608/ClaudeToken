@@ -293,6 +293,10 @@ class Builder:
         if mode == "dynamic":
             self.make_dynamic()
             return "dynamic"
+        if "-run=" in unreal.SystemLibrary.get_command_line().lower():
+            # A commandlet has no renderer: Lightmass asserts in the render graph (InDesc.IsValid) and crashes.
+            rep["notes"].append("lighting not built (commandlet, no renderer): run the setup in the editor to bake")
+            return "unbuilt"
         try:
             for k in ("sky",):
                 comp = self.lights.get(k)

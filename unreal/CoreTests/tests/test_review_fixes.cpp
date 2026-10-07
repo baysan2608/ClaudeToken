@@ -193,7 +193,8 @@ FF_TEST_F(test_review_fixes, RF, test_a_partial_applies_once_per_contact_and_sof
 	h.w->mass_ledger.ground_taken += 80.0;
 	b->vel = V3(0, 0, 11.0);
 	b->attack_id = h.w->new_attack_id();
-	MatBody* wall = h.w->spawn_body(Mat::Sand, Form::Wall, 115.0, V3(0, 0, 2), "test");
+	// Keep the wall alive across the step: the world may drop it (the Agent only holds a raw pointer).
+	const BodyRef wall = h.w->spawn_body(Mat::Sand, Form::Wall, 115.0, V3(0, 0, 2), "test")->shared_from_this();
 	h.w->mass_ledger.ground_taken += 115.0;
 	AgentRef t = Agent::of_body(*h.w, *b);
 	AgentRef c = Agent::of_body(*h.w, *wall);
