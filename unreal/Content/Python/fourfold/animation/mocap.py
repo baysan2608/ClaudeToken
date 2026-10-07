@@ -179,7 +179,16 @@ def _getup_trim(seq, length):
     frac = [max((ph[i] - p0) / max(p1 - p0, 1.0), (hh[i] - h0) / max(h1 - h0, 1.0)) for i in range(n)]
     i0 = next((i for i in range(n) if frac[i] > 0.06), 0)
     i1 = next((i for i in range(i0, n) if ph[i] >= p0 + 0.97 * (p1 - p0) and hh[i] >= h0 + 0.97 * (h1 - h0)), n - 1)
-    return max(0.0, (i0 - 2) / 30.0), min(length, (i1 + 3) / 30.0)
+    t0, t1 = max(0.0, (i0 - 2) / 30.0), min(length, (i1 + 3) / 30.0)
+    # lying pose at the start of the active part (component space, cm): pelvis position and pelvis -> head direction,
+    # used at runtime to line the clip up with where the ragdoll actually lies
+    pose = unreal.AnimPoseExtensions.get_anim_pose_at_time(seq, t0, opts)
+    pv = unreal.AnimPoseExtensions.get_bone_pose(pose, "pelvis", unreal.AnimPoseSpaces.WORLD).translation
+    hv = unreal.AnimPoseExtensions.get_bone_pose(pose, "head", unreal.AnimPoseSpaces.WORLD).translation
+    d = (hv.x - pv.x, hv.y - pv.y)
+    n = max((d[0] ** 2 + d[1] ** 2) ** 0.5, 1e-3)
+    lie = {"pelvis": [round(pv.x, 2), round(pv.y, 2)], "dir": [round(d[0] / n, 4), round(d[1] / n, 4)]}
+    return t0, t1, lie
 
 
 def build(force=False):
@@ -241,7 +250,9 @@ def build(force=False):
                 rep["notes"].append(f"A_{clip}: {length:.2f}s {cycles} cycles speed {speed:.2f} m/s, L touchdown at {touch:.2f}, "
                                     f"plants {plants}")
             if kind == "getup":
-                row["trim"] = [round(v, 3) for v in _getup_trim(seq, length)]
+                t0, t1, lie = _getup_trim(seq, length)
+                row["trim"] = [round(t0, 3), round(t1, 3)]
+                row["lie"] = lie
                 rep["notes"].append(f"A_{clip}: get-up active part {row['trim']}")
             rows[clip] = row
         data = _data_dir()

@@ -8,6 +8,7 @@
 #include "FourfoldAnimInstance.h"
 #include "FourfoldAnimLibrary.h"
 #include "FourfoldCoords.h"
+#include "FourfoldDevCapture.h"
 #include "FourfoldLog.h"
 #include "FourfoldSettings.h"
 #include "FourfoldSimSubsystem.h"
@@ -61,6 +62,11 @@ struct FFourfoldFighterImpl
 	float FlinchW = 0.0f;
 	bool bGetupEarly = false;
 	int32 GetupSide = 0;
+	float KnockdownLen = 0.0f;   // sim knockdown stun at the start of the fall (KOs hold ~3 s)
+	// get-up alignment: the mesh is turned / shifted so the clip's lying pose sits where the ragdoll lies, then eased out
+	float AlignYaw = 0.0f, AlignT = 0.0f, AlignLen = 0.0f;
+	FVector AlignOffset = FVector::ZeroVector;
+	bool bAligned = false;
 	std::string PrevStunKind;
 	uint32 BlendFromSerial = 0;
 	TSharedPtr<const FPoseSnapshot, ESPMode::ThreadSafe> BlendFrom;
@@ -800,6 +806,7 @@ namespace FourfoldPhys
 	constexpr float RagdollMinFall = 0.55f;            // seconds of fall before the get-up may take over
 	constexpr float RagdollMaxTime = 3.0f;
 	constexpr float GetupLead = 0.6f;                  // start the get-up when this much knockdown is left
+	constexpr float RagdollPelvisPos = 450.0f, RagdollPelvisVel = 45.0f;   // world drive of the pelvis
 
 	static FName FirstBody(USkeletalMeshComponent* M, std::initializer_list<const TCHAR*> Names)
 	{
@@ -835,6 +842,18 @@ void AFourfoldFighter::UpdatePhysicalReactions(const ff::ActorView& Cur, float D
 	FFourfoldFighterImpl& S = *Impl;
 	const bool bDown = Cur.stun > 0.0f && Cur.stun_kind == "knockdown";
 	const bool bNewKnockdown = bDown && S.PrevStunKind != "knockdown";
+	if (S.bAligned && Dt > 0.0f)
+	{
+		S.AlignT += Dt;
+		const float Half = 0.5f * S.AlignLen;
+		const float W = S.AlignT < Half ? 1.0f : FMath::Clamp(1.0f - (S.AlignT - Half) / FMath::Max(Half, 0.05f), 0.0f, 1.0f);
+		const float E = W * W * (3.0f - 2.0f * W);
+		BodyMesh->SetRelativeLocationAndRotation(S.AlignOffset * E, FRotator(0.0, MeshYawOffset + S.AlignYaw * E, 0.0));
+		if (W <= 0.0f)
+		{
+			ResetGetupAlign();
+		}
+	}
 	S.PrevStunKind = Cur.stun_kind;
 	if (!(Cur.stun > 0.0f && (Cur.stun_kind == "knockdown" || Cur.stun_kind == "getup")))
 	{
@@ -866,9 +885,19 @@ void AFourfoldFighter::UpdatePhysicalReactions(const ff::ActorView& Cur, float D
 		D.bIsLocalSimulation = true;
 		D.OrientationStrength = RagdollOrient;
 		D.AngularVelocityStrength = RagdollAngVel;
-		PhysAnim->ApplyPhysicalAnimationSettingsBelow(TEXT("pelvis"), D, true);
+		PhysAnim->ApplyPhysicalAnimationSettingsBelow(TEXT("pelvis"), D, false);
+		// The pelvis follows the animated (sim-driven) target in world space, so the body falls where the sim puts the
+		// fighter instead of sliding off on its own; the limbs stay loose.
+		FPhysicalAnimationData P;
+		P.bIsLocalSimulation = false;
+		P.PositionStrength = RagdollPelvisPos;
+		P.VelocityStrength = RagdollPelvisVel;
+		P.OrientationStrength = RagdollOrient;
+		P.AngularVelocityStrength = RagdollAngVel;
+		PhysAnim->ApplyPhysicalAnimationSettings(TEXT("pelvis"), P);
 		BodyMesh->SetAllBodiesBelowSimulatePhysics(TEXT("pelvis"), true, true);
 		BodyMesh->SetAllBodiesBelowPhysicsBlendWeight(TEXT("pelvis"), 1.0f, false, true);
+		ResetGetupAlign();
 		const float Push = 260.0f + 260.0f * FMath::Clamp(Strength, 0.3f, 1.25f);
 		BodyMesh->SetAllPhysicsLinearVelocity(Dir2D * Push + FVector(0.0, 0.0, 110.0), true);
 		const FName Chest = FirstBody(BodyMesh, {TEXT("spine_04"), TEXT("spine_03"), TEXT("spine_05"), TEXT("spine_02")});
@@ -879,7 +908,9 @@ void AFourfoldFighter::UpdatePhysicalReactions(const ff::ActorView& Cur, float D
 		S.Phys = FFourfoldFighterImpl::EPhys::Ragdoll;
 		S.PhysT = 0.0f;
 		S.bGetupEarly = false;
+		S.KnockdownLen = Cur.stun;
 		UE_LOG(LogFourfold, Log, TEXT("Fighter %d: ragdoll fall (push %.0f cm/s, knockdown %.2fs)"), SimActorId, Push, Cur.stun);
+		FourfoldDev::Trigger(TEXT("ragdoll"));
 		return;
 	}
 
@@ -892,6 +923,7 @@ void AFourfoldFighter::UpdatePhysicalReactions(const ff::ActorView& Cur, float D
 			// ---- upper-body flinch: motors hold the animation, the impulse knocks the chest / head off it
 			if (S.Phys == FFourfoldFighterImpl::EPhys::Off)
 			{
+				FourfoldDev::Trigger(TEXT("flinch"));
 				SetBodyPhysics(true);
 				FPhysicalAnimationData D;
 				D.bIsLocalSimulation = true;
@@ -942,14 +974,67 @@ void AFourfoldFighter::UpdatePhysicalReactions(const ff::ActorView& Cur, float D
 			const FVector BodyFwd = FVector::CrossProduct(Right.GetSafeNormal(), (HeadP - Pelvis).GetSafeNormal());
 			S.GetupSide = BodyFwd.Z > 0.0 ? 1 : 0;   // chest facing the sky = lying on the back
 			SetBodyPhysics(false);
+			AlignGetup(Pelvis, HeadP, bDown ? Cur.stun + ffg::AnimDirector::kSimGetupS : ffg::AnimDirector::kSimGetupS);
 			S.BlendFrom = Snap;
 			++S.BlendFromSerial;
 			S.bGetupEarly = bDown;
 			S.Phys = FFourfoldFighterImpl::EPhys::Off;
 			UE_LOG(LogFourfold, Log, TEXT("Fighter %d: ragdoll -> get-up (%s) after %.2fs, knockdown left %.2fs"), SimActorId,
 			       S.GetupSide == 1 ? TEXT("back") : TEXT("front"), S.PhysT, bDown ? Cur.stun : 0.0f);
+			FourfoldDev::Trigger(S.KnockdownLen > 2.0f ? TEXT("getup_ko") : TEXT("getup"));
 		}
 		break;
 	}
 	}
+}
+
+void AFourfoldFighter::ResetGetupAlign()
+{
+	FFourfoldFighterImpl& S = *Impl;
+	S.bAligned = false;
+	S.AlignYaw = 0.0f;
+	S.AlignT = 0.0f;
+	S.AlignOffset = FVector::ZeroVector;
+	BodyMesh->SetRelativeLocationAndRotation(FVector::ZeroVector, FRotator(0.0, MeshYawOffset, 0.0));
+}
+
+void AFourfoldFighter::AlignGetup(const FVector& PelvisW, const FVector& HeadW, float Window)
+{
+	FFourfoldFighterImpl& S = *Impl;
+	ResetGetupAlign();
+	const UFourfoldAnimLibrarySubsystem* Lib = UFourfoldAnimLibrarySubsystem::Get(this);
+	if (!Lib)
+	{
+		return;
+	}
+	const ffg::AnimLibrary& L = Lib->GetLibrary();
+	std::string Name = S.GetupSide == 1 ? L.Reaction("getup_back") : std::string();
+	if (Name.empty())
+	{
+		Name = L.Reaction("getup");
+	}
+	const ffg::ClipDef* C = L.Resolve(Name);
+	if (!C || !C->has_lie)
+	{
+		return;
+	}
+	// yaw: turn the clip's pelvis->head direction onto the ragdoll's
+	const FTransform Comp = BodyMesh->GetComponentTransform();
+	const FVector ClipDirW = Comp.TransformVectorNoScale(FVector(C->lie_dx, C->lie_dy, 0.0)).GetSafeNormal2D();
+	const FVector RagDirW = (HeadW - PelvisW).GetSafeNormal2D();
+	if (ClipDirW.IsNearlyZero() || RagDirW.IsNearlyZero())
+	{
+		return;
+	}
+	const float Yaw = float(FMath::RadiansToDegrees(FMath::Atan2(RagDirW.Y, RagDirW.X) - FMath::Atan2(ClipDirW.Y, ClipDirW.X)));
+	S.AlignYaw = FRotator::NormalizeAxis(Yaw);
+	// offset: with that yaw, move the clip's lying pelvis onto the ragdoll pelvis (horizontally)
+	BodyMesh->SetRelativeRotation(FRotator(0.0, MeshYawOffset + S.AlignYaw, 0.0));
+	const FVector ClipPelvisW = BodyMesh->GetComponentTransform().TransformPosition(FVector(C->lie_px, C->lie_py, 0.0));
+	const FVector DeltaW(PelvisW.X - ClipPelvisW.X, PelvisW.Y - ClipPelvisW.Y, 0.0);
+	S.AlignOffset = GetActorTransform().InverseTransformVectorNoScale(DeltaW);
+	BodyMesh->SetRelativeLocation(S.AlignOffset);
+	S.AlignLen = FMath::Max(Window, 0.3f);
+	S.AlignT = 0.0f;
+	S.bAligned = true;
 }

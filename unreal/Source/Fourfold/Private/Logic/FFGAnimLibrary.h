@@ -30,6 +30,8 @@ struct ClipDef {
 	float phase0 = 0.0f;               // gait: left-foot touchdown as a fraction of the whole clip (0 = first frame)
 	int cycles = 1;                    // gait: stride cycles in the clip (mocap loops hold several)
 	float trim0 = 0.0f, trim1 = 0.0f;  // one-shot: the part that plays (seconds; trim1 <= trim0 = the whole clip)
+	bool has_lie = false;              // get-up: lying pose at trim0 (model space, cm): pelvis XY + pelvis->head XY
+	float lie_px = 0.0f, lie_py = 0.0f, lie_dx = 0.0f, lie_dy = 1.0f;
 	// Seconds that play (the trimmed span, else the duration).
 	float Span() const { return trim1 > trim0 ? trim1 - trim0 : duration; }
 	std::string hand_l, hand_r;        // hand shape keys ("fist" ...)

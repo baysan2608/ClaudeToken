@@ -58,6 +58,8 @@ protected:
 	 *  on knockdowns handed back to the get-up clip through a pose snapshot. */
 	void UpdatePhysicalReactions(const ff::ActorView& Cur, float Dt, bool bHit, const FVector& HitDir, float Strength);
 	void SetBodyPhysics(bool bOn);
+	void AlignGetup(const FVector& PelvisW, const FVector& HeadW, float Window);
+	void ResetGetupAlign();
 
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USceneComponent> Root;
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USkeletalMeshComponent> BodyMesh;

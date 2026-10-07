@@ -157,6 +157,15 @@ bool AnimLibrary::LoadClipsJson(const std::string& text) {
 			if (v["speed"].is_number()) c.speed = static_cast<float>(v["speed"].as_float());
 			if (v["phase0"].is_number()) c.phase0 = static_cast<float>(v["phase0"].as_float());
 			if (v["cycles"].is_number()) c.cycles = std::max(1, static_cast<int>(v["cycles"].as_int(1)));
+			const ff::Value& lie = v["lie"];
+			if (lie.is_dict() && lie["pelvis"].is_array() && lie["dir"].is_array() && lie["pelvis"].as_array().size() == 2 &&
+			    lie["dir"].as_array().size() == 2) {
+				c.has_lie = true;
+				c.lie_px = static_cast<float>(lie["pelvis"].as_array()[0].as_float());
+				c.lie_py = static_cast<float>(lie["pelvis"].as_array()[1].as_float());
+				c.lie_dx = static_cast<float>(lie["dir"].as_array()[0].as_float());
+				c.lie_dy = static_cast<float>(lie["dir"].as_array()[1].as_float());
+			}
 			const ff::Value& tr = v["trim"];
 			if (tr.is_array() && tr.as_array().size() == 2 && tr.as_array()[0].is_number() && tr.as_array()[1].is_number()) {
 				c.trim0 = static_cast<float>(tr.as_array()[0].as_float());

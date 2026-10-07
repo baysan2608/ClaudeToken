@@ -17,6 +17,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/App.h"
 #include "Misc/FileHelper.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 
 #include <string>
@@ -41,6 +43,10 @@ struct FFourfoldSimImpl
 	bool bTouchedDilation = false;
 	float CameraYawSim = 3.14159265f;
 	FString SaveDir;
+	// Dev captures: -FFLabSpawn=<entry>@<sim seconds>[,...] launches Lab threats at fixed times (e.g. stone_80@4 knocks
+	// the player down), so physical reactions can be checked deterministically with Tools/mac/shot.sh.
+	TArray<TPair<FString, double>> DevSpawns;
+	bool bDevSpawnsParsed = false;
 };
 
 namespace FourfoldSim
@@ -345,6 +351,35 @@ void UFourfoldSimSubsystem::Tick(float DeltaTime)
 		if (Ticks > 0)
 		{
 			SyncFighters(false);
+		}
+		if (!Impl->bDevSpawnsParsed)
+		{
+			Impl->bDevSpawnsParsed = true;
+			FString Spec;
+			if (FParse::Value(FCommandLine::Get(), TEXT("-FFLabSpawn="), Spec, false))
+			{
+				TArray<FString> Items;
+				Spec.ParseIntoArray(Items, TEXT(","));
+				for (const FString& It : Items)
+				{
+					FString Entry, At;
+					if (It.Split(TEXT("@"), &Entry, &At))
+					{
+						Impl->DevSpawns.Add(TPair<FString, double>(Entry, FCString::Atod(*At)));
+					}
+				}
+			}
+		}
+		for (int32 i = Impl->DevSpawns.Num() - 1; i >= 0; --i)
+		{
+			if (double(S.Tick()) * ff::kSimDt >= Impl->DevSpawns[i].Value)
+			{
+				std::string Msg;
+				const bool bOk = S.LabSpawn(TCHAR_TO_UTF8(*Impl->DevSpawns[i].Key), ff::LabSpawnParams(), true, &Msg);
+				UE_LOG(LogFourfold, Log, TEXT("FFLabSpawn %s at tick %lld: %s %s"), *Impl->DevSpawns[i].Key, (long long)S.Tick(),
+				       bOk ? TEXT("ok") : TEXT("FAILED"), UTF8_TO_TCHAR(Msg.c_str()));
+				Impl->DevSpawns.RemoveAt(i);
+			}
 		}
 	}
 
