@@ -1148,6 +1148,58 @@ FFT_TEST(loco_transition_stop_and_start) {
 	FFT_CHECK(tr.kind == ffg::LocoTransition::Kind::None && tr.clip == nullptr);
 }
 
+static ffg::ClipDef TurnClip(const char* name, float len, float yaw_deg) {
+	ffg::ClipDef c;
+	c.name = name;
+	c.duration = len;
+	c.frames = static_cast<int>(len * 60.0f);
+	c.available = true;
+	const int n = static_cast<int>(len * 30.0f) + 1;
+	for (int i = 0; i < n; ++i) {
+		const float u = ffg::SmoothStep(0.15f, 0.75f, static_cast<float>(i) / static_cast<float>(n - 1));
+		c.root_yaw.push_back(yaw_deg * u);
+	}
+	return c;
+}
+
+FFT_TEST(turn_in_place_holds_then_steps_round) {
+	const float dt = 1.0f / 60.0f;
+	const ffg::ClipDef l90 = TurnClip("l90", 1.2f, -90.0f), r90 = TurnClip("r90", 1.2f, 90.0f);
+	const ffg::ClipDef l180 = TurnClip("l180", 1.5f, -180.0f), r180 = TurnClip("r180", 1.5f, 180.0f);
+	FFT_NEAR(l90.YawFrac(0.0f), 0.0, 1e-6);
+	FFT_NEAR(l90.YawFrac(1.2f), 1.0, 1e-6);
+	ffg::TurnInPlace tp;
+	tp.Reset();
+	// the target circles to the fighter's left at 1 rad/s: the body holds (offset grows negative), no clip yet
+	for (int i = 0; i < 30; ++i) tp.Update(dt, 1.0f * dt, true, true, &l90, &r90, &l180, &r180);
+	FFT_NEAR(tp.offset, -0.5, 0.02);
+	FFT_CHECK(tp.clip == nullptr);
+	// past ~52 deg the left 90 turn starts and the offset unwinds toward the (still moving) facing
+	for (int i = 0; i < 30; ++i) tp.Update(dt, 1.0f * dt, true, true, &l90, &r90, &l180, &r180);
+	FFT_CHECK(tp.clip == &l90);
+	const float at_start = std::fabs(tp.offset);
+	for (int i = 0; i < 80; ++i) tp.Update(dt, 0.0f, true, true, &l90, &r90, &l180, &r180);   // target stops
+	FFT_CHECK(tp.clip == nullptr);                       // the clip ran out (1.2 s at 1.35x)
+	FFT_CHECK(std::fabs(tp.offset) < 0.05f * at_start + 0.02f);
+	// a big swing to the right picks the 180
+	tp.Reset();
+	tp.Update(dt, -2.3f, true, true, &l90, &r90, &l180, &r180);
+	FFT_CHECK(tp.clip == &r180 && tp.offset > 2.0f);
+	// moving releases the offset quickly
+	for (int i = 0; i < 30; ++i) tp.Update(dt, 0.0f, false, false, &l90, &r90, &l180, &r180);
+	FFT_CHECK(tp.clip == nullptr && std::fabs(tp.offset) < 0.03f);
+	// held but not allowed to start (a stop clip playing): the offset builds, the turn waits for can_start
+	tp.Reset();
+	for (int i = 0; i < 10; ++i) tp.Update(dt, 0.15f, true, false, &l90, &r90, &l180, &r180);
+	FFT_CHECK(tp.clip == nullptr && tp.offset < -1.4f);
+	tp.Update(dt, 0.0f, true, true, &l90, &r90, &l180, &r180);
+	FFT_CHECK(tp.clip == &l90);
+	// without clips the offset never builds into a turn
+	tp.Reset();
+	for (int i = 0; i < 120; ++i) tp.Update(dt, 1.0f * dt, true, true, nullptr, nullptr, nullptr, nullptr);
+	FFT_CHECK(tp.clip == nullptr);
+}
+
 FFT_TEST(library_json_overrides) {
 	ffg::AnimLibrary lib;
 	const char* clips = R"({"schema": "fourfold.clips/1", "fps": 60, "asset_root": "/Game/X/Anims",

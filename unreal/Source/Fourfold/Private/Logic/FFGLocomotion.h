@@ -118,4 +118,39 @@ private:
 	float settle_ = 0.0f;        // seconds a stop has been standing
 };
 
+// Turn in place (standing in free locomotion): the legs keep the yaw they planted with while the sim facing swings round
+// to the target - `offset` (body yaw minus sim facing, radians, + = the body is turned to the left of the facing) is
+// applied to the mesh, the chest twists toward the facing - and past kTrigger a stand-turn clip steps the feet round
+// while the offset unwinds along the clip's root-yaw curve. Moving or acting releases the offset quickly.
+class TurnInPlace {
+public:
+	static constexpr float kTrigger = 0.9f;      // rad (~52 deg) of held offset that starts a turn
+	static constexpr float kBig = 2.1f;          // rad (~120 deg): the 180 clip instead of the 90 one
+	static constexpr float kMaxOffset = 2.6f;    // rad: beyond this the body is dragged (feet slide) rather than left behind
+	static constexpr float kStandSpeed = 0.35f;  // m/s: standing (the caller's hold test)
+	static constexpr float kRate = 1.35f;        // clip playback rate (fighting pace)
+
+	float offset = 0.0f;
+	const ClipDef* clip = nullptr;
+	float t = 0.0f;
+	uint32_t serial = 0;
+
+	// facing_delta: change of the sim facing this frame (rad, + = left). hold: the feet stay planted (standing free
+	// locomotion, or braking in a run stop - the facing swings back to the target while the stop plays); can_start: a turn
+	// clip may start now (not during the stop clip).
+	void Update(float dt, float facing_delta, bool hold, bool can_start, const ClipDef* l90, const ClipDef* r90,
+	            const ClipDef* l180, const ClipDef* r180);
+	void Reset() {
+		offset = 0.0f;
+		clip = nullptr;
+		t = 0.0f;
+		start_ = 0.0f;
+		drift_ = 0.0f;
+	}
+
+private:
+	float start_ = 0.0f;   // offset when the clip started
+	float drift_ = 0.0f;   // offset change since then from the facing (the turn absorbs it)
+};
+
 }  // namespace ffg

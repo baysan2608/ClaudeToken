@@ -41,6 +41,7 @@ struct AnimRecipe {
 	float lean_roll = 0.0f;                  // + tips the top toward the character's right
 	float land_y = 0.0f;                     // pelvis compression along up (negative = down)
 	Vec3 spring_torso, spring_head, spring_arm_l, spring_arm_r;   // rotation vectors, model space
+	float body_yaw = 0.0f;                   // turn in place: body yaw minus the sim facing (rad, + = left), for the mesh
 	float aim_yaw = 0.0f;                    // + turns the chest toward the character's left
 	float aim_weight = 0.0f;
 	bool has_look = false;
@@ -97,6 +98,7 @@ public:
 	LandingSpring landing;
 	LocomotionBlender loco;
 	LocoTransition trans;
+	TurnInPlace turn;
 
 	void Reset();
 	const AnimRecipe& Update(const DirectorInput& in);

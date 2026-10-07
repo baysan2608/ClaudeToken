@@ -8,7 +8,11 @@
   "back": "mm_walk_back",
   "run_start": "mm_run_start",
   "run_stop_l": "mm_run_stop_l",
-  "run_stop_r": "mm_run_stop_r"
+  "run_stop_r": "mm_run_stop_r",
+  "turn_l90": "mm_turn_l90",
+  "turn_r90": "mm_turn_r90",
+  "turn_l180": "mm_turn_l180",
+  "turn_r180": "mm_turn_r180"
  },
  "reactions": {
   "getup": "mm_getup_f",

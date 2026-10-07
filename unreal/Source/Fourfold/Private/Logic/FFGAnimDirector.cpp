@@ -29,6 +29,7 @@ void AnimDirector::Reset() {
 	landing.Reset();
 	loco.Reset();
 	trans.Reset();
+	turn.Reset();
 	ik_w_ = 1.0f;   // a (re)spawned fighter stands: IK starts engaged
 	look_w_ = aim_w_ = legs_w_ = breathe_w_ = 0.0f;
 	lean_ = Vec2();
@@ -334,10 +335,12 @@ const AnimRecipe& AnimDirector::Update(const DirectorInput& in) {
 	hits.Step(dt);
 	landing.Step(dt);
 
-	// Turning on the spot steps the feet round: the yaw rate becomes a small sideways gait input.
+	// Turning on the spot steps the feet round: the yaw rate becomes a small sideways gait input - unless turn-in-place
+	// clips are there (they hold the feet and step round with real turns).
 	Vec2 lv = in.local_vel;
 	const float spd = lv.length();
-	const float turn_k = SmoothStep(1.2f, 3.0f, std::fabs(in.yaw_rate)) * (1.0f - SmoothStep(0.4f, 1.0f, spd));
+	const bool turn_clips = !lib->turn_l90.empty() && Clip(lib->turn_l90) && !lib->turn_r90.empty() && Clip(lib->turn_r90);
+	const float turn_k = turn_clips ? 0.0f : SmoothStep(1.2f, 3.0f, std::fabs(in.yaw_rate)) * (1.0f - SmoothStep(0.4f, 1.0f, spd));
 	if (turn_k > 0.0f) lv.x += Clampf(-in.yaw_rate * 0.22f, -1.0f, 1.0f) * turn_k;
 	loco.Update(dt, lv);
 
@@ -366,6 +369,12 @@ const AnimRecipe& AnimDirector::Update(const DirectorInput& in) {
 		const ClipDef* sl = lib->run_stop_l.empty() ? nullptr : Clip(lib->run_stop_l);
 		const ClipDef* sr = lib->run_stop_r.empty() ? nullptr : Clip(lib->run_stop_r);
 		trans.Update(dt, in.local_vel.length(), in.local_vel.y, allowed, st, sl, sr, pl, pr);
+		const auto clip_or_null = [this](const std::string& n) { return n.empty() ? nullptr : Clip(n); };
+		const bool stopping = trans.kind == LocoTransition::Kind::Stop;
+		const bool hold = allowed && turn_clips && (in.local_vel.length() < TurnInPlace::kStandSpeed || stopping);
+		turn.Update(dt, in.yaw_rate * dt, hold, hold && !trans.clip, clip_or_null(lib->turn_l90), clip_or_null(lib->turn_r90),
+		            clip_or_null(lib->turn_l180), clip_or_null(lib->turn_r180));
+		r_.body_yaw = turn.offset;
 	}
 	if (additive_) {
 		additive_t_ += dt;
@@ -428,6 +437,10 @@ const AnimRecipe& AnimDirector::Update(const DirectorInput& in) {
 		if (mode_clip) {
 			r_.base.push_back({mode_clip, loco.ClipTime(LocoRole::Stance, mode_clip->duration), 1.0f});
 			SetKey("mode:" + mode_clip->name, 6.0f);
+		} else if (turn.clip) {
+			free_loco = true;
+			r_.base.push_back({turn.clip, std::min(turn.t, turn.clip->duration), 1.0f});
+			SetKey("loco:turn:" + turn.clip->name + ":" + std::to_string(turn.serial), 5.0f);
 		} else if (trans.clip) {
 			free_loco = true;
 			r_.base.push_back({trans.clip, trans.t, 1.0f});
@@ -438,7 +451,7 @@ const AnimRecipe& AnimDirector::Update(const DirectorInput& in) {
 			free_loco = true;
 			AddLocomotion(a, 1.0f, r_.base, max_loco);
 			// out of a stop the settle hands over slowly; out of a start the cycle is already running
-			SetKey("loco", key_.rfind("loco:stop:", 0) == 0 ? 12.0f : 6.0f);
+			SetKey("loco", key_.rfind("loco:stop:", 0) == 0 || key_.rfind("loco:turn:", 0) == 0 ? 12.0f : 6.0f);
 		}
 	}
 	if (a.grounded) {
@@ -541,6 +554,11 @@ void AnimDirector::Procedural(const DirectorInput& in, const ff::ActorView& a, b
 				aw = 1.0f;
 			}
 		}
+	}
+	// Holding a turn-in-place offset, the chest twists toward the sim facing (the target).
+	if (aw == 0.0f && std::fabs(r_.body_yaw) > 0.02f) {
+		r_.aim_yaw = Clampf(-r_.body_yaw, -0.6f, 0.6f);
+		aw = Clampf(std::fabs(r_.body_yaw) / 0.3f, 0.0f, 1.0f);
 	}
 	aim_w_ += (aw - aim_w_) * ExpK(12.0f, dt);
 	r_.aim_weight = aim_w_;

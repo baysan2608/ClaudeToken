@@ -46,6 +46,14 @@ float ClipDef::TimeAtDist(float d) const {
 	return static_cast<float>(root_dist.size() - 1) / curve_fps;
 }
 
+float ClipDef::YawFrac(float t) const {
+	if (root_yaw.size() < 2 || std::fabs(root_yaw.back() - root_yaw.front()) < 1e-3f) return 0.0f;
+	const float x = Clampf(t * curve_fps, 0.0f, static_cast<float>(root_yaw.size() - 1));
+	const size_t i = static_cast<size_t>(x);
+	const float y = i + 1 >= root_yaw.size() ? root_yaw.back() : Lerpf(root_yaw[i], root_yaw[i + 1], x - static_cast<float>(i));
+	return Clampf((y - root_yaw.front()) / (root_yaw.back() - root_yaw.front()), 0.0f, 1.0f);
+}
+
 void MoveClips::OverrideWith(const MoveClips& o) {
 	if (!o.startup.empty()) startup = o.startup;
 	if (!o.hold.empty()) hold = o.hold;
@@ -203,6 +211,12 @@ bool AnimLibrary::LoadClipsJson(const std::string& text) {
 				for (const ff::Value& x : rd.as_array())
 					if (x.is_number()) c.root_dist.push_back(static_cast<float>(x.as_float()));
 			}
+			const ff::Value& ry = v["root_yaw"];
+			if (ry.is_array()) {
+				c.root_yaw.clear();
+				for (const ff::Value& x : ry.as_array())
+					if (x.is_number()) c.root_yaw.push_back(static_cast<float>(x.as_float()));
+			}
 			if (v["curve_fps"].is_number() && v["curve_fps"].as_float() > 0.0) c.curve_fps = static_cast<float>(v["curve_fps"].as_float());
 			const ff::Value& fp = v["foot_plants"];
 			if (fp.is_dict()) {
@@ -237,6 +251,10 @@ bool AnimLibrary::LoadAnimMapJson(const std::string& text) {
 		LibReadStr(lo, "run_start", run_start);
 		LibReadStr(lo, "run_stop_l", run_stop_l);
 		LibReadStr(lo, "run_stop_r", run_stop_r);
+		LibReadStr(lo, "turn_l90", turn_l90);
+		LibReadStr(lo, "turn_r90", turn_r90);
+		LibReadStr(lo, "turn_l180", turn_l180);
+		LibReadStr(lo, "turn_r180", turn_r180);
 		const ff::Value& st = lo["stance"];
 		if (st.is_array())
 			for (size_t i = 0; i < 4 && i < st.as_array().size(); ++i)

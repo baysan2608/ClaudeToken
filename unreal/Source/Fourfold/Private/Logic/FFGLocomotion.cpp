@@ -174,4 +174,39 @@ void LocoTransition::Update(float dt, float speed, float fwd, bool allowed, cons
 	}
 }
 
+void TurnInPlace::Update(float dt, float facing_delta, bool hold, bool can_start, const ClipDef* l90, const ClipDef* r90,
+                         const ClipDef* l180, const ClipDef* r180) {
+	if (dt <= 0.0f) return;
+	if (!hold) {
+		clip = nullptr;
+		offset *= 1.0f - ExpK(12.0f, dt);   // moving / acting: the body catches up with the facing
+		if (std::fabs(offset) < 1e-3f) offset = 0.0f;
+		return;
+	}
+	if (clip) {
+		drift_ -= facing_delta;
+		t += dt * kRate;
+		offset = (start_ + drift_) * (1.0f - clip->YawFrac(t));   // the turn stretches to end on the moving target
+		if (t >= clip->duration) {
+			clip = nullptr;
+		}
+	} else {
+		offset = WrapAngle(offset - facing_delta);
+	}
+	offset = Clampf(offset, -kMaxOffset, kMaxOffset);
+	if (!clip && can_start && std::fabs(offset) >= kTrigger) {
+		// offset < 0: the facing is to the body's left, so the body turns left
+		const bool left = offset < 0.0f;
+		const bool big = std::fabs(offset) >= kBig;
+		const ClipDef* c = left ? (big && l180 ? l180 : l90) : (big && r180 ? r180 : r90);
+		if (c && c->root_yaw.size() >= 2 && c->duration > 0.0f) {
+			clip = c;
+			t = 0.0f;
+			start_ = offset;
+			drift_ = 0.0f;
+			++serial;
+		}
+	}
+}
+
 }  // namespace ffg

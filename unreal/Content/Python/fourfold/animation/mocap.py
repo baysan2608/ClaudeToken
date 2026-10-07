@@ -47,12 +47,18 @@ CLIPS = {
     "mm_run_start": (A + "/Run/M_Neutral_Run_Start_F_Lfoot", False, "transition"),
     "mm_run_stop_l": (A + "/Run/M_Neutral_Run_Stop_F_Lfoot", False, "transition"),
     "mm_run_stop_r": (A + "/Run/M_Neutral_Run_Stop_F_Rfoot", False, "transition"),
+    # turn in place (runtime: ffg::TurnInPlace): root yaw curve + foot plants
+    "mm_turn_l90": (A + "/Idle/M_Neutral_Stand_Turn_090_L", False, "turn"),
+    "mm_turn_r90": (A + "/Idle/M_Neutral_Stand_Turn_090_R", False, "turn"),
+    "mm_turn_l180": (A + "/Idle/M_Neutral_Stand_Turn_180_L", False, "turn"),
+    "mm_turn_r180": (A + "/Idle/M_Neutral_Stand_Turn_180_R", False, "turn"),
 }
 # slots of anim_map.json that the overlay re-points (only for clips that were produced)
 MAP = {
     "locomotion": {"walk": "mm_walk", "run": "mm_run", "strafe_l": "mm_strafe_l", "strafe_r": "mm_strafe_r",
                    "back": "mm_walk_back", "run_start": "mm_run_start", "run_stop_l": "mm_run_stop_l",
-                   "run_stop_r": "mm_run_stop_r"},
+                   "run_stop_r": "mm_run_stop_r", "turn_l90": "mm_turn_l90", "turn_r90": "mm_turn_r90",
+                   "turn_l180": "mm_turn_l180", "turn_r180": "mm_turn_r180"},
     "reactions": {"getup": "mm_getup_f", "getup_back": "mm_getup_b"},
 }
 FALLBACK = {"mm_idle": "idle", "mm_walk": "walk", "mm_run": "run", "mm_strafe_l": "strafe_l", "mm_strafe_r": "strafe_r",
@@ -95,35 +101,42 @@ def _ik_rig_for_fighter(force, rep):
 
 
 def fix_root_motion_op(rtg, rep):
-    """Point the retargeter's Root Motion op at the real root bones. Left unset it copies the retarget root (the pelvis),
-    so the target root rides at hip height; the in-place clips lock the root to the ref pose and the whole body sank
-    ~90 cm into the floor. Returns True when the op changed (its clips must be retargeted again)."""
+    """Point the retargeter's Root Motion op at the real root bones. Left at its default it copies the source IK rig's
+    retarget root (the pelvis), so the target root rides at hip height; the in-place clips lock the root to the ref pose
+    and the whole body sank ~90 cm into the floor. UE resets the source root of a UEFN-source op to the pelvis when the
+    asset loads, so this runs (in memory) before every retarget."""
     c = unreal.IKRetargeterController.get_controller(rtg)
-    changed = False
     for i in range(c.get_num_retarget_ops()):
         oc = c.get_op_controller(i)
         if not isinstance(oc, unreal.IKRetargetRootMotionController):
             continue
-        if str(oc.get_source_root_bone()) != "root" or str(oc.get_target_root_bone()) != "root":
-            oc.set_source_root_bone("root")
-            oc.set_target_root_bone("root")
-            oc.set_target_pelvis_bone("pelvis")
-            st = oc.get_settings()
-            st.set_editor_property("root_motion_source", unreal.RootMotionSource.COPY_FROM_SOURCE_ROOT)
-            st.set_editor_property("root_height_source", unreal.RootMotionHeightSource.COPY_HEIGHT_FROM_SOURCE)
-            oc.set_settings(st)
-            changed = True
-    if changed:
-        EAL.save_loaded_asset(rtg)
-        rep["notes"].append(f"{rtg.get_name()}: root motion op now copies the source root (clips re-retargeted)")
-    return changed
+        oc.set_source_root_bone("root")
+        oc.set_target_root_bone("root")
+        oc.set_target_pelvis_bone("pelvis")
+        st = oc.get_settings()
+        st.set_editor_property("root_motion_source", unreal.RootMotionSource.COPY_FROM_SOURCE_ROOT)
+        st.set_editor_property("root_height_source", unreal.RootMotionHeightSource.COPY_HEIGHT_FROM_SOURCE)
+        oc.set_settings(st)
+        oc.set_source_root_bone("root")
+
+
+def root_off_ground(seq_path):
+    """True when a retargeted clip carries its root above the floor (made before the root-motion fix)."""
+    seq = _load(seq_path)
+    if seq is None:
+        return False
+    lock = seq.get_editor_property("force_root_lock")
+    seq.set_editor_property("force_root_lock", False)
+    z = unreal.AnimationLibrary.get_bone_pose_for_time(seq, "root", float(seq.get_play_length()) * 0.5, False).translation.z
+    seq.set_editor_property("force_root_lock", lock)
+    return abs(z) > 20.0
 
 
 def _retargeter(src_rig, tgt_rig, force, rep):
     rtg = _load(RTG)
     if rtg is not None and not force:
         rep["skipped"].append(RTG)
-        rep["_root_fixed"] = fix_root_motion_op(rtg, rep)
+        fix_root_motion_op(rtg, rep)
         return rtg
     if rtg is None:
         rtg = _tools().create_asset("RTG_UEFN_to_Fighter", RIG_DIR, unreal.IKRetargeter, unreal.IKRetargetFactory())
@@ -213,6 +226,20 @@ def _root_travel(seq, length):
     return out
 
 
+def _root_yaw(seq, length):
+    """Unwrapped yaw of the root (degrees, as authored) at CURVE_FPS from t = 0 (force_root_lock off)."""
+    n = int(length * CURVE_FPS) + 1
+    out, prev, acc = [], None, 0.0
+    for i in range(n):
+        y = unreal.AnimationLibrary.get_bone_pose_for_time(seq, "root", min(length, i / CURVE_FPS), False).rotation.rotator().yaw
+        if prev is not None:
+            d = (y - prev + 180.0) % 360.0 - 180.0
+            acc += d
+        prev = y
+        out.append(round(acc, 3))
+    return out
+
+
 def _getup_trim(seq, length):
     """The active part of a get-up: from the first lift of the head / pelvis off the floor to standing (seconds)."""
     opts = unreal.AnimPoseEvaluationOptions()
@@ -249,7 +276,9 @@ def build(force=False):
         tgt_rig = _ik_rig_for_fighter(force, rep)
         rtg = _retargeter(src_rig, tgt_rig, force, rep)
         EAL.make_directory(OUT_DIR)
-        redo = force or rep.pop("_root_fixed", False)
+        redo = force or root_off_ground(f"{OUT_DIR}/A_mm_run")
+        if redo and not force:
+            rep["notes"].append("mocap clips had the root at hip height: re-retargeted with the root-motion fix")
         todo = {k: v for k, v in CLIPS.items() if redo or not EAL.does_asset_exist(f"{OUT_DIR}/A_{k}")}
         for clip, (src, _loop, _kind) in todo.items():
             ad = EAL.find_asset_data(src)
@@ -278,11 +307,13 @@ def build(force=False):
             length = float(seq.get_play_length())
             frames = int(round(length * 60.0))
             travel = None
-            if kind in ("gait", "transition"):
+            if kind in ("gait", "transition", "turn"):
                 seq.set_editor_property("force_root_lock", False)       # measure with the root travelling
                 speed, touch, plants, cycles = _analyse(seq, frames, length, loop)
                 if kind == "transition":
                     travel = _root_travel(seq, length)
+                if kind == "turn":
+                    travel = _root_yaw(seq, length)
             else:
                 speed, touch, plants, cycles = 0.0, 0.0, {}, 1
             # in place: the native runtime moves the fighter from the sim; the clip must not drag the root
@@ -306,6 +337,11 @@ def build(force=False):
                 row["curve_fps"] = CURVE_FPS
                 row["root_dist"] = travel
                 rep["notes"].append(f"A_{clip}: {length:.2f}s root travel {travel[-1]:.2f} m, plants {plants}")
+            if kind == "turn":
+                row["foot_plants"] = plants
+                row["curve_fps"] = CURVE_FPS
+                row["root_yaw"] = travel
+                rep["notes"].append(f"A_{clip}: {length:.2f}s root yaw {travel[-1]:.1f} deg, plants {plants}")
             if kind == "getup":
                 t0, t1, lie = _getup_trim(seq, length)
                 row["trim"] = [round(t0, 3), round(t1, 3)]

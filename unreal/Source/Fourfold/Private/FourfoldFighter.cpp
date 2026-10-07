@@ -59,6 +59,7 @@ struct FFourfoldFighterImpl
 	const ff::ArenaView* ArenaSource = nullptr;
 	FString AnimDebug;
 	uint32 TransSerial = 0;   // last run start / stop seen (dev capture trigger)
+	uint32 TurnSerial = 0;    // last turn in place seen (dev capture trigger)
 	// physical reactions
 	enum class EPhys : uint8 { Off, Flinch, Ragdoll };
 	EPhys Phys = EPhys::Off;
@@ -622,6 +623,16 @@ void AFourfoldFighter::DriveAnimation(const FFourfoldFrame& Frame, const ff::Act
 	In.getup_side = S.GetupSide;
 	const ffg::AnimRecipe& R = S.Director.Update(In);
 	S.AnimDebug = FString(UTF8_TO_TCHAR(R.debug.c_str()));
+	// turn in place: the body keeps the yaw its feet planted with while the sim facing swings round (turn clips unwind it)
+	if (!S.bAligned)
+	{
+		BodyMesh->SetRelativeRotation(FRotator(0.0, MeshYawOffset - FMath::RadiansToDegrees(double(R.body_yaw)), 0.0));
+	}
+	if (S.Director.turn.serial != S.TurnSerial)
+	{
+		S.TurnSerial = S.Director.turn.serial;
+		FourfoldDev::Trigger(TEXT("loco_turn"));
+	}
 	if (S.Director.trans.serial != S.TransSerial)
 	{
 		S.TransSerial = S.Director.trans.serial;

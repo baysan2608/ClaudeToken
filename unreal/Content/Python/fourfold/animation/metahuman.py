@@ -60,8 +60,7 @@ def _rtg(path, src_rig, src_mesh, tgt_rig, tgt_mesh, force, rep):
     rtg = _load(path)
     if rtg is not None and not force:
         rep["skipped"].append(path)
-        if MC.fix_root_motion_op(rtg, rep):
-            rep.setdefault("_root_fixed", []).append(path)
+        MC.fix_root_motion_op(rtg, rep)
         return rtg
     if rtg is None:
         rtg = unreal.AssetToolsHelpers.get_asset_tools().create_asset(path.rsplit("/", 1)[1], path.rsplit("/", 1)[0],
@@ -224,9 +223,7 @@ def build(force=False):
         reg = unreal.AssetRegistryHelpers.get_asset_registry()
         src = [a for a in reg.get_assets_by_path(FIGHTER_ANIMS, recursive=False)
                if str(a.asset_class_path.asset_name) == "AnimSequence"]
-        fixed = rep.get("_root_fixed", [])
-        todo = [a for a in src if force or rtg_f.get_path_name().split(".")[0] in fixed
-                or not EAL.does_asset_exist(f"{ANIMS}/{a.asset_name}")]
+        todo = [a for a in src if force or not EAL.does_asset_exist(f"{ANIMS}/{a.asset_name}")]
         n = _retarget(todo, fighter, body, rtg_f, ANIMS, rep) if todo else 0
         rep["notes"].append(f"{n} fighter clips retargeted ({len(src) - len(todo)} already there)")
         # mocap straight from the GASP mannequin
@@ -234,9 +231,10 @@ def build(force=False):
             ik_uefn = _load(MC.SRC_RIG)
             rtg_u = _rtg(RIGS + "/RTG_UEFN_to_MH", ik_uefn, uefn, ik_mh, body, force, rep)
             m = 0
+            redo = MC.root_off_ground(f"{ANIMS}/Mocap/A_mm_run")
             for clip, (srcp, _loop, kind) in MC.CLIPS.items():
                 dst = f"{ANIMS}/Mocap/A_{clip}"
-                if EAL.does_asset_exist(dst) and not force and rtg_u.get_path_name().split(".")[0] not in rep.get("_root_fixed", []):
+                if EAL.does_asset_exist(dst) and not force and not redo:
                     continue
                 ad = EAL.find_asset_data(srcp)
                 if not ad.is_valid():
@@ -283,6 +281,5 @@ def build(force=False):
             json.dump(data, f, indent=1)
     except Exception as e:  # noqa: BLE001
         rep["failed"].append({"item": "metahuman", "error": f"{e}\n{traceback.format_exc()}"})
-    rep.pop("_root_fixed", None)
     _log(json.dumps({k: (v if k != "skipped" else len(v)) for k, v in rep.items()})[:3000])
     return rep

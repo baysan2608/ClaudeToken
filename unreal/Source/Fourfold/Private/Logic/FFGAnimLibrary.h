@@ -44,6 +44,9 @@ struct ClipDef {
 	float DistAt(float t) const;           // root travel at clip time t (0 without a curve)
 	float TimeAtDist(float d) const;       // first clip time whose travel reaches d (clamped to the curve)
 	float TotalDist() const { return root_dist.empty() ? 0.0f : root_dist.back(); }
+	// Turn clips: the root's yaw (degrees, as authored) at curve_fps; YawFrac = share of the whole turn done at t (0..1).
+	std::vector<float> root_yaw;
+	float YawFrac(float t) const;
 	bool available = false;            // an asset was found (set by the Unreal side)
 	int handle = -1;                   // index of the loaded asset on the Unreal side
 
@@ -83,6 +86,7 @@ public:
 	std::array<std::string, 4> stance{{"e_stance", "w_stance", "f_stance", "a_stance"}};
 	std::string walk = "walk", run = "run", strafe_l = "strafe_l", strafe_r = "strafe_r", back = "walk_back";
 	std::string run_start, run_stop_l, run_stop_r;         // distance-matched transitions (empty = none)
+	std::string turn_l90, turn_r90, turn_l180, turn_r180;  // turn in place (empty = none)
 	// reactions / air / guard / modes / fallbacks
 	std::map<std::string, std::string> reactions;
 	std::map<std::string, std::string> air;
