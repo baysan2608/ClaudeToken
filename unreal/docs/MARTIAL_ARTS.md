@@ -480,7 +480,7 @@ them; any change must keep the slot's timing class.
 | guard | `guard` (Wind Guard) | circling palms | `a_guard` | oxtongue |
 | push | `gust_wall` | big two-palm push | `a_wall_push` | palm |
 | sink | `gust_downdraft` | palms press down | `a_downdraft` | palm |
-| tech | `air_tech` Updraft / Wind Grip | spring up with rising palms / grip | `a_updraft` (grip: `w_hold`-style hold with oxtongue hands, P2) | oxtongue |
+| tech | `air_tech` Updraft / Wind Grip | spring up with rising palms / grip | `a_updraft` (grip: `a_pluck` → `a_guard` circling hold → `a_palm`, see `gust_grip` §4.17) | oxtongue |
 | evade | `air_dash` | streamlined dash | `a_dash` | oxtongue |
 | evade_hold | `gust_tailwind` | circle-walk run | `a_circle_walk` (fallback `run`) | oxtongue |
 
@@ -525,6 +525,18 @@ them; any change must keep the slot's timing class.
 | tech | `sound_flight` | spring up → flight | `a_updraft` → `flight` | oxtongue |
 | evade | `sound_boom_step` | dash | `a_dash` | oxtongue |
 | evade_hold | `sound_hover` | hover | `hover` | relaxed |
+
+### 4.17 Chained actions (started by the sim mid-move, no slot of their own)
+The sim switches the running action to these ids (`start_action` / `morph_action` in FourfoldCore), so they need map
+entries of their own or the fighter drops to its stance. Each names clips of its own element only.
+
+| slot | move | technique | clips | hands |
+|---|---|---|---|---|
+| chain | `lightning` (from `fire_attack` held ≥ `lightning_min`) | release through the stomach channel: two-finger extension (T3 sky strike) | `l_release` (T3 `l_skybreak`) | sword |
+| chain | `pour` (from `fire_tech` on a molten body) | raise, press down, sweep the lava along the ground | `f_pour` | palm |
+| chain | `vent` (legacy Vent) | double palms out of the horse, heat dumped | `f_palm_burst` | palm |
+| chain | `gust_grip` (morph of `air_tech`) | pluck (cai), circle the gripped body, pushing-palm fling | `a_pluck` → `a_guard` → `a_palm` | oxtongue |
+| chain | `flare_dash` (Fire/Flame dash, evade slot) | low sidestep on a flame jet | `evade_*` | fist |
 
 ---
 

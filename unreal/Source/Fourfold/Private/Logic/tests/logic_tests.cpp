@@ -20,9 +20,11 @@
 #include "FFGUiScale.h"
 #include "ff/Json.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <sstream>
@@ -1597,6 +1599,105 @@ FFT_TEST(data_files_parse_when_present) {
 		std::printf("    move_index.json: %d moves, %d without clips\n", moves, unresolved);
 		FFT_CHECK(unresolved == 0);
 	}
+}
+
+// Actions the sim switches to mid-move (start_action / morph_action with a literal id in FourfoldCore: the lightning
+// release, the lava pour, the wind grip ...) are not slot moves of move_index.json, so the test above misses them.
+// Each must resolve to clips (with the JSON data and with the built-in defaults alone) and never to another element's.
+static int ClipElement(const std::string& clip) {
+	if (clip.size() < 2 || clip[1] != '_') return -1;   // shared clip (idle, guard, evade_fwd, hover ...)
+	switch (clip[0]) {
+		case 'e': return 0;
+		case 'w': return 1;
+		case 'f': case 'l': case 'c': return 2;
+		case 'a': return 3;
+		default: return -1;
+	}
+}
+
+static void ScanChainedIds(const std::string& dir, std::vector<std::string>& ids, int& files) {
+	std::error_code ec;
+	std::filesystem::recursive_directory_iterator it(dir, ec), end;
+	for (; !ec && it != end; it.increment(ec)) {
+		const std::string path = it->path().string();
+		if (path.size() < 4 || path.compare(path.size() - 4, 4, ".cpp") != 0) continue;
+		std::string text;
+		if (!ReadFile(path, text)) continue;
+		++files;
+		for (const char* fn : {"start_action(", "morph_action("}) {
+			for (size_t p = text.find(fn); p != std::string::npos; p = text.find(fn, p + 1)) {
+				const size_t comma = text.find(',', p);
+				const size_t close = text.find(')', p);
+				if (comma == std::string::npos || (close != std::string::npos && close < comma)) continue;
+				size_t q = comma + 1;
+				while (q < text.size() && text[q] == ' ') ++q;
+				if (q >= text.size() || text[q] != '"') continue;   // a variable id: a slot move, covered above
+				const size_t qe = text.find('"', q + 1);
+				if (qe == std::string::npos) continue;
+				const std::string id = text.substr(q + 1, qe - q - 1);
+				bool seen = false;
+				for (const std::string& x : ids) seen = seen || x == id;
+				if (!seen) ids.push_back(id);
+			}
+		}
+	}
+}
+
+FFT_TEST(chained_actions_resolve_to_own_element_clips) {
+	const std::string root = FFG_UNREAL_DIR;
+	std::string defs_text;
+	if (!ReadFile(root + "/Source/FourfoldCore/Data/moves.json", defs_text)) {
+		std::printf("    (moves.json not present: skipped)\n");
+		return;
+	}
+	ff::Value defs_doc;
+	FFT_CHECK(ff::ParseJson(defs_text, defs_doc));
+	const ff::Value& defs = defs_doc["defs"];
+	std::vector<std::string> ids;
+	int files = 0;
+	ScanChainedIds(root + "/Source/FourfoldCore/Private", ids, files);
+	FFT_CHECK(files > 20);
+	// "guard" is a slot move (handled by its own rule); the registered dash is reached through the evade slot binding
+	// (a variable id), so it is listed by hand.
+	ids.erase(std::remove(ids.begin(), ids.end(), std::string("guard")), ids.end());
+	for (const char* extra : {"flare_dash"})
+		if (std::find(ids.begin(), ids.end(), std::string(extra)) == ids.end()) ids.push_back(extra);
+	for (const char* must : {"lightning", "pour", "gust_grip"})
+		FFT_CHECK(std::find(ids.begin(), ids.end(), std::string(must)) != ids.end());
+
+	ffg::AnimLibrary with_json, defaults_only;
+	std::string text;
+	if (ReadFile(root + "/Content/Fourfold/Data/clips.json", text)) FFT_CHECK(with_json.LoadClipsJson(text));
+	if (ReadFile(root + "/Content/Fourfold/Data/anim_map.json", text)) FFT_CHECK(with_json.LoadAnimMapJson(text));
+	MarkAllAvailable(with_json);
+	MarkAllAvailable(defaults_only);
+	int bad = 0;
+	for (const std::string& id : ids) {
+		const ff::Value& d = defs[id];
+		FFT_CHECK(d.is_dict());
+		if (!d.is_dict()) continue;
+		const int el = static_cast<int>(d["element"].as_int(-1));
+		const ff::Slot slot = d["slot"].is_string() ? ff::SlotFromName(d["slot"].as_string()) : ff::Slot::None;
+		for (const ffg::AnimLibrary* lib : {&with_json, &defaults_only}) {
+			for (int tier = 0; tier <= 3; ++tier) {
+				const ffg::MoveClips m = lib->ResolveMove(id, "", el < 0 ? 0 : el, slot, tier, "", false);
+				bool ok = !m.Empty();
+				for (const std::string* c : {&m.startup, &m.hold, &m.release}) {
+					if (c->empty() || *c == "evade_*") continue;
+					const int ce = ClipElement(*c);
+					if (ce >= 0 && el >= 0 && ce != el) ok = false;
+					if (!lib->Find(*c)) ok = false;
+				}
+				if (!ok) {
+					++bad;
+					std::printf("    %s (%s) T%d: startup '%s' hold '%s' release '%s'\n", id.c_str(),
+					            lib == &with_json ? "json" : "defaults", tier, m.startup.c_str(), m.hold.c_str(), m.release.c_str());
+				}
+			}
+		}
+	}
+	std::printf("    chained actions (%d source files): %zu ids, %d bad resolutions\n", files, ids.size(), bad);
+	FFT_CHECK(bad == 0);
 }
 
 // =================================================================================== runner

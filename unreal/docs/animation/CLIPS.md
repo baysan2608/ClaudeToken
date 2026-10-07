@@ -8,10 +8,10 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 |---|---|---|---|---|---|---|---|---|
 | `block_impact` | P0 | 16 | 2 |  | guard | fist/fist | block shudder (additive on guards) | `reactions.block` |
 | `deflect` | P0 | 22 | 5 |  | guard | palm/fist | cross-body sweep parry with a hip turn | `aegis_plate`, `blue_aegis`, `dune_wall`, `flame_guard`, `guard@0`, `guard@1`, `guard@3`, `ice_wall` +8 |
-| `evade_back` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `evade@0`, `evade@2`, `ice_glide`, `vine_swing` |
-| `evade_fwd` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `cinder_step`, `evade@0`, `evade@2`, `ice_glide`, `vine_swing` |
-| `evade_l` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `evade@0`, `evade@2`, `ice_glide`, `vine_swing` |
-| `evade_r` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `evade@0`, `evade@2`, `ice_glide`, `vine_swing` |
+| `evade_back` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `evade@0`, `evade@2`, `flare_dash`, `ice_glide`, `vine_swing` |
+| `evade_fwd` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `cinder_step`, `evade@0`, `evade@2`, `flare_dash`, `ice_glide`, `vine_swing` |
+| `evade_l` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `evade@0`, `evade@2`, `flare_dash`, `ice_glide`, `vine_swing` |
+| `evade_r` | P0 | 28 | 12 |  | idle | relaxed/relaxed | low evasive hop (step out of the line) | `evade@0`, `evade@2`, `flare_dash`, `ice_glide`, `vine_swing` |
 | `fall` | P0 | 48 | - | yes | fall | relaxed/relaxed | airborne, arms balancing | `air.fall` |
 | `flight` | P1 | 72 | - | yes | flight | palm/palm | upright flight, palms pressing down | `modes.flight`, `sound_flight` |
 | `getup` | P0 | 48 | - |  | idle | relaxed/relaxed | sit up, rock forward onto the feet, stand | `reactions.getup` |
@@ -77,7 +77,7 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | `w_freeze` | P0 | 24 | 14 |  | w_stance | fist/fist | Hands Play the Pipa -> clench (Ice) | `frost_shard`, `ice_wall`, `water_attack` |
 | `w_ground` | P1 | 36 | 18 |  | w_stance | willow/palm | Needle at Sea Bottom -> rising push | `rime_path`, `root_snare`, `tidal_rush` |
 | `w_heel_kick` | P1 | 30 | 14 |  | w_stance | palm/palm | Separate Foot heel kick (deng jiao) | `glacier_shove` |
-| `w_hold` | P0 | 96 | - | yes | w_hold | cup/cup | Hold the Ball (bao qiu), rolling the sphere | `air_tech`, `freeze_draw`, `vapor_draw`, `vinegrip`, `water_tech` |
+| `w_hold` | P0 | 96 | - | yes | w_hold | cup/cup | Hold the Ball (bao qiu), rolling the sphere | `freeze_draw`, `vapor_draw`, `vinegrip`, `water_tech` |
 | `w_lash` | P0 | 30 | 14 |  | w_stance | willow/willow | Part the Wild Horse's Mane | `bramble_lash`, `water_attack` |
 | `w_maelstrom` | P2 | 48 | 26 |  | w_stance | willow/willow | turning whip (full turn) | `bramble_lash`, `water_attack` |
 | `w_press` | P1 | 24 | 10 |  | w_stance | willow/palm | Press (ji) | `burr_shot`, `fog_lance`, `icicle_volley`, `water_bullet` |
@@ -106,8 +106,8 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | `f_jab` | P0 | 18 | 6 |  | f_stance | fist/fist | chong quan lead straight punch | `fire_attack`, `pop`, `spark` |
 | `f_low_sweep` | P1 | 36 | 17 |  | f_stance | fist/fist | low spinning sweep (sao tang tui) | `blue_furrow`, `fire_line` |
 | `f_needle` | P1 | 20 | 8 |  | f_stance | sword/sword | sword-finger thrust | `blue_needle` |
-| `f_palm_burst` | P0 | 24 | 6 |  | f_charge | palm/palm | double palms out of the horse (fa jin burst) | `backdraft`, `fire_attack`, `fire_tech`, `flash_over`, `shockwave`, `static_burst` |
-| `f_pour` | P0 | 30 | 16 |  | f_stance | palm/palm | raise, press down, sweep along the ground | `fire_tech` |
+| `f_palm_burst` | P0 | 24 | 6 |  | f_charge | palm/palm | double palms out of the horse (fa jin burst) | `backdraft`, `fire_attack`, `fire_tech`, `flash_over`, `shockwave`, `static_burst`, `vent` |
+| `f_pour` | P0 | 30 | 16 |  | f_stance | palm/palm | raise, press down, sweep along the ground | `fire_tech`, `pour` |
 | `f_snap_kick` | P0 | 24 | 10 |  | f_stance | fist/fist | tan tui snap kick | `comet_flame`, `fireball` |
 | `f_stance` | P0 | 72 | - | yes | f_stance | fist/fist | long-fist ready stance, springy | `locomotion.stance` |
 | `f_stomp` | P1 | 24 | 9 |  | f_stance | palm/palm | stomp with palms pressing down | `ground_heat`, `grounding`, `sound_ping`, `sound_tremor` |
@@ -126,8 +126,8 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | `l_fan` | P2 | 30 | 12 |  | f_stance | spread/sword | fingers-spread arc (lightning fan) | `arc_fan` |
 | `l_ground` | P1 | 30 | 14 |  | f_stance | fist/palm | palm strike to the ground | `ground_current` |
 | `l_redirect` | P1 | 36 | 10, 26 |  | guard | sword/sword | redirect through the lower belly (catch, release) | `static_ward` |
-| `l_release` | P0 | 20 | 6 |  | l_charge | sword/sword | sword-finger extension (two-finger release) | `conductors_hand`, `rail_arc`, `spark` |
-| `l_skybreak` | P1 | 36 | 24 |  | l_charge | sword/sword | sky strike (arm to the sky, slash down) | `spark` |
+| `l_release` | P0 | 20 | 6 |  | l_charge | sword/sword | sword-finger extension (two-finger release) | `conductors_hand`, `lightning`, `rail_arc`, `spark` |
+| `l_skybreak` | P1 | 36 | 24 |  | l_charge | sword/sword | sky strike (arm to the sky, slash down) | `lightning`, `spark` |
 
 ## Air - Baguazhang
 
@@ -139,12 +139,12 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | `a_double_palm` | P0 | 30 | 12 |  | a_stance | oxtongue/oxtongue | Double Palm Change (shuang huan zhang) | `air_attack`, `vacuum_palm` |
 | `a_downdraft` | P1 | 22 | 7 |  | a_stance | palm/palm | palms press down from above | `gust_downdraft`, `vacuum_anchor`, `vortex_funnel_down` |
 | `a_gather` | P1 | 40 | 16 |  | a_stance | oxtongue/oxtongue | wide gathering circle overhead | `vacuum_well`, `vortex_eye` |
-| `a_guard` | P0 | 96 | - | yes | a_guard | oxtongue/oxtongue | circling palms guard | `guard@3`, `sound_barrier`, `vacuum_bubble`, `vortex_wall` |
+| `a_guard` | P0 | 96 | - | yes | a_guard | oxtongue/oxtongue | circling palms guard | `air_tech`, `guard@3`, `gust_grip`, `sound_barrier`, `vacuum_bubble`, `vortex_wall` |
 | `a_hurricane` | P1 | 48 | 28 |  | a_stance | oxtongue/oxtongue | turning-body double palm drive | `air_attack`, `vacuum_palm` |
 | `a_low_palm` | P1 | 30 | 14 |  | a_stance | oxtongue/oxtongue | swallow skims the water (low palm) | `gust_dust_line`, `vacuum_mine`, `vortex_funnel` |
-| `a_palm` | P0 | 22 | 8 |  | a_stance | oxtongue/oxtongue | single pushing palm (tui zhang) | `air_attack`, `air_tech`, `vacuum_palm` |
+| `a_palm` | P0 | 22 | 8 |  | a_stance | oxtongue/oxtongue | single pushing palm (tui zhang) | `air_attack`, `air_tech`, `gust_grip`, `vacuum_palm` |
 | `a_pierce` | P1 | 24 | 10 |  | a_stance | oxtongue/oxtongue | piercing palm (chuan zhang) | `gust_crescent`, `sound_lance`, `vortex_spiral` |
-| `a_pluck` | P1 | 24 | 10 |  | a_stance | spread/spread | pluck (cai), pulling to the body | `air_tech`, `vacuum_suction` |
+| `a_pluck` | P1 | 24 | 10 |  | a_stance | spread/spread | pluck (cai), pulling to the body | `air_tech`, `gust_grip`, `vacuum_suction` |
 | `a_rising_guard` | P2 | 24 | 10 |  | a_stance | oxtongue/oxtongue | rising crossed forearms | `vortex_wall` |
 | `a_roar` | P1 | 36 | 14 |  | a_stance | spread/spread | chest-expanding shout | `sound_clap` |
 | `a_spin` | P1 | 36 | 12 |  | a_stance | oxtongue/oxtongue | spin on one foot (360 deg) | `sound_echo_ring`, `vortex_eddy`, `vortex_spin_step`, `vortex_twister` |

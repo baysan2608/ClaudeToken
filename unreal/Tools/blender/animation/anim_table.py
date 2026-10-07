@@ -193,7 +193,7 @@ MOVES = {
     "gust_wall": M("a_wall_push", hands="palm"),
     "gust_downdraft": M("a_downdraft", hands="palm"),
     "air_tech": M("a_updraft", hands="oxtongue",
-                  modes={"wind grip": R(startup="a_pluck", hold="w_hold", release="a_palm", hands="oxtongue")}),
+                  modes={"wind grip": R(startup="a_pluck", hold="a_guard", release="a_palm", hands="oxtongue")}),
     "air_dash": M("a_dash", hands="oxtongue"),
     "gust_tailwind": M(None, hold="run", hands="oxtongue",
                        note="x1.3 run: stride-matched run (a_circle_walk is a fixed-rate loop; see REQUESTS.md)"),
@@ -231,6 +231,16 @@ MOVES = {
     "sound_flight": M("a_updraft", hold="flight", hands="oxtongue"),
     "sound_boom_step": M("a_dash", hands="oxtongue"),
     "sound_hover": M(None, hold="hover"),
+    # ---------------------------------------------------------------- 4.17 chained actions (started by the sim, no slot)
+    # Not in move_index.json: the sim switches the running action to these ids (start_action / morph_action), so the
+    # director resolves them with Slot::None / the morph slot.  Every one names a clip of its own element.
+    "lightning": M("l_release", hands="sword", tiers={3: R("l_skybreak")},
+                   note="fire_attack charged >= lightning_min: two-finger release through the stomach channel"),
+    "pour": M("f_pour", hands="palm", note="fire_tech on a molten body, tech released: raise, press down, sweep"),
+    "vent": M("f_palm_burst", hands="palm", note="legacy Vent: dump the heat reserve through the palms"),
+    "gust_grip": M("a_pluck", hold="a_guard", release="a_palm", hands="oxtongue",
+                   note="air_tech morph: pluck, circle the gripped body, push-palm fling"),
+    "flare_dash": M("evade_*", hands="fist", note="Fire/Flame evade (registered, bound through the evade slot)"),
 }
 
 # missing clip -> stand-in (MARTIAL_ARTS.md §4 "fallback" notes + the runtime's built-in chain); resolved repeatedly

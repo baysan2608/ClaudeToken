@@ -541,7 +541,8 @@ stage `Content/Fourfold/Data` as UFS, Enhanced Input classes, virtual joystick o
 ## 15. UE 5.8 notes and pitfalls (verified)
 * Target files use `BuildSettingsVersion.Latest` / `EngineIncludeOrderVersion.Latest` (5.8 = V7 / Unreal5_8).
 * iOS: minimum iOS / iPadOS 17; recommended Xcode 26.1.1 with the iOS 26 SDK (App Store uploads require Xcode 26 since
-  April 2026); modern Xcode workflow (`bUseModernXcode`, automatic signing, team in `XcodeProjectSettings`).
+  April 2026); modern Xcode is the only workflow (`bUseModernXcode` deprecated in 5.8); the Xcode project takes bundle id and team from
+  `XcodeProjectSettings` `BundleIdentifier` / `CodeSigningTeam` (automatic signing); `IOSRuntimeSettings` mirrors them for Turnkey.
 * Lumen does not run on iOS / iPadOS; 5.8 adds Lumen Lite and production MegaLights for consoles / PC (not our iOS path).
 * FBX import goes through **Interchange** (default since 5.5): `AssetImportTask.options = FbxImportUI` is ignored
   unless `Interchange.FeatureFlags.Import.FBX 0`; prefer the Interchange pipeline calls of §12.

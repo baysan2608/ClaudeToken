@@ -396,6 +396,12 @@ void AddBuiltinAnimDefaults(AnimLibrary& lib) {
 		m.base.hand_r = "palm";
 	}
 	{
+		MoveAnimEntry& m = lib.DefaultMove("flare_dash");
+		m.base.startup = "evade_*";
+		m.base.hand_l = "fist";
+		m.base.hand_r = "fist";
+	}
+	{
 		MoveAnimEntry& m = lib.DefaultMove("flash_over");
 		m.base.startup = "f_palm_burst";
 		m.base.hand_l = "palm";
@@ -515,6 +521,14 @@ void AddBuiltinAnimDefaults(AnimLibrary& lib) {
 		m.base.hand_r = "oxtongue";
 	}
 	{
+		MoveAnimEntry& m = lib.DefaultMove("gust_grip");
+		m.base.startup = "a_pluck";
+		m.base.hold = "a_guard";
+		m.base.release = "a_palm";
+		m.base.hand_l = "oxtongue";
+		m.base.hand_r = "oxtongue";
+	}
+	{
 		MoveAnimEntry& m = lib.DefaultMove("gust_tailwind");
 		m.base.hold = "a_circle_walk";
 		m.base.hand_l = "oxtongue";
@@ -586,6 +600,13 @@ void AddBuiltinAnimDefaults(AnimLibrary& lib) {
 		m.base.hold = "walk";
 		m.base.hand_l = "relaxed";
 		m.base.hand_r = "relaxed";
+	}
+	{
+		MoveAnimEntry& m = lib.DefaultMove("lightning");
+		m.base.startup = "l_release";
+		m.base.hand_l = "sword";
+		m.base.hand_r = "sword";
+		m.tiers[3].release = "l_skybreak";
 	}
 	{
 		MoveAnimEntry& m = lib.DefaultMove("living_lattice");
@@ -662,6 +683,12 @@ void AddBuiltinAnimDefaults(AnimLibrary& lib) {
 		m.base.hand_l = "sword";
 		m.base.hand_r = "sword";
 		m.tiers[1].release = "c_point";
+	}
+	{
+		MoveAnimEntry& m = lib.DefaultMove("pour");
+		m.base.startup = "f_pour";
+		m.base.hand_l = "palm";
+		m.base.hand_r = "palm";
 	}
 	{
 		MoveAnimEntry& m = lib.DefaultMove("quicksand");
@@ -1053,6 +1080,12 @@ void AddBuiltinAnimDefaults(AnimLibrary& lib) {
 		m.base.startup = "e_sweep";
 		m.base.hand_l = "crane";
 		m.base.hand_r = "crane";
+	}
+	{
+		MoveAnimEntry& m = lib.DefaultMove("vent");
+		m.base.startup = "f_palm_burst";
+		m.base.hand_l = "palm";
+		m.base.hand_r = "palm";
 	}
 	{
 		MoveAnimEntry& m = lib.DefaultMove("vine_swing");

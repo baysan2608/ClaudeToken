@@ -7,6 +7,8 @@
 #include "UI/FourfoldUi.h"
 #include "Widgets/SBoxPanel.h"
 
+#include <string>
+
 class SWrapBox;
 
 class FFFPageBuilder

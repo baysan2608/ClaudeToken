@@ -25,6 +25,10 @@ SHAPES = ["fist", "palm", "willow", "tiger", "crane", "sword", "oxtongue", "rela
 CLIP_KEYS = ["asset", "frames", "duration", "loop", "contact", "contacts", "base", "speed", "hands", "foot_plants",
              "priority", "technique"]
 GAITS = {"walk": 1.4, "run": 5.5}
+# Actions the sim switches to with start_action / morph_action (not slot moves of move_index.json) -> element.
+# Keep in sync with Source/FourfoldCore (grep start_action / morph_action); logic_tests.cpp scans the sources for them.
+CHAINED = {"lightning": 2, "pour": 2, "vent": 2, "gust_grip": 3, "flare_dash": 2}
+ELEMENT_PREFIX = {"e_": 0, "w_": 1, "f_": 2, "l_": 2, "c_": 2, "a_": 3}
 
 fails, warns = [], []
 
@@ -115,8 +119,17 @@ def main():
         key = G.map_key(m)
         check(key in mv, f"move {key} ({m['name']}) has no anim_map entry")
         timing[key] = m
+    def_ids = G.load_def_ids()
+    for cid in CHAINED:
+        check(cid in mv, f"chained action {cid} has no anim_map entry (the fighter would drop to its stance)")
     for key, e in mv.items():
-        check(key in timing, f"anim_map move {key} is not a sim move")
+        check(key in timing or key.split("@")[0] in def_ids, f"anim_map move {key} is not a sim action id")
+        if key in CHAINED:
+            el = CHAINED[key]
+            for fld in ("startup", "hold", "release"):
+                n = e.get(fld)
+                if n and n != "evade_*" and n[:2] in ELEMENT_PREFIX:
+                    check(ELEMENT_PREFIX[n[:2]] == el, f"chained action {key}.{fld} = {n} is a clip of another element")
         for fld in ("startup", "hold", "release", "perfect"):
             if fld in e:
                 ref(f"moves.{key}.{fld}", e[fld])

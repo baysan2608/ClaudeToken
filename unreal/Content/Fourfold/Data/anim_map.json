@@ -1147,7 +1147,7 @@
    "modes": {
     "wind grip": {
      "startup": "a_pluck",
-     "hold": "w_hold",
+     "hold": "a_guard",
      "release": "a_palm",
      "hands": {
       "l": "oxtongue",
@@ -1401,6 +1401,48 @@
    "hands": {
     "l": "relaxed",
     "r": "relaxed"
+   }
+  },
+  "lightning": {
+   "startup": "l_release",
+   "hands": {
+    "l": "sword",
+    "r": "sword"
+   },
+   "tiers": {
+    "3": {
+     "release": "l_skybreak"
+    }
+   }
+  },
+  "pour": {
+   "startup": "f_pour",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "vent": {
+   "startup": "f_palm_burst",
+   "hands": {
+    "l": "palm",
+    "r": "palm"
+   }
+  },
+  "gust_grip": {
+   "startup": "a_pluck",
+   "hold": "a_guard",
+   "release": "a_palm",
+   "hands": {
+    "l": "oxtongue",
+    "r": "oxtongue"
+   }
+  },
+  "flare_dash": {
+   "startup": "evade_*",
+   "hands": {
+    "l": "fist",
+    "r": "fist"
    }
   }
  },

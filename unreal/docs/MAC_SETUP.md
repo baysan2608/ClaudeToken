@@ -7,6 +7,11 @@ time**. When something fails, section 9 says exactly what to send back — that 
 Time needed the first time: ~15 min of clicks + 20–60 min of waiting (C++ build, asset imports, shader compilation,
 lighting build).
 
+**Fast path (does sections 2–4 in one go):** `bash unreal/Tools/mac/run.sh` from the repository root (pulls, builds
+the editor into `logs/build_editor.log`, opens Unreal and runs the asset setup). `UE_ROOT="/path/to/UE_5.8"` overrides
+the engine location. The step-by-step sections below are the same thing by hand, and what to do when a step fails.
+The current state of the project, the exact order of steps and what to send back are in [`../HANDOFF.md`](../HANDOFF.md).
+
 ---
 
 ## 1. Install once
@@ -76,9 +81,14 @@ On the first editor start a message about a missing map (`L_Lab`) is expected �
 
 ## 6. Play on an iPhone / iPad
 1. On the device: **Settings ▸ Privacy & Security ▸ Developer Mode ▸ On** (restart), connect it by cable, tap *Trust*.
-2. In the editor: **Edit ▸ Project Settings ▸ Platforms ▸ iOS**: set **Bundle Identifier** to something unique (e.g.
-   `com.<yourname>.fourfold`), keep **Automatic Signing** on, enter your **IOS Team ID** (developer.apple.com ▸ Membership,
-   10 characters). In **Platforms ▸ Xcode Projects** set the same team.
+2. Signing (UE 5.8 only has the modern Xcode workflow; the generated Xcode project takes its bundle id and team from
+   **Xcode Projects**, not from the iOS page). In the editor: **Edit ▸ Project Settings ▸ Platforms ▸ Xcode Projects**:
+   keep **Use Automatic Code Signing** on, set **Apple Dev Account Team ID** (developer.apple.com ▸ Account ▸ Membership
+   details, 10 characters) and **Bundle ID** to something unique you own (e.g. `com.<yourname>.fourfold`; `com.example.*`
+   cannot be registered). Then in **Platforms ▸ iOS** enter the same **Bundle Identifier** and **IOS Team ID** (only the
+   Turnkey / packaging path reads those, but keep them equal). Or edit the four `EDIT-ME` lines in
+   `Config/DefaultEngine.ini` (two values) before opening the editor. If you change them after generating the Xcode
+   project, regenerate it (step 3).
 3. Toolbar **Platforms ▸ iOS ▸ <your device> ▸ Launch** (cooks and installs; the first cook takes a while).
    Or generate the Xcode workspace (step 3), open `Fourfold (IOS).xcworkspace`, pick the *Fourfold* scheme and your
    device, **Run**.
@@ -104,6 +114,7 @@ The project enables Python *developer mode*, so after the first editor start Unr
 | Setup script errors | `unreal/Saved/Fourfold/setup_report.json` and `unreal/Saved/Logs/Fourfold.log` |
 | Crash / wrong behaviour in Play | `unreal/Saved/Logs/Fourfold.log`, what you did, a screenshot or screen recording |
 | iPhone problems | device model + iOS version, the Xcode console output, `stat unit` numbers |
+| iOS signing fails | a screenshot of Xcode ▸ target *Fourfold* ▸ **Signing & Capabilities** and of Project Settings ▸ Platforms ▸ **Xcode Projects** (hide nothing; the Team ID is not secret) |
 | Anything visual / feel | a short screen recording and one sentence of what feels wrong |
 
 ## 10. Regenerating assets (optional, for later)

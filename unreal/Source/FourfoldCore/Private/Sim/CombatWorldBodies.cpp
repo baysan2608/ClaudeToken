@@ -421,7 +421,9 @@ void CombatWorld::_update_wave(MatBody& b, double dt) {
 			}
 		}
 	}
-	const Vec3 stepv = b.wave_dir * (speed * dt);
+	// Godot (combat_world.gd `b.wave_dir * speed * dt`) multiplies left to right, rounding the Vector3 to float32 after
+	// each product; folding speed * dt in double first drifted ice / fire wave segments by a tick.
+	const Vec3 stepv = (b.wave_dir * static_cast<float>(speed)) * static_cast<float>(dt);
 	Vec3 np = b.pos + stepv;
 	const double g0 = b.pos.y;
 	const double raw_top = arena.ground_height(np.x, np.z, g0, 100.0);

@@ -67,12 +67,20 @@ LAYOUT (unreal/)
 - Tools/blender, Tools/vfx, Tools/world, Tools/audio: generators (regenerate assets, never hand-edit outputs).
 - docs/<stream>/: README, API_NOTES, REQUESTS, PROGRESS per stream.
 
-CURRENT STATE (as of the last cloud session — verify with git log and unreal/HANDOFF.md)
-- All six build streams done (core, game, character, animation, fx, world_audio); a review + fix pass ran
-  after them in the cloud; its results are summarised in unreal/HANDOFF.md / docs once it finished.
-- First Mac compile (Xcode beta, clang 21) failed with 4 -Wunreachable-code-loop-increment errors in
-  AirVacuum.cpp, FireFlame.cpp, FireUtil.cpp, WaterWater.cpp — FIXED. More compile/link errors are expected
-  on the next attempt; nothing in UE was ever compiled before this Mac.
+CURRENT STATE (end of the cloud session, 2026-10-07)
+- All six build streams done (core, game, character, animation, fx, world_audio) + 3 independent reviews
+  (UE compile, gameplay fidelity, art/animation) + a fix pass. Details, owner steps and known gaps:
+  unreal/HANDOFF.md (read it).
+- Verified in the cloud: unreal/CoreTests/run_all.sh green with g++ and clang (531 tests, golden counter
+  matrix 13,300/13,300 rows match Godot, deterministic); game-module logic tests 57/57; game module passes
+  clang -fsyntax-only against public UE 5.8.2 headers; 131 animation clips validated and exported as FBX.
+- Review fixes applied: missing <string> include (FourfoldPageBuilder.h), iOS signing keys in
+  Config/DefaultEngine.ini (XcodeProjectSettings CodeSigningTeam / BundleIdentifier — still EDIT-ME),
+  lightning/pour/vent/gust-grip actions now map to their own clips, wave-step float rounding matches Godot.
+- First real Mac compile (Xcode beta, clang 21) failed only on 4 -Wunreachable-code-loop-increment errors
+  (AirVacuum, FireFlame, FireUtil, WaterWater) — FIXED. UE itself has still never finished a build, so more
+  compile/link errors are likely; reviewers' low-severity notes (e.g. animation ease velocity stalls in
+  ~30 clips) are open polish items.
 
 WHAT TO DO (priority order)
 1. Run `bash unreal/Tools/mac/run.sh`. Fix every compile/link error yourself, rebuild, repeat until the

@@ -75,7 +75,7 @@ python3 unreal/Tools/py_mock/run_with_mock_unreal.py unreal/Content/Python/fourf
 3. Open `L_Lab`, check: courtyard matches the previews; **Platform Preview > iOS** shows the phone look; walls fade out correctly when the
    camera is behind them (game side).  If a mesh looks mirrored the report says "FBX import looks MIRRORED": the builder already
    compensated (actor scale Y = -1) - tell us anyway.
-4. iPhone: edit `BundleIdentifier` and `IOSTeamID` in `Config/DefaultEngine.ini` (marked EDIT-ME) or in Project Settings > Platforms > iOS.
+4. iPhone: edit `CodeSigningTeam` and `BundleIdentifier` in `[XcodeProjectSettings]` of `Config/DefaultEngine.ini` (marked EDIT-ME; mirror them into `IOSRuntimeSettings` `IOSTeamID` / `BundleIdentifier`) or in Project Settings > Platforms > Xcode Projects (Apple Dev Account Team ID, Bundle ID).
 5. Tuning dials: `FF_Post` exposure compensation (overall brightness), `FF_Sun` / `FF_SkyLight` intensity, `MI_Env_*` parameters
    (`Saturation`, `Tint`, `GrimeAmount`, `MacroStrength`), `MPC_Arena.Wetness` (0..1 wets every arena surface), `M_Env_Water`
    (`DeepColor`, `ShallowColor`, `RippleStrength`), `M_Env_Sky` (`CloudCover`, colours), `r.MobileContentScaleFactor` in `Config/IOS/IOSEngine.ini`.
@@ -109,13 +109,13 @@ python3 unreal/Tools/py_mock/run_with_mock_unreal.py unreal/Content/Python/fourf
 | `r.DynamicGlobalIlluminationMethod=1`, `r.ReflectionMethod=1`, `r.Shadow.Virtual.Enable=1`, `r.GenerateMeshDistanceFields=True` | kept (Mac: Lumen software tracing needs distance fields) |
 | `+TargetedRHIs=SF_METAL_SM6` (MacTargetSettings) | added (Metal SM6 for Lumen / Nanite on Apple silicon, macOS 15+); unverified key name - harmless if ignored |
 | `FrameRateLock` | `PUFRL_None` (enum has only None / 20 / 30 / 60 in 5.8) + `bSupportHighRefreshRates=True` (= ProMotion, writes `CADisableMinimumFrameDurationOnPhone`) + `bEnableDynamicMaxFPS=True`: the game's `t.MaxFPS` (30 / 60 / 120) is the cap.  Satisfies the game's REQUESTS |
-| `MinimumiOSVersion=IOS_17`, `bSupportsIPad/IPhone`, orientations, `PreferredLandscapeOrientation` | set / kept; signing fields `BundleIdentifier`, `IOSTeamID`, `bAutomaticSigning` marked EDIT-ME at the top |
+| `MinimumiOSVersion=IOS_17`, `bSupportsIPad/IPhone`, orientations, `PreferredLandscapeOrientation` | set / kept; `BundleIdentifier` / `IOSTeamID` kept as a mirror of the Xcode signing keys (read by Turnkey only in 5.8), `bAutomaticSigning` |
 | iOS audio | `AudioSampleRate=48000`, `AudioCallbackBufferFrameSize=512`, `AudioNumBuffersToEnqueue=2`, `AudioMaxChannels=32`; global quality level MaxChannels is 32 (raise it in Project Settings > Audio > Quality Levels if `ff.audio.dump` reports dropped voices) |
 | `bShowConsoleOnFourFingerTap=False` | per the game's request; console stays on `Tilde` (backquote); added `bEnableGestureRecognizer=False`, `bEnableMotionControls=False` |
 | Android section | removed (not a target) |
 | `DefaultScalability.ini` | new: shadow / post / texture / effect groups for levels 0..3 matching the game's mapping (iOS 0..2, Mac 1..3) |
 | `DefaultGame.ini`, `DefaultEditor.ini` | unchanged (cooking of `/Game/Fourfold`, UFS staging of `Fourfold/Data`, Python developer mode) |
-| `[XcodeProjectSettings]` signing keys | architect's placeholders kept (key names could not be verified without the engine); `bUseModernXcode=True` is documented by Epic |
+| `[XcodeProjectSettings]` signing keys | the real 5.8 signing source: UBT's XcodeProject.cs reads `BundleIdentifier` (PRODUCT_BUNDLE_IDENTIFIER) and `CodeSigningTeam` (DEVELOPMENT_TEAM) - the EDIT-ME keys; `bUseModernXcode` removed (deprecated in 5.8, modern Xcode is the only workflow) |
 
 ## Known gaps / risks
 

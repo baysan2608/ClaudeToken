@@ -1,7 +1,7 @@
 # Stream `animation` - hand-keyed martial-arts clips on the shared rig
 
 131 clips (P0 66 · P1 51 · P2 14) authored by script on the frozen UE5-Mannequin-compatible rig, every one validated
-and exported as `SourceArt/Animation/A_<clip>.fbx`; `clips.json` + `anim_map.json` map all 160 sim moves to their
+and exported as `SourceArt/Animation/A_<clip>.fbx`; `clips.json` + `anim_map.json` map all 160 sim moves (+ the 5 chained actions `lightning`, `pour`, `vent`, `gust_grip`, `flare_dash` the sim switches to mid-move) to their
 ideal clips (no stand-ins); the Unreal import script passes the mock dry run and a scripted fake-editor test.
 
 Related: [CLIPS.md](CLIPS.md) (every clip: frames, contacts, technique, which moves use it - generated) ·
@@ -20,7 +20,7 @@ Related: [CLIPS.md](CLIPS.md) (every clip: frames, contacts, technique, which mo
 | `ffa_export.py` | bakes every frame onto `ff_rig_spec.build_armature()` (validated before every export) and writes the FBX through the frozen `ff_fbx_export.export_animation_fbx`; `--check-fbx` re-imports and compares (<= 0.25 deg, 1 mm, frame 0 first, 103 bones) |
 | `clips/` | the catalogue: `bases.py` (stance poses), `shared.py` (idle, guard, gaits), `reactions.py` (evades, air, hits, knockdown / getup, modes), `earth.py`, `water.py`, `fire.py` (+ lightning / combustion), `air.py`, `p2.py`, `hand_shapes.py` |
 | `build_animation.py` | solve -> validate -> previews -> FBX -> merge `clips.json` -> `anim_map.json` + CLIPS.md / COVERAGE.md |
-| `anim_table.py`, `anim_map_gen.py` | move -> clip table for all 160 moves (MARTIAL_ARTS §4) and its resolver (falls back through `CLIP_FALLBACK` only if a clip is missing) |
+| `anim_table.py`, `anim_map_gen.py` | move -> clip table for all 160 moves + 5 chained actions (MARTIAL_ARTS §4, §4.17) and its resolver (falls back through `CLIP_FALLBACK` only if a clip is missing) |
 | `test_anim_data.py`, `test_unreal_import.py`, `review.py` | data self-test; Unreal import against a scripted fake editor; film-strip renderer for iterating |
 | `SourceArt/Animation/` | `A_<clip>.fbx` (60 fps, first key frame 0), `previews/<clip>.jpg` (gameplay camera + side view at start / anticipation / contact / follow-through / end), `previews/<clip>.mp4` (P0, 640x360), `validation_report.json` |
 | `Content/Fourfold/Data/clips.json`, `anim_map.json` | runtime data, schemas exactly ARCHITECTURE §8.3 |
