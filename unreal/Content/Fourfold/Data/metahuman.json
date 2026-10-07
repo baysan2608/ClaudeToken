@@ -92,7 +92,7 @@
    "source_materials": [
     "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Legs_Simplified"
    ],
-   "enabled": true
+   "enabled": false
   },
   {
    "name": "Torso",
@@ -107,6 +107,27 @@
     "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Torso_Simplified"
    ],
    "enabled": false
+  },
+  {
+   "name": "Pants",
+   "kind": "mesh",
+   "asset": "/Game/Fourfold/Characters/MetaHuman/SKM_FF_Pants",
+   "attach": null,
+   "materials": [
+    "/Game/Fourfold/Characters/MetaHuman/Materials/MI_FF_Pants"
+   ],
+   "enabled": true
+  },
+  {
+   "name": "Sash",
+   "kind": "mesh",
+   "asset": "/Game/Fourfold/Characters/MetaHuman/SKM_FF_Sash",
+   "attach": null,
+   "materials": [
+    "/Game/Fourfold/Characters/MetaHuman/Materials/M_FF_Cloth"
+   ],
+   "tint_param": "FF_Tint",
+   "enabled": true
   }
  ],
  "anim_root": "/Game/Fourfold/Characters/MetaHuman/Anims",

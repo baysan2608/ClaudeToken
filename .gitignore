@@ -14,3 +14,6 @@ unreal/Content/Misc/
 # Epic Niagara Examples Pack (free on Fab; in Unreal: Window > Fab > My Library > Niagara Examples Pack > Add to Project)
 unreal/Content/NiagaraExamples/
 unreal/Content/MetaHumans/
+
+# MetaHuman body exported from the Epic sample (Tools/gasp/export_mh_body.py); derived pants FBX
+unreal/SourceArt/Character/MetaHuman/

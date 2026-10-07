@@ -68,7 +68,7 @@ void ParseBurstSpecs()
 
 // Dev capture for automated look checks (works with a locked screen, unlike an OS screenshot):
 //   -FFShot=<seconds after start>[,<seconds>...]  -FFShotDir=<folder>  [-FFShotQuit]
-// Writes <folder>/shot_<n>.png from the game viewport; -FFShotQuit exits after the last one.
+// Writes <folder>/shot_<n>.png from the game viewport (-FFShotUI: with the Slate HUD); -FFShotQuit exits after the last one.
 //   -FFExec="<seconds>:<console command>|<seconds>:<command>..." runs console commands at those times (perf A/B in one
 //   run, e.g. "30:csvprofile frames=300|36:r.VolumetricCloud 0|37:csvprofile frames=300").
 class FFourfoldModule final : public FDefaultGameModuleImpl
@@ -123,7 +123,7 @@ private:
 			if (Now >= B.Next)
 			{
 				const FString File = GShotDir / FString::Printf(TEXT("%s_%d_%02d.png"), *B.Tag, B.Index, B.Done);
-				FScreenshotRequest::RequestScreenshot(File, false, false);
+				FScreenshotRequest::RequestScreenshot(File, FParse::Param(FCommandLine::Get(), TEXT("FFShotUI")), false);
 				B.Next = Now + B.Interval;
 				if (++B.Done >= B.Count)
 				{
@@ -147,7 +147,7 @@ private:
 		if (Next < Times.Num() && T >= Times[Next])
 		{
 			const FString File = Dir / FString::Printf(TEXT("shot_%d.png"), Next);
-			FScreenshotRequest::RequestScreenshot(File, false, false);
+			FScreenshotRequest::RequestScreenshot(File, FParse::Param(FCommandLine::Get(), TEXT("FFShotUI")), false);
 			UE_LOG(LogFourfold, Display, TEXT("FFShot %d at %.1fs -> %s"), Next, T, *File);
 			++Next;
 			QuitAt = T + 2.0;

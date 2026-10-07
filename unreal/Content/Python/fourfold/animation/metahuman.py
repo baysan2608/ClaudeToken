@@ -16,6 +16,7 @@ import traceback
 
 import unreal
 
+from . import mh_outfit as OUTFIT
 from . import mocap as MC
 
 EAL = unreal.EditorAssetLibrary
@@ -268,6 +269,15 @@ def build(force=False):
             part["enabled"] = part.get("name") not in OUTFIT_OFF
             if part.get("name") == "Face" and part.get("kind") == "mesh":
                 part["materials"] = _no_neck_hide(part["asset"], force, rep)
+        # training pants (generated mesh) replace the sample's cargo pants when they are there
+        data["parts"] = [p for p in data.get("parts", []) if p.get("name") not in ("Pants", "Sash")]
+        outfit = OUTFIT.pieces(body.get_editor_property("skeleton"), force, rep)
+        data["parts"].extend(outfit)
+        if outfit:
+            OUTFIT.check_bind(rep, f"{ANIMS}/Mocap/A_mm_walk")
+        for part in data["parts"]:
+            if part.get("name") == "Legs":
+                part["enabled"] = not outfit
         body_mats = next((p.get("materials") for p in data.get("parts", []) if p.get("name") == "Body"), None)
         full = _full_body(body, body_mats, force, rep)
         if full:

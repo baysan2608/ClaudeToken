@@ -33,6 +33,7 @@ SETS = {
     "MetalPlate": "metal_plate",
     "Ground": "dry_ground_rocks",
     "Rock": "dark_rock",
+    "Cloth": "rough_linen",          # fighters' training pants (setup part metahuman), not an arena slot
 }
 MAPS = {"BC": "Diffuse", "N": "nor_dx", "ORM": "arm"}
 API = "https://api.polyhaven.com"
