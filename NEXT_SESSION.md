@@ -67,33 +67,39 @@ LAYOUT (unreal/)
 - Tools/blender, Tools/vfx, Tools/world, Tools/audio: generators (regenerate assets, never hand-edit outputs).
 - docs/<stream>/: README, API_NOTES, REQUESTS, PROGRESS per stream.
 
-CURRENT STATE (end of the cloud session, 2026-10-07)
-- All six build streams done (core, game, character, animation, fx, world_audio) + 3 independent reviews
-  (UE compile, gameplay fidelity, art/animation) + a fix pass. Details, owner steps and known gaps:
-  unreal/HANDOFF.md (read it).
-- Verified in the cloud: unreal/CoreTests/run_all.sh green with g++ and clang (531 tests, golden counter
-  matrix 13,300/13,300 rows match Godot, deterministic); game-module logic tests 57/57; game module passes
-  clang -fsyntax-only against public UE 5.8.2 headers; 131 animation clips validated and exported as FBX.
-- Review fixes applied: missing <string> include (FourfoldPageBuilder.h), iOS signing keys in
-  Config/DefaultEngine.ini (XcodeProjectSettings CodeSigningTeam / BundleIdentifier — still EDIT-ME),
-  lightning/pour/vent/gust-grip actions now map to their own clips, wave-step float rounding matches Godot.
-- First real Mac compile (Xcode beta, clang 21) failed only on 4 -Wunreachable-code-loop-increment errors
-  (AirVacuum, FireFlame, FireUtil, WaterWater) — FIXED. UE itself has still never finished a build, so more
-  compile/link errors are likely; reviewers' low-severity notes (e.g. animation ease velocity stalls in
-  ~30 clips) are open polish items.
+CURRENT STATE (2026-10-07, end of the first Mac session) — details: unreal/docs/QUALITY_PLAN.md, LOCAL_ENV.md
+- Builds green on UE 5.8.3 + Xcode 27 beta; CoreTests 531/531 (needs cmake: export
+  PATH="$HOME/Library/Python/3.9/bin:$PATH"; FF_COMPILERS=clang++); logic tests 58/58; setup_report clean.
+- Look: SkyAtmosphere + volumetric clouds/fog, fully dynamic Lumen, TSR 75 %, Poly Haven CC0 arena textures
+  (Tools/world/fetch_polyhaven.py, git-ignored), courtyard stripe bug fixed (sun per-pixel transmittance off).
+- Skeleton unit fix: FBX now exported in cm (ff_fbx_export); fighter + 131 clips re-imported (root scale 1).
+- Mocap: Epic Game Animation Sample (~/Documents/Unreal Projects/GameAnimationSample) -> Tools/gasp/
+  migrate_from_gasp.py + setup part `mocap` (walk/run/strafe/back/get-ups; multi-cycle stride-synced gaits).
+- Fighters are MetaHumans (Kellan from GASP: Tools/gasp/migrate_metahuman.py + setup part `metahuman`):
+  all clips retargeted, face/clothing/grooms assembled at runtime, role tints. -FFCharacter=fighter = old one.
+- Physics: hit flinch (PhysicalAnimationComponent), ragdoll knockdowns (pelvis world-driven), pose-snapshot
+  hand-back into trimmed mocap get-ups aligned to the lying body.
+- Perf (Mac game, 1600x900): ~18.4 ms GPU in a duel after the tier-2 tweaks (unaccounted 3.8, Lumen gather 2.5, clouds 1.5, shadows 1.4, fog 0.9); target 16.6 ms.
+- VFX: a parallel session ("Add Niagara Examples Pack to Fourfold") owns unreal/Source/FourfoldFX/**,
+  Content/Python/fourfold/fx/**, Data/fx_config.json, docs/fx/**, QUALITY_PLAN row 6: Niagara element cues
+  (Niagara Examples Pack in Content/NiagaraExamples, git-ignored) then Chaos fracture of stone. If it is still
+  running, coordinate with SendMessage (announce UE runs, commit only your paths with `git commit -o -- paths`).
+- Dev tools: Tools/mac/shot.sh <dir> <secs,...> [game args] = in-engine screenshots (works with a locked
+  screen); game args: -scenario=lab|spar -autoplay=duel, -FFBurst=<tag>:<n>:<dt> -FFBurstQuit=<n> (tags:
+  ragdoll flinch getup getup_ko), -FFLabSpawn=<entry>@<sim s>, -csvCaptureFrames=600 -csvGpuStats
+  -ExecCmds="csvprofile start" (CSV in ~/Library/Application Support/Epic/UnrealEngine/5.8/Saved/Profiling/CSV).
+- Open: owner to choose fighter outfit (bare-chested + training pants suggested / own MetaHuman / keep hoodie).
 
 WHAT TO DO (priority order)
-1. Run `bash unreal/Tools/mac/run.sh`. Fix every compile/link error yourself, rebuild, repeat until the
-   editor opens. Keep fixes minimal and correct; never disable warnings globally to hide real bugs.
-   Re-run unreal/CoreTests/run_all.sh after touching FourfoldCore.
-2. Run the asset setup; fix Python errors using the real engine API (py_stub step above) until
-   setup_report.json has no failures.
-3. Play L_Lab and a 1v1 vs AI. Fix crashes/obvious bugs. Use screenshots (screencapture) to check visuals.
-4. Then quality: animation smoothness, VFX beauty, sound, counter feel; mobile preview; then iPhone deploy
-   and `stat unit` perf (60 fps target).
-Work in small verified steps; commit + push after each working step with clear messages.
-Before big multi-file work, write a short plan and keep docs/<stream>/PROGRESS.md updated so any
-interruption loses nothing.
+1. Perf to 60 fps on the Mac (16.6 ms): measure with the CSV profiler; Lumen High (done in FourfoldSettings
+   for tier 2 if committed), fog/clouds, find the 4.6 ms "Unaccounted"; then iOS budget (mobile renderer,
+   MetaHuman LODs / groom cards, no volumetrics).
+2. Locomotion quality: starts / stops / pivots / turn-in-place from GASP (motion matching or clip selection),
+   foot planting check on the MetaHuman, element stances on MetaHuman proportions.
+3. Fighter outfit per the owner's answer; martial-arts strikes still hand-keyed (mocap pack later).
+4. Arena dressing: replace the paper-cutout trees / flat backdrop (Fab/Megascans or CC0 assets).
+5. Sound mix, counter feel, mobile preview, iPhone deploy (`stat unit`).
+Work in small verified steps; commit + push after each step; keep docs/QUALITY_PLAN.md current.
 
 CONVENTIONS
 - Every heat/mass change goes through the ledgers; the C++ core must stay deterministic and match Godot.

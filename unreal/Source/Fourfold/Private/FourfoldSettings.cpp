@@ -149,6 +149,16 @@ void UFourfoldSettingsSubsystem::ApplyEngineSettings()
 	{
 		Scalability::FQualityLevels Levels = Scalability::GetQualityLevels();
 		Levels.SetFromSingleQualityLevel(Level);
+#if !(PLATFORM_IOS || PLATFORM_ANDROID)
+		if (Level >= 3)
+		{
+			// Epic everywhere measured ~23 ms GPU on an M4 Pro (1600x900): Lumen gather and the 200 % TSR history are
+			// most of it. High GI / reflections / AA look the same in this outdoor, sun-lit arena.
+			Levels.GlobalIlluminationQuality = 2;
+			Levels.ReflectionQuality = 2;
+			Levels.AntiAliasingQuality = 2;
+		}
+#endif
 		Scalability::SetQualityLevels(Levels);
 		AppliedQualityLevel = Level;
 		UE_LOG(LogFourfold, Log, TEXT("Scalability level %d (quality tier %d)"), Level, Q);
