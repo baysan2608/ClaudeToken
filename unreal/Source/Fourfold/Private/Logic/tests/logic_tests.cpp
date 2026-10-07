@@ -1058,6 +1058,96 @@ FFT_TEST(library_resolve_moves) {
 	FFT_CHECK(lib.HandPose("fist") && lib.HandPose("fist")->name == "hand_fist");
 }
 
+// A transition clip with a root travel curve: decelerating (stop) or accelerating (start) over `len` seconds.
+static ffg::ClipDef TransitionClip(const char* name, float len, float total, bool stop, float settle = 0.0f) {
+	ffg::ClipDef c;
+	c.name = name;
+	c.duration = len + settle;
+	c.frames = static_cast<int>((len + settle) * 60.0f);
+	c.available = true;
+	c.curve_fps = 30.0f;
+	const int n = static_cast<int>((len + settle) * 30.0f) + 1;
+	for (int i = 0; i < n; ++i) {
+		const float u = std::min(1.0f, (static_cast<float>(i) / 30.0f) / len);
+		// stop: v falls linearly to 0 -> d = total * (1 - (1-u)^2); start: v rises -> d = total * u^2
+		c.root_dist.push_back(stop ? total * (1.0f - (1.0f - u) * (1.0f - u)) : total * u * u);
+	}
+	return c;
+}
+
+FFT_TEST(loco_transition_distance_curve) {
+	const ffg::ClipDef c = TransitionClip("stop", 1.0f, 2.0f, true, 0.5f);
+	FFT_NEAR(c.TotalDist(), 2.0, 1e-5);
+	FFT_NEAR(c.DistAt(0.0f), 0.0, 1e-6);
+	FFT_NEAR(c.DistAt(0.5f), 1.5, 1e-3);
+	FFT_NEAR(c.TimeAtDist(1.5f), 0.5, 2e-3);
+	FFT_NEAR(c.TimeAtDist(2.0f), 1.0, 1e-3);   // first time the travel is complete (the settle follows)
+	FFT_NEAR(c.TimeAtDist(-1.0f), 0.0, 1e-6);
+	ffg::AnimLibrary lib;
+	FFT_CHECK(lib.LoadClipsJson(R"({"clips": {"st": {"frames": 30, "duration": 0.5, "curve_fps": 10, "root_dist": [0, 0.1, 0.4, 0.9, 1.4, 1.9]}}})"));
+	const ffg::ClipDef* st = lib.Find("st");
+	FFT_CHECK(st && st->root_dist.size() == 6);
+	FFT_NEAR(st->TimeAtDist(0.65f), 0.25, 1e-4);
+	FFT_CHECK(lib.LoadAnimMapJson(R"({"locomotion": {"run_start": "st", "run_stop_l": "sl", "run_stop_r": "sr"}})"));
+	FFT_CHECK(lib.run_start == "st" && lib.run_stop_l == "sl" && lib.run_stop_r == "sr");
+}
+
+FFT_TEST(loco_transition_stop_and_start) {
+	const float dt = 1.0f / 60.0f;
+	const ffg::ClipDef stop = TransitionClip("stop", 0.8f, 1.6f, true, 0.6f);
+	const ffg::ClipDef start = TransitionClip("start", 0.9f, 2.4f, false);
+	ffg::LocoTransition tr;
+	tr.Reset();
+	// a steady run: nothing fires
+	for (int i = 0; i < 60; ++i) tr.Update(dt, 5.5f, 5.5f, true, &start, &stop, &stop);
+	FFT_CHECK(tr.kind == ffg::LocoTransition::Kind::None);
+	// brake like the sim (DECEL 42): the stop fires, its clip time only moves forward, reaches the end of the travel
+	// when the fighter stands, then settles in real time and hands back
+	float v = 5.5f, prev_t = -1.0f;
+	bool fired = false, monotonic = true;
+	int frames_after_stop = 0;
+	for (int i = 0; i < 120; ++i) {
+		v = std::max(0.0f, v - 42.0f * dt);
+		tr.Update(dt, v, v, true, &start, &stop, &stop);
+		if (tr.kind == ffg::LocoTransition::Kind::Stop) {
+			if (!fired) FFT_CHECK(tr.t > 0.4f);   // enters late: the sim only needs the last ~0.3 m of 1.6
+			fired = true;
+			monotonic = monotonic && tr.t >= prev_t;
+			prev_t = tr.t;
+			if (v == 0.0f) ++frames_after_stop;
+		}
+	}
+	FFT_CHECK(fired && monotonic);
+	FFT_CHECK(tr.kind == ffg::LocoTransition::Kind::None);   // settled and handed back
+	FFT_CHECK(frames_after_stop > 20);                        // the settle played (0.6 s tail)
+	// from standing: accelerate like the sim (ACCEL 34) - the start fires and follows the travelled distance
+	tr.Reset();
+	for (int i = 0; i < 30; ++i) tr.Update(dt, 0.0f, 0.0f, true, &start, &stop, &stop);
+	v = 0.0f;
+	fired = false;
+	float travelled = 0.0f;
+	for (int i = 0; i < 90; ++i) {
+		v = std::min(5.5f, v + 34.0f * dt);
+		travelled += v * dt;
+		tr.Update(dt, v, v, true, &start, &stop, &stop);
+		if (tr.kind == ffg::LocoTransition::Kind::Start) {
+			fired = true;
+			FFT_CHECK(std::fabs(start.DistAt(tr.t) - travelled) < 0.15f || tr.t >= start.duration * 0.92f);
+		}
+	}
+	FFT_CHECK(fired && tr.kind == ffg::LocoTransition::Kind::None);   // handed over to the run cycle
+	// a walk from standing (1.8 m/s) never fires a run start; an action (not allowed) cancels a stop
+	tr.Reset();
+	for (int i = 0; i < 60; ++i) tr.Update(dt, std::min(1.8f, 34.0f * dt * static_cast<float>(i)), 1.8f, true, &start, &stop, &stop);
+	FFT_CHECK(tr.kind == ffg::LocoTransition::Kind::None);
+	tr.Reset();
+	tr.Update(dt, 5.5f, 5.5f, true, &start, &stop, &stop);
+	tr.Update(dt, 4.8f, 4.8f, true, &start, &stop, &stop);
+	FFT_CHECK(tr.kind == ffg::LocoTransition::Kind::Stop);
+	tr.Update(dt, 4.1f, 4.1f, false, &start, &stop, &stop);
+	FFT_CHECK(tr.kind == ffg::LocoTransition::Kind::None && tr.clip == nullptr);
+}
+
 FFT_TEST(library_json_overrides) {
 	ffg::AnimLibrary lib;
 	const char* clips = R"({"schema": "fourfold.clips/1", "fps": 60, "asset_root": "/Game/X/Anims",

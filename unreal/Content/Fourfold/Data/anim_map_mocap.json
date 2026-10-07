@@ -5,7 +5,10 @@
   "run": "mm_run",
   "strafe_l": "mm_strafe_l",
   "strafe_r": "mm_strafe_r",
-  "back": "mm_walk_back"
+  "back": "mm_walk_back",
+  "run_start": "mm_run_start",
+  "run_stop_l": "mm_run_stop_l",
+  "run_stop_r": "mm_run_stop_r"
  },
  "reactions": {
   "getup": "mm_getup_f",

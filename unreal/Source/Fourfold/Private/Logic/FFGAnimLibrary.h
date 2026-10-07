@@ -37,6 +37,13 @@ struct ClipDef {
 	std::string hand_l, hand_r;        // hand shape keys ("fist" ...)
 	std::array<std::vector<std::pair<int, int>>, 2> plants;   // planted [start, end) frame ranges per foot (0 = l, 1 = r)
 	bool has_plants = false;
+	// Transition clips (starts / stops): cumulative ground travel of the root (m) sampled at curve_fps from t = 0, so an
+	// in-place copy can be distance-matched to the sim (the runtime never lets clips move the fighter).
+	std::vector<float> root_dist;
+	float curve_fps = 30.0f;
+	float DistAt(float t) const;           // root travel at clip time t (0 without a curve)
+	float TimeAtDist(float d) const;       // first clip time whose travel reaches d (clamped to the curve)
+	float TotalDist() const { return root_dist.empty() ? 0.0f : root_dist.back(); }
 	bool available = false;            // an asset was found (set by the Unreal side)
 	int handle = -1;                   // index of the loaded asset on the Unreal side
 
@@ -75,6 +82,7 @@ public:
 	std::string idle = "idle";
 	std::array<std::string, 4> stance{{"e_stance", "w_stance", "f_stance", "a_stance"}};
 	std::string walk = "walk", run = "run", strafe_l = "strafe_l", strafe_r = "strafe_r", back = "walk_back";
+	std::string run_start, run_stop_l, run_stop_r;         // distance-matched transitions (empty = none)
 	// reactions / air / guard / modes / fallbacks
 	std::map<std::string, std::string> reactions;
 	std::map<std::string, std::string> air;

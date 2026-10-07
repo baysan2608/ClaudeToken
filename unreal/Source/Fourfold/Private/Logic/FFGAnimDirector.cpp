@@ -28,6 +28,7 @@ void AnimDirector::Reset() {
 	hits.Reset();
 	landing.Reset();
 	loco.Reset();
+	trans.Reset();
 	ik_w_ = 1.0f;   // a (re)spawned fighter stands: IK starts engaged
 	look_w_ = aim_w_ = legs_w_ = breathe_w_ = 0.0f;
 	lean_ = Vec2();
@@ -351,6 +352,21 @@ const AnimRecipe& AnimDirector::Update(const DirectorInput& in) {
 		overlay_t_ += dt;
 		if (overlay_t_ >= overlay_->duration || stunned) overlay_ = nullptr;
 	}
+	// Run starts / stops (distance-matched one-shots over the gait blend), only in free locomotion on the ground.
+	{
+		const bool mode = !a.stance.empty() && lib->modes.count(a.stance);
+		const bool allowed = !stunned && !overlay_ && !a.action.active && a.grounded && !mode && in.lod < 2;
+		int pl = -1, pr = -1;
+		if (const ClipDef* rc = Clip(lib->run)) {
+			const float rt = loco.ClipTime(LocoRole::Run, rc->duration);
+			pl = rc->PlantedAt(0, rt);
+			pr = rc->PlantedAt(1, rt);
+		}
+		const ClipDef* st = lib->run_start.empty() ? nullptr : Clip(lib->run_start);
+		const ClipDef* sl = lib->run_stop_l.empty() ? nullptr : Clip(lib->run_stop_l);
+		const ClipDef* sr = lib->run_stop_r.empty() ? nullptr : Clip(lib->run_stop_r);
+		trans.Update(dt, in.local_vel.length(), in.local_vel.y, allowed, st, sl, sr, pl, pr);
+	}
 	if (additive_) {
 		additive_t_ += dt;
 		if (additive_t_ >= additive_->duration) additive_ = nullptr;
@@ -412,10 +428,17 @@ const AnimRecipe& AnimDirector::Update(const DirectorInput& in) {
 		if (mode_clip) {
 			r_.base.push_back({mode_clip, loco.ClipTime(LocoRole::Stance, mode_clip->duration), 1.0f});
 			SetKey("mode:" + mode_clip->name, 6.0f);
+		} else if (trans.clip) {
+			free_loco = true;
+			r_.base.push_back({trans.clip, trans.t, 1.0f});
+			SetKey(std::string(trans.kind == LocoTransition::Kind::Stop ? "loco:stop:" : "loco:start:") + trans.clip->name + ":" +
+			           std::to_string(trans.serial),
+			       trans.kind == LocoTransition::Kind::Stop ? 3.0f : 4.0f);
 		} else {
 			free_loco = true;
 			AddLocomotion(a, 1.0f, r_.base, max_loco);
-			SetKey("loco", 6.0f);
+			// out of a stop the settle hands over slowly; out of a start the cycle is already running
+			SetKey("loco", key_.rfind("loco:stop:", 0) == 0 ? 12.0f : 6.0f);
 		}
 	}
 	if (a.grounded) {

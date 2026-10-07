@@ -851,6 +851,47 @@ void AFourfoldPlayerController::PollSimInput(ff::InputFrame& Out, float& InOutCa
 			Touch.FillFrame(Scratch);
 		}
 	}
+#if !UE_BUILD_SHIPPING
+	// Dev input script for animation captures: -FFMove="<s>:<x>,<y>|<s>:<x>,<y>|..." holds the stick at (x, y) from
+	// each time (seconds after the first polled frame), e.g. "3:0,1|4.5:0,0" = run forward 1.5 s, then stop.
+	{
+		static TArray<TPair<double, ff::Vec2>> Script;
+		static double ScriptStart = -1.0;
+		static bool bParsed = false;
+		if (!bParsed)
+		{
+			bParsed = true;
+			FString Spec;
+			if (FParse::Value(FCommandLine::Get(), TEXT("-FFMove="), Spec, false))
+			{
+				TArray<FString> Parts;
+				Spec.ParseIntoArray(Parts, TEXT("|"));
+				for (const FString& P : Parts)
+				{
+					FString When, XY, X, Y;
+					if (P.Split(TEXT(":"), &When, &XY) && XY.Split(TEXT(","), &X, &Y))
+					{
+						Script.Add({FCString::Atod(*When), ff::Vec2(FCString::Atof(*X), FCString::Atof(*Y))});
+					}
+				}
+			}
+		}
+		if (Script.Num() > 0)
+		{
+			const double Now = FPlatformTime::Seconds();
+			if (ScriptStart < 0.0) ScriptStart = Now;
+			const double T = Now - ScriptStart;
+			for (int32 i = Script.Num() - 1; i >= 0; --i)
+			{
+				if (T >= Script[i].Key)
+				{
+					F.move = Script[i].Value;
+					break;
+				}
+			}
+		}
+	}
+#endif
 	if (CameraRig)
 	{
 		CameraRig->Logic.AddInput(F.cam_delta);

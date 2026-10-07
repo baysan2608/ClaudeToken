@@ -248,6 +248,15 @@ void UFourfoldAnimLibrarySubsystem::LoadMetaHumanJson()
 	}
 	Character.bMetaHuman = true;
 	Character.MeshPath = Body;
+	// the rendered body: a complete body of the same type when the setup made one (Kellan's own body is partial)
+	if (Root["body_mesh"].is_string())
+	{
+		const FString Full = FourfoldAnimLib::ToF(Root["body_mesh"].as_string());
+		if (LoadObject<UObject>(nullptr, *(Full + TEXT(".") + FPaths::GetBaseFilename(Full)), nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			Character.MeshPath = Full;
+		}
+	}
 	Character.Name = Root["name"].is_string() ? FourfoldAnimLib::ToF(Root["name"].as_string()) : TEXT("MetaHuman");
 	Library.asset_root = Root["anim_root"].as_string();
 	const ff::Value& Parts = Root["parts"];
@@ -256,6 +265,11 @@ void UFourfoldAnimLibrarySubsystem::LoadMetaHumanJson()
 		for (const ff::Value& P : Parts.as_array())
 		{
 			if (!P.is_dict() || !P["asset"].is_string() || !P["name"].is_string())
+			{
+				continue;
+			}
+			// outfit: the setup part disables MetaHuman clothing the fighters don't wear (e.g. hoodie, shoes)
+			if (P["enabled"].is_bool() && !P["enabled"].as_bool())
 			{
 				continue;
 			}

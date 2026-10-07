@@ -8,35 +8,53 @@
    "kind": "groom",
    "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Mustache_S_Stubble",
    "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Mustache_S_Stubble_m_head_Archetype_Binding",
-   "attach": null
+   "attach": null,
+   "enabled": true
   },
   {
    "name": "Eyelashes",
    "kind": "groom",
    "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Eyelashes_S_Sparse",
    "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Eyelashes_S_Sparse_m_med_nrw_head_skmesh_Face_Archetype_Binding",
-   "attach": null
+   "attach": null,
+   "enabled": true
   },
   {
    "name": "Eyebrows",
    "kind": "groom",
    "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Eyebrows_M_Full",
    "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Eyebrows_M_Full_m_head_Archetype_Binding",
-   "attach": null
+   "attach": null,
+   "enabled": true
   },
   {
    "name": "Hair",
    "kind": "groom",
    "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Hair_S_360Waves",
    "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Hair_S_360Waves_m_med_nrw_head_skmesh_Face_Archetype_Binding",
-   "attach": null
+   "attach": null,
+   "enabled": true
   },
   {
    "name": "Face",
    "kind": "mesh",
    "asset": "/Game/MetaHumans/Kellan/Face/Kellan_FaceMesh",
    "attach": null,
-   "materials": []
+   "materials": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "/Game/Fourfold/Characters/MetaHuman/Materials/MI_HeadSynthesized_Simplified_LOD1_FF",
+    "",
+    "/Game/Fourfold/Characters/MetaHuman/Materials/MI_HeadSynthesized_Simplified_LOD3_FF",
+    "/Game/Fourfold/Characters/MetaHuman/Materials/MI_HeadSynthesized_Simplified_LOD5_FF"
+   ],
+   "enabled": true
   },
   {
    "name": "Body",
@@ -45,7 +63,8 @@
    "attach": null,
    "materials": [
     "/Game/MetaHumans/Kellan/Body/Materials/MI_BodySynthesized_Simplified"
-   ]
+   ],
+   "enabled": true
   },
   {
    "name": "Feet",
@@ -58,7 +77,8 @@
    "tint_param": "FF_Tint",
    "source_materials": [
     "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Feet_Simplified"
-   ]
+   ],
+   "enabled": false
   },
   {
    "name": "Legs",
@@ -71,7 +91,8 @@
    "tint_param": "FF_Tint",
    "source_materials": [
     "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Legs_Simplified"
-   ]
+   ],
+   "enabled": true
   },
   {
    "name": "Torso",
@@ -84,7 +105,8 @@
    "tint_param": "FF_Tint",
    "source_materials": [
     "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Torso_Simplified"
-   ]
+   ],
+   "enabled": false
   }
  ],
  "anim_root": "/Game/Fourfold/Characters/MetaHuman/Anims",
@@ -105,5 +127,6 @@
    0.95,
    0.85
   ]
- }
+ },
+ "body_mesh": "/Game/Fourfold/Characters/MetaHuman/SKM_FF_Body"
 }

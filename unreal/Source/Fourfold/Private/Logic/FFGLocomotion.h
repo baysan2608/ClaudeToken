@@ -8,8 +8,11 @@
 #include "FFGMath.h"
 
 #include <array>
+#include <cstdint>
 
 namespace ffg {
+
+struct ClipDef;
 
 enum class LocoRole : int { Stance = 0, Walk, Run, StrafeL, StrafeR, Back, Count };
 inline constexpr int kLocoRoles = static_cast<int>(LocoRole::Count);
@@ -71,6 +74,48 @@ public:
 		const float o = phase0 * static_cast<float>(g.cycles);
 		g.offset = o - static_cast<float>(static_cast<int>(o));
 	}
+};
+
+// One-shot transitions over the gait blend (free locomotion only): a braking run plants the feet into a stop clip and
+// settles, a run from standing pushes off with a start clip. The sim moves the fighter and the clips are in place, so
+// they are distance-matched: a stop samples the clip where its remaining root travel equals the distance the sim still
+// needs to stop (v^2 / 2 DECEL), a start where its travel equals the distance covered since leaving the stand. The sim
+// brakes in ~0.13 s (5.5 m/s, DECEL 42), so a stop mostly shows the clip's plant and settle.
+class LocoTransition {
+public:
+	enum class Kind { None, Start, Stop };
+	static constexpr float kStopFrom = 3.0f;      // m/s: only a run that brakes gets a stop
+	static constexpr float kBrake = 15.0f;        // m/s^2 of measured deceleration that counts as braking
+	static constexpr float kStandSpeed = 0.4f;    // m/s: below this the fighter stands
+	static constexpr float kStartSpeed = 2.2f;    // m/s: a start fires once a run from standing passes this ...
+	static constexpr float kStartWindow = 0.25f;  // ... within this many seconds of leaving the stand
+	static constexpr float kDecel = 42.0f;        // sim combat_world.DECEL (m/s^2)
+	static constexpr float kSettleMax = 0.45f;    // s of a stop's settle after the fighter stands (mocap idles run long)
+
+	Kind kind = Kind::None;
+	const ClipDef* clip = nullptr;
+	float t = 0.0f;              // clip time
+	uint32_t serial = 0;         // bumps on every new transition
+
+	// speed: ground speed (m/s); fwd: its forward part; allowed: free locomotion on the ground this frame.
+	// plant_l / plant_r: feet planted by the gait blend right now (-1 unknown) - picks the stop clip that matches.
+	void Update(float dt, float speed, float fwd, bool allowed, const ClipDef* start, const ClipDef* stop_l,
+	            const ClipDef* stop_r, int plant_l = -1, int plant_r = -1);
+	void Reset() {
+		kind = Kind::None;
+		clip = nullptr;
+		t = 0.0f;
+		prev_speed_ = 0.0f;
+		since_stand_ = 1e3f;
+		travelled_ = 0.0f;
+		settle_ = 0.0f;
+	}
+
+private:
+	float prev_speed_ = 0.0f;
+	float since_stand_ = 1e3f;   // seconds since the speed was last below kStandSpeed
+	float travelled_ = 0.0f;     // metres since then
+	float settle_ = 0.0f;        // seconds a stop has been standing
 };
 
 }  // namespace ffg

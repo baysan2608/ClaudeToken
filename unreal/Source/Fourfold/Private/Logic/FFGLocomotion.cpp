@@ -1,6 +1,8 @@
 // Fourfold game logic island - locomotion blend (see FFGLocomotion.h).
 #include "FFGLocomotion.h"
 
+#include "FFGAnimLibrary.h"
+
 namespace ffg {
 
 std::array<float, kLocoRoles> LocomotionBlender::TargetWeights(Vec2 local_vel) {
@@ -85,6 +87,91 @@ LocoRole LocomotionBlender::Dominant() const {
 	for (size_t i = 1; i < weights.size(); ++i)
 		if (weights[i] > weights[best]) best = i;
 	return static_cast<LocoRole>(best);
+}
+
+void LocoTransition::Update(float dt, float speed, float fwd, bool allowed, const ClipDef* start, const ClipDef* stop_l,
+                            const ClipDef* stop_r, int plant_l, int plant_r) {
+	if (dt <= 0.0f) return;
+	const float prev = prev_speed_;
+	const float accel = (speed - prev) / dt;
+	prev_speed_ = speed;
+	if (speed < kStandSpeed) {
+		since_stand_ = 0.0f;
+		travelled_ = 0.0f;
+	} else {
+		since_stand_ += dt;
+		travelled_ += speed * dt;
+	}
+	if (!allowed) {
+		kind = Kind::None;
+		clip = nullptr;
+		return;
+	}
+	const auto usable = [](const ClipDef* c) { return c && c->root_dist.size() >= 2 && c->TotalDist() > 0.05f; };
+
+	if (kind == Kind::Stop) {
+		if (speed > kStandSpeed && accel > 2.0f) {   // pushed off again: back to the gait blend
+			kind = Kind::None;
+			clip = nullptr;
+		} else {
+			const float remaining = speed * speed / (2.0f * kDecel);
+			const float target = clip->TimeAtDist(clip->TotalDist() - remaining);
+			const bool standing = speed < 0.05f;
+			settle_ = standing ? settle_ + dt : 0.0f;
+			t = std::max(t + (standing ? dt : 0.0f), target);   // never backwards; settles in real time once stopped
+			if (t >= clip->duration || settle_ >= kSettleMax) {
+				kind = Kind::None;
+				clip = nullptr;
+			}
+			return;
+		}
+	} else if (kind == Kind::Start) {
+		if (speed < kStartSpeed * 0.6f || fwd < 0.7f * speed) {
+			kind = Kind::None;
+			clip = nullptr;
+		} else {
+			t = std::max(t, clip->TimeAtDist(travelled_));
+			// hand over to the cycle once the clip itself runs at the fighter's speed (mocap starts keep running for
+			// seconds) or runs out of travel
+			const float clip_speed = (clip->DistAt(t + 0.1f) - clip->DistAt(t)) / 0.1f;
+			if ((t > 0.25f && clip_speed >= 0.9f * speed) || travelled_ >= clip->TotalDist() || t >= clip->duration * 0.92f) {
+				kind = Kind::None;
+				clip = nullptr;
+			}
+			return;
+		}
+	}
+
+	// new transitions
+	if (prev >= kStopFrom && prev < 8.0f && accel < -kBrake && fwd > 0.7f * speed) {   // > 8 m/s: a teleport, not a run
+		const float remaining = speed * speed / (2.0f * kDecel);
+		const ClipDef* best = nullptr;
+		int best_score = -1;
+		for (const ClipDef* c : {stop_l, stop_r}) {
+			if (!usable(c)) continue;
+			const float tc = c->TimeAtDist(c->TotalDist() - remaining);
+			int score = 0;
+			if (plant_l >= 0 && c->PlantedAt(0, tc) == plant_l) ++score;
+			if (plant_r >= 0 && c->PlantedAt(1, tc) == plant_r) ++score;
+			if (score > best_score) {
+				best = c;
+				best_score = score;
+			}
+		}
+		if (best) {
+			settle_ = 0.0f;
+			kind = Kind::Stop;
+			clip = best;
+			t = best->TimeAtDist(best->TotalDist() - remaining);
+			++serial;
+		}
+	} else if (usable(start) && speed >= kStartSpeed && accel > 0.0f && since_stand_ <= kStartWindow && fwd > 0.7f * speed &&
+	           travelled_ < start->TotalDist()) {
+		kind = Kind::Start;
+		clip = start;
+		t = start->TimeAtDist(travelled_);
+		++serial;
+	}
 }
 
 }  // namespace ffg

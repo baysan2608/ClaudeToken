@@ -58,6 +58,7 @@ struct FFourfoldFighterImpl
 	TSharedPtr<const ffg::ArenaGround, ESPMode::ThreadSafe> Arena;
 	const ff::ArenaView* ArenaSource = nullptr;
 	FString AnimDebug;
+	uint32 TransSerial = 0;   // last run start / stop seen (dev capture trigger)
 	// physical reactions
 	enum class EPhys : uint8 { Off, Flinch, Ragdoll };
 	EPhys Phys = EPhys::Off;
@@ -621,6 +622,11 @@ void AFourfoldFighter::DriveAnimation(const FFourfoldFrame& Frame, const ff::Act
 	In.getup_side = S.GetupSide;
 	const ffg::AnimRecipe& R = S.Director.Update(In);
 	S.AnimDebug = FString(UTF8_TO_TCHAR(R.debug.c_str()));
+	if (S.Director.trans.serial != S.TransSerial)
+	{
+		S.TransSerial = S.Director.trans.serial;
+		FourfoldDev::Trigger(S.Director.trans.kind == ffg::LocoTransition::Kind::Stop ? TEXT("loco_stop") : TEXT("loco_start"));
+	}
 
 	// The arena copy for the IK ground (rebuilt when the scenario changes).
 	if (Sim && Sim->HasScenario())

@@ -43,11 +43,16 @@ CLIPS = {
     "mm_walk_back": (A + "/Walk/M_Neutral_Walk_Loop_B", True, "gait"),
     "mm_getup_f": (A + "/Ragdoll/M_ragdoll_getup_stand_F", False, "getup"),
     "mm_getup_b": (A + "/Ragdoll/M_ragdoll_getup_stand_B", False, "getup"),
+    # distance-matched transitions (runtime: ffg::LocoTransition): root travel curve + foot plants
+    "mm_run_start": (A + "/Run/M_Neutral_Run_Start_F_Lfoot", False, "transition"),
+    "mm_run_stop_l": (A + "/Run/M_Neutral_Run_Stop_F_Lfoot", False, "transition"),
+    "mm_run_stop_r": (A + "/Run/M_Neutral_Run_Stop_F_Rfoot", False, "transition"),
 }
 # slots of anim_map.json that the overlay re-points (only for clips that were produced)
 MAP = {
     "locomotion": {"walk": "mm_walk", "run": "mm_run", "strafe_l": "mm_strafe_l", "strafe_r": "mm_strafe_r",
-                   "back": "mm_walk_back"},
+                   "back": "mm_walk_back", "run_start": "mm_run_start", "run_stop_l": "mm_run_stop_l",
+                   "run_stop_r": "mm_run_stop_r"},
     "reactions": {"getup": "mm_getup_f", "getup_back": "mm_getup_b"},
 }
 FALLBACK = {"mm_idle": "idle", "mm_walk": "walk", "mm_run": "run", "mm_strafe_l": "strafe_l", "mm_strafe_r": "strafe_r",
@@ -89,10 +94,36 @@ def _ik_rig_for_fighter(force, rep):
     return rig
 
 
+def fix_root_motion_op(rtg, rep):
+    """Point the retargeter's Root Motion op at the real root bones. Left unset it copies the retarget root (the pelvis),
+    so the target root rides at hip height; the in-place clips lock the root to the ref pose and the whole body sank
+    ~90 cm into the floor. Returns True when the op changed (its clips must be retargeted again)."""
+    c = unreal.IKRetargeterController.get_controller(rtg)
+    changed = False
+    for i in range(c.get_num_retarget_ops()):
+        oc = c.get_op_controller(i)
+        if not isinstance(oc, unreal.IKRetargetRootMotionController):
+            continue
+        if str(oc.get_source_root_bone()) != "root" or str(oc.get_target_root_bone()) != "root":
+            oc.set_source_root_bone("root")
+            oc.set_target_root_bone("root")
+            oc.set_target_pelvis_bone("pelvis")
+            st = oc.get_settings()
+            st.set_editor_property("root_motion_source", unreal.RootMotionSource.COPY_FROM_SOURCE_ROOT)
+            st.set_editor_property("root_height_source", unreal.RootMotionHeightSource.COPY_HEIGHT_FROM_SOURCE)
+            oc.set_settings(st)
+            changed = True
+    if changed:
+        EAL.save_loaded_asset(rtg)
+        rep["notes"].append(f"{rtg.get_name()}: root motion op now copies the source root (clips re-retargeted)")
+    return changed
+
+
 def _retargeter(src_rig, tgt_rig, force, rep):
     rtg = _load(RTG)
     if rtg is not None and not force:
         rep["skipped"].append(RTG)
+        rep["_root_fixed"] = fix_root_motion_op(rtg, rep)
         return rtg
     if rtg is None:
         rtg = _tools().create_asset("RTG_UEFN_to_Fighter", RIG_DIR, unreal.IKRetargeter, unreal.IKRetargetFactory())
@@ -110,6 +141,7 @@ def _retargeter(src_rig, tgt_rig, force, rep):
     # match the fighter's retarget pose to the mannequin's A-pose chain by chain (rotations copy 1:1 afterwards)
     c.auto_align_all_bones(T, unreal.RetargetAutoAlignMethod.CHAIN_TO_CHAIN)
     EAL.save_loaded_asset(rtg)
+    fix_root_motion_op(rtg, rep)
     rep["created"].append(RTG)
     ops = [str(c.get_op_name(i)) for i in range(c.get_num_retarget_ops())]
     rep["notes"].append(f"RTG ops: {ops}")
@@ -165,6 +197,22 @@ def _analyse(seq, frames, length, loop):
     return speed, touch, plants, cycles
 
 
+CURVE_FPS = 30
+
+
+def _root_travel(seq, length):
+    """Cumulative ground travel of the root (m) at CURVE_FPS from t = 0 (root motion kept, i.e. force_root_lock off)."""
+    n = int(length * CURVE_FPS) + 1
+    out, d, prev = [], 0.0, None
+    for i in range(n):
+        p = unreal.AnimationLibrary.get_bone_pose_for_time(seq, "root", min(length, i / CURVE_FPS), False).translation
+        if prev is not None:
+            d += math.hypot(p.x - prev.x, p.y - prev.y) / 100.0
+        prev = p
+        out.append(round(d, 4))
+    return out
+
+
 def _getup_trim(seq, length):
     """The active part of a get-up: from the first lift of the head / pelvis off the floor to standing (seconds)."""
     opts = unreal.AnimPoseEvaluationOptions()
@@ -201,7 +249,8 @@ def build(force=False):
         tgt_rig = _ik_rig_for_fighter(force, rep)
         rtg = _retargeter(src_rig, tgt_rig, force, rep)
         EAL.make_directory(OUT_DIR)
-        todo = {k: v for k, v in CLIPS.items() if force or not EAL.does_asset_exist(f"{OUT_DIR}/A_{k}")}
+        redo = force or rep.pop("_root_fixed", False)
+        todo = {k: v for k, v in CLIPS.items() if redo or not EAL.does_asset_exist(f"{OUT_DIR}/A_{k}")}
         for clip, (src, _loop, _kind) in todo.items():
             ad = EAL.find_asset_data(src)
             if not ad.is_valid():
@@ -228,9 +277,12 @@ def build(force=False):
             have.add(clip)
             length = float(seq.get_play_length())
             frames = int(round(length * 60.0))
-            if kind == "gait":
+            travel = None
+            if kind in ("gait", "transition"):
                 seq.set_editor_property("force_root_lock", False)       # measure with the root travelling
                 speed, touch, plants, cycles = _analyse(seq, frames, length, loop)
+                if kind == "transition":
+                    travel = _root_travel(seq, length)
             else:
                 speed, touch, plants, cycles = 0.0, 0.0, {}, 1
             # in place: the native runtime moves the fighter from the sim; the clip must not drag the root
@@ -249,6 +301,11 @@ def build(force=False):
                 row["foot_plants"] = plants
                 rep["notes"].append(f"A_{clip}: {length:.2f}s {cycles} cycles speed {speed:.2f} m/s, L touchdown at {touch:.2f}, "
                                     f"plants {plants}")
+            if kind == "transition":
+                row["foot_plants"] = plants
+                row["curve_fps"] = CURVE_FPS
+                row["root_dist"] = travel
+                rep["notes"].append(f"A_{clip}: {length:.2f}s root travel {travel[-1]:.2f} m, plants {plants}")
             if kind == "getup":
                 t0, t1, lie = _getup_trim(seq, length)
                 row["trim"] = [round(t0, 3), round(t1, 3)]

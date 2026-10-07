@@ -96,6 +96,7 @@ public:
 	HitReactor hits;
 	LandingSpring landing;
 	LocomotionBlender loco;
+	LocoTransition trans;
 
 	void Reset();
 	const AnimRecipe& Update(const DirectorInput& in);

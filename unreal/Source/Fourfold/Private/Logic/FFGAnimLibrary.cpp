@@ -25,6 +25,27 @@ int ClipDef::PlantedAt(int side, float t) const {
 	return 0;
 }
 
+float ClipDef::DistAt(float t) const {
+	if (root_dist.empty()) return 0.0f;
+	const float x = Clampf(t * curve_fps, 0.0f, static_cast<float>(root_dist.size() - 1));
+	const size_t i = static_cast<size_t>(x);
+	if (i + 1 >= root_dist.size()) return root_dist.back();
+	return Lerpf(root_dist[i], root_dist[i + 1], x - static_cast<float>(i));
+}
+
+float ClipDef::TimeAtDist(float d) const {
+	if (root_dist.size() < 2 || curve_fps <= 0.0f) return 0.0f;
+	if (d <= root_dist.front()) return 0.0f;
+	for (size_t i = 1; i < root_dist.size(); ++i) {
+		if (root_dist[i] >= d) {
+			const float a = root_dist[i - 1], b = root_dist[i];
+			const float f = b > a ? (d - a) / (b - a) : 1.0f;
+			return (static_cast<float>(i - 1) + f) / curve_fps;
+		}
+	}
+	return static_cast<float>(root_dist.size() - 1) / curve_fps;
+}
+
 void MoveClips::OverrideWith(const MoveClips& o) {
 	if (!o.startup.empty()) startup = o.startup;
 	if (!o.hold.empty()) hold = o.hold;
@@ -176,6 +197,13 @@ bool AnimLibrary::LoadClipsJson(const std::string& text) {
 				LibReadStr(h, "l", c.hand_l);
 				LibReadStr(h, "r", c.hand_r);
 			}
+			const ff::Value& rd = v["root_dist"];
+			if (rd.is_array()) {
+				c.root_dist.clear();
+				for (const ff::Value& x : rd.as_array())
+					if (x.is_number()) c.root_dist.push_back(static_cast<float>(x.as_float()));
+			}
+			if (v["curve_fps"].is_number() && v["curve_fps"].as_float() > 0.0) c.curve_fps = static_cast<float>(v["curve_fps"].as_float());
 			const ff::Value& fp = v["foot_plants"];
 			if (fp.is_dict()) {
 				LibReadPlants(fp["l"], c.plants[0]);
@@ -206,6 +234,9 @@ bool AnimLibrary::LoadAnimMapJson(const std::string& text) {
 		LibReadStr(lo, "strafe_l", strafe_l);
 		LibReadStr(lo, "strafe_r", strafe_r);
 		LibReadStr(lo, "back", back);
+		LibReadStr(lo, "run_start", run_start);
+		LibReadStr(lo, "run_stop_l", run_stop_l);
+		LibReadStr(lo, "run_stop_r", run_stop_r);
 		const ff::Value& st = lo["stance"];
 		if (st.is_array())
 			for (size_t i = 0; i < 4 && i < st.as_array().size(); ++i)
