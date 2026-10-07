@@ -559,6 +559,10 @@ def _create_mpc(report, force):
         return None
 
 
+# the scanned paving / plaster are pale: under auto exposure they read near-white next to the fighters
+PHOTO_BRIGHTNESS = {"Floor": 0.72, "Plaster": 0.85, "StoneCap": 0.85}
+
+
 def _photo_manifest():
     """SourceArt/Environment/PolyHaven/polyhaven.json (Tools/world/fetch_polyhaven.py) or {} when the sets were not fetched."""
     import json
@@ -637,6 +641,8 @@ def build_all(force, texs, report):
                 scalars["UVScale"] = photo["uv_scale"][slot]
                 scalars["Saturation"] = 1.0
                 scalars["GrimeAmount"] = scalars.get("GrimeAmount", 0.5) * 0.35
+                if slot in PHOTO_BRIGHTNESS:
+                    scalars["Brightness"] = PHOTO_BRIGHTNESS[slot]
             for k, v in scalars.items():
                 MEL.set_material_instance_scalar_parameter_value(mi, k, float(v))
             for k, v in vectors.items():

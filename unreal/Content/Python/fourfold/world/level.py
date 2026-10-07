@@ -267,15 +267,17 @@ class Builder:
             vals = [
                 ("auto_exposure_method", C.enum("AutoExposureMethod", "AEM_BASIC", "AEM_HISTOGRAM")),
                 ("auto_exposure_min_brightness", 0.0), ("auto_exposure_max_brightness", 5.0),
-                ("auto_exposure_bias", 0.3), ("auto_exposure_speed_up", 2.0), ("auto_exposure_speed_down", 1.5),
+                ("auto_exposure_bias", -0.35), ("auto_exposure_speed_up", 2.0), ("auto_exposure_speed_down", 1.5),
                 ("bloom_intensity", 0.55), ("bloom_threshold", 1.0),
                 ("motion_blur_amount", 0.35), ("motion_blur_max", 2.0), ("lens_flare_intensity", 0.0),
                 ("vignette_intensity", 0.32),
                 ("ambient_occlusion_intensity", 0.6), ("ambient_occlusion_radius", 120.0),
                 ("film_toe", 0.6), ("film_shoulder", 0.26), ("film_slope", 0.86),
                 ("white_temp", 6200.0),
-                ("color_saturation", unreal.Vector4(1.05, 1.05, 1.05, 1.0)),
-                ("color_contrast", unreal.Vector4(1.06, 1.06, 1.06, 1.0)),
+                ("color_saturation", unreal.Vector4(1.08, 1.08, 1.08, 1.0)),
+                ("color_contrast", unreal.Vector4(1.12, 1.12, 1.12, 1.0)),
+                ("color_gamma_shadows", unreal.Vector4(0.97, 0.98, 1.02, 1.0)),
+                ("color_gain_highlights", unreal.Vector4(1.02, 0.99, 0.95, 1.0)),
                 ("scene_color_tint", unreal.LinearColor(1.0, 0.985, 0.96, 1.0)),
             ]
             for k, v in vals:
