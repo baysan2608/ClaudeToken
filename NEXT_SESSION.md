@@ -67,38 +67,43 @@ LAYOUT (unreal/)
 - Tools/blender, Tools/vfx, Tools/world, Tools/audio: generators (regenerate assets, never hand-edit outputs).
 - docs/<stream>/: README, API_NOTES, REQUESTS, PROGRESS per stream.
 
-CURRENT STATE (2026-10-07, end of the first Mac session) — details: unreal/docs/QUALITY_PLAN.md, LOCAL_ENV.md
+CURRENT STATE (2026-10-07, second Mac session) - details: unreal/docs/QUALITY_PLAN.md, LOCAL_ENV.md
 - Builds green on UE 5.8.3 + Xcode 27 beta; CoreTests 531/531 (needs cmake: export
-  PATH="$HOME/Library/Python/3.9/bin:$PATH"; FF_COMPILERS=clang++); logic tests 58/58; setup_report clean.
-- Look: SkyAtmosphere + volumetric clouds/fog, fully dynamic Lumen, TSR 75 %, Poly Haven CC0 arena textures
-  (Tools/world/fetch_polyhaven.py, git-ignored), courtyard stripe bug fixed (sun per-pixel transmittance off).
-- Skeleton unit fix: FBX now exported in cm (ff_fbx_export); fighter + 131 clips re-imported (root scale 1).
-- Mocap: Epic Game Animation Sample (~/Documents/Unreal Projects/GameAnimationSample) -> Tools/gasp/
-  migrate_from_gasp.py + setup part `mocap` (walk/run/strafe/back/get-ups; multi-cycle stride-synced gaits).
-- Fighters are MetaHumans (Kellan from GASP: Tools/gasp/migrate_metahuman.py + setup part `metahuman`):
-  all clips retargeted, face/clothing/grooms assembled at runtime, role tints. -FFCharacter=fighter = old one.
-- Physics: hit flinch (PhysicalAnimationComponent), ragdoll knockdowns (pelvis world-driven), pose-snapshot
-  hand-back into trimmed mocap get-ups aligned to the lying body.
-- Perf (Mac game, 1600x900): ~18.4 ms GPU in a duel after the tier-2 tweaks (unaccounted 3.8, Lumen gather 2.5, clouds 1.5, shadows 1.4, fog 0.9); target 16.6 ms.
-- VFX: a parallel session ("Add Niagara Examples Pack to Fourfold") owns unreal/Source/FourfoldFX/**,
-  Content/Python/fourfold/fx/**, Data/fx_config.json, docs/fx/**, QUALITY_PLAN row 6: Niagara element cues
-  (Niagara Examples Pack in Content/NiagaraExamples, git-ignored) then Chaos fracture of stone. If it is still
-  running, coordinate with SendMessage (announce UE runs, commit only your paths with `git commit -o -- paths`).
-- Dev tools: Tools/mac/shot.sh <dir> <secs,...> [game args] = in-engine screenshots (works with a locked
-  screen); game args: -scenario=lab|spar -autoplay=duel, -FFBurst=<tag>:<n>:<dt> -FFBurstQuit=<n> (tags:
-  ragdoll flinch getup getup_ko), -FFLabSpawn=<entry>@<sim s>, -csvCaptureFrames=600 -csvGpuStats
-  -ExecCmds="csvprofile start" (CSV in ~/Library/Application Support/Epic/UnrealEngine/5.8/Saved/Profiling/CSV).
-- Open: owner to choose fighter outfit (bare-chested + training pants suggested / own MetaHuman / keep hoodie).
+  PATH="$HOME/Library/Python/3.9/bin:$PATH"; FF_COMPILERS=clang++); logic tests 60/60; setup_report clean.
+- Look: SkyAtmosphere + volumetric clouds/fog, fully dynamic Lumen, TSR, Poly Haven CC0 arena textures.
+- Perf: the "75 % TSR" never applied (Desktop.Mode=1 + scalability ResolutionQuality=100 -> 100 %, ~18 ms). Now manual
+  75 % default + dynamic resolution 50..100 % (budget = 1000 / frame-rate cap): duel holds 60 fps at ~72-81 %, 0 drops.
+  NOTE: this Mac's saved settings use a 120 fps cap (8.3 ms budget -> 50 % res); for 60 fps measurements pass
+  -FFExec="2:t.MaxFPS 60|2:r.DynamicRes.FrameTimeBudget 16.67". Apple per-pass GPU timings overlap: A/B toggles only.
+- Mocap: GASP gaits / get-ups + distance-matched run start / stop (ffg::LocoTransition). Root fix: retargeted mocap had
+  the root at hip height and sank ~90 cm into the floor whenever a mocap gait played - fixed.
+- Fighters: MetaHumans (Kellan), bare-chested + barefoot (owner's choice), complete body SKM_FF_Body, cargo pants
+  tinted per role. -FFCharacter=fighter = old fighter.
+- Physics: hit flinch, ragdoll knockdowns, get-ups aligned to the lying body.
+- VFX: parallel FX session owns unreal/Source/FourfoldFX/**, Shaders/**, Content/Python/fourfold/fx/**,
+  Data/fx_config.json, docs/fx/**, Tools/vfx/**, QUALITY_PLAN row 6 (Niagara cues + pre-warm, next Chaos fracture).
+  Coordinate with SendMessage ("running UE until hh:mm" / "done"); commit only your paths (`git commit -o -- paths`).
+- Dev tools: Tools/mac/shot.sh <dir> <secs,...> [game args] = in-engine screenshots (locked screen OK); game args:
+  -scenario=lab|spar -autoplay=duel, -FFBurst=<tag>:<n>:<dt> -FFBurstQuit=<n> (tags: ragdoll flinch getup getup_ko
+  loco_start loco_stop), -FFLabSpawn=<entry>@<sim s>, -FFMove="<s>:<x>,<y>|..." (scripted stick, Lab),
+  -FFExec="<s>:<console cmd>|..." (timed commands, e.g. csvprofile frames=300 for in-run A/B), -csvGpuStats;
+  Tools/mac/csv_gpu.py [a.csv [b.csv]] summarises CSVs (unreal/Saved/Profiling/CSV).
+- Owner request (relayed 2026-10-07): everything - move interactivity, physics, HUD, controls, graphics, sound, feel,
+  speed, animation - at AAA level, with the feel of a well-known animated elemental martial-arts series as a quality
+  reference only (100 % original IP). Controls and HUD must be redesigned around elemental moves: very flexible, many
+  different things you can do.
 
 WHAT TO DO (priority order)
-1. Perf to 60 fps on the Mac (16.6 ms, now ~18.4): measure with the CSV profiler; find the 3.8 ms
-   "Unaccounted", clouds / shadow depths; then iOS budget (mobile renderer, MetaHuman LODs / groom cards,
-   no volumetrics).
-2. Locomotion quality: starts / stops / pivots / turn-in-place from GASP (motion matching or clip selection),
-   foot planting check on the MetaHuman, element stances on MetaHuman proportions.
-3. Fighter outfit per the owner's answer; martial-arts strikes still hand-keyed (mocap pack later).
-4. Arena dressing: replace the paper-cutout trees / flat backdrop (Fab/Megascans or CC0 assets).
-5. Sound mix, counter feel, mobile preview, iPhone deploy (`stat unit`).
+1. Locomotion: turn-in-place (GASP Stand_Turn_090/180 L/R with a root-yaw offset so the feet stay planted while the
+   sim facing tracks the target), pivots, walk / strafe starts / stops (8 directions); check foot planting up close.
+2. Outfit: proper loose training pants + waist sash (Blender generator from the MetaHuman body: export SKM_FF_Body
+   FBX, offset field + folds + cuffs, weights copied, import on metahuman_base_skel), per-element sash colour; fix the
+   thin pale seam at the neck base.
+3. Controls + HUD redesign for elemental moves (owner request above): design doc first, then implement.
+4. iOS budget: mobile renderer, MetaHuman LODs / groom cards, no volumetrics, scalability maps iOS levels to
+   50 / 71 / 87 % screen percentage (decide), static vs dynamic lighting for the phone.
+5. Arena dressing: replace the paper-cutout trees / flat backdrop (Fab/Megascans or CC0 assets).
+6. Sound mix, counter feel, iPhone deploy (`stat unit`).
 Work in small verified steps; commit + push after each step; keep docs/QUALITY_PLAN.md current.
 
 CONVENTIONS
