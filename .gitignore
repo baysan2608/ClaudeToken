@@ -3,3 +3,4 @@ build/
 *.import.tmp
 __pycache__/
 *.blend1
+unreal/SourceArt/Environment/PolyHaven/

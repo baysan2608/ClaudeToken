@@ -152,6 +152,10 @@ class Builder:
                                 scale=self._fix_scale(mesh), rot=ent_l.get("rotation", (0, 0, 0)),
                                 folder="Fourfold/Arena" if grp == "arena" else "Fourfold/Scenery")
             if a is not None:
+                if grp != "arena" and not ent_l.get("cast_shadow", False):
+                    # backdrop (halls, tree rows): Lumen traces mesh distance fields for sun shadowing even when cast_shadow
+                    # is off, so the tree rows striped the courtyard with 20 m shadows. Keep them out of DF lighting.
+                    C.set_prop(a.static_mesh_component, "affect_distance_field_lighting", False, self.report, quiet=True)
                 if ent_l["mesh"] in ("SM_Env_Sky", "SM_Env_Ridges"):
                     comp = a.static_mesh_component
                     C.set_prop(comp, "cast_shadow", False, self.report, quiet=True)
@@ -179,7 +183,7 @@ class Builder:
                      ("dynamic_shadow_distance_stationary_light", 3800.0), ("dynamic_shadow_distance_movable_light", 3800.0),
                      ("dynamic_shadow_cascades", 2), ("cascade_distribution_exponent", 2.2), ("cascade_transition_fraction", 0.15),
                      ("light_source_angle", 0.8), ("atmosphere_sun_light", True),
-                     ("cast_cloud_shadows", True), ("cast_shadows_on_clouds", True), ("per_pixel_atmosphere_transmittance", True), ("forward_shading_priority", 1),
+                     ("cast_cloud_shadows", True), ("use_ray_traced_distance_field_shadows", False), ("cast_shadows_on_clouds", True), ("per_pixel_atmosphere_transmittance", True), ("forward_shading_priority", 1),
                      ("use_inset_shadows_for_movable_objects", True)):
             C.set_prop(sc, k, v, rep, quiet=True)
         self.lights["sun"] = sc
@@ -361,6 +365,9 @@ class Builder:
             if label.startswith("FFSolid_") or label in ("FFArena_Floor", "FFArena_PoolBasin"):
                 C.set_prop(comp, "cast_dynamic_shadow", True, rep, quiet=True)
                 C.set_prop(comp, "cast_shadow", True, rep, quiet=True)
+            if label in ("FFArena_Floor", "FFArena_PoolBasin"):
+                # a 34 m zero-thickness plane has no usable distance field
+                C.set_prop(comp, "affect_distance_field_lighting", False, rep, quiet=True)
 
     def save(self):
         try:

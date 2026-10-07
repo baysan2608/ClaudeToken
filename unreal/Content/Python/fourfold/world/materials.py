@@ -559,6 +559,18 @@ def _create_mpc(report, force):
         return None
 
 
+def _photo_manifest():
+    """SourceArt/Environment/PolyHaven/polyhaven.json (Tools/world/fetch_polyhaven.py) or {} when the sets were not fetched."""
+    import json
+    import os
+    p = os.path.join(os.path.dirname(C.project_paths()["textures"].rstrip("/")), "PolyHaven", "polyhaven.json")
+    try:
+        with open(p) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
 def build_all(force, texs, report):
     """texs: {texture name: asset path}.  Returns {slot: MaterialInstanceConstant}."""
     C.make_dirs(C.ENV_ROOT, C.MAT_DIR)
@@ -592,6 +604,7 @@ def build_all(force, texs, report):
         except Exception as e:  # noqa: BLE001
             import traceback
             report["failed"].append({"item": path, "error": f"{e}\n{traceback.format_exc()}"})
+    photo = _photo_manifest()
     instances = {}
     for slot, (master, texset, scalars, vectors) in SLOTS.items():
         name = f"MI_Env_{slot}"
@@ -618,6 +631,12 @@ def build_all(force, texs, report):
                         MEL.set_material_instance_texture_parameter_value(mi, pname, t)
                     else:
                         report["notes"].append(f"{name}: texture T_Env_{texset}_{suffix} missing")
+            scalars = dict(scalars)
+            if slot in photo.get("uv_scale", {}):
+                # photo-scanned set: real-world repeat size, and the procedural grading (desaturate + painted grime) toned down
+                scalars["UVScale"] = photo["uv_scale"][slot]
+                scalars["Saturation"] = 1.0
+                scalars["GrimeAmount"] = scalars.get("GrimeAmount", 0.5) * 0.35
             for k, v in scalars.items():
                 MEL.set_material_instance_scalar_parameter_value(mi, k, float(v))
             for k, v in vectors.items():
