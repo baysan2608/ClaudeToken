@@ -98,6 +98,9 @@ void AnimDirector::AddLocomotion(const ff::ActorView& a, float weight, std::vect
 void AnimDirector::ReactionPose(const DirectorInput& in, const ff::ActorView& a) {
 	const float dt = r_.dt;
 	std::string kind = a.stun_kind.empty() ? "light" : a.stun_kind;
+	const bool early = kind == "knockdown" && in.getup_early;
+	if (early) kind = "getup";   // one get-up phase from the early start through the sim's own get-up (no restart)
+	const std::string getup_key = in.getup_side == 1 && Clip(lib->Reaction("getup_back")) ? "getup_back" : "getup";
 	const bool restarted = in.prev && in.prev->stun > 0.0f && a.stun > in.prev->stun + 0.02f && kind != "getup";
 	if (kind != stun_kind_ || restarted) {
 		stun_kind_ = kind;
@@ -105,13 +108,13 @@ void AnimDirector::ReactionPose(const DirectorInput& in, const ff::ActorView& a)
 		stun_rate_ = 1.0f;
 		++stun_serial_;
 		if (kind == "getup") {
-			const ClipDef* g = Clip(lib->Reaction("getup"));
-			if (g) stun_rate_ = AnimTiming::FitRate(g->duration, a.stun);
+			const ClipDef* g = Clip(lib->Reaction(getup_key));
+			if (g) stun_rate_ = AnimTiming::FitRate(g->Span(), a.stun + (early ? kSimGetupS : 0.0f));
 		}
 	} else {
 		stun_t_ += dt * stun_rate_;
 	}
-	std::string key = kind;
+	std::string key = kind == "getup" ? getup_key : kind;
 	if (kind == "light") {
 		const bool back = a.last_hit_dir.dot(DirSimForward(a.facing)) > 0.3f;
 		key = back ? "light_back" : "light";
@@ -125,7 +128,7 @@ void AnimDirector::ReactionPose(const DirectorInput& in, const ff::ActorView& a)
 		AddLocomotion(a, 1.0f, r_.base, 2);
 		return;
 	}
-	r_.base.push_back({c, AnimTiming::OnceTime(stun_t_, c->duration), 1.0f});
+	r_.base.push_back({c, c->trim0 + AnimTiming::OnceTime(stun_t_, c->Span()), 1.0f});
 	SetKey("react:" + std::to_string(stun_serial_) + ":" + c->name, (kind == "knockdown" || kind == "getup") ? 4.0f : 3.0f);
 }
 

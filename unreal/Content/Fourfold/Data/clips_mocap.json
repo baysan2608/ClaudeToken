@@ -318,7 +318,11 @@
     "r": ""
    },
    "priority": "P0",
-   "technique": "mocap (Game Animation Sample): M_ragdoll_getup_stand_F"
+   "technique": "mocap (Game Animation Sample): M_ragdoll_getup_stand_F",
+   "trim": [
+    0.733,
+    2.533
+   ]
   },
   "mm_getup_b": {
    "asset": "Mocap/A_mm_getup_b",
@@ -333,7 +337,11 @@
     "r": ""
    },
    "priority": "P0",
-   "technique": "mocap (Game Animation Sample): M_ragdoll_getup_stand_B"
+   "technique": "mocap (Game Animation Sample): M_ragdoll_getup_stand_B",
+   "trim": [
+    0.267,
+    2.2
+   ]
   }
  }
 }

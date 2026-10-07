@@ -10,6 +10,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/PoseSnapshot.h"
 #include "Logic/FFGArena.h"
 #include "Logic/FFGSprings.h"
 #include "FourfoldAnimInstance.generated.h"
@@ -50,6 +51,10 @@ struct FFourfoldAnimFrame
 	float GroundSpeed = 0.0f, LocalSpeed = 0.0f;
 	float ModelLift = 0.0f;   // metres
 	bool bReset = false;      // teleport / respawn: drop locks, springs and cross-fades
+	// Physics hand-back (ragdoll / flinch end): cross-fade from this pose instead of the last animated one.
+	TSharedPtr<const FPoseSnapshot, ESPMode::ThreadSafe> BlendFromPose;
+	uint32 BlendFromSerial = 0;
+	float BlendFromTime = 0.35f;
 	ffg::ModelAxes Axes;
 	TSharedPtr<const ffg::ArenaGround, ESPMode::ThreadSafe> Arena;
 };

@@ -14,7 +14,10 @@
 #include "Logic/FFGAnimDirector.h"
 #include "Logic/FFGArena.h"
 
+#include "Animation/PoseSnapshot.h"
 #include "Camera/PlayerCameraManager.h"
+#include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
@@ -51,6 +54,16 @@ struct FFourfoldFighterImpl
 	TSharedPtr<const ffg::ArenaGround, ESPMode::ThreadSafe> Arena;
 	const ff::ArenaView* ArenaSource = nullptr;
 	FString AnimDebug;
+	// physical reactions
+	enum class EPhys : uint8 { Off, Flinch, Ragdoll };
+	EPhys Phys = EPhys::Off;
+	float PhysT = 0.0f;
+	float FlinchW = 0.0f;
+	bool bGetupEarly = false;
+	int32 GetupSide = 0;
+	std::string PrevStunKind;
+	uint32 BlendFromSerial = 0;
+	TSharedPtr<const FPoseSnapshot, ESPMode::ThreadSafe> BlendFrom;
 };
 
 namespace FourfoldFighterUtil
@@ -169,6 +182,16 @@ void AFourfoldFighter::SetupBody()
 	}
 	BodyMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	BodyMesh->SetAnimInstanceClass(UFourfoldAnimInstance::StaticClass());
+
+	// Physical reactions need the physics asset's bodies; collision stays off until a reaction switches it on.
+	if (Mesh->GetPhysicsAsset() && !PhysAnim)
+	{
+		PhysAnim = NewObject<UPhysicalAnimationComponent>(this, TEXT("PhysAnim"));
+		PhysAnim->RegisterComponent();
+		PhysAnim->SetSkeletalMeshComponent(BodyMesh);
+		UE_LOG(LogFourfold, Log, TEXT("Fighter %d: physics asset %s (%d bodies) - physical reactions on"), SimActorId,
+		       *Mesh->GetPhysicsAsset()->GetName(), Mesh->GetPhysicsAsset()->SkeletalBodySetups.Num());
+	}
 
 	// One dynamic material instance per slot, tinted with the role palette.
 	BodyMaterials.Reset();
@@ -394,6 +417,9 @@ void AFourfoldFighter::DriveAnimation(const FFourfoldFrame& Frame, const ff::Act
 	}
 	UFourfoldSimSubsystem* Sim = UFourfoldSimSubsystem::Get(this);
 	FFourfoldFighterImpl& S = *Impl;
+	bool bPhysHit = false;
+	FVector PhysHitDir = FVector::ForwardVector;
+	float PhysHitStrength = 0.5f;
 
 	// Smoothed ground velocity / acceleration in the fighter's own frame (sim ticks are 60 Hz, frames vary).
 	const ff::Vec3 Raw = S.bHaveMeasure ? S.VelMeasured : ff::Vec3(Cur.vel.x, 0.0f, Cur.vel.z);
@@ -518,6 +544,9 @@ void AFourfoldFighter::DriveAnimation(const FFourfoldFrame& Frame, const ff::Act
 				R.dir = DirToModel(Dir);
 				R.strength = FMath::Clamp(0.35f + Dmg / 22.0f + Bal / 70.0f, 0.3f, 1.25f);
 				R.knockdown = E.data["result"].as_string() == "knockdown";
+				PhysHitDir = FF::DirToUE(Dir).GetSafeNormal();
+				PhysHitStrength = R.strength;
+				bPhysHit = true;
 				R.heavy = Cur.stun_kind == "heavy";
 				In.events.push_back(R);
 				bHitEvent = true;
@@ -576,6 +605,9 @@ void AFourfoldFighter::DriveAnimation(const FFourfoldFrame& Frame, const ff::Act
 	{
 		S.Director.Reset();
 	}
+	UpdatePhysicalReactions(Cur, AnimDt, bPhysHit, PhysHitDir, PhysHitStrength);
+	In.getup_early = S.bGetupEarly && Cur.stun_kind == "knockdown";
+	In.getup_side = S.GetupSide;
 	const ffg::AnimRecipe& R = S.Director.Update(In);
 	S.AnimDebug = FString(UTF8_TO_TCHAR(R.debug.c_str()));
 
@@ -651,6 +683,8 @@ void AFourfoldFighter::DriveAnimation(const FFourfoldFrame& Frame, const ff::Act
 	F.bReset = S.bResetAnim;
 	F.Axes = S.Director.axes;
 	F.Arena = S.Arena;
+	F.BlendFromPose = S.BlendFrom;
+	F.BlendFromSerial = S.BlendFromSerial;
 	Anim->SetFrame(F);
 	S.bResetAnim = false;
 }
@@ -753,4 +787,169 @@ void AFourfoldFighter::UpdateFallbackPose(const ff::ActorView& Actor, float Dt)
 	Pitch(FallbackParts[0], -S.Lean);
 	// Knockdown: the whole stand-in tips over backwards (the yaw stays the sim facing set this frame).
 	SetActorRotation(FRotator(FMath::RadiansToDegrees(double(S.Tilt)), GetActorRotation().Yaw, 0.0));
+}
+
+// ---------------------------------------------------------------------------------------------- physical reactions
+
+namespace FourfoldPhys
+{
+	// Tuning (owner: game). Strengths are physical-animation motor gains; velocities are cm/s velocity changes.
+	constexpr float FlinchOrient = 900.0f, FlinchAngVel = 90.0f;
+	constexpr float FlinchFade = 2.4f;                 // blend weight per second back to the animation
+	constexpr float RagdollOrient = 140.0f, RagdollAngVel = 14.0f;   // a little muscle tone, not a sack
+	constexpr float RagdollMinFall = 0.55f;            // seconds of fall before the get-up may take over
+	constexpr float RagdollMaxTime = 3.0f;
+	constexpr float GetupLead = 0.6f;                  // start the get-up when this much knockdown is left
+
+	static FName FirstBody(USkeletalMeshComponent* M, std::initializer_list<const TCHAR*> Names)
+	{
+		for (const TCHAR* N : Names)
+		{
+			if (M->GetBodyInstance(FName(N)))
+			{
+				return FName(N);
+			}
+		}
+		return NAME_None;
+	}
+}
+
+void AFourfoldFighter::SetBodyPhysics(bool bOn)
+{
+	if (bOn)
+	{
+		BodyMesh->SetCollisionProfileName(TEXT("Ragdoll"));
+		BodyMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	}
+	else
+	{
+		BodyMesh->SetAllBodiesSimulatePhysics(false);
+		BodyMesh->SetAllBodiesPhysicsBlendWeight(0.0f);
+		BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void AFourfoldFighter::UpdatePhysicalReactions(const ff::ActorView& Cur, float Dt, bool bHit, const FVector& HitDir, float Strength)
+{
+	using namespace FourfoldPhys;
+	FFourfoldFighterImpl& S = *Impl;
+	const bool bDown = Cur.stun > 0.0f && Cur.stun_kind == "knockdown";
+	const bool bNewKnockdown = bDown && S.PrevStunKind != "knockdown";
+	S.PrevStunKind = Cur.stun_kind;
+	if (!(Cur.stun > 0.0f && (Cur.stun_kind == "knockdown" || Cur.stun_kind == "getup")))
+	{
+		S.bGetupEarly = false;
+		S.GetupSide = 0;
+	}
+	const UFourfoldSettingsSubsystem* Settings = UFourfoldSettingsSubsystem::Get(this);
+	const bool bAllowed = PhysAnim && BodyMesh->GetPhysicsAsset() && !(Settings && Settings->GetEffectiveQuality() == 0);
+	if (!bAllowed)
+	{
+		if (S.Phys != FFourfoldFighterImpl::EPhys::Off)
+		{
+			SetBodyPhysics(false);
+			S.Phys = FFourfoldFighterImpl::EPhys::Off;
+		}
+		return;
+	}
+	if (Dt <= 0.0f)
+	{
+		return;   // paused / hit-stop: physics holds as it is
+	}
+	const FVector Dir2D = HitDir.GetSafeNormal2D().IsNearlyZero() ? -GetActorForwardVector() : HitDir.GetSafeNormal2D();
+
+	// ---- start a ragdoll fall on a fresh knockdown
+	if (bNewKnockdown && S.Phys != FFourfoldFighterImpl::EPhys::Ragdoll)
+	{
+		SetBodyPhysics(true);
+		FPhysicalAnimationData D;
+		D.bIsLocalSimulation = true;
+		D.OrientationStrength = RagdollOrient;
+		D.AngularVelocityStrength = RagdollAngVel;
+		PhysAnim->ApplyPhysicalAnimationSettingsBelow(TEXT("pelvis"), D, true);
+		BodyMesh->SetAllBodiesBelowSimulatePhysics(TEXT("pelvis"), true, true);
+		BodyMesh->SetAllBodiesBelowPhysicsBlendWeight(TEXT("pelvis"), 1.0f, false, true);
+		const float Push = 260.0f + 260.0f * FMath::Clamp(Strength, 0.3f, 1.25f);
+		BodyMesh->SetAllPhysicsLinearVelocity(Dir2D * Push + FVector(0.0, 0.0, 110.0), true);
+		const FName Chest = FirstBody(BodyMesh, {TEXT("spine_04"), TEXT("spine_03"), TEXT("spine_05"), TEXT("spine_02")});
+		if (Chest != NAME_None)
+		{
+			BodyMesh->AddImpulse(Dir2D * 180.0f + FVector(0.0, 0.0, 60.0), Chest, true);   // the chest leads: the body tips
+		}
+		S.Phys = FFourfoldFighterImpl::EPhys::Ragdoll;
+		S.PhysT = 0.0f;
+		S.bGetupEarly = false;
+		UE_LOG(LogFourfold, Log, TEXT("Fighter %d: ragdoll fall (push %.0f cm/s, knockdown %.2fs)"), SimActorId, Push, Cur.stun);
+		return;
+	}
+
+	switch (S.Phys)
+	{
+	case FFourfoldFighterImpl::EPhys::Off:
+	case FFourfoldFighterImpl::EPhys::Flinch:
+		if (bHit && !bDown && Cur.stun_kind != "getup")
+		{
+			// ---- upper-body flinch: motors hold the animation, the impulse knocks the chest / head off it
+			if (S.Phys == FFourfoldFighterImpl::EPhys::Off)
+			{
+				SetBodyPhysics(true);
+				FPhysicalAnimationData D;
+				D.bIsLocalSimulation = true;
+				D.OrientationStrength = FlinchOrient;
+				D.AngularVelocityStrength = FlinchAngVel;
+				PhysAnim->ApplyPhysicalAnimationSettingsBelow(TEXT("spine_01"), D, true);
+				BodyMesh->SetAllBodiesBelowSimulatePhysics(TEXT("spine_01"), true, true);
+			}
+			S.Phys = FFourfoldFighterImpl::EPhys::Flinch;
+			S.FlinchW = FMath::Max(S.FlinchW, FMath::Clamp(0.45f + 0.35f * Strength, 0.4f, 0.9f));
+			const float Kick = 160.0f + 260.0f * FMath::Clamp(Strength, 0.3f, 1.25f);
+			const FName Chest = FirstBody(BodyMesh, {TEXT("spine_04"), TEXT("spine_03"), TEXT("spine_05"), TEXT("spine_02")});
+			const FName Head = FirstBody(BodyMesh, {TEXT("head"), TEXT("neck_02"), TEXT("neck_01")});
+			if (Chest != NAME_None)
+			{
+				BodyMesh->AddImpulse(HitDir * Kick, Chest, true);
+			}
+			if (Head != NAME_None)
+			{
+				BodyMesh->AddImpulse(HitDir * Kick * 0.7f, Head, true);
+			}
+		}
+		if (S.Phys == FFourfoldFighterImpl::EPhys::Flinch)
+		{
+			BodyMesh->SetAllBodiesBelowPhysicsBlendWeight(TEXT("spine_01"), S.FlinchW, false, true);
+			S.FlinchW -= Dt * FlinchFade;
+			if (S.FlinchW <= 0.0f)
+			{
+				S.FlinchW = 0.0f;
+				SetBodyPhysics(false);
+				S.Phys = FFourfoldFighterImpl::EPhys::Off;
+			}
+		}
+		break;
+	case FFourfoldFighterImpl::EPhys::Ragdoll:
+	{
+		S.PhysT += Dt;
+		const bool bLanded = S.PhysT >= RagdollMinFall;
+		const bool bTime = (bDown && Cur.stun <= GetupLead) || !bDown;
+		if ((bLanded && bTime) || S.PhysT >= RagdollMaxTime)
+		{
+			// ---- hand the body back: snapshot the simulated pose, pick the get-up side, blend into the clip
+			TSharedPtr<FPoseSnapshot, ESPMode::ThreadSafe> Snap = MakeShared<FPoseSnapshot, ESPMode::ThreadSafe>();
+			BodyMesh->SnapshotPose(*Snap);
+			const FVector Pelvis = BodyMesh->GetBoneLocation(TEXT("pelvis"));
+			const FVector HeadP = BodyMesh->GetBoneLocation(TEXT("head"));
+			const FVector Right = BodyMesh->GetBoneLocation(TEXT("thigh_r")) - BodyMesh->GetBoneLocation(TEXT("thigh_l"));
+			const FVector BodyFwd = FVector::CrossProduct(Right.GetSafeNormal(), (HeadP - Pelvis).GetSafeNormal());
+			S.GetupSide = BodyFwd.Z > 0.0 ? 1 : 0;   // chest facing the sky = lying on the back
+			SetBodyPhysics(false);
+			S.BlendFrom = Snap;
+			++S.BlendFromSerial;
+			S.bGetupEarly = bDown;
+			S.Phys = FFourfoldFighterImpl::EPhys::Off;
+			UE_LOG(LogFourfold, Log, TEXT("Fighter %d: ragdoll -> get-up (%s) after %.2fs, knockdown left %.2fs"), SimActorId,
+			       S.GetupSide == 1 ? TEXT("back") : TEXT("front"), S.PhysT, bDown ? Cur.stun : 0.0f);
+		}
+		break;
+	}
+	}
 }

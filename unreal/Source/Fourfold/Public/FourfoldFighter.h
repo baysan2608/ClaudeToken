@@ -15,6 +15,7 @@ class UMaterialInstanceDynamic;
 class UStaticMeshComponent;
 class UStaticMesh;
 class UMaterialInterface;
+class UPhysicalAnimationComponent;
 
 UCLASS()
 class FOURFOLD_API AFourfoldFighter : public AActor
@@ -53,9 +54,14 @@ protected:
 	void UpdateFallbackPose(const ff::ActorView& Actor, float Dt);
 	void UpdateMaterials(const ff::ActorView& Actor, float Dt);
 	void DriveAnimation(const FFourfoldFrame& Frame, const ff::ActorView& Cur, const ff::ActorView& Prev, float AnimDt);
+	/** Physical reactions (presentation only, the sim stays the authority): an upper-body flinch on hits, a ragdoll fall
+	 *  on knockdowns handed back to the get-up clip through a pose snapshot. */
+	void UpdatePhysicalReactions(const ff::ActorView& Cur, float Dt, bool bHit, const FVector& HitDir, float Strength);
+	void SetBodyPhysics(bool bOn);
 
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USceneComponent> Root;
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USkeletalMeshComponent> BodyMesh;
+	UPROPERTY(Transient) TObjectPtr<UPhysicalAnimationComponent> PhysAnim;
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") int32 SimActorId = -1;
 	UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> BodyMaterials;
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> FallbackParts;

@@ -80,11 +80,16 @@ struct DirectorInput {
 	Vec3 look_target;                      // model space (metres)
 	bool look_is_threat = false;
 	std::vector<ReactionEvent> events;     // this actor's reactions this frame
+	// Physical knockdown (presentation): the ragdoll has landed, so the get-up starts while the sim still counts the
+	// knockdown down; it then spans the rest of the knockdown + the sim's get-up. side 1 = lying on the back.
+	bool getup_early = false;
+	int getup_side = 0;
 };
 
 class AnimDirector {
 public:
 	static constexpr float kSimDt = 1.0f / 60.0f;
+	static constexpr float kSimGetupS = 0.75f;   // the sim's get-up stun after a knockdown (CombatWorld::_timers)
 
 	const AnimLibrary* lib = nullptr;
 	ModelAxes axes;

@@ -152,6 +152,13 @@ class Builder:
                                 scale=self._fix_scale(mesh), rot=ent_l.get("rotation", (0, 0, 0)),
                                 folder="Fourfold/Arena" if grp == "arena" else "Fourfold/Scenery")
             if a is not None:
+                if ent_l["mesh"] not in ("SM_Env_Floor", "SM_Env_PoolBasin", "SM_Env_MetalPlate", "SM_Env_Ground", "SM_Env_Yard"):
+                    # decoration (banners, lanterns, rings, water surface, scenery): its single box collider would
+                    # catch ragdolls in mid-air; only the walkable surfaces and the solids collide
+                    try:
+                        a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+                    except Exception as e:  # noqa: BLE001
+                        self.report["notes"].append(f"{ent_l['actor']}: collision not changed ({e})")
                 if grp != "arena" and not ent_l.get("cast_shadow", False):
                     # backdrop (halls, tree rows): Lumen traces mesh distance fields for sun shadowing even when cast_shadow
                     # is off, so the tree rows striped the courtyard with 20 m shadows. Keep them out of DF lighting.
@@ -183,7 +190,7 @@ class Builder:
                      ("dynamic_shadow_distance_stationary_light", 3800.0), ("dynamic_shadow_distance_movable_light", 3800.0),
                      ("dynamic_shadow_cascades", 2), ("cascade_distribution_exponent", 2.2), ("cascade_transition_fraction", 0.15),
                      ("light_source_angle", 0.8), ("atmosphere_sun_light", True),
-                     ("cast_cloud_shadows", True), ("use_ray_traced_distance_field_shadows", False), ("cast_shadows_on_clouds", True),
+                     ("cast_cloud_shadows", False), ("use_ray_traced_distance_field_shadows", False),   # cloud shadow map: 9 ms GPU ("cast_shadows_on_clouds", True),
                      # per-pixel transmittance banded the courtyard floor into long dark stripes (arena sits on the planet top)
                      ("per_pixel_atmosphere_transmittance", False), ("forward_shading_priority", 1),
                      ("use_inset_shadows_for_movable_objects", True)):
@@ -198,7 +205,8 @@ class Builder:
         try:
             cl = self.spawn(unreal.VolumetricCloud, (0, 0, 0), label="FF_Clouds", folder="Fourfold/Lighting")
             cc = cl.get_component_by_class(unreal.VolumetricCloudComponent)
-            for k, v in (("layer_bottom_altitude", 3.5), ("layer_height", 6.0), ("view_sample_count_scale", 1.0)):
+            for k, v in (("layer_bottom_altitude", 3.5), ("layer_height", 4.0), ("view_sample_count_scale", 0.5),
+                         ("reflection_view_sample_count_scale_value", 0.25), ("shadow_view_sample_count_scale", 0.25)):
                 C.set_prop(cc, k, v, rep, quiet=True)
         except Exception as e:  # noqa: BLE001
             rep["notes"].append(f"volumetric clouds not created: {e}")
@@ -264,7 +272,6 @@ class Builder:
                 ("motion_blur_amount", 0.35), ("motion_blur_max", 2.0), ("lens_flare_intensity", 0.0),
                 ("vignette_intensity", 0.32),
                 ("ambient_occlusion_intensity", 0.6), ("ambient_occlusion_radius", 120.0),
-                ("lumen_final_gather_quality", 2.0), ("lumen_reflection_quality", 2.0), ("lumen_scene_lighting_quality", 2.0),
                 ("film_toe", 0.6), ("film_shoulder", 0.26), ("film_slope", 0.86),
                 ("white_temp", 6200.0),
                 ("color_saturation", unreal.Vector4(1.05, 1.05, 1.05, 1.0)),

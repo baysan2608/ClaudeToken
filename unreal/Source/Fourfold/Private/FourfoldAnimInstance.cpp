@@ -80,6 +80,8 @@ struct FFourfoldAnimProxy final : public FAnimInstanceProxy
 	TArray<FQuat> AccQ;
 	TArray<FVector> AccT, AccS;
 	uint32 LastTransitionSerial = 0;
+	uint32 LastBlendFromSerial = 0;
+	TArray<ffg::Xform> FromPose;
 	ffg::InertialBlend Inertial;
 	ffg::FootPlanter Planter;
 	ffg::LookAt Look;
@@ -147,7 +149,34 @@ struct FFourfoldAnimProxy final : public FAnimInstanceProxy
 				}
 				LastClip.Reset();
 			}
-			if (Frame.TransitionSerial != LastTransitionSerial)
+			if (Frame.BlendFromPose.IsValid() && Frame.BlendFromSerial != LastBlendFromSerial)
+			{
+				// Physics handed the body back: blend from the simulated pose (by bone name; missing bones keep the clip).
+				LastBlendFromSerial = Frame.BlendFromSerial;
+				LastTransitionSerial = Frame.TransitionSerial;
+				const FPoseSnapshot& Snap = *Frame.BlendFromPose;
+				TMap<FName, int32> ByName;
+				for (int32 b = 0; b < Snap.BoneNames.Num(); ++b)
+				{
+					ByName.Add(Snap.BoneNames[b], b);
+				}
+				const FBoneContainer& BCont = Pose.GetBoneContainer();
+				const FReferenceSkeleton& RefSkel = BCont.GetReferenceSkeleton();
+				FromPose = Local;
+				for (int32 i = 0; i < N; ++i)
+				{
+					const int32 MeshIdx = BCont.MakeMeshPoseIndex(FCompactPoseBoneIndex(i)).GetInt();
+					const int32* Si = MeshIdx >= 0 ? ByName.Find(RefSkel.GetBoneName(MeshIdx)) : nullptr;
+					if (Si && Snap.LocalTransforms.IsValidIndex(*Si))
+					{
+						const FTransform& T = Snap.LocalTransforms[*Si];
+						FromPose[i].q = FourfoldAnimRt::ToQ(T.GetRotation());
+						FromPose[i].t = FourfoldAnimRt::ToV(T.GetTranslation(), FourfoldAnimRt::CmToM);
+					}
+				}
+				Inertial.Start(FromPose.GetData(), Local.GetData(), size_t(N), Frame.BlendFromTime);
+			}
+			else if (Frame.TransitionSerial != LastTransitionSerial)
 			{
 				if (LastClip.Num() == N)
 				{

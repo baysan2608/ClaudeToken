@@ -8,18 +8,19 @@
   "back": "mm_walk_back"
  },
  "reactions": {
-  "getup": "mm_getup_f"
+  "getup": "mm_getup_f",
+  "getup_back": "mm_getup_b"
  },
  "fallbacks": {
   "clips": {
-   "mm_idle": "idle",
-   "mm_walk": "walk",
-   "mm_run": "run",
    "mm_strafe_l": "strafe_l",
-   "mm_strafe_r": "strafe_r",
+   "mm_idle": "idle",
+   "mm_run": "run",
    "mm_walk_back": "walk_back",
+   "mm_walk": "walk",
    "mm_getup_f": "getup",
-   "mm_getup_b": "getup"
+   "mm_getup_b": "getup",
+   "mm_strafe_r": "strafe_r"
   }
  }
 }

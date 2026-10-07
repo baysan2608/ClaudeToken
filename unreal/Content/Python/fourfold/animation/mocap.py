@@ -41,14 +41,14 @@ CLIPS = {
     "mm_strafe_l": (A + "/Walk/M_Neutral_Walk_Loop_LL", True, "gait"),
     "mm_strafe_r": (A + "/Walk/M_Neutral_Walk_Loop_RR", True, "gait"),
     "mm_walk_back": (A + "/Walk/M_Neutral_Walk_Loop_B", True, "gait"),
-    "mm_getup_f": (A + "/Ragdoll/M_ragdoll_getup_stand_F", False, "oneshot"),
-    "mm_getup_b": (A + "/Ragdoll/M_ragdoll_getup_stand_B", False, "oneshot"),
+    "mm_getup_f": (A + "/Ragdoll/M_ragdoll_getup_stand_F", False, "getup"),
+    "mm_getup_b": (A + "/Ragdoll/M_ragdoll_getup_stand_B", False, "getup"),
 }
 # slots of anim_map.json that the overlay re-points (only for clips that were produced)
 MAP = {
     "locomotion": {"walk": "mm_walk", "run": "mm_run", "strafe_l": "mm_strafe_l", "strafe_r": "mm_strafe_r",
                    "back": "mm_walk_back"},
-    "reactions": {"getup": "mm_getup_f"},
+    "reactions": {"getup": "mm_getup_f", "getup_back": "mm_getup_b"},
 }
 FALLBACK = {"mm_idle": "idle", "mm_walk": "walk", "mm_run": "run", "mm_strafe_l": "strafe_l", "mm_strafe_r": "strafe_r",
             "mm_walk_back": "walk_back", "mm_getup_f": "getup", "mm_getup_b": "getup"}
@@ -165,6 +165,23 @@ def _analyse(seq, frames, length, loop):
     return speed, touch, plants, cycles
 
 
+def _getup_trim(seq, length):
+    """The active part of a get-up: from the first lift of the head / pelvis off the floor to standing (seconds)."""
+    opts = unreal.AnimPoseEvaluationOptions()
+    opts.set_editor_property("optional_skeletal_mesh", _load(TGT_MESH))
+    n = int(length * 30) + 1
+    ph, hh = [], []
+    for i in range(n):
+        pose = unreal.AnimPoseExtensions.get_anim_pose_at_time(seq, min(length, i / 30.0), opts)
+        ph.append(unreal.AnimPoseExtensions.get_bone_pose(pose, "pelvis", unreal.AnimPoseSpaces.WORLD).translation.z)
+        hh.append(unreal.AnimPoseExtensions.get_bone_pose(pose, "head", unreal.AnimPoseSpaces.WORLD).translation.z)
+    p0, h0, p1, h1 = min(ph[:15]), min(hh[:15]), ph[-1], hh[-1]
+    frac = [max((ph[i] - p0) / max(p1 - p0, 1.0), (hh[i] - h0) / max(h1 - h0, 1.0)) for i in range(n)]
+    i0 = next((i for i in range(n) if frac[i] > 0.06), 0)
+    i1 = next((i for i in range(i0, n) if ph[i] >= p0 + 0.97 * (p1 - p0) and hh[i] >= h0 + 0.97 * (h1 - h0)), n - 1)
+    return max(0.0, (i0 - 2) / 30.0), min(length, (i1 + 3) / 30.0)
+
+
 def build(force=False):
     rep = {"created": [], "skipped": [], "failed": [], "notes": []}
     try:
@@ -223,6 +240,9 @@ def build(force=False):
                 row["foot_plants"] = plants
                 rep["notes"].append(f"A_{clip}: {length:.2f}s {cycles} cycles speed {speed:.2f} m/s, L touchdown at {touch:.2f}, "
                                     f"plants {plants}")
+            if kind == "getup":
+                row["trim"] = [round(v, 3) for v in _getup_trim(seq, length)]
+                rep["notes"].append(f"A_{clip}: get-up active part {row['trim']}")
             rows[clip] = row
         data = _data_dir()
         with open(os.path.join(data, "clips_mocap.json"), "w") as f:
