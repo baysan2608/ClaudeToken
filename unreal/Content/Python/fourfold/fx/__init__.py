@@ -138,6 +138,9 @@ def _texture(name):
     if not name:
         return None
     path = name if name.startswith("/") else f"{spec.TEXTURE_DIR}/{name}"
+    if path.startswith("/Engine/"):
+        # EditorAssetLibrary.does_asset_exist reports False for engine content: load it directly.
+        return unreal.load_asset(path)
     return unreal.load_asset(path) if EAL.does_asset_exist(path) else None
 
 
