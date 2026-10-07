@@ -36,10 +36,16 @@ static TAutoConsoleVariable<int32> CVarFourfoldFxPrewarm(TEXT("ff.fx.Prewarm"), 
 	TEXT("Fourfold effects: pre-warm once the scenario is in view, hidden behind the floor on the camera's view ray, so ")
 	TEXT("first uses mid-fight do not hitch on pipeline (PSO) / shader creation. Bits: 1 = play each Niagara cue system ")
 	TEXT("once (small), 2 = draw every FX material and static FX mesh for a few frames. 0 = off (A/B)."), ECVF_Default);
+static TAutoConsoleVariable<int32> CVarFourfoldFxDebris(TEXT("ff.fx.Debris"), 1,
+	TEXT("Fourfold effects: 1 = broken stones / walls throw Chaos physics pieces (visual only), 0 = procedural chips."),
+	ECVF_Default);
 static TAutoConsoleVariable<float> CVarFourfoldFxShowcase(TEXT("ff.fx.Showcase"), 0.0f,
 	TEXT("Fourfold effects: N > 0 = every N seconds (the first one N seconds after switching it on) play the next cue of ")
 	TEXT("a fixed list (blast, stone, metal, glass, ice, lightning, sand, water, steam, magma, fire cone, plant) 3 m ")
 	TEXT("beyond the first fighter through the normal event path (look checks and screenshots; the log names each cue)."),
+	ECVF_Default);
+static TAutoConsoleVariable<FString> CVarFourfoldFxShowcaseFilter(TEXT("ff.fx.ShowcaseFilter"), TEXT(""),
+	TEXT("Fourfold effects: only showcase cues whose name contains this text (e.g. break, burst/stone); empty = all."),
 	ECVF_Default);
 static TAutoConsoleVariable<FString> CVarFourfoldFxShowcaseShots(TEXT("ff.fx.ShowcaseShots"), TEXT(""),
 	TEXT("Fourfold effects: list of seconds (0.1|0.5) after each showcase cue (and after the pre-warm) at which to save ")
@@ -105,9 +111,21 @@ namespace
 	{
 		static const char* const kCues[][2] = {{"burst", "blast"}, {"burst", "stone"}, {"burst", "metal"}, {"burst", "glass"},
 			{"burst", "ice"}, {"burst", "lightning"}, {"burst", "sand"}, {"burst", "water"}, {"burst", "steam"},
-			{"erupt", "magma"}, {"cone", "flame"}, {"erupt", "plant"}};
+			{"erupt", "magma"}, {"cone", "flame"}, {"erupt", "plant"}, {"break", "rock"}, {"break", "wall"}};
 		constexpr int32 kNum = int32(sizeof(kCues) / sizeof(kCues[0]));
-		const char* const* Cue = kCues[Index % kNum];
+		// ff.fx.ShowcaseFilter: the Index-th cue among those whose "fx/mat" name contains the filter
+		const FString Filter = CVarFourfoldFxShowcaseFilter.GetValueOnGameThread();
+		int32 Matches[kNum];
+		int32 NumMatches = 0;
+		for (int32 i = 0; i < kNum; ++i)
+		{
+			const FString N = FString(UTF8_TO_TCHAR(kCues[i][0])) + TEXT("/") + UTF8_TO_TCHAR(kCues[i][1]);
+			if (Filter.IsEmpty() || N.Contains(Filter))
+			{
+				Matches[NumMatches++] = i;
+			}
+		}
+		const char* const* Cue = kCues[NumMatches > 0 ? Matches[Index % NumMatches] : Index % kNum];
 		ffx::Vec3 Fwd(In.cam.fwd.x, 0.0f, In.cam.fwd.z);
 		Fwd = ffx::Norm(Fwd, ffx::Vec3(0.0f, 0.0f, -1.0f));
 		const ffx::Vec3 Right(-Fwd.z, 0.0f, Fwd.x);
@@ -116,6 +134,21 @@ namespace
 		ffx::Vec3 At = A ? A->pos + Fwd * 3.0f : In.cam.pos + Fwd * 6.0f;
 		At.y = ffx::GroundUnder(In.arena, ffx::Vec3(At.x, At.y + 2.0f, At.z)) + 1.0f;
 		const bool bCone = FCStringAnsi::Strcmp(Cue[0], "cone") == 0;
+		OutName = FString(UTF8_TO_TCHAR(Cue[0])) + TEXT("/") + UTF8_TO_TCHAR(Cue[1]);
+		if (FCStringAnsi::Strcmp(Cue[0], "break") == 0)
+		{
+			// a stone (1 m up, falling) or a wall breaking into physics debris with no sim body behind it
+			const bool bWall = FCStringAnsi::Strcmp(Cue[1], "wall") == 0;
+			ff::Dict B;
+			B.set("kind", ff::Value(Cue[1]));
+			B.set("pos", ff::Value(bWall ? ffx::Vec3(At.x, At.y - 1.0f, At.z) : At));
+			B.set("yaw", ff::Value(std::atan2(Fwd.x, Fwd.z)));
+			B.set("seed", ff::Value(Index));
+			ff::Event E;
+			E.type = "fx_test_break";
+			E.data = ff::Value(B);
+			return E;
+		}
 		ff::Dict D;
 		D.set("fx", ff::Value(Cue[0]));
 		D.set("mat", ff::Value(Cue[1]));
@@ -129,7 +162,6 @@ namespace
 		ff::Event E;
 		E.type = "fx";
 		E.data = ff::Value(D);
-		OutName = FString(UTF8_TO_TCHAR(Cue[0])) + TEXT("/") + UTF8_TO_TCHAR(Cue[1]);
 		return E;
 	}
 }
@@ -262,6 +294,7 @@ void UFourfoldFxSubsystem::SetEnabled(bool bInEnabled)
 
 void UFourfoldFxSubsystem::OnScenarioLoaded(const FString& ScenarioId)
 {
+	bDebrisArenaDirty = true;
 	if (Impl)
 	{
 		Impl->Director.Reset();
@@ -298,7 +331,14 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 	if (Sim && Sim->HasScenario())
 	{
 		In.arena = &Sim->GetArena();
+		if (bDebrisArenaDirty)
+		{
+			FxActor->BuildDebrisArena(Sim->GetArena());
+			bDebrisArenaDirty = false;
+		}
 	}
+	In.physicsDebris = CVarFourfoldFxDebris.GetValueOnGameThread() != 0 && FxActor->IsDebrisReady();
+	In.debrisImpacts = FxActor->GetDebrisImpacts();
 	// camera (sim space)
 	APlayerCameraManager* Cam = World ? UGameplayStatics::GetPlayerCameraManager(World, 0) : nullptr;
 	if (Cam)
@@ -404,6 +444,7 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 	}
 
 	const ffx::DrawList& List = Impl->Director.Update(In);
+	FxActor->ClearDebrisImpacts();   // consumed (new hits arrive during this frame's physics)
 	FxActor->Apply(List, Sim, bNiagara);
 
 	Impl->LastUpdateMs = (FPlatformTime::Seconds() - T0) * 1000.0;

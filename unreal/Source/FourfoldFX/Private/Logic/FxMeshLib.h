@@ -24,6 +24,7 @@
 #include "FxMesh.h"
 
 #include <cstdint>
+#include <vector>
 
 namespace ffx {
 
@@ -55,6 +56,8 @@ void Prewarm();
 // Uncached builders (views that own their geometry).
 void BuildCrystal(MeshData& m, uint32_t seed, CrystalMode mode);
 void BuildWall(MeshData& m, uint32_t seed);
+// The Wall's five blocks as separate meshes; `closed` adds the base faces the drawn wall leaves out (in the ground).
+void BuildWallBlocks(std::vector<MeshData>& blocks, uint32_t seed, bool closed);
 // Lathe around +Y from a (radius, y) profile, `sides` around; smooth or faceted normals. uv0 = (angle, t).
 void BuildLathe(MeshData& m, const float* radius, const float* y, int n, int sides, bool smooth);
 

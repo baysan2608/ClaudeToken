@@ -212,3 +212,30 @@ _Read this first when resuming. Update after every completed sub-step._
   Every first-use window now stays at 16.9-17.4 ms frames (ice 20.9 once), render thread ~3 ms; repeats unchanged
   (0 misses). The misses move into the load frames (84 + 48 in the pre-warm window). Look check: `prewarm_*.png`
   shots 0.03-2.2 s after the pre-warm show nothing of it.
+
+## Chaos fracture: physics debris of stones and walls (2026-10-07)
+- Choice: Option B (Chaos rigid-body pieces), not Geometry Collections: in UE 5.8 a GC's render / simulation data
+  can only be built in the editor (`UGeometryCollection::RebuildRenderData` / `CreateSimulationData` are
+  `WITH_EDITOR`), so GCs would mean editor-generated assets per rock / wall size; the sim also already spawns its own
+  rubble bodies, so the visual layer only needs debris that tumbles, settles and goes.
+- Logic: `FxFracture` (Voronoi pieces with capped cuts, closed and volume-exact, unit tests in
+  `tests/test_fracture.cpp`: clip, rock / wall pieces, sites, stone shatter, wall crumble, colliders, impacts),
+  `FractureReq` / `ColliderReq` in the draw list, `BodyView::Break` (StoneView, WallView), `FxFrameIn::physicsDebris`
+  / `debrisImpacts`, quality `rock_pieces` 0/4/6, `wall_pieces` 0/2/3, `pieces_max` 0/24/48, fx_config "fracture".
+  `BuildWallBlocks` splits the wall builder per block (the drawn wall is byte-identical; a test checks it).
+- Fixes on the way: the legacy `shatter` handler always played a splash + ice shards (stones too); `wall_crumble` ran
+  before the views sync, so `BodyPos` of the just-removed wall fell back to the world origin (dust at 0,0,0) - it now
+  asks the live view.
+- Glue: `FFourfoldFxDebris` (pooled procedural pieces, convex hulls cooked once per shape and component, Destructible
+  channel only, arena collision copy from `ff::ArenaView`, kinematic boxes for raised walls, life -> sink -> pool,
+  hit notifications -> dust), actor / subsystem wiring, `ff.fx.Debris`, showcase cues `break/rock` and `break/wall`
+  with `ff.fx.ShowcaseFilter`.
+- Look check (Lab, `ff.fx.Showcase 5, ff.fx.ShowcaseFilter break`): the rock bursts into six tumbling fragments
+  that bounce and settle with dust; the wall's five blocks (15 pieces) slump, topple and pile up, fresh grey cut faces
+  showing; hard landings puff dust; everything sinks after 2.6 / 4 s. Look-dev on the way: the cold FX rock albedo
+  was raised (0.03-0.12 -> 0.066-0.215 linear, warm grey-tan) and default stone walls get a pale earth tint
+  (1.35, 1.25, 1.1): stones / walls read as near-black holes on the scanned paving before. M_FX_Rock was rebuilt
+  (`fourfold.fx.build_material("rock", ...)`, headless) for `FFRockFreshCut`.
+- Next: persistent Niagara looks (fire fields: NS_Fire with Flame Color for blue fire; steam / smoke columns:
+  NS_Chimney_Smoke; lightning arcs: NS_TeslaCoil `PositionTarget`; fireball trails: NS_RocketTrail), Niagara Fluids
+  (engine plugin, enabled: Grid3D_Gas_Fire / Flip_Splash) for the Mac high tier, then the iOS check.

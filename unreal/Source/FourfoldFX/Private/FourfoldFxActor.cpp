@@ -7,10 +7,12 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "FourfoldFighter.h"
+#include "FourfoldFxDebris.h"
 #include "FourfoldFxNiagara.h"
 #include "FourfoldSimSubsystem.h"
 #include "FxUeConvert.h"
 #include "Logic/FxConfig.h"
+#include "Logic/FxContext.h"
 #include "Logic/FxDrawList.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -140,6 +142,7 @@ AFourfoldFxActor::AFourfoldFxActor()
 	SetCanBeDamaged(false);
 	Impl = MakeShared<FFourfoldFxRendererImpl>();
 	Niagara = MakeShared<FFourfoldFxNiagara>();
+	Debris = MakeShared<FFourfoldFxDebris>();
 }
 
 void AFourfoldFxActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -276,6 +279,7 @@ void AFourfoldFxActor::Setup(const ffx::FxConfig& Config, int32 Quality)
 	}
 	NiagaraSystems.Reset();
 	Niagara->Setup(Config, Quality, NiagaraSystems);
+	Debris->Setup(Config, Quality);
 }
 
 void AFourfoldFxActor::ReleaseAll()
@@ -323,7 +327,43 @@ void AFourfoldFxActor::ReleaseAll()
 	{
 		Niagara->StopAll();
 	}
+	if (Debris)
+	{
+		Debris->ReleaseAll();
+	}
 	EndMaterialPrewarm();
+}
+
+void AFourfoldFxActor::BuildDebrisArena(const ff::ArenaView& Arena)
+{
+	Debris->BuildArena(this, Root, Arena, DebrisArena);
+}
+
+bool AFourfoldFxActor::IsDebrisReady() const
+{
+	return Debris && Debris->IsReady();
+}
+
+const std::vector<ffx::DebrisImpact>* AFourfoldFxActor::GetDebrisImpacts() const
+{
+	return Debris && !Debris->Impacts().empty() ? &Debris->Impacts() : nullptr;
+}
+
+void AFourfoldFxActor::ClearDebrisImpacts()
+{
+	if (Debris)
+	{
+		Debris->ClearImpacts();
+	}
+}
+
+void AFourfoldFxActor::OnDebrisHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (Debris)
+	{
+		Debris->OnHit(HitComponent, FVector(Hit.ImpactPoint), NormalImpulse);
+	}
 }
 
 void AFourfoldFxActor::PrewarmMaterials(const FVector& Location)
@@ -770,6 +810,9 @@ void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* S
 	}
 	// Niagara cue systems (fire and forget; timed stops run even while new spawns are off)
 	Niagara->Spawn(this, List, bNiagara);
+	// physics debris of broken stones / walls, and the raised walls they bounce off
+	Debris->UpdateColliders(this, Root, List, DebrisObjects);
+	Debris->Update(this, List, SlotMaterials, GetWorld() ? GetWorld()->GetDeltaSeconds() : 1.0f / 60.0f, DebrisObjects);
 	if (PrewarmFrames > 0 && --PrewarmFrames == 0)
 	{
 		EndMaterialPrewarm();
@@ -788,8 +831,8 @@ FString AFourfoldFxActor::GetDebugLine() const
 	{
 		Lit += (L && L->IsVisible()) ? 1 : 0;
 	}
-	return FString::Printf(TEXT("fx: %d items, %d components (%d grown), %d uploads, %d params, %d lights | %s"), I.ActiveItems,
-		I.States.Num(), I.Creates, I.Uploads, I.ParamSets, Lit, *Niagara->GetDebugLine());
+	return FString::Printf(TEXT("fx: %d items, %d components (%d grown), %d uploads, %d params, %d lights | %s | %s"), I.ActiveItems,
+		I.States.Num(), I.Creates, I.Uploads, I.ParamSets, Lit, *Niagara->GetDebugLine(), *Debris->GetDebugLine());
 }
 
 uint64 AFourfoldFxActor::GetNiagaraLoadedMask() const

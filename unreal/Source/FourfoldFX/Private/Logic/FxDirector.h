@@ -33,6 +33,7 @@ struct FxStats {
 	int lights = 0;
 	int triangles = 0;
 	int eventsHandled = 0;
+	int fractures = 0;        // physics debris requests this frame
 	int unmappedBodies = 0;   // live bodies without a view (should stay 0; listed in `unmapped`)
 	std::vector<std::string> unmapped;
 };
@@ -87,6 +88,8 @@ private:
 	Fam BodyFam(Ctx& c, int bodyId, Fam fallback) const;
 	Fam ActorFam(Ctx& c, int actorId) const;
 	Vec3 BodyPos(Ctx& c, int bodyId) const;
+	// The body's view breaks into physics debris (BodyView::Break); false when it has no view or did not break.
+	bool BreakView(Ctx& c, int bodyId);
 
 	FxConfig cfg_;
 	DrawList out_;

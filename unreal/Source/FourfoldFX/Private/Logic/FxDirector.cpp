@@ -82,12 +82,20 @@ const DrawList& FxDirector::Update(const FxFrameIn& in) {
 			++stats_.eventsHandled;
 		}
 	}
+	// physics debris landing hard kicks up dust
+	if (in.debrisImpacts) {
+		for (const DebrisImpact& h : *in.debrisImpacts) {
+			const float k = Sat((h.speed - 1.2f) / 5.0f) * Clamp(h.size / 0.3f, 0.4f, 1.6f);
+			if (k > 0.05f) fx_.Dust(c, h.pos, Vec3(0.0f, 1.0f, 0.0f), 0.25f + 0.5f * k, cfg_.DustColor(Fam::Stone));
+		}
+	}
 	SyncViews(c);
 	UpdateActors(c);
 	fx_.Step(c);
 	SelectLights(out_.lights, MinI(c.q.maxLights, 4), in.cam.pos);
 	stats_.items = static_cast<int>(out_.items.size());
 	stats_.lights = static_cast<int>(out_.lights.size());
+	stats_.fractures = static_cast<int>(out_.fractures.size());
 	stats_.oneShots = fx_.ActiveCount();
 	stats_.views = static_cast<int>(views_.size());
 	stats_.dyingViews = static_cast<int>(dying_.size());
@@ -197,10 +205,16 @@ Vec3 FxDirector::BodyPos(Ctx& c, int bodyId) const {
 		const ff::BodyView* pb = FindPrevBody(c.in.prev, bodyId);
 		return pb ? LerpV(pb->pos, b->pos, c.in.alpha) : b->pos;
 	}
-	// recently removed (merged / exploded): the last drawn position of its view
+	// removed this tick (events run before the views sync) or recently (merged / exploded): its view's last position
+	if (const auto it = views_.find(bodyId); it != views_.end() && it->second.view) return it->second.view->lastPos;
 	for (const ViewSlot& s : dying_)
 		if (s.view && s.view->body == bodyId) return s.view->lastPos;
 	return Vec3();
+}
+
+bool FxDirector::BreakView(Ctx& c, int bodyId) {
+	const auto it = views_.find(bodyId);
+	return it != views_.end() && it->second.view && it->second.view->Break(c);
 }
 
 Fam FxDirector::BodyFam(Ctx& c, int bodyId, Fam fallback) const {

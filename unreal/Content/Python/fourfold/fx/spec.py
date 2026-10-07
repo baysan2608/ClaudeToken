@@ -90,6 +90,7 @@ ROCK_WPO = """return FFRockOffset(Pos, float3(UV1.x, UV1.y, UV2.x) * 100.0, UV2.
 	RiseHeight * 100.0, Fade);"""
 ROCK_SURF = """FFSurf s = FFRockSurface(Noise, NoiseSampler, Pos, float3(UV1.x, UV1.y, UV2.x) * 100.0, N, Baked, AX, AY, AZ, Time,
 	Heat, Melt, Crust, Damage, Frost, Seed, Detail, Glass, Tint);
+s = FFRockFreshCut(s, saturate(-UV2.y));
 OutEmissive = s.emissive * GlowScale;
 OutNormal = s.normal;
 OutRough = s.rough;

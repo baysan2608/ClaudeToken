@@ -778,7 +778,10 @@
       "bolt_levels": 5,
       "max_lights": 2,
       "soft_particles": false,
-      "distortion": false
+      "distortion": false,
+      "rock_pieces": 0,
+      "wall_pieces": 0,
+      "pieces_max": 0
     },
     {
       "particles": 0.8,
@@ -790,7 +793,10 @@
       "bolt_levels": 6,
       "max_lights": 3,
       "soft_particles": true,
-      "distortion": true
+      "distortion": true,
+      "rock_pieces": 4,
+      "wall_pieces": 2,
+      "pieces_max": 24
     },
     {
       "particles": 1.0,
@@ -802,13 +808,32 @@
       "bolt_levels": 7,
       "max_lights": 4,
       "soft_particles": true,
-      "distortion": true
+      "distortion": true,
+      "rock_pieces": 6,
+      "wall_pieces": 3,
+      "pieces_max": 48
     }
   ],
   "lights": {
     "intensity_scale": 300.0,
     "radius_scale": 1.0,
     "min_intensity": 0.03
+  },
+  "fracture": {
+    "rock_life": 2.6,
+    "wall_life": 4.0,
+    "sink_time": 0.6,
+    "rock_scale": 0.65,
+    "wall_scale": 0.94,
+    "rock_burst": 3.2,
+    "wall_burst": 1.1,
+    "spin": 9.0,
+    "friction": 0.75,
+    "restitution": 0.22,
+    "linear_damping": 0.12,
+    "angular_damping": 0.35,
+    "max_depenetration": 0.6,
+    "density": 2.4
   },
   "flash_scale": 1.0,
   "materials": {

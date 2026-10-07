@@ -5,6 +5,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+#include <vector>
+
 #include "FourfoldFxActor.generated.h"
 
 class UMaterialInterface;
@@ -18,9 +21,15 @@ class UTexture;
 class UFourfoldSimSubsystem;
 struct FFourfoldFxRendererImpl;
 struct FFourfoldFxNiagara;
+struct FFourfoldFxDebris;
 
+namespace ff
+{
+	struct ArenaView;
+}
 namespace ffx
 {
+	struct DebrisImpact;
 	struct DrawList;
 	struct FxConfig;
 }
@@ -54,6 +63,17 @@ public:
 	 *  precaching is compiled out of editor builds; packaged builds only precache components that exist). */
 	void PrewarmMaterials(const FVector& Location);
 	bool NeedsMaterialPrewarm() const { return !bMaterialsPrewarmed; }
+	/** Rebuilds the physics debris' collision copy of the sim arena (scenario load). */
+	void BuildDebrisArena(const ff::ArenaView& Arena);
+	/** Physics debris can run (arena collision built, quality budget > 0): FxFrameIn::physicsDebris. */
+	bool IsDebrisReady() const;
+	/** Hard debris landings since the last ClearDebrisImpacts (FxFrameIn::debrisImpacts; null when there are none). */
+	const std::vector<ffx::DebrisImpact>* GetDebrisImpacts() const;
+	void ClearDebrisImpacts();
+	/** OnComponentHit of the debris pieces. */
+	UFUNCTION()
+	void OnDebrisHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse,
+		const FHitResult& Hit);
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -71,6 +91,9 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UObject>> NiagaraSystems;
 	/** Material pre-warm draws (destroyed after a few frames). */
 	UPROPERTY(Transient) TArray<TObjectPtr<UPrimitiveComponent>> PrewarmComponents;
+	/** Physics debris: pooled pieces + their materials, and the arena collision copy (rebuilt per scenario). */
+	UPROPERTY(Transient) TArray<TObjectPtr<UObject>> DebrisObjects;
+	UPROPERTY(Transient) TArray<TObjectPtr<UObject>> DebrisArena;
 
 private:
 	void EndMaterialPrewarm();
@@ -79,5 +102,6 @@ private:
 	bool bMaterialsPrewarmed = false;
 	TSharedPtr<FFourfoldFxRendererImpl> Impl;
 	TSharedPtr<FFourfoldFxNiagara> Niagara;
+	TSharedPtr<FFourfoldFxDebris> Debris;
 	friend struct FFourfoldFxRendererImpl;
 };

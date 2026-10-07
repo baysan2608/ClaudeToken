@@ -111,6 +111,27 @@ struct QualityLevel {
 	int maxLights = 4;
 	bool softParticles = true;
 	bool distortion = true;     // vacuum shells / air push screen-space bend (cheap fake on mobile)
+	int rockPieces = 6;         // physics debris pieces of a broken stone (0: procedural chips only)
+	int wallPieces = 3;         // physics pieces per block of a crumbling wall (0: the wall sinks, as before)
+	int piecesMax = 48;         // physics debris pieces alive at once (the glue's budget)
+};
+
+// Physics debris of broken stones / walls (FxFracture; simulated by the glue with Chaos rigid bodies).
+struct FractureSettings {
+	float rockLife = 2.6f;        // seconds a stone's pieces lie before they sink
+	float wallLife = 4.0f;
+	float sinkTime = 0.6f;        // seconds to sink into the ground
+	float rockScale = 0.65f;      // stone pieces shrink about their centres (the sim's own rubble stones live on)
+	float wallScale = 0.94f;      // wall pieces: small gaps, no initial overlap between neighbouring blocks
+	float rockBurst = 3.2f;       // outward speed m/s (x random 0.6..1.2)
+	float wallBurst = 1.1f;
+	float spin = 9.0f;            // rad/s (x random 0.3..1)
+	float friction = 0.75f;
+	float restitution = 0.22f;
+	float linearDamping = 0.12f;
+	float angularDamping = 0.35f;
+	float maxDepenetration = 0.6f;   // m/s: overlapping pieces drift apart instead of popping
+	float density = 2.4f;            // g/cm3 (stone)
 };
 
 struct LightSettings {
@@ -151,6 +172,7 @@ struct FxConfig {
 	std::array<StripLook, kNumStripStyles> strips{};
 	std::array<QualityLevel, 3> quality{};
 	LightSettings lights{};
+	FractureSettings fracture{};
 	float flashScale = 1.0f;               // perfect / lightning in-world flashes (x Settings.Flashes)
 	std::array<std::string, kNumMatSlots> materials{};    // MatSlot -> material asset path
 	std::array<std::string, kNumMeshAssets> meshes{};     // MeshAsset -> static mesh asset path ("" = procedural)

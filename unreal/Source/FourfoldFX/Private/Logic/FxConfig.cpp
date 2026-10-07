@@ -75,6 +75,22 @@ const FieldDesc kStripFields[] = {
 	{"height_tail", FT::F, offsetof(StripLook, heightTail)},
 	{"bulge", FT::F, offsetof(StripLook, bulge)},
 };
+const FieldDesc kFractureFields[] = {
+	{"rock_life", FT::F, offsetof(FractureSettings, rockLife)},
+	{"wall_life", FT::F, offsetof(FractureSettings, wallLife)},
+	{"sink_time", FT::F, offsetof(FractureSettings, sinkTime)},
+	{"rock_scale", FT::F, offsetof(FractureSettings, rockScale)},
+	{"wall_scale", FT::F, offsetof(FractureSettings, wallScale)},
+	{"rock_burst", FT::F, offsetof(FractureSettings, rockBurst)},
+	{"wall_burst", FT::F, offsetof(FractureSettings, wallBurst)},
+	{"spin", FT::F, offsetof(FractureSettings, spin)},
+	{"friction", FT::F, offsetof(FractureSettings, friction)},
+	{"restitution", FT::F, offsetof(FractureSettings, restitution)},
+	{"linear_damping", FT::F, offsetof(FractureSettings, linearDamping)},
+	{"angular_damping", FT::F, offsetof(FractureSettings, angularDamping)},
+	{"max_depenetration", FT::F, offsetof(FractureSettings, maxDepenetration)},
+	{"density", FT::F, offsetof(FractureSettings, density)},
+};
 const FieldDesc kLightFields[] = {
 	{"intensity_scale", FT::F, offsetof(LightSettings, intensityScale)},
 	{"radius_scale", FT::F, offsetof(LightSettings, radiusScale)},
@@ -94,6 +110,8 @@ const QField kQualityFields[] = {
 	{"bolt_levels", QT::I, offsetof(QualityLevel, boltLevels)}, {"max_lights", QT::I, offsetof(QualityLevel, maxLights)},
 	{"soft_particles", QT::B, offsetof(QualityLevel, softParticles)},
 	{"distortion", QT::B, offsetof(QualityLevel, distortion)},
+	{"rock_pieces", QT::I, offsetof(QualityLevel, rockPieces)},  {"wall_pieces", QT::I, offsetof(QualityLevel, wallPieces)},
+	{"pieces_max", QT::I, offsetof(QualityLevel, piecesMax)},
 };
 
 ff::Value ColorToValue(const Color& c) {
@@ -426,9 +444,9 @@ FxConfig::FxConfig() {
 	strips[static_cast<size_t>(StripStyle::Mud)] = {0.25f, 0.12f, 0.2f};
 
 	// ---- quality levels (0 low: iPhone 12 under heat, 1 medium, 2 high)
-	quality[0] = {0.55f, 7, 5, 8, 8, 5, 5, 2, false, false};
-	quality[1] = {0.8f, 10, 7, 11, 11, 8, 6, 3, true, true};
-	quality[2] = {1.0f, 12, 9, 14, 14, 10, 7, 4, true, true};
+	quality[0] = {0.55f, 7, 5, 8, 8, 5, 5, 2, false, false, 0, 0, 0};
+	quality[1] = {0.8f, 10, 7, 11, 11, 8, 6, 3, true, true, 4, 2, 24};
+	quality[2] = {1.0f, 12, 9, 14, 14, 10, 7, 4, true, true, 6, 3, 48};
 
 	for (int i = 0; i < kNumMatSlots; ++i) materials[static_cast<size_t>(i)] = MatAssetPath(static_cast<MatSlot>(i));
 	for (int i = 1; i < kNumMeshAssets; ++i) {
@@ -524,6 +542,7 @@ std::string FxConfig::ToJson() const {
 		root.set("quality", ff::Value(q));
 	}
 	root.set("lights", ff::Value(FieldsToDict(&lights, kLightFields)));
+	root.set("fracture", ff::Value(FieldsToDict(&fracture, kFractureFields)));
 	root.set("flash_scale", ff::Value(Round4(flashScale)));
 	{
 		ff::Dict m;
@@ -625,6 +644,7 @@ bool FxConfig::LoadJson(std::string_view text, std::string* error, std::string* 
 		}
 	}
 	DictToFields(v["lights"], &c.lights, kLightFields, "lights", warnings);
+	DictToFields(v["fracture"], &c.fracture, kFractureFields, "fracture", warnings);
 	c.flashScale = v["flash_scale"].as_f32(c.flashScale);
 	auto readPaths = [&](const ff::Value& d, auto& out, const auto& names, int first, const char* where) {
 		const ff::Dict* dd = d.dict_ptr();

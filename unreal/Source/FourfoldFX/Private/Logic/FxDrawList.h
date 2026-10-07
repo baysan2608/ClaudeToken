@@ -83,15 +83,45 @@ struct SystemReq {
 	Color color2{0.0f, 0.0f, 0.0f, 0.0f};
 };
 
+struct FracturePiece;   // FxFracture.h
+
+// Physics debris of a broken stone / wall (FxFracture; visual only). The glue drops every piece (source-local geometry)
+// as a rigid body placed with `xform` (the intact body's transform), shrunk by `scale` about its own centre, moving with
+// `vel` + `burst` m/s away from `origin` + spin; they settle on a collision copy of the arena and sink after `life` s.
+struct FractureReq {
+	const std::vector<FracturePiece>* pieces = nullptr;   // meshlib::RockPieces / WallPieces (stable for the run)
+	Xform xform;
+	MatSlot mat = MatSlot::Rock;
+	ParamBlock params;   // look of every piece
+	Vec3 vel;
+	Vec3 origin;
+	float burst = 3.0f;
+	float scale = 1.0f;
+	float life = 2.5f;
+	uint32_t seed = 0;
+};
+
+// A solid the physics debris bounces off (a raised stone wall body): an oriented box, xform.pos = centre and the basis
+// columns = half extents along its axes. Only sent while FxFrameIn::physicsDebris is set; keys are stable per body.
+struct ColliderReq {
+	uint32_t key = 0;
+	Xform xform;
+};
+
 struct DrawList {
 	std::vector<DrawItem> items;
 	std::vector<LightReq> lights;
 	std::vector<SystemReq> systems;
+	std::vector<FractureReq> fractures;
+	std::vector<ColliderReq> colliders;
 	void Clear() {
 		items.clear();
 		lights.clear();
 		systems.clear();
+		fractures.clear();
+		colliders.clear();
 	}
+	FractureReq& Fracture() { return fractures.emplace_back(); }
 	SystemReq& System(NCue cue, const Vec3& pos, const Vec3& dir, float scale, float intensity) {
 		SystemReq& s = systems.emplace_back();
 		s.cue = cue;

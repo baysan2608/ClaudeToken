@@ -33,6 +33,13 @@ public:
 	// Emits draw items: fade 1 while the body lives, 1 -> 0 while the view fades out after the body is gone.
 	virtual void Draw(Ctx& c, float fade) = 0;
 	virtual float FadeTime() const { return 0.25f; }
+	// The body broke (shatter / wall_crumble): emits physics debris (FractureReq) when the glue simulates it and
+	// returns true if it did (the caller then skips the procedural chips). A view whose body ends with the break stops
+	// drawing: its pieces take its place.
+	virtual bool Break(Ctx& c) {
+		(void)c;
+		return false;
+	}
 
 	ViewSel sel;
 	int body = -1;

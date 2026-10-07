@@ -79,11 +79,12 @@ FFRockSample FFRockModel(float ed, float eid, float lowf, float grain, float up,
 	const float thr = lerp(0.58, -0.25, drive);
 	const float act = FFSmooth(thr, thr + 0.16, eid);
 
-	// cold stone: tonal variation, grain, pale dust on upward faces, cavity darkening along cracks
-	float3 rock = lerp(float3(0.032, 0.030, 0.029), float3(0.115, 0.104, 0.092), FFSmooth(0.25, 0.75, lowf));
+	// cold stone: tonal variation, grain, pale dust on upward faces, cavity darkening along cracks. Warm grey-tan earth
+	// (2026-10-07: was 0.03..0.12, near black against the scanned arena paving)
+	float3 rock = lerp(float3(0.066, 0.059, 0.050), float3(0.215, 0.192, 0.158), FFSmooth(0.25, 0.75, lowf));
 	rock = rock * (0.72 + 0.56 * grain);
 	const float dust = FFSmooth(0.40, 0.95, up) * FFSmooth(0.25, 0.75, grain * 0.7 + lowf * 0.5);
-	rock = lerp(rock, float3(0.15, 0.135, 0.115), dust * 0.3);
+	rock = lerp(rock, float3(0.30, 0.27, 0.22), dust * 0.3);
 	rock = rock * lerp(1.0, 0.55 + 0.45 * FFSmooth(0.0, 0.2, ed), act);
 
 	// cooled crust (basalt / glassy slag)
@@ -125,6 +126,18 @@ FFRockSample FFRockModel(float ed, float eid, float lowf, float grain, float up,
 	o.rough = lerp(lerp(rRock, rHot, dark), 0.55, fm);
 	o.dark = dark;
 	return o;
+}
+
+// Fracture caps (FxFracture writes uv2.y = -1 there; rocks keep 0..1): the fresh inside of the stone - lighter,
+// greyer and matte, the heat glow unchanged (the core of a hot stone is no cooler).
+FFSurf FFRockFreshCut(FFSurf s, float cut)
+{
+	const float lum = s.albedo.x * 0.299 + s.albedo.y * 0.587 + s.albedo.z * 0.114;
+	const float3 fresh = lerp(float3(lum, lum, lum), s.albedo, 0.35) * 1.3 + float3(0.03, 0.03, 0.03);
+	s.albedo = lerp(s.albedo, fresh, cut);
+	s.rough = lerp(s.rough, 0.92, cut);
+	s.spec = lerp(s.spec, 0.4, cut);
+	return s;
 }
 
 // ------------------------------------------------------------------------------------------------ M_FX_Rock

@@ -1,6 +1,7 @@
 // FourfoldFX logic island - persistent body views. Owner: stream `fx`.
 #include "FxViews.h"
 
+#include "FxFracture.h"
 #include "FxMeshLib.h"
 
 #include <cmath>
@@ -62,6 +63,7 @@ public:
 		crust_ = Crust01(b);
 		tier_ = ClampI(MaxI(b.tier, tierHint), 0, 3);
 		spear_ = b.tag == "spear";
+		vel_ = b.vel;
 		const float spd = b.vel.length();
 		if (b.controller >= 0) {
 			rot_ = Basis::YawY(1.2f * c.dt).Mul(rot_);
@@ -86,18 +88,8 @@ public:
 		if (trailOn_ && !flying) trail_.End();
 	}
 	void Draw(Ctx& c, float fade) override {
-		const float s = radius_ * (spear_ ? 1.0f : kTierScale[tier_]) * (fade < 1.0f ? 0.5f + 0.5f * fade : 1.0f);
-		Xform x;
-		x.pos = pos_;
-		x.basis = spear_ ? spearBasis_.Scaled(s, s, s * 2.4f) : rot_.Scaled(s);
-		DrawItem& it = c.out.AddStatic(key_, MatSlot::Rock, RockAsset(seed_), x, &meshlib::Rock(seed_));
-		it.params.Set(P::Seed, SeedParam(seed_));
-		it.params.Set(P::Heat, heat_);
-		it.params.Set(P::Melt, melt_);
-		it.params.Set(P::Crust, crust_);
-		it.params.Set(P::Rise, 1.0f);
-		it.params.Set(P::Detail, 1.0f);
-		it.params.Set(P::Fade, fade);
+		DrawItem& it = c.out.AddStatic(key_, MatSlot::Rock, RockAsset(seed_), Place(fade), &meshlib::Rock(seed_));
+		Look(it.params, fade);
 		it.castShadow = true;
 		const float glow = Sat(0.75f * heat_ + 0.45f * melt_) * (1.0f - 0.8f * crust_) * fade;
 		if (glow > 0.12f)
@@ -106,11 +98,45 @@ public:
 		if (trailOn_ && !trail_.Draw(c, fade)) trailOn_ = false;
 	}
 	float FadeTime() const override { return 0.15f; }
+	bool Break(Ctx& c) override {
+		// a molten blob splashes rather than breaking; the sim's own rubble stones live on beside the pieces
+		if (!c.in.physicsDebris || c.q.rockPieces < 2 || melt_ > 0.5f) return false;
+		const FractureSettings& fs = c.cfg.fracture;
+		FractureReq& r = c.out.Fracture();
+		r.pieces = &meshlib::RockPieces(seed_, c.q.rockPieces);
+		r.xform = Place(1.0f);
+		r.mat = MatSlot::Rock;
+		Look(r.params, 1.0f);
+		r.vel = vel_ * 0.4f;
+		r.origin = pos_;
+		r.burst = fs.rockBurst * (0.8f + 0.1f * static_cast<float>(tier_));
+		r.scale = fs.rockScale;
+		r.life = fs.rockLife;
+		r.seed = HashCombine(seed_, static_cast<uint32_t>(c.in.curr ? c.in.curr->tick : 0));
+		return true;
+	}
 
 private:
+	Xform Place(float fade) const {
+		const float s = radius_ * (spear_ ? 1.0f : kTierScale[tier_]) * (fade < 1.0f ? 0.5f + 0.5f * fade : 1.0f);
+		Xform x;
+		x.pos = pos_;
+		x.basis = spear_ ? spearBasis_.Scaled(s, s, s * 2.4f) : rot_.Scaled(s);
+		return x;
+	}
+	void Look(ParamBlock& p, float fade) const {
+		p.Set(P::Seed, SeedParam(seed_));
+		p.Set(P::Heat, heat_);
+		p.Set(P::Melt, melt_);
+		p.Set(P::Crust, crust_);
+		p.Set(P::Rise, 1.0f);
+		p.Set(P::Detail, 1.0f);
+		p.Set(P::Fade, fade);
+	}
+
 	uint32_t key_ = 0, keyLight_ = 0, seed_ = 0;
 	Basis rot_, spearBasis_;
-	Vec3 pos_;
+	Vec3 pos_, vel_;
 	float radius_ = 0.3f, heat_ = 0.0f, melt_ = 0.0f, crust_ = 0.0f;
 	int tier_ = 0;
 	bool spear_ = false, trailOn_ = false;
@@ -230,6 +256,7 @@ public:
 	using BodyView::BodyView;
 	void Init(const BodyFrame& f, Ctx& c) override {
 		key_ = c.keys.New();
+		keyCollider_ = c.keys.New();
 		seed_ = SeedOf(f.b.id);
 	}
 	void Update(const BodyFrame& f, Ctx& c) override {
@@ -259,40 +286,77 @@ public:
 		if (rise_ <= 0.001f) dustStage_ = 0;
 	}
 	void Draw(Ctx& c, float fade) override {
+		if (broken_) return;   // its physics pieces took its place
 		Xform x;
 		x.pos = pos_;
-		x.basis = Basis::YawY(yaw_).Scaled(MaxF(half_.x, 0.15f), MaxF(half_.y * 2.0f, 0.2f), MaxF(half_.z * 4.0f, 0.3f));
+		x.basis = Frame();
 		DrawItem& it = c.out.Add(key_, MatSlot::Rock, &meshlib::Wall(seed_), x);
-		it.params.Set(P::Seed, SeedParam(seed_));
-		it.params.Set(P::Rise, rise_ * fade);   // a crumbling wall sinks back into the ground
-		it.params.Set(P::RiseHeight, 1.25f);
-		it.params.Set(P::Detail, 2.2f);
-		it.params.Set(P::Damage, damage_);
-		it.params.Set(P::Heat, heat_);
-		it.params.Set(P::Fade, 1.0f);
-		const std::string& st = sel.style;
-		if (st == "obsidian") {
-			it.params.Set(PV::Tint, Color(0.32f, 0.30f, 0.36f));
-			it.params.Set(P::Glass, 1.0f);
-		} else if (st == "sand") {
-			it.params.Set(PV::Tint, Color(2.7f, 2.15f, 1.45f));
-			it.params.Set(P::Glass, 0.0f);
-		} else if (st == "mud") {
-			it.params.Set(PV::Tint, Color(0.95f, 0.72f, 0.5f));
-			it.params.Set(P::Glass, 0.45f);
-		} else {
-			it.params.Set(PV::Tint, Color(1.0f, 1.0f, 1.0f));
-			it.params.Set(P::Glass, 0.0f);
-		}
+		Look(it.params, rise_ * fade);   // a crumbling wall sinks back into the ground
 		it.castShadow = true;
+		// physics debris bounces off a raised wall (the unit wall spans x -1..1, y 0..1, z -0.27..0.27)
+		const float h = MaxF(half_.y, 0.1f) * rise_ * fade;
+		if (c.in.physicsDebris && h > 0.15f) {
+			ColliderReq& col = c.out.colliders.emplace_back();
+			col.key = keyCollider_;
+			col.xform.pos = pos_ + Vec3(0.0f, h, 0.0f);
+			col.xform.basis = Basis::YawY(yaw_).Scaled(MaxF(half_.x, 0.15f), h, MaxF(half_.z * 4.0f, 0.3f) * 0.27f);
+		}
 	}
 	float FadeTime() const override { return 0.35f; }
+	bool Break(Ctx& c) override {
+		// sand and mud slump into dust; a wall that has barely risen just sinks
+		const std::string& st = sel.style;
+		if (!c.in.physicsDebris || c.q.wallPieces < 1 || st == "sand" || st == "mud" || rise_ < 0.3f) return false;
+		const FractureSettings& fs = c.cfg.fracture;
+		FractureReq& r = c.out.Fracture();
+		r.pieces = &meshlib::WallPieces(seed_, c.q.wallPieces);
+		const Basis b = Frame();
+		r.xform.basis = b;
+		r.xform.pos = pos_ - b.y * (1.0f - rise_);   // a half-risen wall breaks where it stands
+		r.mat = MatSlot::Rock;
+		Look(r.params, 1.0f);
+		r.origin = pos_ - b.y * 0.6f;   // below the base centre: pieces lean out and topple
+		r.burst = fs.wallBurst;
+		r.scale = fs.wallScale;
+		r.life = fs.wallLife;
+		r.seed = HashCombine(seed_, static_cast<uint32_t>(c.in.curr ? c.in.curr->tick : 0));
+		broken_ = true;
+		return true;
+	}
 
 private:
-	uint32_t key_ = 0, seed_ = 0;
+	Basis Frame() const {
+		return Basis::YawY(yaw_).Scaled(MaxF(half_.x, 0.15f), MaxF(half_.y * 2.0f, 0.2f), MaxF(half_.z * 4.0f, 0.3f));
+	}
+	void Look(ParamBlock& p, float rise) const {
+		p.Set(P::Seed, SeedParam(seed_));
+		p.Set(P::Rise, rise);
+		p.Set(P::RiseHeight, 1.25f);
+		p.Set(P::Detail, 2.2f);
+		p.Set(P::Damage, damage_);
+		p.Set(P::Heat, heat_);
+		p.Set(P::Fade, 1.0f);
+		const std::string& st = sel.style;
+		if (st == "obsidian") {
+			p.Set(PV::Tint, Color(0.32f, 0.30f, 0.36f));
+			p.Set(P::Glass, 1.0f);
+		} else if (st == "sand") {
+			p.Set(PV::Tint, Color(2.7f, 2.15f, 1.45f));
+			p.Set(P::Glass, 0.0f);
+		} else if (st == "mud") {
+			p.Set(PV::Tint, Color(0.95f, 0.72f, 0.5f));
+			p.Set(P::Glass, 0.45f);
+		} else {
+			p.Set(PV::Tint, Color(1.35f, 1.25f, 1.1f));   // pale earth: reads against the scanned courtyard stone
+			p.Set(P::Glass, 0.0f);
+		}
+	}
+
+	uint32_t key_ = 0, keyCollider_ = 0, seed_ = 0;
 	Vec3 pos_, half_{1.0f, 0.6f, 0.25f};
 	float yaw_ = 0.0f, rise_ = 0.0f, damage_ = 0.0f, heat_ = 0.0f;
 	int dustStage_ = 0;
+	bool broken_ = false;
 };
 
 // --------------------------------------------------------------------------------------------- water blob / ribbon / puddle

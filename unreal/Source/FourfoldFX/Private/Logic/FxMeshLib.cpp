@@ -400,11 +400,13 @@ void BuildCrystal(MeshData& m, uint32_t seed, CrystalMode mode) {
 	}
 }
 
-void BuildWall(MeshData& m, uint32_t seed) {
+void BuildWallBlocks(std::vector<MeshData>& out, uint32_t seed, bool closed) {
 	Rng rng(HashCombine(seed, 0x1b873593u));
 	const int blocks = 5;
+	out.assign(static_cast<size_t>(blocks), MeshData());
 	const float bw = 2.0f / static_cast<float>(blocks);
 	for (int bi = 0; bi < blocks; ++bi) {
+		MeshData& m = out[static_cast<size_t>(bi)];
 		const float cx = -1.0f + bw * (static_cast<float>(bi) + 0.5f);
 		const float edge = std::fabs(static_cast<float>(bi) - (blocks - 1) * 0.5f) / ((blocks - 1) * 0.5f);
 		const float h = (1.0f - 0.2f * edge) * rng.Range(0.93f, 1.0f);
@@ -435,8 +437,18 @@ void BuildWall(MeshData& m, uint32_t seed) {
 			FlatTri(m, rs[i], rs[j], rt[j], uvs(rs[i]), uvs(rs[j]), uvs(rt[j]), Vec2(), body, col);
 			FlatTri(m, rs[i], rt[j], rt[i], uvs(rs[i]), uvs(rt[j]), uvs(rt[i]), Vec2(), body, col);
 			FlatTri(m, rt[i], rt[j], top, Vec2(rt[i].x, rt[i].z), Vec2(rt[j].x, rt[j].z), Vec2(top.x, top.z), Vec2(), body, col);
+			// the base sits in the ground and is drawn open; fracture pieces need a closed solid
+			if (closed)
+				FlatTri(m, Vec3(cx, 0.0f, 0.0f), rb[j], rb[i], Vec2(cx, 0.0f), Vec2(rb[j].x, rb[j].z), Vec2(rb[i].x, rb[i].z), Vec2(),
+				        body, col);
 		}
 	}
+}
+
+void BuildWall(MeshData& m, uint32_t seed) {
+	std::vector<MeshData> blocks;
+	BuildWallBlocks(blocks, seed, false);
+	for (const MeshData& b : blocks) m.Append(b);
 }
 
 const MeshData& Crystal(uint32_t seed, CrystalMode mode) {

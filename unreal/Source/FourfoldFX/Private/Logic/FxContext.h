@@ -31,6 +31,13 @@ struct FxAnchors {
 	std::array<Vec3, static_cast<size_t>(Bone::Count)> bones{};
 };
 
+// A physics debris piece hit the ground or another piece (reported by the glue, one frame late).
+struct DebrisImpact {
+	Vec3 pos;
+	float speed = 0.0f;   // impact speed, m/s
+	float size = 0.3f;    // piece radius, m
+};
+
 struct FxFrameIn {
 	const ff::Snapshot* prev = nullptr;
 	const ff::Snapshot* curr = nullptr;
@@ -45,6 +52,8 @@ struct FxFrameIn {
 	float flashes = 1.0f;             // Settings.Flashes 0..1
 	bool reducedMotion = false;
 	uint64_t niagaraLoaded = 0;       // bit per NCue: the glue has the slot's Niagara system loaded
+	bool physicsDebris = false;       // the glue simulates FractureReq pieces (arena collision built)
+	const std::vector<DebrisImpact>* debrisImpacts = nullptr;   // pieces landing hard since the last frame
 };
 
 class KeyAlloc {

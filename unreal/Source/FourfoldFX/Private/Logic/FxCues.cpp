@@ -3,6 +3,7 @@
 // Owner: stream `fx`.
 #include "FxActorFx.h"
 #include "FxDirector.h"
+#include "FxFracture.h"
 
 #include <cmath>
 #include <initializer_list>
@@ -182,7 +183,51 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 	if (t == "wall_crumble") {
 		const Vec3 p = BodyPos(c, body);
 		fx_.Dust(c, p, kUp, 1.4f, stoneDust);
+		// physics pieces replace the sinking wall (the view stops drawing); otherwise chips fly
+		if (!B(d, "melted") && BreakView(c, body)) return;
 		fx_.Shards(c, p + Vec3(0.0f, 0.4f, 0.0f), kUp, 1.0f, ShardMat::Stone, static_cast<uint32_t>(body) * 31u + 7u, c.Ground(p));
+		return;
+	}
+	if (t == "fx_test_break") {
+		// look checks (ff.fx.Showcase "break/rock|wall"): a stone or a wall breaks with no sim body behind it
+		const bool wall = S(d, "kind") == "wall";
+		const Vec3 p = V(d, "pos");
+		const uint32_t seed = static_cast<uint32_t>(I(d, "seed", 7));
+		const float gy = c.Ground(p);
+		fx_.Dust(c, Vec3(p.x, gy, p.z), kUp, wall ? 1.4f : 0.8f, stoneDust);
+		const int n = wall ? c.q.wallPieces : c.q.rockPieces;
+		if (!c.in.physicsDebris || n < (wall ? 1 : 2)) {
+			fx_.Shards(c, p, kUp, 1.0f, ShardMat::Stone, seed, gy);
+			return;
+		}
+		const FractureSettings& fs = cfg_.fracture;
+		FractureReq& r = c.out.Fracture();
+		r.mat = MatSlot::Rock;
+		r.params.Set(P::Seed, static_cast<float>(seed % 977u) + 0.5f);
+		r.params.Set(P::Rise, 1.0f);
+		r.params.Set(P::RiseHeight, 1.25f);
+		r.params.Set(P::Detail, wall ? 2.2f : 1.0f);
+		r.params.Set(P::Fade, 1.0f);
+		r.params.Set(P::Glass, 0.0f);
+		r.params.Set(PV::Tint, wall ? Color(1.35f, 1.25f, 1.1f) : Color(1.0f, 1.0f, 1.0f));   // as WallView's stone wall
+		if (wall) {
+			r.pieces = &meshlib::WallPieces(seed, n);
+			r.xform.basis = Basis::YawY(F(d, "yaw")).Scaled(1.2f, 1.2f, 1.0f);   // 2.4 m long, 1.2 m high, 0.54 m thick
+			r.xform.pos = Vec3(p.x, gy, p.z);
+			r.origin = r.xform.pos - kUp * 0.7f;
+			r.burst = fs.wallBurst;
+			r.scale = fs.wallScale;
+			r.life = fs.wallLife;
+		} else {
+			r.pieces = &meshlib::RockPieces(seed, n);
+			r.xform.basis = Basis::AxisAngle(Norm(Vec3(0.3f, 1.0f, 0.2f)), 0.7f).Scaled(0.35f);
+			r.xform.pos = p;
+			r.origin = p;
+			r.burst = fs.rockBurst;
+			r.scale = fs.rockScale;
+			r.life = fs.rockLife;
+		}
+		r.seed = HashCombine(seed, static_cast<uint32_t>(c.in.curr->tick));
 		return;
 	}
 	if (t == "transform") {
@@ -198,8 +243,17 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 	}
 	if (t == "shatter") {
 		const Vec3 p = BodyPos(c, body);
-		fx_.Splash(c, p, kUp, 0.5f);
-		fx_.Shards(c, p, kUp, 0.8f, ShardMat::Ice, static_cast<uint32_t>(body) * 31u + static_cast<uint32_t>(c.in.curr->tick), p.y - 1.0f);
+		const uint32_t seed = static_cast<uint32_t>(body) * 31u + static_cast<uint32_t>(c.in.curr->tick);
+		const Fam fam = BodyFam(c, body, Fam::Ice);
+		if (fam == Fam::Ice || fam == Fam::Water) {
+			// a frozen body bursts (the original look of this event)
+			fx_.Splash(c, p, kUp, 0.5f);
+			fx_.Shards(c, p, kUp, 0.8f, ShardMat::Ice, seed, p.y - 1.0f);
+			return;
+		}
+		// stones break into physics pieces (the sim's rubble bodies fly beside them); others / no physics: chips
+		if (BreakView(c, body)) return;
+		fx_.Shards(c, p, kUp, 0.8f, ShardOf(fam), seed, c.Ground(p));
 		return;
 	}
 	if (t == "wave_blocked" || t == "wave_drop") {

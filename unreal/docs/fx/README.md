@@ -14,6 +14,8 @@ pre-authored Niagara systems (Epic's free Niagara Examples Pack by default) - se
 | `Source/FourfoldFX/Private/Logic/tests/` | unit tests, integration soak, shader shim, CPU preview renderer (all `FF_LOGIC_TESTS`, empty in UBT builds) |
 | `Source/FourfoldFX/{Public,Private}/FourfoldFx{Subsystem,Actor}*`, `Private/FxUeConvert.h` | thin UE glue: world subsystem (binds `OnFrame`), pooled component renderer, sim -> UE conversion |
 | `Source/FourfoldFX/Private/FourfoldFxNiagara.*` | Niagara cue layer: spawns the configured system per `SystemReq`, binds user parameters |
+| `Source/FourfoldFX/Private/Logic/FxFracture.*` | Voronoi fracture pieces of rocks / wall blocks (engine-free, cached) |
+| `Source/FourfoldFX/Private/FourfoldFxDebris.*` | physics debris: Chaos rigid bodies for `FractureReq` pieces on a collision copy of the sim arena |
 | `Source/FourfoldShaders/` | maps `unreal/Shaders` -> `/Fourfold` (PostConfigInit, guarded) |
 | `Shaders/Common/*.ush` | noise (value / gradient / simplex / fbm / ridged / curl / Voronoi 2D-3D, triplanar), flipbook blending, flow, fresnel / fake lighting, dithering, black-body, `FFSurf` |
 | `Shaders/FX/*.ush` | `FFRock` (stone -> lava -> crust continuum + lava strips), `FFFlame` (mesh flames + fire sprites), `FFWater` (water -> ice), `FFCrystal`, `FFMetal`, `FFVine`, `FFGround` (strips + decals), `FFLightning` (bolts, beams, sparks), `FFWind` (air + vortex), `FFShell` (shells + rings), `FFSmoke` (smoke / steam / dust / puffs / splash) |
@@ -135,6 +137,35 @@ so the Fab plugin is signed in, open Fourfold, Window > Fab > My Library > Niaga
   prints per cue window GPU mean / max, worst frame / render-thread time and PSO misses, first uses apart from
   repeats. Never take showcase shots in a profiled run (each screenshot stalls 150+ ms). On this Mac add
   `-FFExec="2:t.MaxFPS 60|2:r.DynamicRes.FrameTimeBudget 16.67"` (dynamic resolution follows the frame-rate cap).
+
+## Physics debris (Chaos fracture of stones and walls)
+Visual only: the sim decides when a body breaks and spawns its own rubble bodies; the pieces never feed back.
+* Pieces: `ffx::VoronoiPieces` clips a closed mesh with the bisector planes of n sites (best-candidate spread) and caps
+  every cut, so the pieces fit together exactly and keep the source's local frame (the rock material's local-space
+  noise runs on across the cuts). `meshlib::RockPieces(seed, n)` (Rock(seed), ~1 ms per variant, cached for the run)
+  and `meshlib::WallPieces(seed, perBlock)` (each of the Wall's five blocks, closed at the base for this). Each piece
+  carries <= 42 support points for its convex collision.
+* Requests: `shatter` on a stone and `wall_crumble` call `BodyView::Break`; `StoneView` / `WallView` emit a
+  `FractureReq` (pieces, the intact body's transform, its look parameters, inherited velocity, burst origin / speed,
+  scale, life) when `FxFrameIn::physicsDebris` is set and the quality allows (`rock_pieces` / `wall_pieces`, 0 on
+  low). The stone keeps drawing (the sim's body lives on; pieces are 0.65x fragments); the wall stops drawing at
+  once (its pieces take its place; the sim's two rubble stones fly out beside them). Sand / mud walls and molten
+  stones keep the procedural look. A frozen body's `shatter` keeps its splash + ice shards (stones used to get them
+  too: the legacy handler was ice-only).
+* Glue (`FFourfoldFxDebris`): pooled `UProceduralMeshComponent`s (<= 64) with `SetCollisionConvexMeshes` cooked once
+  per piece shape (a component keeps its shape when idle), Destructible channel only, blocking only the arena copy
+  (`UBoxComponent`s from `ff::ArenaView`: ground with the pool basin, metal plate, every solid) and each other - the
+  fighters, cameras and traces never see them. Biggest pieces first when `pieces_max` runs out. After `life` a
+  piece stops simulating and sinks (`sink_time`), then goes back to the pool. Tuning: fx_config.json "fracture"
+  (lives, scales, burst speeds, spin, friction, restitution, damping, max depenetration, density).
+* Raised stone walls send a `ColliderReq` (oriented box, stable key) while physics debris runs; the glue keeps a
+  kinematic box per key, so pieces bounce off earth walls too. Hard landings (> 1.2 m/s, 0.3 s per piece) come back
+  to the logic as `FxFrameIn::debrisImpacts` and kick up dust puffs.
+* Cut faces carry uv2.y = -1; `FFRockFreshCut` (FFRock.ush, called from M_FX_Rock) draws them as fresh broken
+  stone: lighter, greyer, matte.
+* Console: `ff.fx.Debris 0/1`; look check: `ff.fx.Showcase` ends its list with `break/rock` and `break/wall`
+  (`fx_test_break` events: a stone / wall breaking with no sim body behind it); `ff.fx.ShowcaseFilter break` plays
+  only those.
 
 ## Tuning without a rebuild
 Edit `Content/Fourfold/Data/fx_config.json` (any subset of keys; colours are display sRGB) and run console
