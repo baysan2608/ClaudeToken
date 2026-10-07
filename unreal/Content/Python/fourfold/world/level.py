@@ -183,7 +183,9 @@ class Builder:
                      ("dynamic_shadow_distance_stationary_light", 3800.0), ("dynamic_shadow_distance_movable_light", 3800.0),
                      ("dynamic_shadow_cascades", 2), ("cascade_distribution_exponent", 2.2), ("cascade_transition_fraction", 0.15),
                      ("light_source_angle", 0.8), ("atmosphere_sun_light", True),
-                     ("cast_cloud_shadows", True), ("use_ray_traced_distance_field_shadows", False), ("cast_shadows_on_clouds", True), ("per_pixel_atmosphere_transmittance", True), ("forward_shading_priority", 1),
+                     ("cast_cloud_shadows", True), ("use_ray_traced_distance_field_shadows", False), ("cast_shadows_on_clouds", True),
+                     # per-pixel transmittance banded the courtyard floor into long dark stripes (arena sits on the planet top)
+                     ("per_pixel_atmosphere_transmittance", False), ("forward_shading_priority", 1),
                      ("use_inset_shadows_for_movable_objects", True)):
             C.set_prop(sc, k, v, rep, quiet=True)
         self.lights["sun"] = sc
