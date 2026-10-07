@@ -180,3 +180,35 @@ _Read this first when resuming. Update after every completed sub-step._
   pre-warm the slot systems at scenario load (spawn once off-screen) or rely on PSO precaching in packaged builds.
 - Next: Chaos fracture of stone walls / thrown stones (agreed with the main session: fx owns it), Niagara pre-warm,
   then persistent looks (fire fields, water, wind) where the pack falls short; iOS check of the Niagara slots.
+
+## Niagara / material pre-warm (2026-10-07, session "Continue Fourfold FX: Niagara pre-warm, Chaos fracture")
+- The old "first blast hitches" number (79 vs 43 ms mean) was mostly a measurement artefact: the first showcase cue
+  fired on frame 1 amid the start-up stalls, and every cue window contained a ~160 ms showcase screenshot. Fixed the
+  tooling: the showcase's first cue now comes one interval after `ff.fx.Showcase` is set; `csv_fx.py` reports per cue
+  window GPU mean / max, worst frame, worst render-thread time and PSO misses (graphics / compute), first use vs
+  repeats; profiled runs take no showcase shots.
+- Real first-use cost (editor `-game`, Lab, 60 fps cap): first blast froze one 164 ms frame (21 graphics + 20 compute
+  PSO misses + the editor's on-demand Niagara system compile), first metal burst 49 ms, first steam 30 ms; repeats
+  had 0 misses. Cause: PSO precaching is compiled out of editor builds (`PipelineStateCache::IsPSOPrecachingEnabled`
+  returns false `WITH_EDITOR`), so every pipeline is built at its first draw; packaged builds precache, but only for
+  components that exist.
+- Fix (`ff.fx.Prewarm`, bits 1 = Niagara systems, 2 = FX materials, default 3): once the camera looks at the floor,
+  `ffx::PointBehindFloor` (FxArena, unit test `niagara_prewarm_point_behind_floor`) picks a point on the view ray
+  1.5-3.5 m behind the floor (inside the frustum, depth-hidden). `FFourfoldFxNiagara::Prewarm` plays each loaded slot
+  system there once (scale 0.1, 1.5 s, player effect = no scalability culling, `SetOcclusionQueryMode(AlwaysDisabled)`
+  so it still draws once its particles appear after the editor compile - without that its sprites never drew and 19
+  graphics misses stayed), ManualRelease then back to Niagara's pool; `AFourfoldFxActor::PrewarmMaterials` draws a
+  small triangle per FX material (same vertex streams as every procedural section; Rock casts shadows) and each static
+  FX mesh there for 4 frames. Timed slot systems (steam `life`) are ManualRelease too now (no stop on a component the
+  pool already handed to another cue).
+- Measured (same run each, `python3 unreal/Tools/vfx/csv_fx.py`):
+
+  | `ff.fx.Prewarm` | first blast frame max / RT max | PSO misses (gfx + compute) | first metal | first steam |
+  |---|---|---|---|---|
+  | 0 | 163.8 / 76.3 ms | 21 + 20 | 48.9 ms | 29.6 ms |
+  | 1 (systems, occludable) | 51.2 / 52.1 ms | 19 + 6 | 17.2 ms | 17.0 ms |
+  | 3 (systems + materials, occlusion off) | **17.2 / 3.2 ms** | 3 + 0 | 17.3 ms | 16.9 ms |
+
+  Every first-use window now stays at 16.9-17.4 ms frames (ice 20.9 once), render thread ~3 ms; repeats unchanged
+  (0 misses). The misses move into the load frames (84 + 48 in the pre-warm window). Look check: `prewarm_*.png`
+  shots 0.03-2.2 s after the pre-warm show nothing of it.

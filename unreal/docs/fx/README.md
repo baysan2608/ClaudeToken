@@ -114,11 +114,27 @@ so the Fab plugin is signed in, open Fourfold, Window > Fab > My Library > Niaga
   NS_Impact_* are bullet-sized, its bubbles do not read as water and its sparks stay orange (wrong for lightning /
   blue fire). `ff.fx.Niagara 0` switches the layer off at runtime (procedural only).
 * Look checks: `ff.fx.Showcase <seconds>` plays a fixed cue list (blast, stone, metal, glass, ice, lightning, sand,
-  water, steam, magma, fire cone, plant) through the normal event path 3 m beyond the first fighter;
-  `ff.fx.ShowcaseShots 0.12|0.5|1.2` saves `showcase_<n>_<cue>_<ms>.png` that long after each cue into `-FFShotDir`.
+  water, steam, magma, fire cone, plant) through the normal event path 3 m beyond the first fighter, the first cue one
+  interval after it is switched on (the scenario settles first); `ff.fx.ShowcaseShots 0.12|0.5|1.2` saves
+  `showcase_<n>_<cue>_<ms>.png` that long after each cue (and `prewarm_<ms>.png` after the pre-warm) into `-FFShotDir`.
   Example: `-scenario=lab -ExecCmds="ff.fx.Showcase 2.5, ff.fx.ShowcaseShots 0.12|0.5|1.2" -FFShot=50 -FFShotDir=<dir> -FFShotQuit`.
+* Pre-warm (`ff.fx.Prewarm`, default 3): the first time a cue system or an FX material draws, the renderer builds its
+  pipelines (PSOs) - in editor builds synchronously (PSO precaching is compiled out of `WITH_EDITOR`), and the editor
+  also compiles each pack system on its first spawn. The first blast of a fight used to freeze one 164 ms frame. So once
+  the camera looks at the floor after a scenario load, `UFourfoldFxSubsystem` picks a point on the view ray 1.5-3.5 m
+  *behind* the floor (`ffx::PointBehindFloor`: in the frustum, so things there are drawn, but depth-hidden) and
+  bit 1 plays each loaded slot system there once (scale 0.1, 1.5 s, exempt from scalability culling, occlusion
+  queries off so it draws whenever it has particles, ManualRelease then back to the pool), bit 2 draws a small
+  triangle per FX material and each static FX mesh there for 4 frames (rocks / walls with shadows). The cost moves
+  into the load frames; measured below in PROGRESS.md (Lab: first blast 164 -> 17 ms frame, first metal 49 -> 17 ms).
+* Pooling: fire-and-forget cues use AutoRelease; systems the layer stops itself (slot `life`, pre-warm) are
+  ManualRelease, so a stop never hits a component the pool already handed to another cue.
 * GPU budget: the Mac game is GPU-bound; slots are one-shot bursts only (no persistent Niagara), the pack's own
   Effect Types handle significance / culling, `min_quality` 1 keeps them off on low.
+* Profiling: `-csvCaptureFrames=2400 -ExecCmds="ff.fx.Showcase 2.5"` then `python3 unreal/Tools/vfx/csv_fx.py <csv>`
+  prints per cue window GPU mean / max, worst frame / render-thread time and PSO misses, first uses apart from
+  repeats. Never take showcase shots in a profiled run (each screenshot stalls 150+ ms). On this Mac add
+  `-FFExec="2:t.MaxFPS 60|2:r.DynamicRes.FrameTimeBudget 16.67"` (dynamic resolution follows the frame-rate cap).
 
 ## Tuning without a rebuild
 Edit `Content/Fourfold/Data/fx_config.json` (any subset of keys; colours are display sRGB) and run console

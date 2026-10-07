@@ -8,9 +8,11 @@
 #include "Logic/FxDrawList.h"
 #include "Misc/PackageName.h"
 #include "NiagaraComponent.h"
+#include "NiagaraEffectType.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "NiagaraTypes.h"
+#include "Particles/ParticleSystemComponent.h"
 
 #include <string>
 
@@ -19,6 +21,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogFourfoldFxNiagara, Log, All);
 namespace
 {
 	constexpr int32 kMaxSpawnsPerFrame = 10;
+	constexpr float kPrewarmScale = 0.1f;   // pre-warm instances: small, so nothing reaches above the floor that hides them
+	constexpr double kPrewarmLife = 1.5;    // seconds (editor builds first compile the system; late emitters)
 
 	FString ToFString(const std::string& S) { return UTF8_TO_TCHAR(S.c_str()); }
 	FString CueName(int32 Cue) { return ToFString(std::string(ffx::NCueName(ffx::NCue(Cue)))); }
@@ -216,13 +220,19 @@ void FFourfoldFxNiagara::Spawn(AActor* Owner, const ffx::DrawList& List, bool bS
 {
 	UWorld* World = Owner ? Owner->GetWorld() : nullptr;
 	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	// timed systems are ManualRelease: no other spawn can be handed the component before this releases it
 	for (int32 i = Timed.Num() - 1; i >= 0; --i)
 	{
 		if (Now >= Timed[i].StopAt)
 		{
 			if (UNiagaraComponent* C = Timed[i].Comp.Get())
 			{
-				C->Deactivate();   // stop emitting; live particles finish
+				if (Timed[i].bKill)
+				{
+					C->DeactivateImmediate();   // pre-warm instance: particles go too
+					C->SetOcclusionQueryMode(ENiagaraOcclusionQueryMode::Default);   // the pool hands it out as is
+				}
+				C->ReleaseToPool();   // stops emitting; back to the pool once the live particles finished
 			}
 			Timed.RemoveAtSwap(i);
 		}
@@ -241,7 +251,7 @@ void FFourfoldFxNiagara::Spawn(AActor* Owner, const ffx::DrawList& List, bool bS
 			continue;
 		}
 		const FSlot& S = Slots[Cue];
-		if (!S.System || Quality < S.MinQuality || R.intensity < S.MinIntensity)
+		if (!Usable(S) || R.intensity < S.MinIntensity)
 		{
 			continue;
 		}
@@ -253,8 +263,9 @@ void FFourfoldFxNiagara::Spawn(AActor* Owner, const ffx::DrawList& List, bool bS
 		}
 		const FRotator Rotation = FRotationMatrix::MakeFromZ(Dir).Rotator();
 		const float Scale = FMath::Max(0.01f, S.Scale * R.scale);
+		const bool bTimed = S.Life > 0.0f;
 		UNiagaraComponent* Comp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(Owner, S.System, Location, Rotation,
-			FVector(Scale), true, false, ENCPoolMethod::AutoRelease, true);
+			FVector(Scale), true, false, bTimed ? ENCPoolMethod::ManualRelease : ENCPoolMethod::AutoRelease, true);
 		if (!Comp)
 		{
 			continue;   // culled (effect type budget / not visible)
@@ -263,12 +274,72 @@ void FFourfoldFxNiagara::Spawn(AActor* Owner, const ffx::DrawList& List, bool bS
 		Comp->Activate(true);
 		++LastSpawns;
 		++TotalSpawns;
-		Live.Add(Comp);
-		if (S.Life > 0.0f)
+		if (bTimed)
 		{
 			Timed.Add({Comp, Now + double(S.Life)});
 		}
+		else
+		{
+			Live.Add(Comp);
+		}
 	}
+}
+
+int32 FFourfoldFxNiagara::Prewarm(AActor* Owner, const FVector& Location)
+{
+	UWorld* World = Owner ? Owner->GetWorld() : nullptr;
+	if (!World || Mask == 0)
+	{
+		return 0;
+	}
+	const double Now = World->GetTimeSeconds();
+	int32 Num = 0;
+	for (const FSlot& S : Slots)
+	{
+		if (!Usable(S) || Prewarmed.Contains(S.System))
+		{
+			continue;
+		}
+		Prewarmed.Add(S.System);
+		FFXSystemSpawnParameters P;
+		P.WorldContextObject = Owner;
+		P.SystemTemplate = S.System;
+		P.Location = Location;
+		P.Scale = FVector(kPrewarmScale);
+		P.bAutoDestroy = true;
+		P.bAutoActivate = true;
+		P.PoolingMethod = EPSCPoolMethod::ManualRelease;
+		P.bPreCullCheck = false;
+		P.bIsPlayerEffect = true;   // exempt from distance / visibility culling: it has to render once
+		UNiagaraComponent* Comp = UNiagaraFunctionLibrary::SpawnSystemAtLocationWithParams(P);
+		if (!Comp)
+		{
+			continue;
+		}
+		// never occlusion-culled: it must draw (the floor's depth hides it) whenever it has particles - in editor builds
+		// those only appear after the system compile, when an occludable proxy would long be culled
+		Comp->SetOcclusionQueryMode(ENiagaraOcclusionQueryMode::AlwaysDisabled);
+		Timed.Add({Comp, Now + kPrewarmLife, true});
+		++Num;
+		const FNiagaraSystemScalabilitySettings& Sc = S.System->GetScalabilitySettings();
+		UE_LOG(LogFourfoldFxNiagara, Log, TEXT("Pre-warm %s (culling: distance %s, not rendered %s, outside frustum %s)"),
+			*S.System->GetName(), Sc.bCullByDistance ? *FString::Printf(TEXT("%.0f cm"), Sc.MaxDistance) : TEXT("off"),
+			Sc.VisibilityCulling.bCullWhenNotRendered ? *FString::Printf(TEXT("%.1f s"), Sc.VisibilityCulling.MaxTimeWithoutRender) : TEXT("off"),
+			Sc.VisibilityCulling.bCullByViewFrustum ? *FString::Printf(TEXT("%.1f s"), Sc.VisibilityCulling.MaxTimeOutsideViewFrustum) : TEXT("off"));
+	}
+	return Num;
+}
+
+bool FFourfoldFxNiagara::NeedsPrewarm() const
+{
+	for (const FSlot& S : Slots)
+	{
+		if (Usable(S) && !Prewarmed.Contains(S.System))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void FFourfoldFxNiagara::StopAll()
@@ -277,7 +348,19 @@ void FFourfoldFxNiagara::StopAll()
 	{
 		if (UNiagaraComponent* Comp = C.Get())
 		{
+			Comp->DeactivateImmediate();   // AutoRelease: returns to the pool by itself
+		}
+	}
+	for (const FTimed& T : Timed)
+	{
+		if (UNiagaraComponent* Comp = T.Comp.Get())
+		{
 			Comp->DeactivateImmediate();
+			if (T.bKill)
+			{
+				Comp->SetOcclusionQueryMode(ENiagaraOcclusionQueryMode::Default);
+			}
+			Comp->ReleaseToPool();
 		}
 	}
 	Live.Reset();
@@ -286,6 +369,6 @@ void FFourfoldFxNiagara::StopAll()
 
 FString FFourfoldFxNiagara::GetDebugLine() const
 {
-	return FString::Printf(TEXT("niagara: %d slots, %d live, %d this frame, %d total"), FMath::CountBits64(Mask), Live.Num(),
-		LastSpawns, TotalSpawns);
+	return FString::Printf(TEXT("niagara: %d slots, %d live, %d this frame, %d total, %d pre-warmed"), FMath::CountBits64(Mask),
+		Live.Num() + Timed.Num(), LastSpawns, TotalSpawns, Prewarmed.Num());
 }

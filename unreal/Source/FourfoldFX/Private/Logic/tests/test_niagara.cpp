@@ -118,4 +118,21 @@ FXT_TEST(niagara_slot_rules_and_json) {
 	FXT_CHECK(r.ToJson() == c.ToJson());
 }
 
+FXT_TEST(niagara_prewarm_point_behind_floor) {
+	// third-person camera 3 m up looking 20 degrees down at a flat floor (no arena: ground 0)
+	const Vec3 cam(0.0f, 3.0f, 8.0f);
+	const Vec3 fwd = Norm(Vec3(0.0f, -0.364f, -1.0f));
+	Vec3 p;
+	FXT_CHECK(PointBehindFloor(nullptr, cam, fwd, 3.5f, 1.5f, 40.0f, p));
+	FXT_NEAR(p.y, -3.5f, 0.15f);                         // depth below the floor
+	FXT_NEAR(Norm(p - cam).dot(fwd), 1.0f, 1e-4);        // on the view ray: screen centre, inside the frustum
+	// the distance cap trades depth for range, down to minDepth
+	FXT_CHECK(PointBehindFloor(nullptr, cam, fwd, 3.5f, 1.5f, 14.0f, p));
+	FXT_CHECK((p - cam).length() <= 14.0f + 1e-3f && p.y < -1.5f && p.y > -3.5f);
+	FXT_CHECK(!PointBehindFloor(nullptr, cam, fwd, 3.5f, 1.5f, 10.0f, p));
+	// looking at the horizon or up: nothing to hide behind
+	FXT_CHECK(!PointBehindFloor(nullptr, cam, Vec3(0.0f, 0.0f, -1.0f), 3.5f, 1.5f, 40.0f, p));
+	FXT_CHECK(!PointBehindFloor(nullptr, cam, Norm(Vec3(0.0f, 0.3f, -1.0f)), 3.5f, 1.5f, 40.0f, p));
+}
+
 #endif  // FF_LOGIC_TESTS

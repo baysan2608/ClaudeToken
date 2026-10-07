@@ -17,6 +17,7 @@
 #include "ProceduralMeshComponent.h"
 
 #include <string>
+#include <type_traits>
 
 DEFINE_LOG_CATEGORY_STATIC(LogFourfoldFxRender, Log, All);
 
@@ -88,6 +89,16 @@ namespace
 	};
 }
 
+namespace
+{
+	// A static mesh's own material when it is an instance of the slot's master (it carries baked maps), else null.
+	UMaterialInterface* OwnSlotMaterial(UStaticMesh* Mesh, UMaterialInterface* SlotMat)
+	{
+		UMaterialInterface* Own = Mesh ? Mesh->GetMaterial(0) : nullptr;
+		return (Own && SlotMat && Own != SlotMat && Own->GetBaseMaterial() == SlotMat->GetBaseMaterial()) ? Own : nullptr;
+	}
+}
+
 struct FFourfoldFxRendererImpl
 {
 	TArray<FCompState> States;
@@ -139,29 +150,17 @@ void AFourfoldFxActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 namespace
 {
-	int32 CreateComponent(AFourfoldFxActor* Owner, USceneComponent* Root, FFourfoldFxRendererImpl& I, bool bStatic, int32 Slot,
-		UMaterialInterface* Material, TArray<TObjectPtr<UPrimitiveComponent>>& Pooled,
-		TArray<TObjectPtr<UMaterialInstanceDynamic>>& PooledMids)
+	// Every effect primitive (pooled or pre-warm) is created the same way: the flags take part in its render state, so
+	// a pre-warm draw only builds the pipelines the real items use when they match.
+	template <typename T>
+	T* NewFxPrimitive(AFourfoldFxActor* Owner, USceneComponent* Root)
 	{
-		FCompState St;
-		St.bStatic = bStatic;
-		St.Slot = Slot;
-		if (bStatic)
+		T* P = NewObject<T>(Owner, NAME_None, RF_Transient);
+		if constexpr (std::is_same_v<T, UProceduralMeshComponent>)
 		{
-			UStaticMeshComponent* C = NewObject<UStaticMeshComponent>(Owner, NAME_None, RF_Transient);
-			C->SetMobility(EComponentMobility::Movable);
-			St.Static = C;
-			St.Comp = C;
+			P->bUseAsyncCooking = false;
 		}
-		else
-		{
-			UProceduralMeshComponent* C = NewObject<UProceduralMeshComponent>(Owner, NAME_None, RF_Transient);
-			C->bUseAsyncCooking = false;
-			C->SetMobility(EComponentMobility::Movable);
-			St.Proc = C;
-			St.Comp = C;
-		}
-		UPrimitiveComponent* P = St.Comp;
+		P->SetMobility(EComponentMobility::Movable);
 		P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		P->SetGenerateOverlapEvents(false);
 		P->SetCanEverAffectNavigation(false);
@@ -173,6 +172,27 @@ namespace
 		P->SetupAttachment(Root);
 		P->RegisterComponent();
 		P->SetVisibility(false);
+		return P;
+	}
+
+	int32 CreateComponent(AFourfoldFxActor* Owner, USceneComponent* Root, FFourfoldFxRendererImpl& I, bool bStatic, int32 Slot,
+		UMaterialInterface* Material, TArray<TObjectPtr<UPrimitiveComponent>>& Pooled,
+		TArray<TObjectPtr<UMaterialInstanceDynamic>>& PooledMids)
+	{
+		FCompState St;
+		St.bStatic = bStatic;
+		St.Slot = Slot;
+		if (bStatic)
+		{
+			St.Static = NewFxPrimitive<UStaticMeshComponent>(Owner, Root);
+			St.Comp = St.Static;
+		}
+		else
+		{
+			St.Proc = NewFxPrimitive<UProceduralMeshComponent>(Owner, Root);
+			St.Comp = St.Proc;
+		}
+		UPrimitiveComponent* P = St.Comp;
 		if (Material)
 		{
 			St.MID = UMaterialInstanceDynamic::Create(Material, Owner);
@@ -303,6 +323,90 @@ void AFourfoldFxActor::ReleaseAll()
 	{
 		Niagara->StopAll();
 	}
+	EndMaterialPrewarm();
+}
+
+void AFourfoldFxActor::PrewarmMaterials(const FVector& Location)
+{
+	bMaterialsPrewarmed = true;
+	EndMaterialPrewarm();
+	// one small triangle with the vertex streams of every procedural section (the vertex layout is part of the PSO)
+	ffx::MeshData Tri;
+	const ffx::Vec3 N(0.0f, 0.0f, 1.0f);
+	Tri.Add(ffx::Vec3(-0.15f, 0.0f, 0.0f), N, ffx::Vec2(0.0f, 0.0f), ffx::Color(1.0f, 1.0f, 1.0f, 1.0f));
+	Tri.Add(ffx::Vec3(0.15f, 0.0f, 0.0f), N, ffx::Vec2(1.0f, 0.0f), ffx::Color(1.0f, 1.0f, 1.0f, 1.0f));
+	Tri.Add(ffx::Vec3(0.0f, 0.3f, 0.0f), N, ffx::Vec2(0.5f, 1.0f), ffx::Color(1.0f, 1.0f, 1.0f, 1.0f));
+	Tri.Tri(0, 1, 2);
+	FFFx::FMeshBuffers B;
+	B.Convert(Tri, true);
+	// opaque items that cast shadows: rocks and walls (Rock slot); their shadow-depth pipelines get built too
+	auto CastsShadow = [](int32 Slot) { return Slot == int32(ffx::MatSlot::Rock); };
+	int32 k = 0;
+	auto Place = [&](UPrimitiveComponent* C, bool bShadow)
+	{
+		C->SetWorldLocation(Location + FVector(double(k % 6) * 40.0, double(k / 6) * 40.0, 0.0));   // spread: no overdraw
+		C->SetCastShadow(bShadow);
+		C->SetVisibility(true);
+		PrewarmComponents.Add(C);
+		++k;
+	};
+	for (int32 Slot = 0; Slot < kNumSlots; ++Slot)
+	{
+		if (UMaterialInterface* Mat = SlotMaterials[Slot].Get())
+		{
+			UProceduralMeshComponent* C = NewFxPrimitive<UProceduralMeshComponent>(this, Root);
+			C->CreateMeshSection_LinearColor(0, B.Vertices, B.Triangles, B.Normals, B.UV0, B.UV1, B.UV2, B.UV3, B.Colors,
+				B.Tangents, false, false);
+			C->SetMaterial(0, Mat);   // the pooled dynamic instances share their parent's shaders
+			Place(C, CastsShadow(Slot));
+		}
+	}
+	// the static meshes the views draw, with the material Apply() binds to them
+	struct FStaticUse
+	{
+		ffx::MeshAsset Asset;
+		ffx::MatSlot Slot;
+	};
+	using ffx::MeshAsset;
+	using ffx::MatSlot;
+	const FStaticUse Statics[] = {{MeshAsset::Rock0, MatSlot::Rock}, {MeshAsset::Rock1, MatSlot::Rock},
+		{MeshAsset::Rock2, MatSlot::Rock}, {MeshAsset::Rock3, MatSlot::Rock}, {MeshAsset::Rock4, MatSlot::Rock},
+		{MeshAsset::Rock5, MatSlot::Rock}, {MeshAsset::Rock6, MatSlot::Rock}, {MeshAsset::Rock7, MatSlot::Rock},
+		{MeshAsset::Disc, MatSlot::Metal}, {MeshAsset::Lance, MatSlot::Metal}, {MeshAsset::Plate, MatSlot::Metal},
+		{MeshAsset::IceShard, MatSlot::Crystal}};
+	for (const FStaticUse& S : Statics)
+	{
+		UStaticMesh* Mesh = AssetMeshes.IsValidIndex(int32(S.Asset)) ? AssetMeshes[int32(S.Asset)].Get() : nullptr;
+		UMaterialInterface* Mat = SlotMaterials.IsValidIndex(int32(S.Slot)) ? SlotMaterials[int32(S.Slot)].Get() : nullptr;
+		if (!Mesh || !Mat)
+		{
+			continue;
+		}
+		UStaticMeshComponent* C = NewFxPrimitive<UStaticMeshComponent>(this, Root);
+		C->SetStaticMesh(Mesh);
+		UMaterialInterface* Own = OwnSlotMaterial(Mesh, Mat);
+		for (int32 m = 0; m < C->GetNumMaterials(); ++m)
+		{
+			C->SetMaterial(m, Own ? Own : Mat);
+		}
+		C->SetWorldScale3D(FVector(0.3));
+		Place(C, CastsShadow(int32(S.Slot)));
+	}
+	PrewarmFrames = 4;   // a few frames: the base pass draws on the first (occlusion has no history yet), shadows on each
+	UE_LOG(LogFourfoldFxRender, Log, TEXT("Material pre-warm: %d components at %s"), PrewarmComponents.Num(), *Location.ToCompactString());
+}
+
+void AFourfoldFxActor::EndMaterialPrewarm()
+{
+	for (UPrimitiveComponent* C : PrewarmComponents)
+	{
+		if (C)
+		{
+			C->DestroyComponent();
+		}
+	}
+	PrewarmComponents.Reset();
+	PrewarmFrames = 0;
 }
 
 void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* Sim, bool bNiagara)
@@ -382,8 +486,7 @@ void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* S
 				St.Static->SetStaticMesh(Asset);
 				St.BoundMesh = Asset;
 				// the mesh's own slot material wins when it is an instance of this slot's master (baked maps)
-				UMaterialInterface* Own = Asset->GetMaterial(0);
-				UMaterialInterface* Parent = (Own && Own != Mat && Own->GetBaseMaterial() == Mat->GetBaseMaterial()) ? Own : nullptr;
+				UMaterialInterface* Parent = OwnSlotMaterial(Asset, Mat);
 				UMaterialInstanceDynamic* Want = St.MasterMID;
 				if (Parent)
 				{
@@ -667,6 +770,10 @@ void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* S
 	}
 	// Niagara cue systems (fire and forget; timed stops run even while new spawns are off)
 	Niagara->Spawn(this, List, bNiagara);
+	if (PrewarmFrames > 0 && --PrewarmFrames == 0)
+	{
+		EndMaterialPrewarm();
+	}
 }
 
 FString AFourfoldFxActor::GetDebugLine() const
@@ -688,4 +795,14 @@ FString AFourfoldFxActor::GetDebugLine() const
 uint64 AFourfoldFxActor::GetNiagaraLoadedMask() const
 {
 	return Niagara ? Niagara->LoadedMask() : 0;
+}
+
+bool AFourfoldFxActor::NeedsNiagaraPrewarm() const
+{
+	return Niagara && Niagara->NeedsPrewarm();
+}
+
+int32 AFourfoldFxActor::PrewarmNiagara(const FVector& Location)
+{
+	return Niagara ? Niagara->Prewarm(this, Location) : 0;
 }

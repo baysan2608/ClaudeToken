@@ -32,13 +32,18 @@ static TAutoConsoleVariable<int32> CVarFourfoldFxStats(TEXT("ff.fx.Stats"), 0,
 static TAutoConsoleVariable<int32> CVarFourfoldFxNiagara(TEXT("ff.fx.Niagara"), 1,
 	TEXT("Fourfold effects: 1 = Niagara cue systems on (fx_config.json \"niagara\"), 0 = procedural one-shots only."),
 	ECVF_Default);
+static TAutoConsoleVariable<int32> CVarFourfoldFxPrewarm(TEXT("ff.fx.Prewarm"), 3,
+	TEXT("Fourfold effects: pre-warm once the scenario is in view, hidden behind the floor on the camera's view ray, so ")
+	TEXT("first uses mid-fight do not hitch on pipeline (PSO) / shader creation. Bits: 1 = play each Niagara cue system ")
+	TEXT("once (small), 2 = draw every FX material and static FX mesh for a few frames. 0 = off (A/B)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarFourfoldFxShowcase(TEXT("ff.fx.Showcase"), 0.0f,
-	TEXT("Fourfold effects: N > 0 = every N seconds play the next cue of a fixed list (blast, stone, metal, glass, ice, ")
-	TEXT("lightning, sand, water, steam, magma, fire cone, plant) 4 m in front of the camera through the normal event path ")
-	TEXT("(look checks and screenshots; the log names each cue)."), ECVF_Default);
+	TEXT("Fourfold effects: N > 0 = every N seconds (the first one N seconds after switching it on) play the next cue of ")
+	TEXT("a fixed list (blast, stone, metal, glass, ice, lightning, sand, water, steam, magma, fire cone, plant) 3 m ")
+	TEXT("beyond the first fighter through the normal event path (look checks and screenshots; the log names each cue)."),
+	ECVF_Default);
 static TAutoConsoleVariable<FString> CVarFourfoldFxShowcaseShots(TEXT("ff.fx.ShowcaseShots"), TEXT(""),
-	TEXT("Fourfold effects: list of seconds (0.1|0.5) after each showcase cue at which to save ")
-	TEXT("<-FFShotDir or Saved/Shots>/showcase_<n>_<cue>_<ms>.png."), ECVF_Default);
+	TEXT("Fourfold effects: list of seconds (0.1|0.5) after each showcase cue (and after the pre-warm) at which to save ")
+	TEXT("<-FFShotDir or Saved/Shots>/showcase_<n>_<cue>_<ms>.png (prewarm_<ms>.png)."), ECVF_Default);
 
 struct FFourfoldFxImpl
 {
@@ -48,7 +53,7 @@ struct FFourfoldFxImpl
 	std::vector<ff::Event> Events;   // sim events + showcase cues (only while ff.fx.Showcase is on)
 	double LastUpdateMs = 0.0;
 	double PeakUpdateMs = 0.0;
-	double ShowcaseNext = 0.0;
+	double ShowcaseNext = -1.0;   // < 0: showcase off (the first cue comes one interval after it is switched on)
 	int32 ShowcaseIndex = 0;
 	TArray<TPair<double, FString>> ShowcaseShots;   // (world time, file) still to capture
 };
@@ -126,6 +131,24 @@ namespace
 		E.data = ff::Value(D);
 		OutName = FString(UTF8_TO_TCHAR(Cue[0])) + TEXT("/") + UTF8_TO_TCHAR(Cue[1]);
 		return E;
+	}
+}
+
+// ff.fx.ShowcaseShots: queue "<prefix>_<ms>.png" screenshots that many seconds after Now (showcase cues, pre-warm).
+static void QueueShots(TArray<TPair<double, FString>>& Shots, double Now, const FString& Prefix)
+{
+	TArray<FString> Offsets;
+	static const TCHAR* const kSeparators[] = {TEXT(","), TEXT("|"), TEXT(" ")};   // -ExecCmds splits on commas: use 0.1|0.5
+	CVarFourfoldFxShowcaseShots.GetValueOnGameThread().ParseIntoArray(Offsets, kSeparators, 3);
+	FString Dir;
+	if (!FParse::Value(FCommandLine::Get(), TEXT("-FFShotDir="), Dir))
+	{
+		Dir = FPaths::ProjectSavedDir() / TEXT("Shots");
+	}
+	for (const FString& O : Offsets)
+	{
+		const double T = FCString::Atod(*O);
+		Shots.Add({Now + T, Dir / FString::Printf(TEXT("%s_%04d.png"), *Prefix, int32(T * 1000.0))});
 	}
 }
 
@@ -277,7 +300,8 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 		In.arena = &Sim->GetArena();
 	}
 	// camera (sim space)
-	if (APlayerCameraManager* Cam = World ? UGameplayStatics::GetPlayerCameraManager(World, 0) : nullptr)
+	APlayerCameraManager* Cam = World ? UGameplayStatics::GetPlayerCameraManager(World, 0) : nullptr;
+	if (Cam)
 	{
 		const FRotator Rot = Cam->GetCameraRotation();
 		const FRotationMatrix RM(Rot);
@@ -321,9 +345,40 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 	In.anchors = &Impl->Anchors;
 	const bool bNiagara = CVarFourfoldFxNiagara.GetValueOnGameThread() != 0;
 	In.niagaraLoaded = bNiagara ? FxActor->GetNiagaraLoadedMask() : 0;
+	// pre-warm: Niagara cue systems and FX materials drawn once on the view ray behind the floor (in the frustum, so
+	// their pipelines get built, but hidden); retried every frame until the camera looks at the floor
+	const int32 Prewarm = CVarFourfoldFxPrewarm.GetValueOnGameThread();
+	const bool bPrewarmNiagara = (Prewarm & 1) != 0 && bNiagara && FxActor->NeedsNiagaraPrewarm();
+	const bool bPrewarmMaterials = (Prewarm & 2) != 0 && FxActor->NeedsMaterialPrewarm();
+	ffx::Vec3 Hidden;
+	if (Cam && (bPrewarmNiagara || bPrewarmMaterials) &&
+		ffx::PointBehindFloor(In.arena, In.cam.pos, ffx::Norm(In.cam.fwd), 3.5f, 1.5f, 30.0f, Hidden))
+	{
+		const FVector Where = FF::ToUE(Hidden);
+		const int32 Num = bPrewarmNiagara ? FxActor->PrewarmNiagara(Where) : 0;
+		if (bPrewarmMaterials)
+		{
+			FxActor->PrewarmMaterials(Where);
+		}
+		UE_LOG(LogFourfoldFx, Display, TEXT("Pre-warm at %s: %d Niagara systems%s"), *Where.ToCompactString(), Num,
+			bPrewarmMaterials ? TEXT(", FX materials") : TEXT(""));
+		CSV_EVENT_GLOBAL(TEXT("ff.fx prewarm %d%s"), Num, bPrewarmMaterials ? TEXT(" +materials") : TEXT(""));
+		if (World)
+		{
+			QueueShots(Impl->ShowcaseShots, World->GetTimeSeconds(), TEXT("prewarm"));   // look check: nothing may show
+		}
+	}
 	// look checks: inject the next showcase cue
 	const float Showcase = CVarFourfoldFxShowcase.GetValueOnGameThread();
-	if (Showcase > 0.0f && World && World->GetTimeSeconds() >= Impl->ShowcaseNext)
+	if (Showcase <= 0.0f || !World)
+	{
+		Impl->ShowcaseNext = -1.0;
+	}
+	else if (Impl->ShowcaseNext < 0.0)
+	{
+		Impl->ShowcaseNext = World->GetTimeSeconds() + double(Showcase);   // let the scenario settle first
+	}
+	else if (World->GetTimeSeconds() >= Impl->ShowcaseNext)
 	{
 		Impl->ShowcaseNext = World->GetTimeSeconds() + double(Showcase);
 		Impl->Events = Frame.Events ? *Frame.Events : std::vector<ff::Event>();
@@ -333,20 +388,8 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 		In.events = &Impl->Events;
 		UE_LOG(LogFourfoldFx, Display, TEXT("Showcase %d: %s at %.1fs"), Impl->ShowcaseIndex - 1, *Name, World->GetTimeSeconds());
 		CSV_EVENT_GLOBAL(TEXT("ff.fx showcase %s"), *Name);
-		TArray<FString> Offsets;
-		static const TCHAR* const kSeparators[] = {TEXT(","), TEXT("|"), TEXT(" ")};   // -ExecCmds splits on commas: use 0.1|0.5
-		CVarFourfoldFxShowcaseShots.GetValueOnGameThread().ParseIntoArray(Offsets, kSeparators, 3);
-		FString Dir;
-		if (!FParse::Value(FCommandLine::Get(), TEXT("-FFShotDir="), Dir))
-		{
-			Dir = FPaths::ProjectSavedDir() / TEXT("Shots");
-		}
-		for (const FString& O : Offsets)
-		{
-			const double T = FCString::Atod(*O);
-			Impl->ShowcaseShots.Add({World->GetTimeSeconds() + T, Dir / FString::Printf(TEXT("showcase_%02d_%s_%04d.png"),
-				Impl->ShowcaseIndex - 1, *Name.Replace(TEXT("/"), TEXT("_")), int32(T * 1000.0))});
-		}
+		QueueShots(Impl->ShowcaseShots, World->GetTimeSeconds(),
+			FString::Printf(TEXT("showcase_%02d_%s"), Impl->ShowcaseIndex - 1, *Name.Replace(TEXT("/"), TEXT("_"))));
 	}
 	// one pending showcase screenshot per frame (FScreenshotRequest holds a single request)
 	for (int32 i = 0; World && i < Impl->ShowcaseShots.Num(); ++i)

@@ -44,6 +44,16 @@ public:
 	FString GetDebugLine() const;
 	/** Bit per ffx::NCue: the cue's Niagara system loaded (fed back to the logic as FxFrameIn::niagaraLoaded). */
 	uint64 GetNiagaraLoadedMask() const;
+	/** True while a loaded Niagara cue system has not been pre-warmed in this world. */
+	bool NeedsNiagaraPrewarm() const;
+	/** Plays each loaded Niagara cue system once, small, at Location (a point hidden behind the floor) so its first-use
+	 *  costs are paid now; returns the number of systems spawned. */
+	int32 PrewarmNiagara(const FVector& Location);
+	/** Draws a small triangle per FX material and each static FX mesh at Location (hidden behind the floor) for a few
+	 *  frames, so every look's render pipelines are built at load rather than on its first appearance mid-fight (PSO
+	 *  precaching is compiled out of editor builds; packaged builds only precache components that exist). */
+	void PrewarmMaterials(const FVector& Location);
+	bool NeedsMaterialPrewarm() const { return !bMaterialsPrewarmed; }
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -59,8 +69,14 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UTexture>> FlipbookTextures;
 	/** Niagara systems of the cue slots (fx_config.json "niagara"). */
 	UPROPERTY(Transient) TArray<TObjectPtr<UObject>> NiagaraSystems;
+	/** Material pre-warm draws (destroyed after a few frames). */
+	UPROPERTY(Transient) TArray<TObjectPtr<UPrimitiveComponent>> PrewarmComponents;
 
 private:
+	void EndMaterialPrewarm();
+
+	int32 PrewarmFrames = 0;
+	bool bMaterialsPrewarmed = false;
 	TSharedPtr<FFourfoldFxRendererImpl> Impl;
 	TSharedPtr<FFourfoldFxNiagara> Niagara;
 	friend struct FFourfoldFxRendererImpl;

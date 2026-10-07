@@ -3,6 +3,8 @@
 
 #include "ff/Snapshot.h"
 
+#include <algorithm>
+
 namespace ffx {
 
 float GroundHeight(const ff::ArenaView* arena, float x, float z, float fromY) {
@@ -18,6 +20,23 @@ float GroundHeight(const ff::ArenaView* arena, float x, float z, float fromY) {
 			if (s.max.y <= fromY + kStepHeight && s.max.y > g) g = s.max.y;
 	}
 	return g;
+}
+
+bool PointBehindFloor(const ff::ArenaView* arena, const Vec3& camPos, const Vec3& camFwd, float depth, float minDepth,
+                      float maxDist, Vec3& out) {
+	const float down = -camFwd.y;   // metres the ray drops per metre travelled
+	if (down < 0.02f) return false;
+	constexpr float kStep = 0.25f;
+	for (float t = kStep; t <= maxDist; t += kStep) {
+		const Vec3 p = camPos + camFwd * t;
+		const float g = GroundUnder(arena, p);
+		if (p.y > g) continue;
+		const float tEnd = std::min(t + depth / down, maxDist);
+		if ((tEnd - t) * down < minDepth) return false;
+		out = camPos + camFwd * tEnd;
+		return true;
+	}
+	return false;
 }
 
 }  // namespace ffx
