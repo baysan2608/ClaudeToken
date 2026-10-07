@@ -81,6 +81,7 @@ struct SystemReq {
 	float intensity = 1.0f;       // strength of the cue (parameter source "intensity")
 	Color color{0.0f, 0.0f, 0.0f, 0.0f};
 	Color color2{0.0f, 0.0f, 0.0f, 0.0f};
+	Vec3 target;                  // a second point (parameter source "target"): where an arc ends; = pos by default
 };
 
 struct FracturePiece;   // FxFracture.h
@@ -113,6 +114,7 @@ struct LoopReq {
 	float intensity = 1.0f;
 	Color color{0.0f, 0.0f, 0.0f, 0.0f};
 	Color color2{0.0f, 0.0f, 0.0f, 0.0f};
+	Vec3 target;                  // parameter source "target"; = pos by default
 };
 
 // A solid the physics debris bounces off (a raised stone wall body): an oriented box, xform.pos = centre and the basis
@@ -142,6 +144,7 @@ struct DrawList {
 		l.key = key;
 		l.cue = cue;
 		l.pos = pos;
+		l.target = pos;
 		return l;
 	}
 	FractureReq& Fracture() { return fractures.emplace_back(); }
@@ -152,6 +155,7 @@ struct DrawList {
 		s.dir = dir;
 		s.scale = scale;
 		s.intensity = intensity;
+		s.target = pos;
 		return s;
 	}
 	DrawItem& Add(uint32_t key, MatSlot mat, const MeshData* mesh, const Xform& x = Xform()) {

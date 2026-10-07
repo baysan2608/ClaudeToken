@@ -1202,6 +1202,7 @@ public:
 		keyOuter_ = c.keys.New();
 		keyInner_ = c.keys.New();
 		keyDebris_ = c.keys.New();
+		for (uint32_t& k : keyWind_) k = c.keys.New();
 		seed_ = SeedOf(f.b.id);
 		Rng r(4242u);
 		for (int i = 0; i < kDebris; ++i)
@@ -1255,6 +1256,18 @@ public:
 			it.sortPriority = inner ? 2 : 1;
 		}
 		const std::string& st = sel.style;
+		// wind ribbons: points circling the funnel at three heights leave spiral streaks (fx_config "niagara_loops")
+		if (fade >= 1.0f && c.LoopOn(LCue::Wind)) {
+			for (int i = 0; i < kWind; ++i) {
+				const float hf = 0.2f + 0.3f * static_cast<float>(i);
+				const float ang = spinPhase_ * kFxTau * (1.0f + 0.25f * static_cast<float>(i)) + kFxTau * static_cast<float>(i) / kWind;
+				const float rr = radius_ * Lerp(0.55f, 1.0f, hf);
+				LoopReq& l = c.out.Loop(keyWind_[static_cast<size_t>(i)], LCue::Wind,
+				                        pos_ + Vec3(std::cos(ang) * rr, hf * height_, std::sin(ang) * rr));
+				l.scale = Clamp(radius_ * 0.6f, 0.4f, 1.2f);
+				l.color = vl.a;
+			}
+		}
 		if (!vl.debris || st == "eddy") return;
 		// debris: inner chips orbit faster (angular speed ~ 1/r), climb and fall back on a slow cycle
 		debris_.Clear();
@@ -1283,6 +1296,7 @@ public:
 
 private:
 	static constexpr int kDebris = 10;
+	static constexpr int kWind = 3;
 	void BuildFunnels() {
 		const std::string& st = sel.style;
 		float rb = radius_ * 0.22f, sk = radius_ * 0.5f;
@@ -1315,6 +1329,7 @@ private:
 		build(inner_, rb * 0.55f, radius_ * 0.62f, sk * 0.4f, height_ * 0.92f);
 	}
 	uint32_t keyOuter_ = 0, keyInner_ = 0, keyDebris_ = 0, seed_ = 0;
+	std::array<uint32_t, kWind> keyWind_{};
 	float deb_[kDebris][4] = {};
 	Vec3 pos_;
 	float radius_ = 1.6f, height_ = 3.0f, spin_ = 4.0f, spinPhase_ = 0.0f, risePhase_ = 0.0f, builtR_ = -1.0f, builtH_ = -1.0f;
@@ -1329,6 +1344,8 @@ public:
 	void Init(const BodyFrame& f, Ctx& c) override {
 		const ff::BodyView& b = f.b;
 		key_ = c.keys.New();
+		keyTips_[0] = c.keys.New();
+		keyTips_[1] = c.keys.New();
 		wall_ = sel.style == "wall";
 		size_ = wall_ ? Vec3(MaxF(b.wall_half.x, b.radius), MaxF(b.wall_half.y * 2.0f, 1.8f), 1.0f)
 		              : Vec3(1, 1, 1) * Clamp(b.radius * 1.6f, 0.5f, 1.4f);
@@ -1363,11 +1380,21 @@ public:
 		it.params.Set(P::Age, 0.5f);
 		it.params.Set(PV::Color, Linear(c.cfg.DustColor(Fam::Wind)));
 		it.sortPriority = 1;
+		// a flying crescent trails ribbons from its two tips (unit crescent: tips near local x = -1 / +1)
+		if (!wall_ && fade >= 1.0f && c.LoopOn(LCue::Wind)) {
+			for (int i = 0; i < 2; ++i) {
+				LoopReq& l = c.out.Loop(keyTips_[static_cast<size_t>(i)], LCue::Wind, pos_ + x.basis.x * (i == 0 ? -0.95f : 0.95f));
+				l.dir = basis_.z * -1.0f;
+				l.scale = Clamp(size_.x * 0.7f, 0.4f, 1.0f);
+				l.color = c.cfg.DustColor(Fam::Wind);
+			}
+		}
 	}
 	float FadeTime() const override { return 0.2f; }
 
 private:
 	uint32_t key_ = 0;
+	std::array<uint32_t, 2> keyTips_{};
 	bool wall_ = false;
 	Vec3 pos_, size_{1, 1, 1};
 	Basis basis_;

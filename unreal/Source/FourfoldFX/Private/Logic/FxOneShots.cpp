@@ -1057,6 +1057,10 @@ void OneShots::Bolt(Ctx& c, const std::vector<Vec3>& nodes, uint32_t seed, float
 	                             0.6f + 0.4f * Clamp(intensity, 0.0f, 2.0f), intensity);
 	sr.color = Color(1.0f, 1.0f, 1.0f, 1.0f);
 	sr.color2 = tint;
+	// ribbon arcs along the strike (adds): the system's own arcs leap from the first node to the last
+	SystemReq& arc = c.out.System(NCue::BoltArc, nodes.front(), Norm(tip - nodes.front(), Vec3(0.0f, 1.0f, 0.0f)), 1.0f, intensity);
+	arc.target = tip;
+	arc.color = tint;
 }
 
 void OneShots::LightPulse(Ctx& c, const Vec3& pos, const Color& col, float intensity, float radius, float dur) {

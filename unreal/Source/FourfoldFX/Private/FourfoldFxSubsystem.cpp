@@ -62,13 +62,25 @@ struct FFourfoldFxImpl
 	double ShowcaseNext = -1.0;   // < 0: showcase off (the first cue comes one interval after it is switched on)
 	int32 ShowcaseIndex = 0;
 	TArray<TPair<double, FString>> ShowcaseShots;   // (world time, file) still to capture
+	// showcase "body/<kind>": a fake body the FX layer alone sees (added to copies of the snapshots; never in the sim)
+	ff::Snapshot FakePrev, FakeCurr;
+	ff::BodyView FakeBody;
+	ffx::Vec3 FakeStart;
+	double FakeFrom = 0.0, FakeUntil = -1.0;
 };
 
 namespace
 {
 	bool LoadConfigFile(ffx::FxConfig& Out)
 	{
-		const FString Path = FPaths::ProjectContentDir() / TEXT("Fourfold/Data/fx_config.json");
+		// -FFFxConfig=<file>: look experiments without touching the committed config
+		FString Path = FPaths::ProjectContentDir() / TEXT("Fourfold/Data/fx_config.json");
+		FString Override;
+		if (FParse::Value(FCommandLine::Get(), TEXT("-FFFxConfig="), Override))
+		{
+			Path = Override;
+			UE_LOG(LogFourfoldFx, Display, TEXT("fx config from %s (-FFFxConfig)"), *Path);
+		}
 		FString Text;
 		if (!FFileHelper::LoadFileToString(Text, *Path))
 		{
@@ -111,7 +123,8 @@ namespace
 	{
 		static const char* const kCues[][2] = {{"burst", "blast"}, {"burst", "stone"}, {"burst", "metal"}, {"burst", "glass"},
 			{"burst", "ice"}, {"burst", "lightning"}, {"burst", "sand"}, {"burst", "water"}, {"burst", "steam"},
-			{"erupt", "magma"}, {"cone", "flame"}, {"erupt", "plant"}, {"break", "rock"}, {"break", "wall"}};
+			{"erupt", "magma"}, {"cone", "flame"}, {"erupt", "plant"}, {"break", "rock"}, {"break", "wall"}, {"bolt", "lightning"},
+		{"body", "tornado"}, {"body", "crescent"}, {"body", "fire_field"}, {"body", "steam"}};
 		constexpr int32 kNum = int32(sizeof(kCues) / sizeof(kCues[0]));
 		// ff.fx.ShowcaseFilter: the Index-th cue among those whose "fx/mat" name contains the filter
 		const FString Filter = CVarFourfoldFxShowcaseFilter.GetValueOnGameThread();
@@ -135,6 +148,30 @@ namespace
 		At.y = ffx::GroundUnder(In.arena, ffx::Vec3(At.x, At.y + 2.0f, At.z)) + 1.0f;
 		const bool bCone = FCStringAnsi::Strcmp(Cue[0], "cone") == 0;
 		OutName = FString(UTF8_TO_TCHAR(Cue[0])) + TEXT("/") + UTF8_TO_TCHAR(Cue[1]);
+		if (FCStringAnsi::Strcmp(Cue[0], "body") == 0)
+		{
+			ff::Dict B;
+			B.set("kind", ff::Value(Cue[1]));
+			B.set("pos", ff::Value(ffx::Vec3(At.x, At.y - 1.0f, At.z)));
+			B.set("dir", ff::Value(Right));
+			ff::Event E;
+			E.type = "fx_showcase_body";   // handled by the subsystem, never reaches the director
+			E.data = ff::Value(B);
+			return E;
+		}
+		if (FCStringAnsi::Strcmp(Cue[0], "bolt") == 0)
+		{
+			// a bolt striking across the view, high on the left to the ground on the right (the sim's "lightning" event)
+			ff::Dict B;
+			B.set("actor", ff::Value(ActorId));
+			const ffx::Vec3 From = At - Right * 2.5f + ffx::Vec3(0.0f, 1.2f, 0.0f);
+			const ffx::Vec3 To = At + Right * 2.5f - ffx::Vec3(0.0f, 0.95f, 0.0f);
+			B.set("path", ff::Value(ff::Array({ff::Value(From), ff::Value(To)})));
+			ff::Event E;
+			E.type = "lightning";
+			E.data = ff::Value(B);
+			return E;
+		}
 		if (FCStringAnsi::Strcmp(Cue[0], "break") == 0)
 		{
 			// a stone (1 m up, falling) or a wall breaking into physics debris with no sim body behind it
@@ -425,8 +462,34 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 		Impl->Events = Frame.Events ? *Frame.Events : std::vector<ff::Event>();
 		FString Name;
 		const int ActorId = Frame.Curr->actors.empty() ? -1 : Frame.Curr->actors[0].id;
-		Impl->Events.push_back(ShowcaseEvent(Impl->ShowcaseIndex++, In, ActorId, Name));
-		In.events = &Impl->Events;
+		ff::Event Ev = ShowcaseEvent(Impl->ShowcaseIndex++, In, ActorId, Name);
+		if (Ev.type == "fx_showcase_body")
+		{
+			// a body for one interval: tornado / fire field / steam stand, a crescent flies across the view
+			const std::string Kind = Ev.data["kind"].as_string();
+			ff::BodyView& B = Impl->FakeBody;
+			B = ff::BodyView();
+			B.id = 9900001 + Impl->ShowcaseIndex;
+			B.props = ff::Value(ff::Dict());
+			B.radius = 0.5f;
+			B.mass = 10.0f;
+			const ffx::Vec3 P = Ev.data["pos"].as_vec3();
+			const ffx::Vec3 Dir = Ev.data["dir"].as_vec3();
+			Impl->FakeStart = P;
+			if (Kind == "tornado") { B.mat = ff::Mat::Air; B.form = ff::Form::Zone; B.tag = "tornado"; B.zone_radius = 1.3f; B.spin = 4.0f; }
+			else if (Kind == "crescent") { B.mat = ff::Mat::Air; B.form = ff::Form::Chunk; B.tag = "crescent"; B.vel = Dir * 6.0f;
+				Impl->FakeStart = P - Dir * 5.0f + ffx::Vec3(0.0f, 1.2f, 0.0f); }
+			else if (Kind == "fire_field") { B.mat = ff::Mat::Fire; B.form = ff::Form::Zone; B.tag = "fire_field"; B.zone_radius = 1.8f; B.power = 30.0f; }
+			else { B.mat = ff::Mat::Steam; B.form = ff::Form::Cloud; B.radius = 1.0f; }
+			B.max_life = Showcase * 0.9f;
+			Impl->FakeFrom = World->GetTimeSeconds();
+			Impl->FakeUntil = Impl->FakeFrom + double(Showcase) * 0.9;
+		}
+		else
+		{
+			Impl->Events.push_back(Ev);
+			In.events = &Impl->Events;
+		}
 		UE_LOG(LogFourfoldFx, Display, TEXT("Showcase %d: %s at %.1fs"), Impl->ShowcaseIndex - 1, *Name, World->GetTimeSeconds());
 		CSV_EVENT_GLOBAL(TEXT("ff.fx showcase %s"), *Name);
 		QueueShots(Impl->ShowcaseShots, World->GetTimeSeconds(),
@@ -444,6 +507,21 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 		}
 	}
 
+	if (World && Impl->FakeUntil > World->GetTimeSeconds())
+	{
+		// the showcase body: copies of this frame's snapshots plus the body (moved along its velocity)
+		ff::BodyView& B = Impl->FakeBody;
+		B.age = float(World->GetTimeSeconds() - Impl->FakeFrom);
+		Impl->FakeCurr = *In.curr;
+		Impl->FakePrev = *In.prev;
+		B.pos = Impl->FakeStart + B.vel * B.age;
+		Impl->FakeCurr.bodies.push_back(B);
+		ff::BodyView Bp = B;
+		Bp.pos = B.pos - B.vel * In.dt;
+		Impl->FakePrev.bodies.push_back(Bp);
+		In.curr = &Impl->FakeCurr;
+		In.prev = &Impl->FakePrev;
+	}
 	const ffx::DrawList& List = Impl->Director.Update(In);
 	FxActor->ClearDebrisImpacts();   // consumed (new hits arrive during this frame's physics)
 	FxActor->Apply(List, Sim, bNiagara);

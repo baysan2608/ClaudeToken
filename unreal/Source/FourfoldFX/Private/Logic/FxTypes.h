@@ -146,7 +146,7 @@ enum class NCue : uint8_t {
 	BurstDust, BurstMetal, BurstSand, BurstGlass, BurstEmber, BurstWater, BurstFrost, BurstMist, BurstSteam,
 	BurstLeaves, BurstBlueSparks, BurstStatic, BurstAsh, BurstInflow, BurstSparks, BurstSmoke, BurstGrit,
 	ShardsStone, ShardsIce, ShardsGlass, ShardsMetal, ShardsPlant,
-	FireBurst, FireBurstBlue, Splash, Steam, Dust, Ember, BoltHit, AirPush, Count
+	FireBurst, FireBurstBlue, Splash, Steam, Dust, Ember, BoltHit, AirPush, BoltArc, Count
 };
 inline constexpr int kNumNCues = static_cast<int>(NCue::Count);
 static_assert(static_cast<int>(NCue::BurstGrit) - static_cast<int>(NCue::BurstDust) == kNumBursts - 1,
@@ -158,16 +158,16 @@ inline constexpr std::array<std::string_view, kNumNCues> kNCueNames = {
 	"burst_steam", "burst_leaves", "burst_blue_sparks", "burst_static", "burst_ash", "burst_inflow", "burst_sparks",
 	"burst_smoke", "burst_grit",
 	"shards_stone", "shards_ice", "shards_glass", "shards_metal", "shards_plant",
-	"fire_burst", "fire_burst_blue", "splash", "steam", "dust", "ember", "bolt_hit", "air_push"};
+	"fire_burst", "fire_burst_blue", "splash", "steam", "dust", "ember", "bolt_hit", "air_push", "bolt_arc"};
 inline std::string_view NCueName(NCue c) { return kNCueNames[static_cast<size_t>(c)]; }
 
 // Persistent Niagara slots (fx_config.json "niagara_loops"): systems a view keeps alive while its body lives (one
 // component per LoopReq key, moved and re-bound every frame, stopped gently when the key disappears). Append only.
-enum class LCue : uint8_t { Fire, FireBlue, Steam, Smoke, TrailFire, TrailBlue, Count };
+enum class LCue : uint8_t { Fire, FireBlue, Steam, Smoke, TrailFire, TrailBlue, Wind, Count };
 inline constexpr int kNumLCues = static_cast<int>(LCue::Count);
 static_assert(kNumLCues <= 64, "FxFrameIn::niagaraLoopsLoaded is a 64-bit mask");
 inline constexpr std::array<std::string_view, kNumLCues> kLCueNames = {"fire", "fire_blue", "steam", "smoke",
-                                                                       "trail_fire", "trail_blue"};
+                                                                       "trail_fire", "trail_blue", "wind"};
 inline std::string_view LCueName(LCue c) { return kLCueNames[static_cast<size_t>(c)]; }
 inline NCue BurstCue(Burst b) { return static_cast<NCue>(static_cast<int>(NCue::BurstDust) + static_cast<int>(b)); }
 

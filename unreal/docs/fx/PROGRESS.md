@@ -255,3 +255,35 @@ _Read this first when resuming. Update after every completed sub-step._
 - Next: lightning arcs (NS_TeslaCoil with `PositionTarget`) for ground currents / static fields, water (pack has
   no splash; Niagara Fluids Flip_Splash / a ribbon system for streams on the Mac high tier), wind wisps, then the
   iOS check of every slot.
+
+## Lightning arcs (2026-10-07)
+- `NCue::BoltArc` (appended): every bolt also asks for NS_TeslaCoil from its first to its last node for 0.3 s;
+  `SystemReq::target` / `LoopReq::target` + parameter source `target` (glue binds it as a world position).
+  Look check `ff.fx.Showcase 3, ff.fx.ShowcaseFilter bolt`: blue-violet ribbon arcs leap along the white bolt - good.
+
+## Handoff 2026-10-07 (FX stream; resume here)
+Pushed on claude/loving-dirac-0gtvnt: 039001a (pre-warm), 7070ec0 (Chaos debris), e7c24d4 (persistent loops), plus
+the commit with this section (bolt arcs, wind ribbons off, showcase `bolt` / `body` cues, `-FFFxConfig`).
+State: everything above works in the Lab; logic tests 37/37 (`bash unreal/Tools/vfx/logic_tests.sh <dir>`); the
+editor build is green (last checked by the main session at 6323ae2 with this tree).
+Open items, in order:
+1. Look-check the new showcase bodies and the wind ribbons: `-scenario=lab -ExecCmds="ff.fx.Showcase 4,
+   ff.fx.ShowcaseFilter body, ff.fx.ShowcaseShots 0.6|1.2|2.2" -FFShot=40 -FFShotDir=<dir> -FFShotQuit` (the fake-body
+   showcase compiled but has not run yet). If the ribbons around the tornado / crescent look right, set
+   `niagara_loops.wind.path` to /Game/NiagaraExamples/FX_Weapons/Trails/NS_SimpleRibbonTrail in FxConfig.cpp
+   (comment there), regenerate fx_config.json (`logic_tests.sh <dir> --write-config ...`) and re-measure GPU.
+2. A code review of today's changes was started in a background agent when the session paused; its findings were not
+   collected - re-run a correctness review of FourfoldFxDebris / FourfoldFxNiagara (pooled ManualRelease loops,
+   debris physics) before building on them.
+3. Water: the pack has no splash. Experiment ready: `-FFFxConfig=<copy of fx_config.json with niagara.splash /
+   burst_water -> /NiagaraFluids/Templates/Liquid/3D/Systems/Grid3D_Flip_Splash, min_quality 2>` then
+   `ff.fx.ShowcaseFilter water`; measure GPU (Niagara Fluids is Mac-high-tier only). Water streams / whips:
+   Grid3D_Flip_Hose or ribbons.
+4. Debris polish: pieces could leave dust trails while tumbling; walls hit by a strike could break toward the hit
+   (the sim's wall_crumble has no direction yet - ask the main session for a "dir" field); ice / glass walls could
+   shatter into crystal pieces (CrystalView::Break with Crystal material).
+5. iOS: every Niagara slot (cues and loops) has min_quality 1 and debris is off at quality 0; nothing has run on a
+   device yet - check emitter scalability on the iOS preview / device once the main session deploys.
+GPU budget agreed with the main session: FX <= 2 ms (a burning fire field + steam = +1.7 ms; cue bursts +0.5-1 ms).
+Coordination: ask the main session for a UE slot before any build / -game / commandlet; commit only FX paths with
+`git commit -o -- <paths>`.

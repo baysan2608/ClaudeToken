@@ -1200,6 +1200,17 @@
       "min_quality": 1,
       "min_intensity": 0.0,
       "params": {}
+    },
+    "bolt_arc": {
+      "path": "/Game/NiagaraExamples/FX_Ribbons/NS_TeslaCoil",
+      "scale": 1.0,
+      "life": 0.3,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "PositionTarget": "target"
+      }
     }
   },
   "niagara_loops": {
@@ -1276,6 +1287,15 @@
         "Smoke Color": "color2",
         "Flare Active": "1"
       }
+    },
+    "wind": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
     }
   }
 }

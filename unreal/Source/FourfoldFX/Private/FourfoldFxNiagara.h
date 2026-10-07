@@ -51,7 +51,7 @@ struct FFourfoldFxNiagara
 
 private:
 	enum class EType : uint8 { Float, Int, Bool, Color, Vec3, Vec4, Vec2, Position, Other };
-	enum class ESource : uint8 { Color, Color2, Dir, NegDir, Scale, Intensity, Literal };
+	enum class ESource : uint8 { Color, Color2, Dir, NegDir, Scale, Intensity, Literal, Target };
 	struct FBinding
 	{
 		FName Name;
@@ -83,6 +83,7 @@ private:
 		float Intensity = 1.0f;
 		ffx::Color Color;
 		ffx::Color Color2;
+		FVector Target;   // world position (cm)
 	};
 	struct FLoop
 	{

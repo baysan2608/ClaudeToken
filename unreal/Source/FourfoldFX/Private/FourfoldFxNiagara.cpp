@@ -124,6 +124,7 @@ bool FFourfoldFxNiagara::LoadSlot(const ffx::NiagaraSlot& Cfg, FSlot& S, const F
 		else if (Src == TEXT("-dir")) B.Source = ESource::NegDir;
 		else if (Src == TEXT("scale")) B.Source = ESource::Scale;
 		else if (Src == TEXT("intensity")) B.Source = ESource::Intensity;
+		else if (Src == TEXT("target")) B.Source = ESource::Target;
 		else if (FCString::IsNumeric(*Src))
 		{
 			B.Source = ESource::Literal;
@@ -206,6 +207,17 @@ void FFourfoldFxNiagara::Bind(UNiagaraComponent& Comp, const FSlot& Slot, const 
 					case EType::Vec3: Comp.SetVariableVec3(B.Name, FVector(Lin.R, Lin.G, Lin.B)); break;
 					case EType::Vec4: Comp.SetVariableVec4(B.Name, FVector4(Lin.R, Lin.G, Lin.B, 1.0)); break;
 					case EType::Float: Comp.SetVariableFloat(B.Name, Lin.GetLuminance()); break;
+					default: break;
+				}
+				break;
+			}
+			case ESource::Target:
+			{
+				switch (B.Type)
+				{
+					case EType::Position: Comp.SetVariablePosition(B.Name, Req.Target); break;
+					case EType::Vec3: Comp.SetVariableVec3(B.Name, Req.Target); break;
+					case EType::Vec4: Comp.SetVariableVec4(B.Name, FVector4(Req.Target.X, Req.Target.Y, Req.Target.Z, 1.0)); break;
 					default: break;
 				}
 				break;
@@ -297,7 +309,7 @@ void FFourfoldFxNiagara::Spawn(AActor* Owner, const ffx::DrawList& List, bool bS
 		{
 			continue;   // culled (effect type budget / not visible)
 		}
-		Bind(*Comp, S, {Location, Dir, R.scale, R.intensity, R.color, R.color2});
+		Bind(*Comp, S, {Location, Dir, R.scale, R.intensity, R.color, R.color2, FF::ToUE(R.target)});
 		Comp->Activate(true);
 		++LastSpawns;
 		++TotalSpawns;
@@ -421,7 +433,7 @@ void FFourfoldFxNiagara::UpdateLoops(AActor* Owner, const ffx::DrawList& List, b
 				{
 					continue;
 				}
-				Bind(*Comp, S, {Location, Dir, R.scale, R.intensity, R.color, R.color2});
+				Bind(*Comp, S, {Location, Dir, R.scale, R.intensity, R.color, R.color2, FF::ToUE(R.target)});
 				Comp->Activate(true);
 				Loops.Add(R.key, {Comp, Cue});
 			}
@@ -429,7 +441,7 @@ void FFourfoldFxNiagara::UpdateLoops(AActor* Owner, const ffx::DrawList& List, b
 			{
 				Comp->SetWorldLocationAndRotation(Location, Rotation);
 				Comp->SetWorldScale3D(FVector(Scale));
-				Bind(*Comp, S, {Location, Dir, R.scale, R.intensity, R.color, R.color2});
+				Bind(*Comp, S, {Location, Dir, R.scale, R.intensity, R.color, R.color2, FF::ToUE(R.target)});
 			}
 			Seen.Add(R.key);
 		}

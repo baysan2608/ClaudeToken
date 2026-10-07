@@ -197,6 +197,43 @@ FXT_TEST(niagara_loops_follow_views) {
 		if (l.cue == LCue::TrailFire) FXT_CHECK(l.dir.z < -0.3f);
 }
 
+FXT_TEST(niagara_bolt_arcs_and_wind_ribbons) {
+	// a bolt asks for an arc from its first node to its last
+	{
+		FxDirector d;
+		NFrame f;
+		f.events.clear();
+		f.events.push_back(NEv("lightning", {{"actor", 1}, {"path", ff::Value(ff::Array({ff::Value(Vec3(0, 1, 0)), ff::Value(Vec3(4, 1, 0))}))}}));
+		f.in.niagaraLoaded = ~0ULL;
+		const DrawList& dl = d.Update(f.in);
+		bool arc = false;
+		for (const SystemReq& r : dl.systems)
+			if (r.cue == NCue::BoltArc) arc = (r.target - r.pos).length() > 2.0f;
+		FXT_CHECK(arc);
+	}
+	// a tornado gets three circling ribbons, a crescent two tip ribbons
+	ff::BodyView tw = LBody(5, ff::Mat::Air, ff::Form::Zone, "tornado");
+	tw.zone_radius = 1.5f;
+	tw.age = 1.0f;
+	ff::BodyView cr = LBody(6, ff::Mat::Air, ff::Form::Chunk, "crescent");
+	cr.vel = Vec3(6.0f, 0.0f, 0.0f);
+	FxDirector d;
+	FxConfig cfg;   // the wind slot ships empty until it is look-checked: give it a system here
+	cfg.niagaraLoops[static_cast<size_t>(LCue::Wind)].path = "/Game/NiagaraExamples/FX_Weapons/Trails/NS_SimpleRibbonTrail";
+	d.SetConfig(cfg);
+	ff::Snapshot prev, curr;
+	curr.bodies = {tw, cr};
+	prev = curr;
+	FxFrameIn in;
+	in.prev = &prev;
+	in.curr = &curr;
+	in.niagaraLoopsLoaded = ~0ULL;
+	const DrawList& dl = d.Update(in);
+	int wind = 0;
+	for (const LoopReq& l : dl.loops) wind += l.cue == LCue::Wind ? 1 : 0;
+	FXT_CHECK(wind >= 3);
+}
+
 FXT_TEST(niagara_loops_json) {
 	FxConfig c;
 	FXT_CHECK(c.Loop(LCue::Fire).path.find("NS_Fire") != std::string::npos);

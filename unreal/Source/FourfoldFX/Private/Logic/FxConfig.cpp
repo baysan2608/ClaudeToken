@@ -488,6 +488,7 @@ FxConfig::FxConfig() {
 	slot(NCue::Dust, "FX_Explosions/NS_Dirt_Explosion_Small", 0.35f, false, dirt, 0.0f, 0.6f);
 	slot(NCue::Ember, "FX_Sparks/NS_Spark_Burst", 0.5f, false, sparks);
 	slot(NCue::Steam, "FX_Smoke/NS_Smoke_Plume", 0.3f, false, {{"Smoke Color", "color"}}, 0.5f);
+	slot(NCue::BoltArc, "FX_Ribbons/NS_TeslaCoil", 1.0f, false, {{"PositionTarget", "target"}}, 0.3f);
 
 	// ---- persistent slots (views keep them alive): fire fields / lines, steam / smoke columns, fireball trails.
 	// LoopReq colours: fire `color` = flame, `color2` = smoke; steam / smoke `color` = puff colour; trails `color2` = smoke.
@@ -507,6 +508,11 @@ FxConfig::FxConfig() {
 	loop(LCue::Smoke, "FX_Smoke/NS_Chimney_Smoke", 0.6f, false, {{"Smoke Color", "color"}});
 	loop(LCue::TrailFire, "FX_Weapons/Trails/NS_RocketTrail", 0.8f, false, {{"Smoke Color", "color2"}, {"Flare Active", "1"}});
 	loop(LCue::TrailBlue, "FX_Weapons/Trails/NS_RocketTrail", 0.8f, false, {{"Smoke Color", "color2"}, {"Flare Active", "1"}});
+	// wind ribbons (tornado orbiters, crescent tips): coded and unit-tested, not yet look-checked in the game -> off until
+	// `ff.fx.Showcase 4, ff.fx.ShowcaseFilter body` confirms them (then set the path to
+	// /Game/NiagaraExamples/FX_Weapons/Trails/NS_SimpleRibbonTrail)
+	loop(LCue::Wind, "FX_Weapons/Trails/NS_SimpleRibbonTrail", 1.0f, false, {});
+	niagaraLoops[static_cast<size_t>(LCue::Wind)].path.clear();
 }
 
 std::string FxConfig::ToJson() const {

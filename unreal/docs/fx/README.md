@@ -104,7 +104,8 @@ so the Fab plugin is signed in, open Fourfold, Window > Fab > My Library > Niaga
   request to the system's user parameters.
 * Config: `fx_config.json` "niagara".<cue> = `path` ("" = none), `scale`, `life` (seconds until a looping system is
   told to stop), `replace`, `min_quality`, `min_intensity`, `params` {user parameter (without "User.") : source}.
-  Sources: `color`, `color2` (linear, skipped when alpha 0), `dir`, `-dir`, `scale`, `intensity`, each optionally
+  Sources: `color`, `color2` (linear, skipped when alpha 0), `dir`, `-dir`, `scale`, `intensity`, `target` (the
+  request's second point, a world position), each optionally
   `*<k>` (e.g. `color*4`, `-dir*600`), or a number. The glue converts to the parameter's real type; every loaded
   system's user parameters (with types) are logged once (`LogFourfoldFxNiagara`).
 * Fallback: the glue reports which slots loaded (`FxFrameIn::niagaraLoaded`); `replace` only skips the procedural
@@ -112,7 +113,9 @@ so the Fab plugin is signed in, open Fourfold, Window > Fab > My Library > Niaga
   (`min_intensity`, e.g. the 0.35 s periodic status puffs) and low quality (`min_quality`) stay procedural.
 * Current slots (C++ defaults -> fx_config.json): blast = NS_Explosion_Medium (replace), dust / sand / grit bursts =
   NS_Dirt_Explosion_Small (replace), strong `dust` = the same (adds), metal / ember / spark bursts and embers =
-  NS_Spark_Burst (adds), steam = NS_Smoke_Plume for 0.5 s (adds). Everything else stays procedural: the pack's
+  NS_Spark_Burst (adds), steam = NS_Smoke_Plume for 0.5 s (adds), every bolt = NS_TeslaCoil arcs from its first to
+  its last node for 0.3 s (`bolt_arc`, parameter source `target`: the request's second point). Everything else stays
+  procedural: the pack's
   NS_Impact_* are bullet-sized, its bubbles do not read as water and its sparks stay orange (wrong for lightning /
   blue fire). `ff.fx.Niagara 0` switches the layer off at runtime (procedural only).
 * Look checks: `ff.fx.Showcase <seconds>` plays a fixed cue list (blast, stone, metal, glass, ice, lightning, sand,
@@ -138,7 +141,10 @@ so the Fab plugin is signed in, open Fourfold, Window > Fab > My Library > Niaga
   is missing. Current: fire fields / lines -> NS_Fire at up to 4 sites (field centre + ring, line every 1.8 m;
   `Flame Color` = flame palette x 6, grey smoke, its own lights off: the procedural fire lights the scene, tongues
   at 0.55), steam / geyser / steam screen / smoke clouds -> NS_Chimney_Smoke at the base, fireballs / comets ->
-  NS_RocketTrail (flare on) following the ball along its tail. GPU (Mac, 75 %, 60 fps cap): a burning fire field
+  NS_RocketTrail (flare on) following the ball along its tail. Wind ribbons (tornadoes / funnels: three
+  NS_SimpleRibbonTrail points circling the funnel at three heights; wind crescents: a ribbon from each tip) are coded
+  and unit-tested but ship with an empty `niagara_loops.wind.path` until a look check confirms them. GPU (Mac,
+  75 %, 60 fps cap): a burning fire field
   plus a steam cloud +1.7 ms (13.35 vs 11.66 ms median; +2.9 ms before the trim to 4 sites without lights). Loop
   systems are pre-warmed with the cue slots.
 * GPU budget: the Mac game is GPU-bound; slots are one-shot bursts only (no persistent Niagara), the pack's own
@@ -176,6 +182,16 @@ Visual only: the sim decides when a body breaks and spawns its own rubble bodies
 * Console: `ff.fx.Debris 0/1`; look check: `ff.fx.Showcase` ends its list with `break/rock` and `break/wall`
   (`fx_test_break` events: a stone / wall breaking with no sim body behind it); `ff.fx.ShowcaseFilter break` plays
   only those.
+
+## Look-check tools (dev)
+* `ff.fx.Showcase <s>` + `ff.fx.ShowcaseFilter <text>` + `ff.fx.ShowcaseShots 0.1|0.5`: cue list `burst/*`,
+  `erupt/*`, `cone/flame`, `break/rock|wall` (physics debris), `bolt/lightning` (a "lightning" event: bolt + arcs),
+  `body/tornado|crescent|fire_field|steam` (a fake body added to the FX layer's copy of the snapshots for one interval -
+  the sim never sees it; for persistent views without a Lab threat in frame). Screenshots land in `-FFShotDir`.
+* `-FFFxConfig=<file>`: read the FX config from another file (slot experiments without touching the committed one).
+* `-FFLabSpawn=<entry>@<sim s>,...` (game module): real Lab threats, e.g. `fire_field`, `steam`, `fireball`, `comet`,
+  `fire_line`, `bolt`, `tornado`, `wind_crescent`, `stone_80` (list: Source/FourfoldCore/Data/lab.json).
+* Process-time `-FFShot` is too coarse for short events (bolts, crescents); use the showcase shots instead.
 
 ## Tuning without a rebuild
 Edit `Content/Fourfold/Data/fx_config.json` (any subset of keys; colours are display sRGB) and run console
