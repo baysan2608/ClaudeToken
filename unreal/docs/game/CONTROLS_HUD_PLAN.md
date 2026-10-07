@@ -66,3 +66,11 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
 - Petals: show predicted outcome colours always, or only in the Lab / on easy difficulty?
 - Forms on touch: one-finger drawing on the right half (replacing the camera drag there; camera moves to two fingers),
   or only from the ATTACK / TECHNIQUE buttons?
+
+## Progress
+- 2026-10-07 - A, first pass: `App/CounterHints` (core, read-only, CoreTests `test_counter_hints`) picks the most urgent
+  threat and evaluates guard (+ perfect) / push / sink / technique of the current element / sub with
+  `Interactions::predict`; `HudModel::counters`; HUD strip above the charge bar (threat class + seconds, answers in band
+  colours, pulse near impact); touch GUARD petals name the push / sink answers in band colours. Next: the desktop radial
+  near the fighter, perfect-window flash, petals for the attack slots that also counter (thrust / ground / sweep), D.
+

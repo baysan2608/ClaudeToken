@@ -77,8 +77,13 @@ CURRENT STATE (2026-10-07, second Mac session) - details: unreal/docs/QUALITY_PL
   -FFExec="2:t.MaxFPS 60|2:r.DynamicRes.FrameTimeBudget 16.67". Apple per-pass GPU timings overlap: A/B toggles only.
 - Mocap: GASP gaits / get-ups + distance-matched run start / stop (ffg::LocoTransition). Root fix: retargeted mocap had
   the root at hip height and sank ~90 cm into the floor whenever a mocap gait played - fixed.
-- Fighters: MetaHumans (Kellan), bare-chested + barefoot (owner's choice), complete body SKM_FF_Body, cargo pants
-  tinted per role. -FFCharacter=fighter = old fighter.
+- Fighters: MetaHumans (Kellan), bare-chested + barefoot (owner's choice), complete body SKM_FF_Body, generated loose
+  charcoal training pants + waist sash in the role colour (Tools/blender/character/mh_outfit.py). -FFCharacter=fighter =
+  old fighter.
+- Locomotion: distance-matched run starts / stops, turn-in-place (GASP stand turns, feet planted while the facing swings).
+- Context counters (owner chose "counters + world HUD first", outcome colours always on): the HUD names what guard /
+  push / sink / technique do to the incoming threat, from the sim's counter rule (App/CounterHints). Plan + progress:
+  unreal/docs/game/CONTROLS_HUD_PLAN.md.
 - Physics: hit flinch, ragdoll knockdowns, get-ups aligned to the lying body.
 - VFX: parallel FX session owns unreal/Source/FourfoldFX/**, Shaders/**, Content/Python/fourfold/fx/**,
   Data/fx_config.json, docs/fx/**, Tools/vfx/**, QUALITY_PLAN row 6 (Niagara cues + pre-warm, next Chaos fracture).
@@ -94,12 +99,11 @@ CURRENT STATE (2026-10-07, second Mac session) - details: unreal/docs/QUALITY_PL
   different things you can do.
 
 WHAT TO DO (priority order)
-1. Locomotion: turn-in-place (GASP Stand_Turn_090/180 L/R with a root-yaw offset so the feet stay planted while the
-   sim facing tracks the target), pivots, walk / strafe starts / stops (8 directions); check foot planting up close.
-2. Outfit: proper loose training pants + waist sash (Blender generator from the MetaHuman body: export SKM_FF_Body
-   FBX, offset field + folds + cuffs, weights copied, import on metahuman_base_skel), per-element sash colour; fix the
-   thin pale seam at the neck base.
-3. Controls + HUD redesign for elemental moves (owner request above): design doc first, then implement.
+1. Controls + HUD (unreal/docs/game/CONTROLS_HUD_PLAN.md): finish part A (desktop radial near the fighter, perfect-window
+   flash, attack slots that counter), then part D (world HUD: arcs at the feet, outcome callouts, rival intent rim).
+2. Locomotion: pivots, walk / strafe starts / stops (8 directions), element stances on MetaHuman proportions; check foot
+   planting up close (-scenario=lab -FFMove=...).
+3. Outfit polish: the thin pale seam at the neck base (face / body texture seam), per-element outfit variants.
 4. iOS budget: mobile renderer, MetaHuman LODs / groom cards, no volumetrics, scalability maps iOS levels to
    50 / 71 / 87 % screen percentage (decide), static vs dynamic lighting for the phone.
 5. Arena dressing: replace the paper-cutout trees / flat backdrop (Fab/Megascans or CC0 assets).
