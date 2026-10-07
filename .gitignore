@@ -10,3 +10,6 @@ unreal/Content/Characters/
 unreal/Content/Audio/
 unreal/Content/Blueprints/
 unreal/Content/Misc/
+
+# Epic Niagara Examples Pack (free on Fab; in Unreal: Window > Fab > My Library > Niagara Examples Pack > Add to Project)
+unreal/Content/NiagaraExamples/
