@@ -4,3 +4,9 @@ build/
 __pycache__/
 *.blend1
 unreal/SourceArt/Environment/PolyHaven/
+
+# Epic Game Animation Sample content migrated by unreal/Tools/gasp/migrate_from_gasp.py (large; re-run after clone)
+unreal/Content/Characters/
+unreal/Content/Audio/
+unreal/Content/Blueprints/
+unreal/Content/Misc/

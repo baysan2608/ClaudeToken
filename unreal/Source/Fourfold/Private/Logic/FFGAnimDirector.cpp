@@ -276,8 +276,10 @@ const AnimRecipe& AnimDirector::Update(const DirectorInput& in) {
 	{
 		const std::string* g[kLocoRoles] = {nullptr, &lib->walk, &lib->run, &lib->strafe_l, &lib->strafe_r, &lib->back};
 		for (int i = 1; i < kLocoRoles; ++i) {
-			const ClipDef* c = lib->Find(*g[i]);
-			if (c && c->speed > 0.0f && c->duration > 0.0f) loco.SetGait(static_cast<LocoRole>(i), c->speed, c->duration);
+			const ClipDef* c = lib->Resolve(*g[i]);
+			if (!c) c = lib->Find(*g[i]);
+			if (c && c->speed > 0.0f && c->duration > 0.0f)
+				loco.SetGait(static_cast<LocoRole>(i), c->speed, c->duration, c->phase0, c->cycles);
 		}
 	}
 

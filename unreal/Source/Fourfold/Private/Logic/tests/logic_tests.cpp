@@ -963,6 +963,33 @@ FFT_TEST(locomotion_weights_and_stride) {
 	FFT_CHECK(l.weights[static_cast<size_t>(ffg::LocoRole::Walk)] > w_walk * 0.8f);
 }
 
+FFT_TEST(locomotion_multi_cycle_mocap_clip) {
+	// a 4 s mocap walk holding 4 cycles, left touchdown at 2.5 % of the clip: stride is one cycle, the clip time runs
+	// continuously through all four cycles (no jump when the shared phase wraps) and phase 0 lands on the touchdown
+	ffg::LocomotionBlender l;
+	l.Reset();
+	l.SetGait(ffg::LocoRole::Walk, 2.0f, 4.0f, 0.025f, 4);
+	FFT_NEAR(l.gaits[static_cast<size_t>(ffg::LocoRole::Walk)].stride, 2.0, 1e-5);
+	FFT_NEAR(l.gaits[static_cast<size_t>(ffg::LocoRole::Walk)].offset, 0.1, 1e-5);
+	FFT_NEAR(l.ClipTime(ffg::LocoRole::Walk, 4.0f), 0.1, 1e-5);
+	float prev = l.ClipTime(ffg::LocoRole::Walk, 4.0f);
+	float max_step = 0.0f;
+	int wraps = 0;
+	for (int i = 0; i < 60 * 9; ++i) {
+		l.Update(1.0f / 60.0f, Vec2(0, 2.0f));
+		const float t = l.ClipTime(ffg::LocoRole::Walk, 4.0f);
+		float d = t - prev;
+		if (d < -2.0f) {
+			d += 4.0f;   // the clip itself loops
+			++wraps;
+		}
+		max_step = std::max(max_step, std::fabs(d));
+		prev = t;
+	}
+	FFT_CHECK(max_step < 0.05f);
+	FFT_CHECK(wraps >= 1);
+}
+
 // =================================================================================== anim library + director
 
 static void MarkAllAvailable(ffg::AnimLibrary& lib, const std::vector<std::string>& except = {}) {

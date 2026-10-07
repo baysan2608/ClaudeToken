@@ -1,0 +1,339 @@
+{
+ "schema": "fourfold.clips/1",
+ "fps": 60,
+ "asset_root": "/Game/Fourfold/Characters/Fighter/Anims",
+ "clips": {
+  "mm_idle": {
+   "asset": "Mocap/A_mm_idle",
+   "frames": 600,
+   "duration": 10.0,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "speed": 0.0,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_Neutral_Stand_Idle_Loop"
+  },
+  "mm_walk": {
+   "asset": "Mocap/A_mm_walk",
+   "frames": 240,
+   "duration": 4.0,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "speed": 2.062,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_Neutral_Walk_Loop_F",
+   "phase0": 0.0251,
+   "cycles": 4,
+   "foot_plants": {
+    "l": [
+     [
+      6,
+      32
+     ],
+     [
+      67,
+      92
+     ],
+     [
+      125,
+      150
+     ],
+     [
+      185,
+      211
+     ]
+    ],
+    "r": [
+     [
+      0,
+      2
+     ],
+     [
+      36,
+      62
+     ],
+     [
+      96,
+      120
+     ],
+     [
+      155,
+      181
+     ],
+     [
+      215,
+      240
+     ]
+    ]
+   }
+  },
+  "mm_run": {
+   "asset": "Mocap/A_mm_run",
+   "frames": 150,
+   "duration": 2.5,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "speed": 5.155,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_Neutral_Run_Loop_F",
+   "phase0": 0.0268,
+   "cycles": 4,
+   "foot_plants": {
+    "l": [
+     [
+      4,
+      9
+     ],
+     [
+      41,
+      47
+     ],
+     [
+      79,
+      83
+     ],
+     [
+      116,
+      120
+     ]
+    ],
+    "r": [
+     [
+      23,
+      27
+     ],
+     [
+      61,
+      65
+     ],
+     [
+      98,
+      102
+     ],
+     [
+      136,
+      140
+     ]
+    ]
+   }
+  },
+  "mm_strafe_l": {
+   "asset": "Mocap/A_mm_strafe_l",
+   "frames": 222,
+   "duration": 3.7,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "speed": 1.856,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_Neutral_Walk_Loop_LL",
+   "phase0": 0.1448,
+   "cycles": 4,
+   "foot_plants": {
+    "l": [
+     [
+      0,
+      2
+     ],
+     [
+      32,
+      58
+     ],
+     [
+      87,
+      113
+     ],
+     [
+      144,
+      168
+     ],
+     [
+      198,
+      222
+     ]
+    ],
+    "r": [
+     [
+      4,
+      29
+     ],
+     [
+      59,
+      86
+     ],
+     [
+      115,
+      141
+     ],
+     [
+      170,
+      195
+     ]
+    ]
+   }
+  },
+  "mm_strafe_r": {
+   "asset": "Mocap/A_mm_strafe_r",
+   "frames": 222,
+   "duration": 3.7,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "speed": 1.856,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_Neutral_Walk_Loop_RR",
+   "phase0": 0.0181,
+   "cycles": 4,
+   "foot_plants": {
+    "l": [
+     [
+      4,
+      30
+     ],
+     [
+      59,
+      86
+     ],
+     [
+      115,
+      141
+     ],
+     [
+      170,
+      196
+     ]
+    ],
+    "r": [
+     [
+      0,
+      2
+     ],
+     [
+      32,
+      57
+     ],
+     [
+      87,
+      113
+     ],
+     [
+      143,
+      167
+     ],
+     [
+      199,
+      222
+     ]
+    ]
+   }
+  },
+  "mm_walk_back": {
+   "asset": "Mocap/A_mm_walk_back",
+   "frames": 242,
+   "duration": 4.03333,
+   "loop": true,
+   "contact": null,
+   "contacts": [],
+   "speed": 1.546,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_Neutral_Walk_Loop_B",
+   "phase0": 0.0124,
+   "cycles": 4,
+   "foot_plants": {
+    "l": [
+     [
+      3,
+      31
+     ],
+     [
+      65,
+      91
+     ],
+     [
+      125,
+      152
+     ],
+     [
+      184,
+      212
+     ]
+    ],
+    "r": [
+     [
+      35,
+      63
+     ],
+     [
+      95,
+      122
+     ],
+     [
+      154,
+      182
+     ],
+     [
+      214,
+      242
+     ]
+    ]
+   }
+  },
+  "mm_getup_f": {
+   "asset": "Mocap/A_mm_getup_f",
+   "frames": 300,
+   "duration": 5.0,
+   "loop": false,
+   "contact": null,
+   "contacts": [],
+   "speed": 0.0,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_ragdoll_getup_stand_F"
+  },
+  "mm_getup_b": {
+   "asset": "Mocap/A_mm_getup_b",
+   "frames": 300,
+   "duration": 5.0,
+   "loop": false,
+   "contact": null,
+   "contacts": [],
+   "speed": 0.0,
+   "hands": {
+    "l": "",
+    "r": ""
+   },
+   "priority": "P0",
+   "technique": "mocap (Game Animation Sample): M_ragdoll_getup_stand_B"
+  }
+ }
+}

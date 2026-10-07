@@ -34,7 +34,9 @@ namespace FourfoldAnimLib
 	{
 		FString R = Root;
 		R.RemoveFromEnd(TEXT("/"));
-		return FString::Printf(TEXT("%s/%s.%s"), *R, *Asset, *Asset);
+		// the asset may sit in a sub-folder of the root ("Mocap/A_mm_walk"): the object name is the leaf
+		const FString Leaf = FPaths::GetCleanFilename(Asset);
+		return FString::Printf(TEXT("%s/%s.%s"), *R, *Asset, *Leaf);
 	}
 }
 
@@ -60,11 +62,20 @@ void UFourfoldAnimLibrarySubsystem::LoadJson()
 	{
 		Library.LoadClipsJson(Text);
 	}
+	// Overlay written by Content/Python/fourfold/animation/mocap.py (retargeted motion capture); merged key by key.
+	if (FourfoldAnimLib::ReadData(TEXT("clips_mocap.json"), Text))
+	{
+		Library.LoadClipsJson(Text);
+	}
 	else
 	{
 		UE_LOG(LogFourfold, Warning, TEXT("Content/Fourfold/Data/clips.json not found: using the built-in clip catalogue"));
 	}
 	if (FourfoldAnimLib::ReadData(TEXT("anim_map.json"), Text))
+	{
+		Library.LoadAnimMapJson(Text);
+	}
+	if (FourfoldAnimLib::ReadData(TEXT("anim_map_mocap.json"), Text))
 	{
 		Library.LoadAnimMapJson(Text);
 	}

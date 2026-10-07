@@ -17,7 +17,8 @@ inline constexpr int kLocoRoles = static_cast<int>(LocoRole::Count);
 struct GaitSpec {
 	float speed = 1.0f;    // design ground speed (m/s)
 	float stride = 1.0f;   // metres per cycle
-	float offset = 0.0f;   // phase of the left-foot touchdown
+	float offset = 0.0f;   // phase of the left-foot touchdown (fraction of one cycle)
+	int cycles = 1;        // stride cycles in the clip: the shared phase walks through them one after another
 };
 
 class LocomotionBlender {
@@ -39,6 +40,7 @@ public:
 	}};
 	std::array<float, kLocoRoles> weights{};   // smoothed weights
 	float phase = 0.0f;
+	int cycle_index = 0;   // completed phase cycles (selects the cycle of a multi-cycle clip)
 	float stance_t = 0.0f;
 	float speed = 0.0f;
 	float cycle_rate = 0.0f;
@@ -50,6 +52,7 @@ public:
 		weights = {};
 		weights[0] = 1.0f;
 		phase = 0.0f;
+		cycle_index = 0;
 		speed = 0.0f;
 		cycle_rate = 0.0f;
 	}
@@ -57,11 +60,16 @@ public:
 	float ClipTime(LocoRole role, float length) const;
 	float GaitAmount() const;
 	LocoRole Dominant() const;
-	// Set a gait's design speed from its clip (stride = speed x cycle length).
-	void SetGait(LocoRole role, float design_speed, float cycle_len) {
-		if (design_speed <= 0.0f || cycle_len <= 0.0f) return;
-		gaits[static_cast<size_t>(role)].speed = design_speed;
-		gaits[static_cast<size_t>(role)].stride = design_speed * cycle_len;
+	// Set a gait from its clip: design speed, stride (= speed x one cycle), the left-foot touchdown phase and the
+	// number of cycles in the clip (phase0 is a fraction of the whole clip).
+	void SetGait(LocoRole role, float design_speed, float clip_len, float phase0 = 0.0f, int clip_cycles = 1) {
+		if (design_speed <= 0.0f || clip_len <= 0.0f) return;
+		GaitSpec& g = gaits[static_cast<size_t>(role)];
+		g.cycles = clip_cycles > 0 ? clip_cycles : 1;
+		g.speed = design_speed;
+		g.stride = design_speed * clip_len / static_cast<float>(g.cycles);
+		const float o = phase0 * static_cast<float>(g.cycles);
+		g.offset = o - static_cast<float>(static_cast<int>(o));
 	}
 };
 

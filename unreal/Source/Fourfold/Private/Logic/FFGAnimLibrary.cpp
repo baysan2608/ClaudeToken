@@ -155,6 +155,8 @@ bool AnimLibrary::LoadClipsJson(const std::string& text) {
 				}
 			}
 			if (v["speed"].is_number()) c.speed = static_cast<float>(v["speed"].as_float());
+			if (v["phase0"].is_number()) c.phase0 = static_cast<float>(v["phase0"].as_float());
+			if (v["cycles"].is_number()) c.cycles = std::max(1, static_cast<int>(v["cycles"].as_int(1)));
 			const ff::Value& h = v["hands"];
 			if (h.is_dict()) {
 				LibReadStr(h, "l", c.hand_l);

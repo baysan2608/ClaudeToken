@@ -58,14 +58,20 @@ void LocomotionBlender::Update(float dt, Vec2 local_vel) {
 	} else {
 		cycle_rate = 0.0f;
 	}
-	phase = Fposmod(phase + cycle_rate * dt, 1.0f);
+	const float next = phase + cycle_rate * dt;
+	if (next >= 1.0f) cycle_index = (cycle_index + static_cast<int>(next)) % 1000000;
+	phase = Fposmod(next, 1.0f);
 	stance_t += dt;
 }
 
 float LocomotionBlender::ClipTime(LocoRole role, float length) const {
 	if (length <= 1e-4f) return 0.0f;
 	if (role == LocoRole::Stance) return Fposmod(stance_t, length);
-	return Fposmod(phase + gaits[static_cast<size_t>(role)].offset, 1.0f) * length;
+	const GaitSpec& g = gaits[static_cast<size_t>(role)];
+	if (g.cycles <= 1) return Fposmod(phase + g.offset, 1.0f) * length;
+	// Continuous through the cycles: cycle_index steps exactly when phase wraps, so the sum never jumps.
+	const float total = static_cast<float>(cycle_index % g.cycles) + phase + g.offset;
+	return Fposmod(total, static_cast<float>(g.cycles)) * (length / static_cast<float>(g.cycles));
 }
 
 float LocomotionBlender::GaitAmount() const {

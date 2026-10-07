@@ -27,6 +27,8 @@ struct ClipDef {
 	bool loop = false;
 	std::vector<int> contacts;         // frames of the power points (first = "contact")
 	float speed = 0.0f;                // design ground speed of a gait clip (m/s)
+	float phase0 = 0.0f;               // gait: left-foot touchdown as a fraction of the whole clip (0 = first frame)
+	int cycles = 1;                    // gait: stride cycles in the clip (mocap loops hold several)
 	std::string hand_l, hand_r;        // hand shape keys ("fist" ...)
 	std::array<std::vector<std::pair<int, int>>, 2> plants;   // planted [start, end) frame ranges per foot (0 = l, 1 = r)
 	bool has_plants = false;
