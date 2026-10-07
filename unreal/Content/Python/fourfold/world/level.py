@@ -23,9 +23,9 @@ SOLID_MESH = {"north_wall": "SM_Env_WallN", "south_wall": "SM_Env_WallS", "west_
               "cover_wall": "SM_Env_CoverWall", "terrace": "SM_Env_Terrace", "step_block": "SM_Env_StepBlock",
               "high_ledge": "SM_Env_HighLedge", "pillar_ne": "SM_Env_Pillar", "pillar_sw": "SM_Env_Pillar"}
 FIXED_EV100 = -0.263            # exposure scale exactly 1.0  (1 / (1.2 * 2^EV))
-SUN_PITCH, SUN_YAW = -55.2, -37.9          # toward the light = fx's FFKeyDir (-0.45, 0.35, 0.82) in Unreal axes
+SUN_PITCH, SUN_YAW = -42.0, -37.9          # late-afternoon sun: long shadows, warm atmosphere (fx FFKeyDir still assumes 55 deg)
 SUN_COLOR = (255, 214, 168)
-SUN_LUX = 3.2
+SUN_LUX = 10.0                             # with auto exposure (EV100 0..5): sky + clouds read physically
 SKY_INTENSITY = 1.0
 
 
@@ -140,6 +140,8 @@ class Builder:
         for ent_l in layout.get("actors", []):
             if ent_l.get("group") == "solid":
                 continue
+            if ent_l["mesh"] in ("SM_Env_Sky", "SM_Env_Ridges"):
+                continue          # replaced by SkyAtmosphere + VolumetricCloud (build_lighting)
             mesh = meshes.get(ent_l["mesh"])
             if mesh is None:
                 self.report["failed"].append({"item": ent_l["actor"], "error": f"mesh {ent_l['mesh']} not imported"})
@@ -172,33 +174,49 @@ class Builder:
         # sun
         sun = self.spawn(unreal.DirectionalLight, (0, 0, 2500), (SUN_PITCH, SUN_YAW, 0), "FF_Sun", folder="Fourfold/Lighting")
         sc = sun.get_component_by_class(unreal.DirectionalLightComponent)
-        sc.set_mobility(unreal.ComponentMobility.STATIONARY)
+        sc.set_mobility(unreal.ComponentMobility.MOVABLE)
         for k, v in (("intensity", SUN_LUX), ("light_color", unreal.Color(*SUN_COLOR, 255)), ("cast_shadows", True),
                      ("dynamic_shadow_distance_stationary_light", 3800.0), ("dynamic_shadow_distance_movable_light", 3800.0),
                      ("dynamic_shadow_cascades", 2), ("cascade_distribution_exponent", 2.2), ("cascade_transition_fraction", 0.15),
-                     ("light_source_angle", 1.2), ("atmosphere_sun_light", False), ("forward_shading_priority", 1),
+                     ("light_source_angle", 0.8), ("atmosphere_sun_light", True),
+                     ("cast_cloud_shadows", True), ("cast_shadows_on_clouds", True), ("per_pixel_atmosphere_transmittance", True), ("forward_shading_priority", 1),
                      ("use_inset_shadows_for_movable_objects", True)):
             C.set_prop(sc, k, v, rep, quiet=True)
         self.lights["sun"] = sc
-        # sky light captured from the dome
+        # physical sky: atmosphere scattering lit by the sun + volumetric clouds
+        atm = self.spawn(unreal.SkyAtmosphere, (0, 0, 0), label="FF_SkyAtmosphere", folder="Fourfold/Lighting")
+        ac = atm.get_component_by_class(unreal.SkyAtmosphereComponent)
+        for k, v in (("mie_scattering_scale", 0.006), ("mie_anisotropy", 0.82), ("multi_scattering_factor", 1.0),
+                     ("aerial_pespective_view_distance_scale", 1.6), ("height_fog_contribution", 1.0)):
+            C.set_prop(ac, k, v, rep, quiet=True)
+        try:
+            cl = self.spawn(unreal.VolumetricCloud, (0, 0, 0), label="FF_Clouds", folder="Fourfold/Lighting")
+            cc = cl.get_component_by_class(unreal.VolumetricCloudComponent)
+            for k, v in (("layer_bottom_altitude", 3.5), ("layer_height", 6.0), ("view_sample_count_scale", 1.0)):
+                C.set_prop(cc, k, v, rep, quiet=True)
+        except Exception as e:  # noqa: BLE001
+            rep["notes"].append(f"volumetric clouds not created: {e}")
+        # sky light: real-time capture of the atmosphere + clouds (movable, Lumen uses it for sky occlusion)
         sky = self.spawn(unreal.SkyLight, (0, 0, 2400), label="FF_SkyLight", folder="Fourfold/Lighting")
         kc = sky.get_component_by_class(unreal.SkyLightComponent)
-        kc.set_mobility(unreal.ComponentMobility.STATIONARY)
+        kc.set_mobility(unreal.ComponentMobility.MOVABLE)
         for k, v in (("source_type", C.enum("SkyLightSourceType", "SLS_CAPTURED_SCENE")), ("intensity", SKY_INTENSITY),
-                     ("real_time_capture", False), ("lower_hemisphere_is_black", False),
-                     ("lower_hemisphere_color", unreal.LinearColor(0.13, 0.115, 0.10, 1.0)), ("cubemap_resolution", 128)):
+                     ("real_time_capture", True), ("lower_hemisphere_is_black", False),
+                     ("lower_hemisphere_color", unreal.LinearColor(0.13, 0.115, 0.10, 1.0)), ("cubemap_resolution", 256)):
             C.set_prop(kc, k, v, rep, quiet=True)
         self.lights["sky"] = kc
         # fog
         fog = self.spawn(unreal.ExponentialHeightFog, (0, 0, 400), label="FF_Fog", folder="Fourfold/Lighting")
         fc = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
-        for k, v in (("fog_density", 0.004), ("fog_height_falloff", 0.35), ("start_distance", 3000.0), ("fog_max_opacity", 0.85),
-                     ("fog_inscattering_luminance", unreal.LinearColor(0.50, 0.40, 0.31, 1.0)), ("enable_volumetric_fog", False),
+        for k, v in (("fog_density", 0.012), ("fog_height_falloff", 0.25), ("start_distance", 600.0), ("fog_max_opacity", 0.9),
+                     ("fog_inscattering_luminance", unreal.LinearColor(0.50, 0.40, 0.31, 1.0)), ("enable_volumetric_fog", True),
+                     ("volumetric_fog_scattering_distribution", 0.55), ("volumetric_fog_extinction_scale", 0.6),
+                     ("volumetric_fog_distance", 5000.0),
                      ("directional_inscattering_luminance", unreal.LinearColor(0.35, 0.25, 0.15, 1.0)),
                      ("directional_inscattering_exponent", 12.0)):
             C.set_prop(fc, k, v, rep, quiet=True)
-        # reflection captures: one over the courtyard, one over the pool
-        for label, loc, radius in (("FF_ReflectionCourtyard", (0, 0, 300), 3200.0), ("FF_ReflectionPool", (1000, -100, 120), 1000.0)):
+        # reflection captures: Lumen reflections on the Mac; the captures are only a fallback, so none are placed
+        for label, loc, radius in ():
             try:
                 rc = self.spawn(unreal.SphereReflectionCapture, loc, label=label, folder="Fourfold/Lighting")
                 comp = rc.get_component_by_class(unreal.SphereReflectionCaptureComponent)
@@ -211,11 +229,12 @@ class Builder:
             try:
                 pl = self.spawn(unreal.PointLight, l["location"], label=f"FF_{l['kind']}_{i}", folder="Fourfold/Lighting")
                 pc = pl.get_component_by_class(unreal.PointLightComponent)
-                pc.set_mobility(unreal.ComponentMobility.STATIONARY)
+                pc.set_mobility(unreal.ComponentMobility.MOVABLE)
                 col = l["color"]
                 for k, v in (("intensity_units", C.enum("LightUnits", "CANDELAS")), ("intensity", float(l["intensity_cd"])),
                              ("light_color", unreal.Color(int(col[0] * 255), int(col[1] * 255), int(col[2] * 255), 255)),
                              ("attenuation_radius", float(l["radius_m"]) * 100.0), ("cast_shadows", False),
+                             ("volumetric_scattering_intensity", 2.0),
                              ("use_inverse_squared_falloff", True), ("source_radius", 8.0)):
                     C.set_prop(pc, k, v, rep, quiet=True)
                 n += 1
@@ -233,12 +252,15 @@ class Builder:
             st = ppv.get_editor_property("settings")
             vals = [
                 ("auto_exposure_method", C.enum("AutoExposureMethod", "AEM_BASIC", "AEM_HISTOGRAM")),
-                ("auto_exposure_min_brightness", FIXED_EV100), ("auto_exposure_max_brightness", FIXED_EV100),
-                ("auto_exposure_bias", 0.0),
+                ("auto_exposure_min_brightness", 0.0), ("auto_exposure_max_brightness", 5.0),
+                ("auto_exposure_bias", 0.3), ("auto_exposure_speed_up", 2.0), ("auto_exposure_speed_down", 1.5),
                 ("bloom_intensity", 0.55), ("bloom_threshold", 1.0),
-                ("motion_blur_amount", 0.0), ("lens_flare_intensity", 0.0),
-                ("vignette_intensity", 0.28),
-                ("ambient_occlusion_intensity", 0.0),
+                ("motion_blur_amount", 0.35), ("motion_blur_max", 2.0), ("lens_flare_intensity", 0.0),
+                ("vignette_intensity", 0.32),
+                ("ambient_occlusion_intensity", 0.6), ("ambient_occlusion_radius", 120.0),
+                ("lumen_final_gather_quality", 2.0), ("lumen_reflection_quality", 2.0), ("lumen_scene_lighting_quality", 2.0),
+                ("film_toe", 0.6), ("film_shoulder", 0.26), ("film_slope", 0.86),
+                ("white_temp", 6200.0),
                 ("color_saturation", unreal.Vector4(1.05, 1.05, 1.05, 1.0)),
                 ("color_contrast", unreal.Vector4(1.06, 1.06, 1.06, 1.0)),
                 ("scene_color_tint", unreal.LinearColor(1.0, 0.985, 0.96, 1.0)),
@@ -290,7 +312,9 @@ class Builder:
     def build_lighting_bake(self, mode):
         """mode 'baked' | 'dynamic' | 'auto'.  Returns the mode actually used ('baked' or 'dynamic')."""
         rep = self.report
-        if mode == "dynamic":
+        if mode in ("dynamic", "auto"):
+            # Desktop-first look: everything movable, Lumen GI. Lightmass started from a script call also times out
+            # ("Timed out waiting for the recipient"), so "baked" is opt-in only.
             self.make_dynamic()
             return "dynamic"
         if "-run=" in unreal.SystemLibrary.get_command_line().lower():
