@@ -1,0 +1,121 @@
+// FourfoldFX logic island - Niagara cue requests (SystemReq) and the "replace" switch. Empty in the Unreal build.
+#if defined(FF_LOGIC_TESTS)
+#include "FxTest.h"
+
+#include "FxDirector.h"
+
+#include <set>
+#include <string>
+
+using namespace ffx;
+
+namespace {
+
+ff::Event NEv(const std::string& type, std::initializer_list<std::pair<const char*, ff::Value>> kv) {
+	ff::Event e;
+	e.type = type;
+	ff::Dict d;
+	for (const auto& p : kv) d.set(p.first, p.second);
+	e.data = ff::Value(d);
+	return e;
+}
+
+// One frame with a spread of fx / interaction / lightning events (as director_events_spawn_and_finish_one_shots).
+struct NFrame {
+	ff::Snapshot prev, curr;
+	std::vector<ff::Event> events;
+	FxFrameIn in;
+	NFrame() {
+		in.prev = &prev;
+		in.curr = &curr;
+		in.events = &events;
+		in.dt = 1.0f / 60.0f;
+		ff::ActorView a;
+		a.id = 1;
+		a.element = 2;
+		curr.actors = {a};
+		const char* mats[] = {"stone", "metal", "sand", "glass", "magma", "water", "ice", "flame", "blue", "lightning",
+		                      "blast", "wind", "plant"};
+		for (const char* k : {"burst", "erupt", "splash", "release"})
+			for (const char* m : mats)
+				events.push_back(NEv("fx", {{"fx", k}, {"mat", m}, {"actor", 1}, {"tier", 3}, {"pos", Vec3(0, 1.2f, 0)},
+				                           {"dir", Vec3(0, 0, 1)}, {"radius", 2.0f}, {"length", 4.0f}}));
+		for (const char* o : {"shatter", "block", "transform", "ground"})
+			events.push_back(NEv("interaction", {{"outcome", o}, {"threat", "stone"}, {"counter", "flame"},
+			                                     {"pos", Vec3(1, 1, 0)}, {"dir", Vec3(1, 0, 0)}, {"to", "steam"}}));
+		events.push_back(NEv("lightning", {{"actor", 1}, {"path", ff::Value(ff::Array({ff::Value(Vec3(0, 1, 0)), ff::Value(Vec3(4, 1, 0))}))}}));
+		prev = curr;
+		++curr.tick;
+	}
+};
+
+}  // namespace
+
+FXT_TEST(niagara_requests_cover_cues_and_are_valid) {
+	FxDirector d;
+	NFrame f;
+	const DrawList& dl = d.Update(f.in);
+	FXT_CHECK(!dl.systems.empty());
+	std::set<int> cues;
+	for (const SystemReq& s : dl.systems) {
+		cues.insert(static_cast<int>(s.cue));
+		FXT_CHECK(static_cast<int>(s.cue) < kNumNCues);
+		FXT_NEAR(s.dir.length(), 1.0f, 1e-3);
+		FXT_CHECK(s.scale > 0.0f && s.scale < 10.0f);
+		FXT_CHECK(std::isfinite(s.pos.x) && std::isfinite(s.pos.y) && std::isfinite(s.pos.z));
+	}
+	FXT_CHECK(cues.count(static_cast<int>(NCue::BoltHit)) == 1);
+	FXT_CHECK(cues.size() >= 6);
+	// requests are one frame only
+	f.events.clear();
+	f.prev = f.curr;
+	++f.curr.tick;
+	FXT_CHECK(d.Update(f.in).systems.empty());
+}
+
+FXT_TEST(niagara_replace_skips_procedural_only_when_loaded) {
+	auto run = [](uint64_t loaded, int& oneShots, size_t& systems) {
+		FxDirector d;
+		FxConfig cfg;
+		for (NiagaraSlot& s : cfg.niagara) s.replace = !s.path.empty();
+		d.SetConfig(cfg);
+		NFrame f;
+		f.in.niagaraLoaded = loaded;
+		systems = d.Update(f.in).systems.size();
+		oneShots = d.Stats().oneShots;
+	};
+	int shotsOff = 0, shotsOn = 0;
+	size_t sysOff = 0, sysOn = 0;
+	run(0, shotsOff, sysOff);
+	run(~0ULL, shotsOn, sysOn);
+	FXT_CHECK(shotsOff > 0);
+	FXT_CHECK(shotsOn < shotsOff);   // loaded + replace: those cues play only through Niagara
+	FXT_CHECK(sysOn > 0 && sysOn <= sysOff);
+}
+
+FXT_TEST(niagara_slot_rules_and_json) {
+	FxConfig c;
+	const NiagaraSlot& blast = c.Niagara(NCue::Blast);
+	FXT_CHECK(blast.path.find("/Game/NiagaraExamples/") == 0);
+	FXT_CHECK(blast.Wants(1.0f, 2));
+	FXT_CHECK(!blast.Wants(1.0f, 0));                       // min quality 1
+	FXT_CHECK(!c.Niagara(NCue::BurstDust).Wants(0.2f, 2));  // periodic status puffs stay procedural
+	FXT_CHECK(c.Niagara(NCue::BurstDust).Wants(0.8f, 2));
+	FXT_CHECK(!c.Niagara(NCue::AirPush).Wants(1.0f, 2));    // no system configured
+	std::string err, warn;
+	FXT_CHECK(c.LoadJson(R"({"niagara": {"blast": {"path": "", "params": {"Foo": 2, "Bar": "color2"}},
+	                                     "air_push": {"path": "/Game/X/NS_Y", "min_quality": 0, "bogus": 1},
+	                                     "nope": {}}})",
+	                     &err, &warn));
+	FXT_CHECK(c.Niagara(NCue::Blast).path.empty());
+	FXT_CHECK(c.Niagara(NCue::Blast).params.size() == 2);
+	FXT_CHECK(c.Niagara(NCue::Blast).params[0].first == "Foo" && c.Niagara(NCue::Blast).params[0].second == "2");
+	FXT_CHECK(c.Niagara(NCue::AirPush).Wants(0.5f, 0));
+	FXT_CHECK(warn.find("niagara.air_push.bogus") != std::string::npos);
+	FXT_CHECK(warn.find("niagara.nope") != std::string::npos);
+	FxConfig r;
+	FXT_CHECK(r.LoadJson(c.ToJson(), &err, &warn));
+	FXT_CHECK(r.ToJson() == c.ToJson());
+}
+
+#endif  // FF_LOGIC_TESTS

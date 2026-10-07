@@ -156,3 +156,27 @@ _Read this first when resuming. Update after every completed sub-step._
 - Transparent FX use AlphaComposite (premultiplied, Cover 0 = additive .. 1 = alpha) unlit; opaque: rock, lava
   strip, metal, vine, ground strip (lit).
 - All logic in SIM space (metres, +Y up); UE glue converts once (FxUeConvert.h) and reverses triangle winding.
+
+## Niagara cue layer (2026-10-07, Mac; session "Add Niagara Examples Pack to Fourfold")
+- Epic's free Niagara Examples Pack added through the editor's Fab plugin (the Launcher's project picker cannot see
+  Fourfold; Fab signs in only when Unreal is started from the Launcher): `Content/NiagaraExamples/`, 1.2 GB,
+  git-ignored (20ebe83).
+- Logic: `NCue` slots (FxTypes.h), `SystemReq` + `DrawList::systems`, `FxConfig::niagara` (`NiagaraSlot`: path,
+  scale, life, replace, min_quality, min_intensity, params), `FxFrameIn::niagaraLoaded` + `Ctx::NiagaraReplaces`;
+  `OneShots` plays emit requests and skip the procedural one-shot only for loaded `replace` slots. Tests:
+  `tests/test_niagara.cpp` (26 tests total). Mac without cmake: `bash unreal/Tools/vfx/logic_tests.sh [build_dir]`.
+- Glue: `Private/FourfoldFxNiagara.{h,cpp}` (load + user-parameter binding by name and real type, pooled spawns,
+  timed stops), actor (`NiagaraSystems` UPROPERTY, Setup / Apply / ReleaseAll), subsystem (loaded mask,
+  `ff.fx.Niagara`, `ff.fx.Showcase`, `ff.fx.ShowcaseShots`, CSV events), Build.cs + "Niagara".
+- Tuned from three showcase captures: blast -> NS_Explosion_Medium (replace; smoke `color*4`, scale 0.7), dust /
+  sand / grit bursts -> NS_Dirt_Explosion_Small (replace), metal / ember / spark bursts -> NS_Spark_Burst (adds),
+  steam -> NS_Smoke_Plume (0.5 s, adds), strong `dust` -> dirt explosion (adds). Unused: NS_Impact_* (bullet scale,
+  invisible at fighting distance), bubbles (no water look), sparks for lightning / blue fire (stay orange).
+- `FFKeyDir` follows the world's 42-degree sun: toward the light (-0.5864, 0.4565, 0.6691).
+- GPU cost A/B (Mac M4 Pro, 1600x900, 75% TSR, showcase every 2.5 s, CSV profiler, `ff.fx.Niagara 1` vs `0`):
+  median GPU outside the cue windows 16.2 vs 15.8 ms (lingering dust); mean GPU in the 1.5 s after a cue +0.5 ms
+  (blast, stone, sand), up to +1 ms (metal sparks); budget agreed with the main session: FX cues <= 2 ms. The first
+  blast of a run hitches (79 ms mean over 1.5 s vs 43 ms without Niagara): first-use shader / PSO compile -
+  pre-warm the slot systems at scenario load (spawn once off-screen) or rely on PSO precaching in packaged builds.
+- Next: Chaos fracture of stone walls / thrown stones (agreed with the main session: fx owns it), Niagara pre-warm,
+  then persistent looks (fire fields, water, wind) where the pack falls short; iOS check of the Niagara slots.

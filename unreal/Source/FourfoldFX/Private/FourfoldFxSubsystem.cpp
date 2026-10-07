@@ -13,8 +13,12 @@
 #include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
 #include "Logic/FxDirector.h"
+#include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "ProfilingDebugging/CsvProfiler.h"
+#include "UnrealClient.h"
 
 #include <string>
 #include <vector>
@@ -25,14 +29,28 @@ static TAutoConsoleVariable<int32> CVarFourfoldFxEnable(TEXT("ff.fx.Enable"), 1,
 	TEXT("Fourfold effects: 1 = on, 0 = off (every effect component is released)."), ECVF_Default);
 static TAutoConsoleVariable<int32> CVarFourfoldFxStats(TEXT("ff.fx.Stats"), 0,
 	TEXT("Fourfold effects: 1 = print the per-frame counters on screen."), ECVF_Default);
+static TAutoConsoleVariable<int32> CVarFourfoldFxNiagara(TEXT("ff.fx.Niagara"), 1,
+	TEXT("Fourfold effects: 1 = Niagara cue systems on (fx_config.json \"niagara\"), 0 = procedural one-shots only."),
+	ECVF_Default);
+static TAutoConsoleVariable<float> CVarFourfoldFxShowcase(TEXT("ff.fx.Showcase"), 0.0f,
+	TEXT("Fourfold effects: N > 0 = every N seconds play the next cue of a fixed list (blast, stone, metal, glass, ice, ")
+	TEXT("lightning, sand, water, steam, magma, fire cone, plant) 4 m in front of the camera through the normal event path ")
+	TEXT("(look checks and screenshots; the log names each cue)."), ECVF_Default);
+static TAutoConsoleVariable<FString> CVarFourfoldFxShowcaseShots(TEXT("ff.fx.ShowcaseShots"), TEXT(""),
+	TEXT("Fourfold effects: list of seconds (0.1|0.5) after each showcase cue at which to save ")
+	TEXT("<-FFShotDir or Saved/Shots>/showcase_<n>_<cue>_<ms>.png."), ECVF_Default);
 
 struct FFourfoldFxImpl
 {
 	ffx::FxDirector Director;
 	ffx::FxConfig Config;
 	std::vector<ffx::FxAnchors> Anchors;
+	std::vector<ff::Event> Events;   // sim events + showcase cues (only while ff.fx.Showcase is on)
 	double LastUpdateMs = 0.0;
 	double PeakUpdateMs = 0.0;
+	double ShowcaseNext = 0.0;
+	int32 ShowcaseIndex = 0;
+	TArray<TPair<double, FString>> ShowcaseShots;   // (world time, file) still to capture
 };
 
 namespace
@@ -76,6 +94,39 @@ namespace
 
 	ffx::Vec3 ToSimV(const FVector& V) { return FF::ToSim(V); }
 	ffx::Vec3 ToSimDir(const FVector& V) { return FF::DirToSim(V); }
+
+	// ff.fx.Showcase: one synthetic "fx" event (the shape the sim emits) 4 m in front of the camera.
+	ff::Event ShowcaseEvent(int32 Index, const ffx::FxFrameIn& In, int ActorId, FString& OutName)
+	{
+		static const char* const kCues[][2] = {{"burst", "blast"}, {"burst", "stone"}, {"burst", "metal"}, {"burst", "glass"},
+			{"burst", "ice"}, {"burst", "lightning"}, {"burst", "sand"}, {"burst", "water"}, {"burst", "steam"},
+			{"erupt", "magma"}, {"cone", "flame"}, {"erupt", "plant"}};
+		constexpr int32 kNum = int32(sizeof(kCues) / sizeof(kCues[0]));
+		const char* const* Cue = kCues[Index % kNum];
+		ffx::Vec3 Fwd(In.cam.fwd.x, 0.0f, In.cam.fwd.z);
+		Fwd = ffx::Norm(Fwd, ffx::Vec3(0.0f, 0.0f, -1.0f));
+		const ffx::Vec3 Right(-Fwd.z, 0.0f, Fwd.x);
+		// 3 m beyond the first fighter as seen from the camera (or 6 m ahead of the camera)
+		const ff::ActorView* A = In.curr ? In.curr->FindActor(ActorId) : nullptr;
+		ffx::Vec3 At = A ? A->pos + Fwd * 3.0f : In.cam.pos + Fwd * 6.0f;
+		At.y = ffx::GroundUnder(In.arena, ffx::Vec3(At.x, At.y + 2.0f, At.z)) + 1.0f;
+		const bool bCone = FCStringAnsi::Strcmp(Cue[0], "cone") == 0;
+		ff::Dict D;
+		D.set("fx", ff::Value(Cue[0]));
+		D.set("mat", ff::Value(Cue[1]));
+		D.set("actor", ff::Value(ActorId));
+		D.set("tier", ff::Value(3));
+		D.set("pos", ff::Value(bCone ? At - Right * 2.0f : At));
+		D.set("dir", ff::Value(bCone ? Right : ffx::Vec3(0.0f, 1.0f, 0.0f)));
+		D.set("radius", ff::Value(2.0f));
+		D.set("length", ff::Value(4.0f));
+		D.set("power", ff::Value(30.0f));
+		ff::Event E;
+		E.type = "fx";
+		E.data = ff::Value(D);
+		OutName = FString(UTF8_TO_TCHAR(Cue[0])) + TEXT("/") + UTF8_TO_TCHAR(Cue[1]);
+		return E;
+	}
 }
 
 UFourfoldFxSubsystem* UFourfoldFxSubsystem::Get(const UObject* WorldContextObject)
@@ -268,9 +319,49 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 		}
 	}
 	In.anchors = &Impl->Anchors;
+	const bool bNiagara = CVarFourfoldFxNiagara.GetValueOnGameThread() != 0;
+	In.niagaraLoaded = bNiagara ? FxActor->GetNiagaraLoadedMask() : 0;
+	// look checks: inject the next showcase cue
+	const float Showcase = CVarFourfoldFxShowcase.GetValueOnGameThread();
+	if (Showcase > 0.0f && World && World->GetTimeSeconds() >= Impl->ShowcaseNext)
+	{
+		Impl->ShowcaseNext = World->GetTimeSeconds() + double(Showcase);
+		Impl->Events = Frame.Events ? *Frame.Events : std::vector<ff::Event>();
+		FString Name;
+		const int ActorId = Frame.Curr->actors.empty() ? -1 : Frame.Curr->actors[0].id;
+		Impl->Events.push_back(ShowcaseEvent(Impl->ShowcaseIndex++, In, ActorId, Name));
+		In.events = &Impl->Events;
+		UE_LOG(LogFourfoldFx, Display, TEXT("Showcase %d: %s at %.1fs"), Impl->ShowcaseIndex - 1, *Name, World->GetTimeSeconds());
+		CSV_EVENT_GLOBAL(TEXT("ff.fx showcase %s"), *Name);
+		TArray<FString> Offsets;
+		static const TCHAR* const kSeparators[] = {TEXT(","), TEXT("|"), TEXT(" ")};   // -ExecCmds splits on commas: use 0.1|0.5
+		CVarFourfoldFxShowcaseShots.GetValueOnGameThread().ParseIntoArray(Offsets, kSeparators, 3);
+		FString Dir;
+		if (!FParse::Value(FCommandLine::Get(), TEXT("-FFShotDir="), Dir))
+		{
+			Dir = FPaths::ProjectSavedDir() / TEXT("Shots");
+		}
+		for (const FString& O : Offsets)
+		{
+			const double T = FCString::Atod(*O);
+			Impl->ShowcaseShots.Add({World->GetTimeSeconds() + T, Dir / FString::Printf(TEXT("showcase_%02d_%s_%04d.png"),
+				Impl->ShowcaseIndex - 1, *Name.Replace(TEXT("/"), TEXT("_")), int32(T * 1000.0))});
+		}
+	}
+	// one pending showcase screenshot per frame (FScreenshotRequest holds a single request)
+	for (int32 i = 0; World && i < Impl->ShowcaseShots.Num(); ++i)
+	{
+		if (World->GetTimeSeconds() >= Impl->ShowcaseShots[i].Key)
+		{
+			FScreenshotRequest::RequestScreenshot(Impl->ShowcaseShots[i].Value, false, false);
+			UE_LOG(LogFourfoldFx, Display, TEXT("Showcase shot %s"), *Impl->ShowcaseShots[i].Value);
+			Impl->ShowcaseShots.RemoveAt(i);
+			break;
+		}
+	}
 
 	const ffx::DrawList& List = Impl->Director.Update(In);
-	FxActor->Apply(List, Sim);
+	FxActor->Apply(List, Sim, bNiagara);
 
 	Impl->LastUpdateMs = (FPlatformTime::Seconds() - T0) * 1000.0;
 	Impl->PeakUpdateMs = FMath::Max(Impl->PeakUpdateMs * 0.995, Impl->LastUpdateMs);

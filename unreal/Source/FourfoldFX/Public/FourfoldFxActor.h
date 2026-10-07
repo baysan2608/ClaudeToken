@@ -17,6 +17,7 @@ class UStaticMeshComponent;
 class UTexture;
 class UFourfoldSimSubsystem;
 struct FFourfoldFxRendererImpl;
+struct FFourfoldFxNiagara;
 
 namespace ffx
 {
@@ -34,12 +35,15 @@ public:
 
 	/** Loads materials / meshes / flipbooks named by the config and pre-creates pooled components (hidden). */
 	void Setup(const ffx::FxConfig& Config, int32 Quality);
-	/** Binds this frame's draw items to components (creating / recycling as needed) and sets the lights. */
-	void Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* Sim);
+	/** Binds this frame's draw items to components (creating / recycling as needed), sets the lights and spawns the
+	 *  frame's Niagara cue systems (unless bNiagara is false: ff.fx.Niagara 0). */
+	void Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* Sim, bool bNiagara = true);
 	/** Hides and releases every component (scenario change). */
 	void ReleaseAll();
 	/** One line of counters for the debug overlay. */
 	FString GetDebugLine() const;
+	/** Bit per ffx::NCue: the cue's Niagara system loaded (fed back to the logic as FxFrameIn::niagaraLoaded). */
+	uint64 GetNiagaraLoadedMask() const;
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -53,8 +57,11 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInterface>> SlotMaterials;
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMesh>> AssetMeshes;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTexture>> FlipbookTextures;
+	/** Niagara systems of the cue slots (fx_config.json "niagara"). */
+	UPROPERTY(Transient) TArray<TObjectPtr<UObject>> NiagaraSystems;
 
 private:
 	TSharedPtr<FFourfoldFxRendererImpl> Impl;
+	TSharedPtr<FFourfoldFxNiagara> Niagara;
 	friend struct FFourfoldFxRendererImpl;
 };

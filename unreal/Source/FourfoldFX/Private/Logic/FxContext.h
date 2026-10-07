@@ -44,6 +44,7 @@ struct FxFrameIn {
 	int quality = 2;                  // 0..2 (UFourfoldSettingsSubsystem::GetEffectiveQuality)
 	float flashes = 1.0f;             // Settings.Flashes 0..1
 	bool reducedMotion = false;
+	uint64_t niagaraLoaded = 0;       // bit per NCue: the glue has the slot's Niagara system loaded
 };
 
 class KeyAlloc {
@@ -104,6 +105,12 @@ struct Ctx {
 	// The "hand point" of a cast: midway between both hands (FighterView.hand_position).
 	Vec3 Hands(int actorId) const { return LerpV(Anchor(actorId, Bone::HandL), Anchor(actorId, Bone::HandR), 0.5f); }
 	Vec3 Chest(int actorId) const { return Anchor(actorId, Bone::Chest); }
+
+	// The cue's Niagara system is loaded, will be spawned for this request and stands in for the procedural one-shot.
+	bool NiagaraReplaces(NCue cue, float intensity) const {
+		const NiagaraSlot& s = cfg.Niagara(cue);
+		return s.replace && s.Wants(intensity, in.quality) && ((in.niagaraLoaded >> static_cast<int>(cue)) & 1ULL) != 0;
+	}
 
 	// Basis whose +Z faces the camera from p (+Y as close to the camera's up as possible).
 	Basis Facing(const Vec3& p) const { return Basis::FromFwdUp(in.cam.pos - p, in.cam.up); }

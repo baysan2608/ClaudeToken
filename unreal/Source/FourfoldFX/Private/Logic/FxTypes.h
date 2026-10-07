@@ -138,4 +138,28 @@ enum class Bone : uint8_t { Pelvis, Spine, Chest, Head, HandL, HandR, FootL, Foo
 inline constexpr std::array<std::string_view, static_cast<size_t>(Bone::Count)> kBoneNames = {
 	"pelvis", "spine_03", "spine_05", "head", "hand_l", "hand_r", "foot_l", "foot_r"};
 
+// Niagara cue slots (fx_config.json "niagara"): every one-shot play also emits a SystemReq for its slot, and the
+// Unreal glue spawns the Niagara system configured for the slot (Epic Niagara Examples Pack by default) when it is
+// loaded. Burst slots follow the Burst order, shard slots the ShardMat order. Append only.
+enum class NCue : uint8_t {
+	Blast, BlastBlue,
+	BurstDust, BurstMetal, BurstSand, BurstGlass, BurstEmber, BurstWater, BurstFrost, BurstMist, BurstSteam,
+	BurstLeaves, BurstBlueSparks, BurstStatic, BurstAsh, BurstInflow, BurstSparks, BurstSmoke, BurstGrit,
+	ShardsStone, ShardsIce, ShardsGlass, ShardsMetal, ShardsPlant,
+	FireBurst, FireBurstBlue, Splash, Steam, Dust, Ember, BoltHit, AirPush, Count
+};
+inline constexpr int kNumNCues = static_cast<int>(NCue::Count);
+static_assert(static_cast<int>(NCue::BurstGrit) - static_cast<int>(NCue::BurstDust) == kNumBursts - 1,
+              "burst cue slots follow the Burst order");
+static_assert(kNumNCues <= 64, "FxFrameIn::niagaraLoaded is a 64-bit mask");
+inline constexpr std::array<std::string_view, kNumNCues> kNCueNames = {
+	"blast", "blast_blue",
+	"burst_dust", "burst_metal", "burst_sand", "burst_glass", "burst_ember", "burst_water", "burst_frost", "burst_mist",
+	"burst_steam", "burst_leaves", "burst_blue_sparks", "burst_static", "burst_ash", "burst_inflow", "burst_sparks",
+	"burst_smoke", "burst_grit",
+	"shards_stone", "shards_ice", "shards_glass", "shards_metal", "shards_plant",
+	"fire_burst", "fire_burst_blue", "splash", "steam", "dust", "ember", "bolt_hit", "air_push"};
+inline std::string_view NCueName(NCue c) { return kNCueNames[static_cast<size_t>(c)]; }
+inline NCue BurstCue(Burst b) { return static_cast<NCue>(static_cast<int>(NCue::BurstDust) + static_cast<int>(b)); }
+
 }  // namespace ffx

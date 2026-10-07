@@ -6,10 +6,11 @@
 
 #include "FFCommon.ush"
 
-// Arena sun direction (toward the light, UE world space, Z up) used by unlit translucent effects.
+// Arena sun direction (toward the light, UE world space, Z up) used by unlit translucent effects: the opposite of the
+// world's sun Rotator (pitch -42, yaw -37.9; Content/Python/fourfold/world/level.py SUN_PITCH / SUN_YAW).
 float3 FFKeyDir()
 {
-	return normalize(float3(-0.45, 0.35, 0.82));
+	return normalize(float3(-0.5864, 0.4565, 0.6691));
 }
 
 float FFFresnel(float ndv, float f0, float power)

@@ -643,9 +643,14 @@ void OneShots::Ring(Ctx& c, const Vec3& pos, const Vec3& normal, float r0, float
 
 void OneShots::Burst(Ctx& c, const Vec3& pos, const Vec3& normal, float strength, ffx::Burst style) {
 	const BurstStyle& st = c.cfg.Burst(style);
-	BurstFx& b = bursts_.Acquire(serial_);
 	strength = Clamp(strength, 0.1f, 2.0f);
 	const Vec3 n = normal.length_squared() > 1e-6f ? Norm(normal) : Vec3(0.0f, 1.0f, 0.0f);
+	const NCue cue = BurstCue(style);
+	SystemReq& sr = c.out.System(cue, pos, n, 0.6f + 0.4f * strength, strength);
+	sr.color = st.puff;
+	sr.color2 = st.spark;
+	if (c.NiagaraReplaces(cue, sr.intensity)) return;
+	BurstFx& b = bursts_.Acquire(serial_);
 	const Vec3 at = pos + n * 0.06f;
 	b.hasPuff = st.hasPuff;
 	b.hasSpark = st.hasSpark;
@@ -721,15 +726,23 @@ void OneShots::Burst(Ctx& c, const Vec3& pos, const Vec3& normal, float strength
 }
 
 void OneShots::Shards(Ctx& c, const Vec3& pos, const Vec3& dir, float strength, ShardMat mat, uint32_t seed, float groundY) {
-	ShardsFx& s = shards_.Acquire(serial_);
+	static_assert(static_cast<int>(NCue::ShardsPlant) - static_cast<int>(NCue::ShardsStone) == static_cast<int>(ShardMat::Plant),
+	              "shard cue slots follow the ShardMat order");
+	static constexpr Fam kShardFam[] = {Fam::Stone, Fam::Ice, Fam::Glass, Fam::Metal, Fam::Plant};
 	strength = Clamp(strength, 0.2f, 2.0f);
+	const Vec3 d = dir.length_squared() > 1e-6f ? Norm(dir) : Vec3(0.0f, 1.0f, 0.0f);
+	const NCue cue = static_cast<NCue>(static_cast<int>(NCue::ShardsStone) + static_cast<int>(mat));
+	SystemReq& sr = c.out.System(cue, pos, d, 0.6f + 0.4f * strength, strength);
+	sr.color = c.cfg.MatColor(kShardFam[static_cast<int>(mat)]);
+	sr.color2 = c.cfg.DustColor(kShardFam[static_cast<int>(mat)]);
+	if (c.NiagaraReplaces(cue, sr.intensity)) return;
+	ShardsFx& s = shards_.Acquire(serial_);
 	Rng r(HashCombine(seed, 1103u) + 17u);
 	s.mat = mat;
 	s.seed = seed;
 	s.key = c.keys.New();
 	s.n = ClampI(static_cast<int>(6.0f + 8.0f * strength * 0.6f), 5, ShardsFx::kMax);
 	s.n = MinI(s.n, c.q.shardsMax);
-	const Vec3 d = dir.length_squared() > 1e-6f ? Norm(dir) : Vec3(0.0f, 1.0f, 0.0f);
 	const bool crystal = mat == ShardMat::Ice || mat == ShardMat::Glass;
 	for (int i = 0; i < s.n; ++i) {
 		const Vec3 rr = Norm(Vec3(r.Signed(), std::fabs(r.Signed()) * 0.8f + 0.3f, r.Signed()));
@@ -745,6 +758,11 @@ void OneShots::Shards(Ctx& c, const Vec3& pos, const Vec3& dir, float strength, 
 }
 
 void OneShots::Blast(Ctx& c, const Vec3& pos, float radius, float intensity, bool blue, float groundY) {
+	const NCue cue = blue ? NCue::BlastBlue : NCue::Blast;
+	SystemReq& sr = c.out.System(cue, pos, Vec3(0.0f, 1.0f, 0.0f), Clamp(radius, 0.3f, 6.0f) * 0.5f, Clamp(intensity, 0.2f, 1.5f));
+	sr.color = c.cfg.DustColor(Fam::Blast);
+	sr.color2 = blue ? c.cfg.blueFlame[1] : c.cfg.flame[1];
+	if (c.NiagaraReplaces(cue, sr.intensity)) return;   // the system carries its own embers / smoke
 	BlastFx& b = blasts_.Acquire(serial_);
 	b.pos = pos;
 	b.radius = Clamp(radius, 0.3f, 6.0f);
@@ -771,9 +789,15 @@ void OneShots::Beam(Ctx& c, const Vec3& from, const Vec3& to, float dur, BeamSty
 }
 
 void OneShots::FireBurst(Ctx& c, const Vec3& origin, const Vec3& dir, float length, float intensity, bool blue) {
+	const Vec3 jet = dir.length_squared() > 1e-8f ? Norm(dir) : Vec3(0.0f, 0.0f, -1.0f);
+	const NCue cue = blue ? NCue::FireBurstBlue : NCue::FireBurst;
+	SystemReq& sr = c.out.System(cue, origin, jet, MaxF(length, 0.2f) * 0.5f, Clamp(intensity, 0.1f, 2.0f));
+	sr.color = blue ? c.cfg.blueFlame[1] : c.cfg.flame[1];
+	sr.color2 = blue ? c.cfg.blueFlame[2] : c.cfg.flame[2];
+	if (c.NiagaraReplaces(cue, sr.intensity)) return;
 	FireBurstFx& f = fireBursts_.Acquire(serial_);
 	f.origin = origin;
-	f.dir = dir.length_squared() > 1e-8f ? Norm(dir) : Vec3(0.0f, 0.0f, -1.0f);
+	f.dir = jet;
 	f.length = MaxF(length, 0.2f);
 	f.intensity = Clamp(intensity, 0.1f, 2.0f);
 	f.blue = blue;
@@ -809,9 +833,13 @@ void OneShots::FireBurst(Ctx& c, const Vec3& origin, const Vec3& dir, float leng
 }
 
 void OneShots::AirPush(Ctx& c, const Vec3& origin, const Vec3& dir, float radius, float length) {
+	const Vec3 push = dir.length_squared() > 1e-8f ? Norm(dir) : Vec3(0.0f, 0.0f, -1.0f);
+	SystemReq& sr = c.out.System(NCue::AirPush, origin, push, MaxF(radius, 0.1f), MaxF(length, 0.3f));
+	sr.color = c.cfg.DustColor(Fam::Wind);
+	if (c.NiagaraReplaces(NCue::AirPush, sr.intensity)) return;
 	AirPushFx& a = airPushes_.Acquire(serial_);
 	a.origin = origin;
-	a.dir = dir.length_squared() > 1e-8f ? Norm(dir) : Vec3(0.0f, 0.0f, -1.0f);
+	a.dir = push;
 	a.radius = MaxF(radius, 0.1f);
 	a.length = MaxF(length, 0.3f);
 	a.keyCone = c.keys.New();
@@ -827,9 +855,13 @@ void OneShots::AirPush(Ctx& c, const Vec3& origin, const Vec3& dir, float radius
 }
 
 void OneShots::Splash(Ctx& c, const Vec3& pos, const Vec3& normal, float strength) {
-	PuffFx& s = splashes_.Acquire(serial_);
 	strength = Clamp(strength, 0.1f, 2.0f);
 	const Vec3 n = normal.length_squared() > 1e-6f ? Norm(normal) : Vec3(0.0f, 1.0f, 0.0f);
+	SystemReq& sr = c.out.System(NCue::Splash, pos, n, 0.6f + 0.4f * strength, strength);
+	sr.color = c.cfg.MatColor(Fam::Water);
+	sr.color2 = Color(1.0f, 1.0f, 1.0f, 1.0f);
+	if (c.NiagaraReplaces(NCue::Splash, sr.intensity)) return;
+	PuffFx& s = splashes_.Acquire(serial_);
 	s.key = c.keys.New();
 	s.key2 = c.keys.New();
 	s.dur = 0.8f;
@@ -884,8 +916,11 @@ void OneShots::Splash(Ctx& c, const Vec3& pos, const Vec3& normal, float strengt
 }
 
 void OneShots::Steam(Ctx& c, const Vec3& pos, float amount) {
-	PuffFx& s = steams_.Acquire(serial_);
 	amount = Clamp(amount, 0.05f, 1.0f);
+	SystemReq& sr = c.out.System(NCue::Steam, pos, Vec3(0.0f, 1.0f, 0.0f), 0.5f + 0.5f * amount, amount);
+	sr.color = Color(0.93f, 0.95f, 0.97f, 1.0f);
+	if (c.NiagaraReplaces(NCue::Steam, sr.intensity)) return;
+	PuffFx& s = steams_.Acquire(serial_);
 	s.key = c.keys.New();
 	s.dur = 1.4f;
 	s.tint = Color(0.93f, 0.95f, 0.97f);
@@ -920,9 +955,12 @@ void OneShots::Steam(Ctx& c, const Vec3& pos, float amount) {
 }
 
 void OneShots::Dust(Ctx& c, const Vec3& pos, const Vec3& normal, float strength, const Color& tint) {
-	PuffFx& s = dusts_.Acquire(serial_);
 	strength = Clamp(strength, 0.1f, 2.0f);
 	const Vec3 n = normal.length_squared() > 1e-6f ? Norm(normal) : Vec3(0.0f, 1.0f, 0.0f);
+	SystemReq& sr = c.out.System(NCue::Dust, pos, n, 0.6f + 0.4f * strength, strength);
+	sr.color = Color(tint.r, tint.g, tint.b, 1.0f);
+	if (c.NiagaraReplaces(NCue::Dust, sr.intensity)) return;
+	PuffFx& s = dusts_.Acquire(serial_);
 	s.key = c.keys.New();
 	s.dur = 1.1f;
 	s.tint = tint;
@@ -955,9 +993,13 @@ void OneShots::Dust(Ctx& c, const Vec3& pos, const Vec3& normal, float strength,
 }
 
 void OneShots::Ember(Ctx& c, const Vec3& pos, const Vec3& normal, float strength) {
-	PuffFx& s = embers_.Acquire(serial_);
 	strength = Clamp(strength, 0.1f, 2.0f);
 	const Vec3 n = normal.length_squared() > 1e-6f ? Norm(normal) : Vec3(0.0f, 1.0f, 0.0f);
+	SystemReq& sr = c.out.System(NCue::Ember, pos, n, 0.6f + 0.4f * strength, strength);
+	sr.color = Color(0.9f, 0.2f, 0.03f, 1.0f);
+	sr.color2 = Color(1.0f, 0.75f, 0.35f, 1.0f);
+	if (c.NiagaraReplaces(NCue::Ember, sr.intensity)) return;
+	PuffFx& s = embers_.Acquire(serial_);
 	s.key = c.keys.New();
 	s.dur = 1.3f;
 	s.ps.Reset(12, c.rng.Next());
@@ -1009,6 +1051,12 @@ void OneShots::Bolt(Ctx& c, const std::vector<Vec3>& nodes, uint32_t seed, float
 	b.tint = tint;
 	b.length = len;
 	b.mid = nodes[nodes.size() / 2];
+	// sparks where the bolt strikes (only adds: the bolt itself stays procedural)
+	const Vec3& tip = nodes.back();
+	SystemReq& sr = c.out.System(NCue::BoltHit, tip, Norm(nodes[nodes.size() - 2] - tip, Vec3(0.0f, 1.0f, 0.0f)),
+	                             0.6f + 0.4f * Clamp(intensity, 0.0f, 2.0f), intensity);
+	sr.color = Color(1.0f, 1.0f, 1.0f, 1.0f);
+	sr.color2 = tint;
 }
 
 void OneShots::LightPulse(Ctx& c, const Vec3& pos, const Color& col, float intensity, float radius, float dur) {

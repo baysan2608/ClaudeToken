@@ -7,6 +7,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "FourfoldFighter.h"
+#include "FourfoldFxNiagara.h"
 #include "FourfoldSimSubsystem.h"
 #include "FxUeConvert.h"
 #include "Logic/FxConfig.h"
@@ -127,6 +128,7 @@ AFourfoldFxActor::AFourfoldFxActor()
 	RootComponent = Root;
 	SetCanBeDamaged(false);
 	Impl = MakeShared<FFourfoldFxRendererImpl>();
+	Niagara = MakeShared<FFourfoldFxNiagara>();
 }
 
 void AFourfoldFxActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -252,6 +254,8 @@ void AFourfoldFxActor::Setup(const ffx::FxConfig& Config, int32 Quality)
 			Lights.Add(L);
 		}
 	}
+	NiagaraSystems.Reset();
+	Niagara->Setup(Config, Quality, NiagaraSystems);
 }
 
 void AFourfoldFxActor::ReleaseAll()
@@ -295,9 +299,13 @@ void AFourfoldFxActor::ReleaseAll()
 	{
 		K = 0;
 	}
+	if (Niagara)
+	{
+		Niagara->StopAll();
+	}
 }
 
-void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* Sim)
+void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* Sim, bool bNiagara)
 {
 	FFourfoldFxRendererImpl& I = *Impl;
 	I.Uploads = 0;
@@ -657,6 +665,8 @@ void AFourfoldFxActor::Apply(const ffx::DrawList& List, UFourfoldSimSubsystem* S
 			L->SetVisibility(true);
 		}
 	}
+	// Niagara cue systems (fire and forget; timed stops run even while new spawns are off)
+	Niagara->Spawn(this, List, bNiagara);
 }
 
 FString AFourfoldFxActor::GetDebugLine() const
@@ -671,6 +681,11 @@ FString AFourfoldFxActor::GetDebugLine() const
 	{
 		Lit += (L && L->IsVisible()) ? 1 : 0;
 	}
-	return FString::Printf(TEXT("fx: %d items, %d components (%d grown), %d uploads, %d params, %d lights"), I.ActiveItems,
-		I.States.Num(), I.Creates, I.Uploads, I.ParamSets, Lit);
+	return FString::Printf(TEXT("fx: %d items, %d components (%d grown), %d uploads, %d params, %d lights | %s"), I.ActiveItems,
+		I.States.Num(), I.Creates, I.Uploads, I.ParamSets, Lit, *Niagara->GetDebugLine());
+}
+
+uint64 AFourfoldFxActor::GetNiagaraLoadedMask() const
+{
+	return Niagara ? Niagara->LoadedMask() : 0;
 }

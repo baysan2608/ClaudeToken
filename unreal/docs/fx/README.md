@@ -3,8 +3,9 @@
 Every visual effect of the game: earth, lava, metal, sand, glass, water, ice, mist / steam, plants, flame, blue fire,
 lightning, blasts, wind, vortices, vacuum, sound; charge tiers; status looks on fighters. Persistent visuals come
 **only** from sim body state (`ff::Snapshot`), one-shot cues **only** from sim events (`ff::Event`) - the Godot rule.
-No Niagara (cannot be authored from Python): C++-driven procedural meshes + Python-built materials whose Custom nodes
-include our HLSL + Blender hero meshes + simulated flipbooks.
+Core look: C++-driven procedural meshes + Python-built materials whose Custom nodes include our HLSL + Blender hero
+meshes + simulated flipbooks. On top of it, the **Niagara cue layer** (2026-10-07): one-shot cues also request
+pre-authored Niagara systems (Epic's free Niagara Examples Pack by default) - see "Niagara cue layer" below.
 
 ## Layout (all owned by `fx`)
 | Path | What |
@@ -12,6 +13,7 @@ include our HLSL + Blender hero meshes + simulated flipbooks.
 | `Source/FourfoldFX/Private/Logic/` | **engine-free** core (namespace `ffx`, sim space, no UE headers): director (`FxDirector`), body views (`FxViews*`), cues (`FxCues`), pooled one-shots (`FxOneShots`), geometry builders (`FxMesh`, `FxMeshLib`, `FxLightning`, `FxParticles`), mapping (`FxMapping`), config (`FxConfig`), draw list (`FxDrawList`) |
 | `Source/FourfoldFX/Private/Logic/tests/` | unit tests, integration soak, shader shim, CPU preview renderer (all `FF_LOGIC_TESTS`, empty in UBT builds) |
 | `Source/FourfoldFX/{Public,Private}/FourfoldFx{Subsystem,Actor}*`, `Private/FxUeConvert.h` | thin UE glue: world subsystem (binds `OnFrame`), pooled component renderer, sim -> UE conversion |
+| `Source/FourfoldFX/Private/FourfoldFxNiagara.*` | Niagara cue layer: spawns the configured system per `SystemReq`, binds user parameters |
 | `Source/FourfoldShaders/` | maps `unreal/Shaders` -> `/Fourfold` (PostConfigInit, guarded) |
 | `Shaders/Common/*.ush` | noise (value / gradient / simplex / fbm / ridged / curl / Voronoi 2D-3D, triplanar), flipbook blending, flow, fresnel / fake lighting, dithering, black-body, `FFSurf` |
 | `Shaders/FX/*.ush` | `FFRock` (stone -> lava -> crust continuum + lava strips), `FFFlame` (mesh flames + fire sprites), `FFWater` (water -> ice), `FFCrystal`, `FFMetal`, `FFVine`, `FFGround` (strips + decals), `FFLightning` (bolts, beams, sparks), `FFWind` (air + vortex), `FFShell` (shells + rings), `FFSmoke` (smoke / steam / dust / puffs / splash) |
@@ -89,6 +91,35 @@ Quality levels (fx_config `quality[0..2]`): particle multiplier 0.55 / 0.8 / 1.0
 flame tongues 8 / 11 / 14, shards, debris, bolt subdivision 5 / 6 / 7, lights 2 / 3 / 4. Particles <= 32 per
 one-shot; geometry rebuilt at most once per frame; components pooled and pre-warmed.
 
+## Niagara cue layer
+Niagara systems cannot be authored from Python, so they come pre-made: Epic's free **Niagara Examples Pack** (Fab),
+installed at `Content/NiagaraExamples/` (1.2 GB, git-ignored; to add it: start Unreal **from the Epic Games Launcher**
+so the Fab plugin is signed in, open Fourfold, Window > Fab > My Library > Niagara Examples Pack > Add to Project).
+* Flow: `OneShots::Blast / Burst / Shards / FireBurst / AirPush / Splash / Steam / Dust / Ember / Bolt` also emit a
+  `SystemReq` (`DrawList::systems`: cue slot `NCue`, position, unit direction, scale, intensity, `color` = body /
+  dust colour, `color2` = hot / spark colour). `FFourfoldFxNiagara` (`Private/FourfoldFxNiagara.*`) spawns the slot's
+  system from Niagara's world pool (AutoRelease, at most 10 per frame), with +Z along the direction, and binds the
+  request to the system's user parameters.
+* Config: `fx_config.json` "niagara".<cue> = `path` ("" = none), `scale`, `life` (seconds until a looping system is
+  told to stop), `replace`, `min_quality`, `min_intensity`, `params` {user parameter (without "User.") : source}.
+  Sources: `color`, `color2` (linear, skipped when alpha 0), `dir`, `-dir`, `scale`, `intensity`, each optionally
+  `*<k>` (e.g. `color*4`, `-dir*600`), or a number. The glue converts to the parameter's real type; every loaded
+  system's user parameters (with types) are logged once (`LogFourfoldFxNiagara`).
+* Fallback: the glue reports which slots loaded (`FxFrameIn::niagaraLoaded`); `replace` only skips the procedural
+  one-shot of a loaded slot, so a clone without the pack keeps exactly the procedural look. Weak requests
+  (`min_intensity`, e.g. the 0.35 s periodic status puffs) and low quality (`min_quality`) stay procedural.
+* Current slots (C++ defaults -> fx_config.json): blast = NS_Explosion_Medium (replace), dust / sand / grit bursts =
+  NS_Dirt_Explosion_Small (replace), strong `dust` = the same (adds), metal / ember / spark bursts and embers =
+  NS_Spark_Burst (adds), steam = NS_Smoke_Plume for 0.5 s (adds). Everything else stays procedural: the pack's
+  NS_Impact_* are bullet-sized, its bubbles do not read as water and its sparks stay orange (wrong for lightning /
+  blue fire). `ff.fx.Niagara 0` switches the layer off at runtime (procedural only).
+* Look checks: `ff.fx.Showcase <seconds>` plays a fixed cue list (blast, stone, metal, glass, ice, lightning, sand,
+  water, steam, magma, fire cone, plant) through the normal event path 3 m beyond the first fighter;
+  `ff.fx.ShowcaseShots 0.12|0.5|1.2` saves `showcase_<n>_<cue>_<ms>.png` that long after each cue into `-FFShotDir`.
+  Example: `-scenario=lab -ExecCmds="ff.fx.Showcase 2.5, ff.fx.ShowcaseShots 0.12|0.5|1.2" -FFShot=50 -FFShotDir=<dir> -FFShotQuit`.
+* GPU budget: the Mac game is GPU-bound; slots are one-shot bursts only (no persistent Niagara), the pack's own
+  Effect Types handle significance / culling, `min_quality` 1 keeps them off on low.
+
 ## Tuning without a rebuild
 Edit `Content/Fourfold/Data/fx_config.json` (any subset of keys; colours are display sRGB) and run console
 `ff.fx.ReloadConfig`. `ff.fx.Stats 1` prints counters, `ff.fx.Enable 0` turns effects off. Material look constants
@@ -101,7 +132,7 @@ equal).
 ```
 SCR=<scratch dir>
 cmake -S unreal/Source/FourfoldFX/Private/Logic/tests -B $SCR/lt_gcc -G Ninja && cmake --build $SCR/lt_gcc
-$SCR/lt_gcc/ffx_logic_tests                       # 23 tests (also with clang: CXX=clang++)
+$SCR/lt_gcc/ffx_logic_tests                       # 26 tests (also with clang: CXX=clang++)
 $SCR/lt_gcc/ffx_core_soak --quick --dump-params $SCR/params.json      # real sim through the director
 python3 unreal/Tools/vfx/shader_check/check_shaders.py --dxc <dxc> --params $SCR/params.json   # lint + DXC
 python3 unreal/Tools/vfx/py_mock_fx.py            # editor builder dry run (also the shared mock runner)
@@ -128,9 +159,11 @@ code** (generated from spec.py) over the shared HLSL through `hlsl_shim.h` - the
 * `game`: FX reads `UFourfoldSimSubsystem::OnFrame` / `OnScenarioLoaded`, the settings subsystem (quality, Flashes)
   and `AFourfoldFighter::GetBodyMesh / GetBoneLocation` (bones `pelvis spine_03 spine_05 head hand_l hand_r foot_l
   foot_r`). The character's own wet / frost / burn / glow material params stay the game's job (ARCHITECTURE §9).
-* `world_audio`: the arena sun should point along `FFKeyDir()` = UE (-0.45, 0.35, 0.82) (normalised) - the unlit
-  translucent FX fake their lighting with it. Lab exposure: emissive values are tuned for a fixed exposure around EV 0
-  with bloom; if the level uses a different exposure, adjust `GlowScale` / `EmissiveScale` defaults.
+* `world_audio`: the unlit translucent FX fake their lighting with `FFKeyDir()` (Shaders/Common/FFLighting.ush) =
+  the direction toward the arena sun, UE (-0.5864, 0.4565, 0.6691) = the opposite of the sun Rotator (pitch -42,
+  yaw -37.9) in `Content/Python/fourfold/world/level.py`; when the sun moves, update `FFKeyDir` to follow. Lab
+  exposure: emissive values are tuned for a fixed exposure around EV 0 with bloom; if the level uses a different
+  exposure, adjust `GlowScale` / `EmissiveScale` defaults.
 * Material order in `fx_config.json` "materials" follows `ffx::MatSlot`; the setup script order is fx first.
 
 ## Known gaps

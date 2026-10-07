@@ -14,6 +14,8 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace ffx {
 
@@ -117,6 +119,23 @@ struct LightSettings {
 	float minIntensity = 0.03f;      // below this a request is dropped
 };
 
+// One Niagara cue slot (fx_config.json "niagara.<cue>"): the system the glue spawns for every SystemReq of the cue.
+// `params` binds the system's user parameters (name without "User.") to a source: "color" / "color2" (the request
+// colours, linear; skipped when their alpha is 0), "dir" / "-dir" (unit direction in UE axes), "scale" / "intensity"
+// (optionally "scale*<k>", "intensity*<k>"), or a number. The glue converts to the parameter's own type.
+struct NiagaraSlot {
+	std::string path;        // UNiagaraSystem asset path; "" = no system (the procedural one-shot plays alone)
+	float scale = 1.0f;      // uniform scale of the spawned system (x the request's scale)
+	float life = 0.0f;       // seconds until the system is told to stop (looping systems as one-shots); 0 = its own
+	bool replace = false;    // while the system is loaded, the procedural one-shot of the cue is skipped
+	int minQuality = 1;      // spawned only at this effect quality or higher (0..2)
+	float minIntensity = 0.0f;   // weaker requests (e.g. the periodic status puffs) keep the procedural look only
+	std::vector<std::pair<std::string, std::string>> params;
+
+	// The glue spawns this slot's system for a request of this strength at this quality (when the asset loaded).
+	bool Wants(float intensity, int quality) const { return !path.empty() && quality >= minQuality && intensity >= minIntensity; }
+};
+
 struct FxConfig {
 	std::array<Color, kNumFams> mat{};     // VfxPalette.MAT
 	std::array<Color, kNumFams> dust{};    // VfxPalette.DUST
@@ -136,6 +155,7 @@ struct FxConfig {
 	std::array<std::string, kNumMatSlots> materials{};    // MatSlot -> material asset path
 	std::array<std::string, kNumMeshAssets> meshes{};     // MeshAsset -> static mesh asset path ("" = procedural)
 	std::array<std::string, kNumFlipbooks> flipbooks{};   // Flipbook -> texture asset path
+	std::array<NiagaraSlot, kNumNCues> niagara{};         // NCue -> Niagara system + parameter bindings
 
 	FxConfig();   // defaults
 
@@ -149,6 +169,7 @@ struct FxConfig {
 	const VortexLook& Vortex(Infusion i) const { return vortex[static_cast<size_t>(i)]; }
 	const BeamLook& Beam(BeamStyle s) const { return beams[static_cast<size_t>(s)]; }
 	const StripLook& Strip(StripStyle s) const { return strips[static_cast<size_t>(s)]; }
+	const NiagaraSlot& Niagara(NCue c) const { return niagara[static_cast<size_t>(c)]; }
 
 	// Overrides from JSON text (any subset). Returns false on a parse error (config unchanged then); unknown keys are
 	// ignored and listed in `warnings` (one per line) when given.

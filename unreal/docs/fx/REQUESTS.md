@@ -7,10 +7,10 @@
    tag). Change: skip the generic zone when the move's hook already spawned its zone (or give the def its tag).
 
 ## world_audio
-1. Arena sun direction: the unlit / translucent FX fake their lighting with `FFKeyDir()` (Shaders/Common/FFLighting.ush)
-   = UE world direction toward the light (-0.45, 0.35, 0.82), normalised. File: the level builder in
-   `Content/Python/fourfold/world/`. Change: point the directional light along it (or tell `fx` the direction used so
-   `FFKeyDir` can follow). Reason: crystal glints, water reflections and smoke shading should agree with the real sun.
+1. ~~Arena sun direction~~ DONE the other way round (2026-10-07): the world moved the sun to Rotator(pitch -42,
+   yaw -37.9) and `FFKeyDir()` now follows it (toward the light (-0.5864, 0.4565, 0.6691)). If the sun moves again,
+   tell `fx` (or update FFLighting.ush). The world's own copies of the old value (`world/materials.py` SUN_TOWARD,
+   `Tools/world/dry_run_world.py`) belong to the world owner.
 2. Exposure: FX emissive levels assume a fixed exposure near EV 0 with bloom (no auto exposure, as ARCHITECTURE §10
    says). If the post process volume uses another fixed exposure, tell `fx` the value (the master defaults
    `GlowScale` / `EmissiveScale` will be rescaled).

@@ -16,7 +16,7 @@ public class FourfoldFX : ModuleRules
 			"Core", "CoreUObject", "Engine", "FourfoldCore", "Fourfold"
 		});
 		PrivateDependencyModuleNames.AddRange(new string[] {
-			"ProceduralMeshComponent", "RenderCore"
+			"ProceduralMeshComponent", "RenderCore", "Niagara"
 		});
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private", "Logic"));

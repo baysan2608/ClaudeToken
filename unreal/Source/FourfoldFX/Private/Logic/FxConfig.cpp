@@ -439,6 +439,37 @@ FxConfig::FxConfig() {
 		std::string n(kFlipbookNames[static_cast<size_t>(i)]);
 		flipbooks[static_cast<size_t>(i)] = "/Game/Fourfold/FX/Textures/T_FX_FB_" + n;
 	}
+
+	// ---- Niagara cue slots: Epic's free Niagara Examples Pack (Fab; git-ignored content, see docs/fx/README.md).
+	// Request colours: `color` = body / dust colour, `color2` = hot / spark colour (see FxOneShots.cpp). Chosen from
+	// showcase captures (ff.fx.Showcase): the pack's bullet-impact systems (NS_Impact_*) and bubbles read too small at
+	// fighting distance and its sparks stay orange (wrong for lightning / blue fire), so those cues keep the procedural
+	// look only. `replace` = the Niagara system stands in for the procedural one-shot while loaded.
+	using PL = std::vector<std::pair<std::string, std::string>>;
+	auto slot = [this](NCue cue, const char* path, float scale, bool replace, PL params, float life = 0.0f,
+	                   float minIntensity = 0.0f) {
+		NiagaraSlot& s = niagara[static_cast<size_t>(cue)];
+		s.path = std::string("/Game/NiagaraExamples/") + path;
+		s.scale = scale;
+		s.replace = replace;
+		s.params = std::move(params);
+		s.life = life;
+		s.minIntensity = minIntensity;
+	};
+	const PL dirt = {{"Dust Color", "color"}, {"Dirt Color", "color"}};
+	const PL sparks = {{"Spark Color Gain", "color2*8"}};
+	// the periodic status puffs (drip / grit / mud / frost feet / steam / fog / embers: strength 0.15 - 0.3) stay
+	// procedural: bursts need strength >= 0.35
+	slot(NCue::Blast, "FX_Explosions/NS_Explosion_Medium", 0.7f, true, {{"Smoke Color", "color*4"}, {"Dirt Color", "color"}});
+	slot(NCue::BurstDust, "FX_Explosions/NS_Dirt_Explosion_Small", 0.5f, true, dirt, 0.0f, 0.35f);
+	slot(NCue::BurstSand, "FX_Explosions/NS_Dirt_Explosion_Small", 0.5f, true, dirt, 0.0f, 0.35f);
+	slot(NCue::BurstGrit, "FX_Explosions/NS_Dirt_Explosion_Small", 0.4f, true, dirt, 0.0f, 0.35f);
+	slot(NCue::BurstMetal, "FX_Sparks/NS_Spark_Burst", 0.8f, false, sparks, 0.0f, 0.35f);
+	slot(NCue::BurstEmber, "FX_Sparks/NS_Spark_Burst", 0.6f, false, sparks, 0.0f, 0.35f);
+	slot(NCue::BurstSparks, "FX_Sparks/NS_Spark_Burst", 0.8f, false, sparks, 0.0f, 0.35f);
+	slot(NCue::Dust, "FX_Explosions/NS_Dirt_Explosion_Small", 0.35f, false, dirt, 0.0f, 0.6f);
+	slot(NCue::Ember, "FX_Sparks/NS_Spark_Burst", 0.5f, false, sparks);
+	slot(NCue::Steam, "FX_Smoke/NS_Smoke_Plume", 0.3f, false, {{"Smoke Color", "color"}}, 0.5f);
 }
 
 std::string FxConfig::ToJson() const {
@@ -504,6 +535,24 @@ std::string FxConfig::ToJson() const {
 		ff::Dict fb;
 		for (int i = 1; i < kNumFlipbooks; ++i) fb.set(kFlipbookNames[static_cast<size_t>(i)], ff::Value(flipbooks[static_cast<size_t>(i)]));
 		root.set("flipbooks", ff::Value(fb));
+	}
+	{
+		ff::Dict n;
+		for (int i = 0; i < kNumNCues; ++i) {
+			const NiagaraSlot& s = niagara[static_cast<size_t>(i)];
+			ff::Dict d;
+			d.set("path", ff::Value(s.path));
+			d.set("scale", ff::Value(Round4(s.scale)));
+			d.set("life", ff::Value(Round4(s.life)));
+			d.set("replace", ff::Value(s.replace));
+			d.set("min_quality", ff::Value(s.minQuality));
+			d.set("min_intensity", ff::Value(Round4(s.minIntensity)));
+			ff::Dict p;
+			for (const auto& kv : s.params) p.set(kv.first, ff::Value(kv.second));
+			d.set("params", ff::Value(p));
+			n.set(kNCueNames[static_cast<size_t>(i)], ff::Value(d));
+		}
+		root.set("niagara", ff::Value(n));
 	}
 	std::string out;
 	WriteJson(ff::Value(root), 0, out);
@@ -593,6 +642,39 @@ bool FxConfig::LoadJson(std::string_view text, std::string* error, std::string* 
 	readPaths(v["materials"], c.materials, kMatSlotNames, 0, "materials");
 	readPaths(v["meshes"], c.meshes, kMeshAssetNames, 1, "meshes");
 	readPaths(v["flipbooks"], c.flipbooks, kFlipbookNames, 1, "flipbooks");
+	if (const ff::Dict* nd = v["niagara"].dict_ptr()) {
+		for (const auto& kv : nd->items()) {
+			int idx = -1;
+			for (int i = 0; i < kNumNCues; ++i)
+				if (kNCueNames[static_cast<size_t>(i)] == kv.first) idx = i;
+			const ff::Dict* sd = kv.second.dict_ptr();
+			if (idx < 0 || !sd) {
+				if (warnings) *warnings += "unknown entry niagara." + kv.first + "\n";
+				continue;
+			}
+			NiagaraSlot& s = c.niagara[static_cast<size_t>(idx)];
+			for (const auto& f : sd->items()) {
+				const ff::Value& fv = f.second;
+				if (f.first == "path" && fv.is_string()) s.path = fv.as_string();
+				else if (f.first == "scale") s.scale = fv.as_f32(s.scale);
+				else if (f.first == "life") s.life = fv.as_f32(s.life);
+				else if (f.first == "replace") s.replace = fv.as_bool(s.replace);
+				else if (f.first == "min_quality") s.minQuality = static_cast<int>(fv.as_int(s.minQuality));
+				else if (f.first == "min_intensity") s.minIntensity = fv.as_f32(s.minIntensity);
+				else if (f.first == "params" && fv.is_dict()) {
+					s.params.clear();
+					for (const auto& p : fv.dict_ptr()->items()) {
+						if (p.second.is_string()) s.params.emplace_back(p.first, p.second.as_string());
+						else if (p.second.is_number()) {
+							char buf[32];
+							std::snprintf(buf, sizeof(buf), "%g", p.second.as_float());
+							s.params.emplace_back(p.first, buf);
+						} else if (warnings) *warnings += "bad entry niagara." + kv.first + ".params." + p.first + "\n";
+					}
+				} else if (warnings) *warnings += "unknown key niagara." + kv.first + "." + f.first + "\n";
+			}
+		}
+	}
 	return true;
 }
 

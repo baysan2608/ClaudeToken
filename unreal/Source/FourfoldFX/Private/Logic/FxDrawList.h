@@ -70,12 +70,36 @@ struct LightReq {
 	float priority = 1.0f;    // higher wins the <= N light budget
 };
 
+// One Niagara system to spawn this frame (fire and forget). The glue spawns the system configured for `cue`
+// (fx_config "niagara") and drops the request when the slot has none loaded. Colours are display sRGB; a == 0 keeps
+// the system's own colour.
+struct SystemReq {
+	NCue cue = NCue::Blast;
+	Vec3 pos;
+	Vec3 dir{0.0f, 1.0f, 0.0f};   // unit: surface normal, jet or strike direction (the system's +Z)
+	float scale = 1.0f;           // x the slot's scale
+	float intensity = 1.0f;       // strength of the cue (parameter source "intensity")
+	Color color{0.0f, 0.0f, 0.0f, 0.0f};
+	Color color2{0.0f, 0.0f, 0.0f, 0.0f};
+};
+
 struct DrawList {
 	std::vector<DrawItem> items;
 	std::vector<LightReq> lights;
+	std::vector<SystemReq> systems;
 	void Clear() {
 		items.clear();
 		lights.clear();
+		systems.clear();
+	}
+	SystemReq& System(NCue cue, const Vec3& pos, const Vec3& dir, float scale, float intensity) {
+		SystemReq& s = systems.emplace_back();
+		s.cue = cue;
+		s.pos = pos;
+		s.dir = dir;
+		s.scale = scale;
+		s.intensity = intensity;
+		return s;
 	}
 	DrawItem& Add(uint32_t key, MatSlot mat, const MeshData* mesh, const Xform& x = Xform()) {
 		DrawItem& it = items.emplace_back();

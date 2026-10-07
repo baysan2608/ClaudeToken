@@ -861,5 +861,320 @@
     "explosion": "/Game/Fourfold/FX/Textures/T_FX_FB_explosion",
     "water_splash": "/Game/Fourfold/FX/Textures/T_FX_FB_water_splash",
     "puff_atlas": "/Game/Fourfold/FX/Textures/T_FX_FB_puff_atlas"
+  },
+  "niagara": {
+    "blast": {
+      "path": "/Game/NiagaraExamples/FX_Explosions/NS_Explosion_Medium",
+      "scale": 0.7,
+      "life": 0.0,
+      "replace": true,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Smoke Color": "color*4",
+        "Dirt Color": "color"
+      }
+    },
+    "blast_blue": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_dust": {
+      "path": "/Game/NiagaraExamples/FX_Explosions/NS_Dirt_Explosion_Small",
+      "scale": 0.5,
+      "life": 0.0,
+      "replace": true,
+      "min_quality": 1,
+      "min_intensity": 0.35,
+      "params": {
+        "Dust Color": "color",
+        "Dirt Color": "color"
+      }
+    },
+    "burst_metal": {
+      "path": "/Game/NiagaraExamples/FX_Sparks/NS_Spark_Burst",
+      "scale": 0.8,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.35,
+      "params": {
+        "Spark Color Gain": "color2*8"
+      }
+    },
+    "burst_sand": {
+      "path": "/Game/NiagaraExamples/FX_Explosions/NS_Dirt_Explosion_Small",
+      "scale": 0.5,
+      "life": 0.0,
+      "replace": true,
+      "min_quality": 1,
+      "min_intensity": 0.35,
+      "params": {
+        "Dust Color": "color",
+        "Dirt Color": "color"
+      }
+    },
+    "burst_glass": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_ember": {
+      "path": "/Game/NiagaraExamples/FX_Sparks/NS_Spark_Burst",
+      "scale": 0.6,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.35,
+      "params": {
+        "Spark Color Gain": "color2*8"
+      }
+    },
+    "burst_water": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_frost": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_mist": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_steam": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_leaves": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_blue_sparks": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_static": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_ash": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_inflow": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_sparks": {
+      "path": "/Game/NiagaraExamples/FX_Sparks/NS_Spark_Burst",
+      "scale": 0.8,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.35,
+      "params": {
+        "Spark Color Gain": "color2*8"
+      }
+    },
+    "burst_smoke": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "burst_grit": {
+      "path": "/Game/NiagaraExamples/FX_Explosions/NS_Dirt_Explosion_Small",
+      "scale": 0.4,
+      "life": 0.0,
+      "replace": true,
+      "min_quality": 1,
+      "min_intensity": 0.35,
+      "params": {
+        "Dust Color": "color",
+        "Dirt Color": "color"
+      }
+    },
+    "shards_stone": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "shards_ice": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "shards_glass": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "shards_metal": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "shards_plant": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "fire_burst": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "fire_burst_blue": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "splash": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "steam": {
+      "path": "/Game/NiagaraExamples/FX_Smoke/NS_Smoke_Plume",
+      "scale": 0.3,
+      "life": 0.5,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Smoke Color": "color"
+      }
+    },
+    "dust": {
+      "path": "/Game/NiagaraExamples/FX_Explosions/NS_Dirt_Explosion_Small",
+      "scale": 0.35,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.6,
+      "params": {
+        "Dust Color": "color",
+        "Dirt Color": "color"
+      }
+    },
+    "ember": {
+      "path": "/Game/NiagaraExamples/FX_Sparks/NS_Spark_Burst",
+      "scale": 0.5,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {
+        "Spark Color Gain": "color2*8"
+      }
+    },
+    "bolt_hit": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    },
+    "air_push": {
+      "path": "",
+      "scale": 1.0,
+      "life": 0.0,
+      "replace": false,
+      "min_quality": 1,
+      "min_intensity": 0.0,
+      "params": {}
+    }
   }
 }
