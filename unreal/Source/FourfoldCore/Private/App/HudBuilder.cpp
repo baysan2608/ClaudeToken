@@ -1,6 +1,8 @@
 // Fourfold core - ports of the HUD context builders of game/game.gd.
 #include "App/HudBuilder.h"
 
+#include "App/CounterHints.h"
+
 #include "Combat/Acts.h"
 #include "Combat/Moves.h"
 #include "Sim/Charge.h"
@@ -258,6 +260,14 @@ HudModel build(const Context& c) {
 	h.guard_petal_up = dstr(gd, "up");
 	h.guard_petal_down = dstr(gd, "down");
 	h.shape_label = shape_label(p);
+	{
+		const CounterHints::Result ch = CounterHints::query(w, p);
+		h.has_threat = ch.valid;
+		h.threat_cls = ch.threat_cls;
+		h.threat_tti = static_cast<float>(ch.tti);
+		h.threat_world = ch.pos;
+		h.counters = ch.hints;
+	}
 
 	const Dict ar = attack_ring_context(p);
 	h.attack_charge = static_cast<float>(dnum(ar, "attack_charge", -1.0));

@@ -17,6 +17,17 @@
 namespace ff {
 
 // ------------------------------------------------------------------ HUD / touch overlay
+// One answer to the incoming threat (context counters on the GUARD button, docs/game/CONTROLS_HUD_PLAN.md part A).
+struct CounterHintView {
+	std::string slot;        // "guard" | "push" | "sink" | "tech"
+	std::string label;       // the answer as a verb: "Send back", "Sink", "Melt", "Ground", ... ("No effect" for a pass)
+	std::string move;        // short name of the move that gives it
+	std::string outcome;     // the counter rule's outcome (block, reflect, transform, ...)
+	std::string band;        // "full" | "partial" | "fail" | "none" (pass / no effect)
+	int tier = 0;            // lowest charge tier that reaches this band
+	bool perfect = false;    // the band needs a perfect guard
+};
+
 struct HudModel {
 	bool valid = false;               // false when there is no player actor
 	int player_id = -1;
@@ -62,6 +73,14 @@ struct HudModel {
 
 	// Scenario text.
 	std::string scenario_title, objective, challenge_text;
+
+	// Context counters: the most urgent threat coming at the player and the answers the current element / sub-element
+	// can give it, predicted by the sim's own counter rule (no state change). has_threat = false when nothing is coming.
+	bool has_threat = false;
+	std::string threat_cls;
+	float threat_tti = 0.0f;          // seconds to impact
+	Vec3 threat_world;
+	std::vector<CounterHintView> counters;   // guard, push, sink, tech (those the sub-element has)
 };
 
 // ------------------------------------------------------------------ menus

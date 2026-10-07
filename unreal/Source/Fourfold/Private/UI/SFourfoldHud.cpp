@@ -394,6 +394,7 @@ int32 SFourfoldHud::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 			H.TextBase(Input.LabStatus, Lx - 90.0 * U, Y + 52.0 * U + H.GrowBar + H.GrowStat, H.FsStat, C4(1.0f, 0.85f, 0.45f, 0.95f), 0, 180.0 * U);
 		}
 		DrawChargeBar(H);
+		DrawCounters(H);
 
 		// Objective + challenge.
 		const double ObjBase = H.SrEnd().Y - 10.0 * U;
@@ -546,6 +547,65 @@ void SFourfoldHud::DrawChargeBar(const FPaintCtx& H) const
 	}
 	const FString Name = Hud.charge_move_name.empty() ? FString() : HS(Hud.charge_move_name);
 	H.TextBase(FString::Printf(TEXT("%s  T%d"), *Name, Tier), X, Y - 4.0 * U, H.Fs(12.0f, kTextMm), FLinearColor(1, 1, 1, 0.95f), 0, W, 0.6f);
+}
+
+void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
+{
+	// Context counters (docs/game/CONTROLS_HUD_PLAN.md part A): what each defensive input does to the threat that is coming,
+	// predicted by the sim's own counter rule; the colour is the outcome band.
+	if (!Hud.has_threat || Hud.counters.empty())
+	{
+		return;
+	}
+	const float U = H.U;
+	const float FsKey = H.Fs(10.0f, kTextMm * 0.8f);
+	const float FsTxt = H.Fs(14.0f, kTextMm * 1.1f);
+	const FSlateFontInfo FKey = FFUi::Font(FsKey, false);
+	const FSlateFontInfo FTxt = FFUi::Font(FsTxt, true, FMath::Max(1, FMath::RoundToInt(FsTxt / 7.0f)), FLinearColor(0, 0, 0, 0.6f));
+	const float Pad = 8.0f * U, Gap = 6.0f * U;
+	// near impact the strip pulses (the perfect window is close)
+	const float Urgent = FMath::Clamp(1.0f - (Hud.threat_tti - 0.15f) / 0.6f, 0.0f, 1.0f);
+	const float Pulse = 0.75f + 0.25f * FMath::Sin(float(FPlatformTime::Seconds()) * 18.0f) * Urgent;
+	struct FPill
+	{
+		FString Key, Txt;
+		FLinearColor Col;
+		float W;
+	};
+	TArray<FPill> Pills;
+	float Total = 0.0f;
+	for (const ff::CounterHintView& C : Hud.counters)
+	{
+		FPill Pl;
+		Pl.Key = C.slot == "guard" ? TEXT("GUARD") : C.slot == "push" ? TEXT("GUARD ↑") : C.slot == "sink" ? TEXT("GUARD ↓") : TEXT("TECH");
+		Pl.Txt = HS(C.label);
+		if (C.tier > 0)
+		{
+			Pl.Txt += FString::Printf(TEXT(" T%d"), C.tier);
+		}
+		if (C.perfect)
+		{
+			Pl.Txt += TEXT(" ★");   // needs a perfect guard
+		}
+		Pl.Col = C.band == "full" ? C4(0.45f, 1.0f, 0.6f, 1) : C.band == "partial" ? C4(1.0f, 0.78f, 0.3f, 1)
+		       : C.band == "fail" ? C4(1.0f, 0.38f, 0.3f, 1) : C4(0.7f, 0.7f, 0.7f, 1);
+		Pl.W = FMath::Max(FFUi::Measure(Pl.Txt, FTxt).X, FFUi::Measure(Pl.Key, FKey).X) + 2.0f * Pad;
+		Total += Pl.W;
+		Pills.Add(Pl);
+	}
+	Total += Gap * float(Pills.Num() - 1);
+	const float Hh = FsKey + FsTxt + 1.6f * Pad;
+	double X = H.SrCenter().X - Total * 0.5;
+	const double Y = H.SrEnd().Y - 112.0 * U - Hh;
+	H.TextBase(FString::Printf(TEXT("%s  %.1f s"), *HS(Hud.threat_cls).ToUpper(), Hud.threat_tti), H.SrCenter().X - Total * 0.5, Y - 4.0 * U,
+	           FsKey, FLinearColor(1, 1, 1, 0.7f), 0, Total, 0.5f);
+	for (const FPill& Pl : Pills)
+	{
+		H.P.RoundRect(FVector2D(X, Y), FVector2D(Pl.W, Hh), FLinearColor(0.02f, 0.02f, 0.03f, 0.6f), WithA(Pl.Col, 0.9f * Pulse), 2.0f * U, 6.0f * U);
+		H.P.Text(Pl.Key, FVector2D(X + Pad, Y + 0.5f * Pad), FKey, FLinearColor(1, 1, 1, 0.6f));
+		H.P.Text(Pl.Txt, FVector2D(X + Pad, Y + 0.7f * Pad + FsKey), FTxt, Pl.Col);
+		X += Pl.W + Gap;
+	}
 }
 
 void SFourfoldHud::DrawMarker(const FPaintCtx& H) const

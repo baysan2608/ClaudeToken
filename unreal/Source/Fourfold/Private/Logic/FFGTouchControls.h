@@ -43,6 +43,11 @@ struct TouchContext {
 	std::array<std::string, 4> sub_names{{"", "", "", ""}};
 	std::string petal_up, petal_down, petal_side;   // ATTACK flick move names
 	std::string guard_petal_up, guard_petal_down;   // GUARD push / sink names
+	// Context counters: a threat is coming; what push / sink do to it ("" = no answer) and their bands
+	// (0 none, 1 fail, 2 partial, 3 full) - the petals show these, lit, without the button held.
+	bool threat = false;
+	std::string counter_up, counter_down;
+	int counter_band_up = 0, counter_band_down = 0;
 	std::string shape_label;                        // what T+A does now ("" = no technique running)
 	std::string charge_slot;                        // "attack" | "guard" | "tech" | "evade" | "" (charge ring owner)
 	int charge_tier = 0;

@@ -26,6 +26,17 @@ TouchContext TouchContextFromHud(const ff::HudModel& h) {
 	c.guard_petal_up = h.guard_petal_up;
 	c.guard_petal_down = h.guard_petal_down;
 	c.shape_label = h.shape_label;
+	c.threat = h.has_threat;
+	for (const ff::CounterHintView& v : h.counters) {
+		const int band = v.band == "full" ? 3 : v.band == "partial" ? 2 : v.band == "fail" ? 1 : 0;
+		if (v.slot == "push") {
+			c.counter_up = v.label;
+			c.counter_band_up = band;
+		} else if (v.slot == "sink") {
+			c.counter_down = v.label;
+			c.counter_band_down = band;
+		}
+	}
 	if (h.charge.active && h.charge.max_tier > 0) {
 		c.charge_slot = h.charge.button;
 		c.charge_tier = h.charge.tier;

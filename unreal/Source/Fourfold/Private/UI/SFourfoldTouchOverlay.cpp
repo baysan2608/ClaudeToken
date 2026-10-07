@@ -584,20 +584,26 @@ void SFourfoldTouchOverlay::DrawPetals(const FDrawCtx& D) const
 	}
 	const bool bGrdHeld = Touch.ButtonHeld(ffg::TouchId::Guard);
 	const bool bAnyGrdPetal = !Ctx.guard_petal_up.empty() || !Ctx.guard_petal_down.empty();
-	if ((bGrdHeld || D.bStrong) && bAnyGrdPetal)
+	if ((bGrdHeld || D.bStrong || Ctx.threat) && bAnyGrdPetal)
 	{
 		const ff::Gesture GHot = bGrdHeld ? Touch.GuardGestureHot() : ff::Gesture::None;
-		const float GA = bGrdHeld ? 1.0f : 0.38f;
 		const ff::Gesture Gs[2] = {ff::Gesture::Up, ff::Gesture::Down};
 		const std::string* Names[2] = {&Ctx.guard_petal_up, &Ctx.guard_petal_down};
+		// with a threat coming the petals name the answer (counter rule) and take the outcome band's colour
+		const std::string* Answers[2] = {&Ctx.counter_up, &Ctx.counter_down};
+		const int32 Bands[2] = {Ctx.counter_band_up, Ctx.counter_band_down};
 		for (int32 i = 0; i < 2; ++i)
 		{
 			if (Names[i]->empty())
 			{
 				continue;
 			}
+			const bool bAnswer = Ctx.threat && !Answers[i]->empty();
+			const FLinearColor BandCol = Bands[i] == 3 ? FLinearColor(0.2f, 1.0f, 0.35f) : Bands[i] == 2 ? FLinearColor(1.0f, 0.6f, 0.08f)
+			                           : Bands[i] == 1 ? FLinearColor(1.0f, 0.12f, 0.08f) : FLinearColor(0.45f, 0.45f, 0.45f);
+			const float GA = (bGrdHeld || bAnswer) ? 1.0f : 0.38f;
 			const ffg::PetalAnchor An = Touch.layout.GuardPetalAnchor(Gs[i]);
-			DrawPill(D, V(An.pos), An.align, S(*Names[i]), EC, GHot == Gs[i], GA, int32(Gs[i]));
+			DrawPill(D, V(An.pos), An.align, S(bAnswer ? *Answers[i] : *Names[i]), bAnswer ? BandCol : EC, GHot == Gs[i] || bAnswer, GA, int32(Gs[i]));
 		}
 	}
 	if (D.bTechLive && !Ctx.shape_label.empty())
