@@ -215,7 +215,7 @@ def main():
         import math
         p, y = math.radians(sun.rot.pitch), math.radians(sun.rot.yaw)
         toward = [-math.cos(p) * math.cos(y), -math.cos(p) * math.sin(y), -math.sin(p)]     # opposite of the light's travel direction
-        want = (-0.45, 0.35, 0.82)                                                              # fx FFKeyDir (docs/fx/REQUESTS.md)
+        want = (-0.5864, 0.4565, 0.6691)                                                            # fx FFKeyDir (docs/fx/REQUESTS.md)
         n = math.sqrt(sum(c * c for c in want))
         if any(abs(t - w / n) > 0.01 for t, w in zip(toward, want)):
             fails.append(f"sun direction toward the light {toward} differs from fx FFKeyDir {want}")

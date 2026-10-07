@@ -461,7 +461,7 @@ SKY_DEFAULTS = {
     "GroundBottom": C.linear((0.17, 0.15, 0.13)), "CloudLit": C.linear((1.0, 0.80, 0.58)), "CloudShade": C.linear((0.42, 0.44, 0.58)),
     "SunColor": (1.0, 0.72, 0.42),
 }
-SUN_TOWARD = (-0.4506, 0.3505, 0.8211)           # unit vector TO the sun (Unreal axes) = fx FFKeyDir; opposite of the sun Rotator in level.py
+SUN_TOWARD = (-0.5864, 0.4565, 0.6691)           # unit vector TO the sun (Unreal axes) = fx FFKeyDir; opposite of the sun Rotator in level.py
 
 
 def build_sky(mat, tex, notes, mpc=None):

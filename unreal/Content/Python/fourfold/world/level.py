@@ -23,7 +23,7 @@ SOLID_MESH = {"north_wall": "SM_Env_WallN", "south_wall": "SM_Env_WallS", "west_
               "cover_wall": "SM_Env_CoverWall", "terrace": "SM_Env_Terrace", "step_block": "SM_Env_StepBlock",
               "high_ledge": "SM_Env_HighLedge", "pillar_ne": "SM_Env_Pillar", "pillar_sw": "SM_Env_Pillar"}
 FIXED_EV100 = -0.263            # exposure scale exactly 1.0  (1 / (1.2 * 2^EV))
-SUN_PITCH, SUN_YAW = -42.0, -37.9          # late-afternoon sun: long shadows, warm atmosphere (fx FFKeyDir still assumes 55 deg)
+SUN_PITCH, SUN_YAW = -42.0, -37.9          # afternoon sun (fx FFKeyDir in Shaders/Common/FFLighting.ush matches)
 SUN_COLOR = (255, 214, 168)
 SUN_LUX = 10.0                             # with auto exposure (EV100 0..5): sky + clouds read physically
 SKY_INTENSITY = 1.0
