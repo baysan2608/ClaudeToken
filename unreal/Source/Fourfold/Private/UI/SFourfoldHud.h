@@ -8,8 +8,11 @@
 #include "CoreMinimal.h"
 #include "Templates/Function.h"
 #include "Widgets/SLeafWidget.h"
+#include "ff/Events.h"
 #include "ff/Snapshot.h"
 #include "ff/ViewModels.h"
+
+#include <vector>
 
 class SFourfoldHud : public SLeafWidget
 {
@@ -32,6 +35,7 @@ public:
 		FString LabStatus;                           // "FROZEN" / "x0.25" under the rival panel ("" = hidden)
 		FString PerfText;
 		TArray<FString> DebugLines;
+		const std::vector<ff::Event>* Events = nullptr;   // this frame's sim events (outcome callouts)
 	};
 
 	void Construct(const FArguments& InArgs);
@@ -69,7 +73,31 @@ private:
 		bool bHot = false;
 	};
 
+	/** World HUD (CONTROLS_HUD_PLAN part D): vitals as arcs on the ground around a fighter, gauge centred on the side facing
+	 *  the camera; the rival's charge tiers as an outer rim in its element colour. Points are viewport pixels. */
+	struct FFootRing
+	{
+		TArray<FVector2D> Ring[4];     // full circles: 0 health, 1 balance, 2 focus, 3 charge rim
+		float Frac[4] = {0, 0, 0, 0};
+		int32 Element = 0;
+		int32 ChargeTier = 0, ChargeMax = 0;
+		bool bPlayer = false;
+		bool bCharge = false;
+	};
+	/** Outcome callout at an impact ("Send back", "Melt", "Overwhelmed"), rising and fading. */
+	struct FCallout
+	{
+		ff::Vec3 World;
+		FString Text;
+		FLinearColor Col;
+		float T = 0.0f;
+		bool bPerfect = false;
+		bool bVisible = false;
+		FVector2D Px = FVector2D::ZeroVector;
+	};
 	struct FPaintCtx;
+	void DrawRings(const FPaintCtx& H) const;
+	void DrawCallouts(const FPaintCtx& H) const;
 	float DrawStatuses(const FPaintCtx& H, const std::vector<ff::StatusView>& Statuses, int32 ActorId, FVector2D Origin, bool bCentred) const;
 	void DrawChargeBar(const FPaintCtx& H) const;
 	void DrawCounters(const FPaintCtx& H) const;
@@ -99,6 +127,10 @@ private:
 	float MarkerAlpha = 0.0f;
 	FString MarkerLabel;
 
+	TArray<FFootRing> Rings;
+	bool bPlayerRing = false;   // the player's arcs are on screen: the corner vitals bars step back
+	bool bRivalRing = false;    // likewise the rival panel's bars
+	TArray<FCallout> Callouts;
 	TArray<FThreat> Threats;
 	TArray<FScreenLabel> Labels;
 	TArray<FTimingBar> Bars;

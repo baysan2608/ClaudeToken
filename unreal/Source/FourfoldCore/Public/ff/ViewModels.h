@@ -28,6 +28,10 @@ struct CounterHintView {
 	bool perfect = false;    // the band needs a perfect guard
 };
 
+// The counter rule's outcome as a short verb for HUD text ("reflect" -> "Send back", "transform" + to "lava" -> "To lava",
+// kit outcomes "water_freeze" -> "Freeze"); "" for a pass (nothing happened).
+FOURFOLDCORE_API std::string CounterOutcomeLabel(const std::string& outcome, const std::string& to);
+
 struct HudModel {
 	bool valid = false;               // false when there is no player actor
 	int player_id = -1;

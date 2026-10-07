@@ -129,4 +129,9 @@ Result query(CombatWorld& w, ActorState& me) {
 }
 
 }  // namespace CounterHints
+
+std::string CounterOutcomeLabel(const std::string& outcome, const std::string& to) {
+	return outcome == "pass" || outcome.empty() ? std::string() : CounterHints::label_for(outcome, to);
+}
+
 }  // namespace ff

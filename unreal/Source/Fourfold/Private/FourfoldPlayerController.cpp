@@ -1144,6 +1144,7 @@ void AFourfoldPlayerController::OnSimFrame(const FFourfoldFrame& Frame)
 		}
 		In.PerfText = Impl->PerfText;
 	}
+	In.Events = Frame.bPaused ? nullptr : Frame.Events;
 	Hud.UpdateFrame(Model, Cur, In, [this](const ff::Vec3& SimPos, FVector2D& OutPx) { return ProjectSim(SimPos, OutPx); });
 
 	// ---- world-space debug overlay

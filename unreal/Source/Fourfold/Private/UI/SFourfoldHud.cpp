@@ -8,6 +8,7 @@
 #include "Rendering/DrawElements.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -150,6 +151,120 @@ void SFourfoldHud::UpdateFrame(const ff::HudModel& InHud, const ff::Snapshot& Sn
 	const float Want = bMarker ? 1.0f : 0.0f;
 	MarkerAlpha = In.bReducedMotion ? Want : FMath::FInterpConstantTo(MarkerAlpha, Want, Dt, 8.0f);
 	MarkerShown = FMath::Lerp(MarkerShown, MarkerPx, In.bReducedMotion ? 1.0f : FMath::Min(1.0f, Dt * 22.0f));
+
+	// World HUD (CONTROLS_HUD_PLAN part D): vitals arcs at the feet of the player and of the fighter it fights; the rival's
+	// charge as a rim in its element colour.
+	Rings.Reset();
+	bPlayerRing = bRivalRing = false;
+	const ff::ActorView* Opp = Player ? Snap.FindActor(Player->lock_target) : nullptr;
+	{
+		const ff::Vec3 CamF = ff::Vec3(In.CamForwardSim.x, 0.0f, In.CamForwardSim.z).normalized();
+		const float A0 = std::atan2(-CamF.z, -CamF.x);   // the ring point nearest the camera
+		constexpr int32 N = 48;
+		const float Radii[4] = {0.66f, 0.57f, 0.48f, 0.78f};
+		for (const ff::ActorView& A : Snap.actors)
+		{
+			const bool bP = A.id == Hud.player_id;
+			if ((!bP && !(Opp && A.id == Opp->id) && !A.is_rival) || A.health <= 0.0f)
+			{
+				continue;
+			}
+			FFootRing Rg;
+			Rg.bPlayer = bP;
+			Rg.Element = A.element;
+			Rg.bCharge = !bP && A.charge.active && A.charge.max_tier > 0;
+			const ff::Vec3 C = A.pos + ff::Vec3(0.0f, 0.04f, 0.0f);
+			bool bOk = true;
+			for (int32 k = 0; k < 4 && bOk; ++k)
+			{
+				if ((k == 2 && !bP) || (k == 3 && !Rg.bCharge))
+				{
+					continue;
+				}
+				Rg.Ring[k].Reserve(N + 1);
+				for (int32 i = 0; i <= N; ++i)
+				{
+					const float Ang = A0 + (float(i) / float(N) - 0.5f) * 2.0f * PI;   // i = N / 2 faces the camera
+					FVector2D RingPx;
+					if (!Project(C + ff::Vec3(std::cos(Ang) * Radii[k], 0.0f, std::sin(Ang) * Radii[k]), RingPx))
+					{
+						bOk = false;
+						break;
+					}
+					Rg.Ring[k].Add(RingPx);
+				}
+			}
+			if (!bOk)
+			{
+				continue;
+			}
+			Rg.Frac[0] = FMath::Clamp(A.health / 100.0f, 0.0f, 1.0f);
+			Rg.Frac[1] = FMath::Clamp(A.balance / 100.0f, 0.0f, 1.0f);
+			Rg.Frac[2] = FMath::Clamp(A.focus / 100.0f, 0.0f, 1.0f);
+			Rg.ChargeTier = A.charge.tier;
+			Rg.ChargeMax = A.charge.max_tier;
+			Rg.Frac[3] = FMath::Clamp(A.charge.frac, 0.0f, 1.0f);
+			(bP ? bPlayerRing : bRivalRing) = true;
+			Rings.Add(MoveTemp(Rg));
+		}
+	}
+
+	// Outcome callouts: every counter that resolved this frame, named by the rule's outcome, at the impact.
+	for (FCallout& C : Callouts)
+	{
+		C.T += Dt;
+	}
+	Callouts.RemoveAll([](const FCallout& C) { return C.T > 1.25f; });
+	if (In.Events)
+	{
+		for (const ff::Event& E : *In.Events)
+		{
+			if (E.type != "interaction" || !E.data["pos"].is_vec3())
+			{
+				continue;
+			}
+			const int32 CA = int32(E.data["counter_actor"].as_int(-1));
+			const int32 TA = int32(E.data["threat_actor"].as_int(-1));
+			const std::string To = E.data["to"].is_string() ? E.data["to"].as_string() : std::string();
+			const FString Txt = HS(ff::CounterOutcomeLabel(E.data["outcome"].is_string() ? E.data["outcome"].as_string() : std::string(), To));
+			if (Txt.IsEmpty() || (CA < 0 && TA < 0))
+			{
+				continue;
+			}
+			const std::string Band = E.data["band"].is_string() ? E.data["band"].as_string() : std::string();
+			FCallout C;
+			C.World = E.data["pos"].as_vec3();
+			C.Text = Txt;
+			C.bPerfect = E.data["perfect"].as_bool(false);
+			if (CA == Hud.player_id)        // your answer: how well it worked
+			{
+				C.Col = Band == "partial" ? C4(1.0f, 0.78f, 0.3f, 1) : Band == "fail" ? C4(1.0f, 0.38f, 0.3f, 1) : C4(0.5f, 1.0f, 0.62f, 1);
+			}
+			else if (TA == Hud.player_id)   // your attack met their answer
+			{
+				C.Col = Band == "fail" ? C4(0.5f, 1.0f, 0.62f, 1) : C4(1.0f, 0.55f, 0.42f, 1);
+			}
+			else
+			{
+				C.Col = C4(0.85f, 0.9f, 1.0f, 1);
+			}
+			const bool bDup = Callouts.ContainsByPredicate([&](const FCallout& O) {
+				return O.T < 0.25f && O.Text == C.Text && (O.World - C.World).length() < 1.2f;
+			});
+			if (!bDup)
+			{
+				Callouts.Add(C);
+			}
+		}
+		while (Callouts.Num() > 5)
+		{
+			Callouts.RemoveAt(0);
+		}
+	}
+	for (FCallout& C : Callouts)
+	{
+		C.bVisible = Project(C.World + ff::Vec3(0.0f, 0.7f + 0.55f * C.T, 0.0f), C.Px);
+	}
 
 	// Off-screen threats (bodies attacking the player).
 	Threats.Reset();
@@ -332,13 +447,18 @@ int32 SFourfoldHud::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 
 	if (bGameplay && bHasPlayer)
 	{
+		DrawRings(H);
+		DrawCallouts(H);
 		const float Row = 9.0f * U + H.GrowBar;
 		const double X = H.SrPos.X + 8.0 * U;
 		const double Y = H.SrPos.Y + 8.0 * U;
 		const float Bw = 190.0f * U;
-		H.Bar(FVector2D(X, Y), Bw, Hud.health / 100.0f, C4(0.92f, 0.9f, 0.86f, 1), Alpha);
-		H.Bar(FVector2D(X, Y + Row), Bw * 0.8f, Hud.balance / 100.0f, C4(0.75f, 0.82f, 0.92f, 1), Alpha * 0.9f);
-		H.Bar(FVector2D(X, Y + 2 * Row), Bw * 0.8f, Hud.focus / 100.0f, C4(0.96f, 0.82f, 0.45f, 1), Alpha * 0.9f);
+		if (!bPlayerRing)   // the arcs at the feet carry the vitals while the fighter is on screen
+		{
+			H.Bar(FVector2D(X, Y), Bw, Hud.health / 100.0f, C4(0.92f, 0.9f, 0.86f, 1), Alpha);
+			H.Bar(FVector2D(X, Y + Row), Bw * 0.8f, Hud.balance / 100.0f, C4(0.75f, 0.82f, 0.92f, 1), Alpha * 0.9f);
+			H.Bar(FVector2D(X, Y + 2 * Row), Bw * 0.8f, Hud.focus / 100.0f, C4(0.96f, 0.82f, 0.45f, 1), Alpha * 0.9f);
+		}
 		// Sub-element line, then the resource bars that matter right now.
 		const FLinearColor Ec = FFUi::ElementColor(Hud.element);
 		const double SubBase = Y + 3 * Row + H.FsStat + H.GrowStat * 0.2;
@@ -379,8 +499,11 @@ int32 SFourfoldHud::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 		if (Hud.has_rival)
 		{
 			const double Cx = H.SrCenter().X;
-			H.Bar(FVector2D(Cx - 80.0 * U, Y), 160.0f * U, Hud.rival_health / 100.0f, C4(0.95f, 0.55f, 0.45f, 1), 0.85f);
-			H.Bar(FVector2D(Cx - 64.0 * U, Y + Row), 128.0f * U, Hud.rival_balance / 100.0f, C4(0.75f, 0.82f, 0.92f, 1), 0.7f);
+			if (!bRivalRing)
+			{
+				H.Bar(FVector2D(Cx - 80.0 * U, Y), 160.0f * U, Hud.rival_health / 100.0f, C4(0.95f, 0.55f, 0.45f, 1), 0.85f);
+				H.Bar(FVector2D(Cx - 64.0 * U, Y + Row), 128.0f * U, Hud.rival_balance / 100.0f, C4(0.75f, 0.82f, 0.92f, 1), 0.7f);
+			}
 			const double NameBase = Y + 28.0 * U + H.GrowBar + (H.FsName - 12.0f * U) * 0.75;
 			H.TextBase(HS(Hud.rival_name), Cx - 80.0 * U, NameBase, H.FsName, FLinearColor(1, 1, 1, 0.7f), 0, 160.0 * U);
 			if (!Hud.rival_statuses.empty())
@@ -577,7 +700,8 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 	for (const ff::CounterHintView& C : Hud.counters)
 	{
 		FPill Pl;
-		Pl.Key = C.slot == "guard" ? TEXT("GUARD") : C.slot == "push" ? TEXT("GUARD ↑") : C.slot == "sink" ? TEXT("GUARD ↓") : TEXT("TECH");
+		const bool bNow = C.slot == "guard" && Hud.threat_tti <= 0.2f;   // press now for a perfect guard
+		Pl.Key = C.slot == "guard" ? (bNow ? TEXT("GUARD  NOW") : TEXT("GUARD")) : C.slot == "push" ? TEXT("GUARD ↑") : C.slot == "sink" ? TEXT("GUARD ↓") : TEXT("TECH");
 		Pl.Txt = HS(C.label);
 		if (C.tier > 0)
 		{
@@ -605,6 +729,70 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 		H.P.Text(Pl.Key, FVector2D(X + Pad, Y + 0.5f * Pad), FKey, FLinearColor(1, 1, 1, 0.6f));
 		H.P.Text(Pl.Txt, FVector2D(X + Pad, Y + 0.7f * Pad + FsKey), FTxt, Pl.Col);
 		X += Pl.W + Gap;
+	}
+}
+
+void SFourfoldHud::DrawRings(const FPaintCtx& H) const
+{
+	const float U = H.U;
+	auto Arc = [&](const TArray<FVector2D>& Ring, float Frac, float Width, const FLinearColor& Col) {
+		// the gauge is centred on the camera side (index N / 2) and shrinks toward it
+		const int32 N = Ring.Num() - 1;
+		if (N < 2 || Frac <= 0.0f)
+		{
+			return;
+		}
+		const int32 Half = FMath::Max(1, FMath::RoundToInt(Frac * float(N) * 0.5f));
+		TArray<FVector2f> Pts;
+		for (int32 i = N / 2 - Half; i <= N / 2 + Half; ++i)
+		{
+			Pts.Add(FVector2f(Ring[FMath::Clamp(i, 0, N)] * H.PixelToLocal));
+		}
+		H.P.Polyline(Pts, Width, Col);
+	};
+	for (const FFootRing& Rg : Rings)
+	{
+		const float W = FMath::Max(2.0f * U, 0.35f * H.FloorPpm);
+		const FLinearColor HealthCol = Rg.bPlayer ? C4(0.95f, 0.93f, 0.88f, 1) : C4(0.98f, 0.55f, 0.45f, 1);
+		// dim full circles under the gauges, then the gauges
+		Arc(Rg.Ring[0], 1.0f, W * 2.2f, FLinearColor(0, 0, 0, 0.28f));
+		Arc(Rg.Ring[0], Rg.Frac[0], W * 1.4f, WithA(HealthCol, 0.9f));
+		Arc(Rg.Ring[1], 1.0f, W * 1.6f, FLinearColor(0, 0, 0, 0.22f));
+		Arc(Rg.Ring[1], Rg.Frac[1], W, C4(0.72f, 0.82f, 0.95f, 0.85f));
+		if (Rg.bPlayer)
+		{
+			Arc(Rg.Ring[2], 1.0f, W * 1.4f, FLinearColor(0, 0, 0, 0.2f));
+			Arc(Rg.Ring[2], Rg.Frac[2], W * 0.8f, C4(0.96f, 0.82f, 0.45f, 0.85f));
+		}
+		if (Rg.bCharge)
+		{
+			// rival intent: one lit segment per charge tier reached, the next one filling, pulsing faster with the tier
+			const FLinearColor Ec = FFUi::ElementColor(Rg.Element);
+			const int32 Mx = FMath::Clamp(Rg.ChargeMax, 1, 3);
+			const float Pulse = 0.7f + 0.3f * FMath::Sin(float(FPlatformTime::Seconds()) * (6.0f + 4.0f * float(Rg.ChargeTier)));
+			const float Lit = FMath::Clamp((float(Rg.ChargeTier) + Rg.Frac[3]) / float(Mx), 0.0f, 1.0f);
+			Arc(Rg.Ring[3], 1.0f, W * 1.8f, WithA(Ec, 0.18f));
+			Arc(Rg.Ring[3], Lit, W * 1.8f, WithA(Ec, 0.95f * Pulse));
+		}
+	}
+}
+
+void SFourfoldHud::DrawCallouts(const FPaintCtx& H) const
+{
+	const float U = H.U;
+	for (const FCallout& C : Callouts)
+	{
+		if (!C.bVisible)
+		{
+			continue;
+		}
+		const float Pop = 1.0f + 0.45f * (1.0f - FMath::Clamp(C.T / 0.12f, 0.0f, 1.0f));
+		const float A = 1.0f - FMath::Clamp((C.T - 0.85f) / 0.4f, 0.0f, 1.0f);
+		const float Px = H.Fs(C.bPerfect ? 30.0f : 24.0f, kLineMm * 1.6f) * Pop;
+		const FSlateFontInfo F = FFUi::Font(Px, true, FMath::Max(1, FMath::RoundToInt(Px / 8.0f)), FLinearColor(0, 0, 0, 0.75f * A));
+		const FString Txt = C.bPerfect ? TEXT("PERFECT  ") + C.Text.ToUpper() : C.Text.ToUpper();
+		H.P.TextCentered(Txt, C.Px * H.PixelToLocal, F, WithA(C.Col, A));
+		(void)U;
 	}
 }
 

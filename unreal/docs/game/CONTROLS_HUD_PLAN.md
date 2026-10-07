@@ -73,4 +73,10 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   `Interactions::predict`; `HudModel::counters`; HUD strip above the charge bar (threat class + seconds, answers in band
   colours, pulse near impact); touch GUARD petals name the push / sink answers in band colours. Next: the desktop radial
   near the fighter, perfect-window flash, petals for the attack slots that also counter (thrust / ground / sweep), D.
+- 2026-10-07 - D, first pass: vitals as ground arcs around the player and its opponent (health / balance, focus for the
+  player; gauges centred on the side facing the camera, shrinking toward it); the corner / rival-panel bars step back
+  while the arcs are on screen. Rival intent: charge tiers as an outer rim in its element colour, pulsing faster per
+  tier. Outcome callouts from every `interaction` event at the impact (`ff::CounterOutcomeLabel`; green / amber / red
+  from the player's side, PERFECT prefix). Guard pill reads "GUARD NOW" in the last 0.2 s before impact.
+  Next in D: the element quarter-wheel with flick switching; charge glyphs at the hands replacing the centre bar.
 
