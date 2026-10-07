@@ -12,13 +12,30 @@
 class UAnimSequence;
 class USkeleton;
 
-/** character.json (stream `character`): mesh path, yaw offset and the role palettes. */
+/** One extra part of a MetaHuman (metahuman.json): a leader-posed mesh or a groom on the face. */
+struct FFourfoldCharacterPart
+{
+	FString Name;        // Face | Torso | Legs | Feet | Hair | Eyebrows ...
+	bool bGroom = false;
+	FString Asset;       // skeletal mesh or groom asset
+	FString Binding;     // groom binding asset (grooms)
+	TArray<FString> Materials;   // per-slot override materials (empty entry = keep the mesh's)
+	FName TintParam;             // vector parameter that tints this part per role (clothing)
+};
+
+/** character.json (stream `character`): mesh path, yaw offset and the role palettes. When metahuman.json is present
+ *  (and its clips were built), the body becomes the MetaHuman body and Parts lists the rest of it. */
 struct FFourfoldCharacterInfo
 {
 	FString MeshPath = TEXT("/Game/Fourfold/Characters/Fighter/SK_Fighter");
 	double MeshYawOffsetDeg = -90.0;
 	double HeightM = 1.79;
 	TMap<FString, TMap<FName, FLinearColor>> Palettes;   // "player" | "rival" | "dummy" -> FF_Main / FF_Accent / FF_Trim
+	FString Name = TEXT("Fighter");
+	TArray<FFourfoldCharacterPart> Parts;
+	TArray<FString> BodyMaterials;            // MetaHuman body slot overrides
+	TMap<FString, FLinearColor> RoleTints;    // "player" | "rival" | "dummy" -> clothing tint
+	bool bMetaHuman = false;
 };
 
 UCLASS()
@@ -43,6 +60,7 @@ private:
 	void LoadJson();
 	void LoadAssets();
 	void LoadCharacterJson();
+	void LoadMetaHumanJson();
 
 	ffg::AnimLibrary Library;
 	UPROPERTY() TArray<TObjectPtr<UAnimSequence>> Sequences;

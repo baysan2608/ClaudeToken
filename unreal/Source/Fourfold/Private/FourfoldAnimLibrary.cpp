@@ -8,6 +8,8 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Misc/FileHelper.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "ff/Json.h"
 #include "ff/Value.h"
@@ -51,8 +53,9 @@ void UFourfoldAnimLibrarySubsystem::Initialize(FSubsystemCollectionBase& Collect
 {
 	Super::Initialize(Collection);
 	LoadJson();
-	LoadAssets();
 	LoadCharacterJson();
+	LoadMetaHumanJson();   // may switch the body mesh and the clip asset root before the clips load
+	LoadAssets();
 }
 
 void UFourfoldAnimLibrarySubsystem::LoadJson()
@@ -215,4 +218,90 @@ void UFourfoldAnimLibrarySubsystem::LoadCharacterJson()
 			}
 		}
 	}
+}
+
+void UFourfoldAnimLibrarySubsystem::LoadMetaHumanJson()
+{
+	// -FFCharacter=fighter keeps the original fighter even when a MetaHuman is set up.
+	FString Want;
+	if (FParse::Value(FCommandLine::Get(), TEXT("-FFCharacter="), Want) && Want.Equals(TEXT("fighter"), ESearchCase::IgnoreCase))
+	{
+		return;
+	}
+	std::string Text;
+	if (!FourfoldAnimLib::ReadData(TEXT("metahuman.json"), Text))
+	{
+		return;
+	}
+	ff::Value Root;
+	if (!ff::ParseJson(Text, Root) || !Root.is_dict() || !Root["body"].is_string() || !Root["anim_root"].is_string())
+	{
+		UE_LOG(LogFourfold, Log, TEXT("metahuman.json present but not built yet (no anim_root): keeping the fighter"));
+		return;
+	}
+	const FString Body = FourfoldAnimLib::ToF(Root["body"].as_string());
+	const FString BodyObj = Body + TEXT(".") + FPaths::GetBaseFilename(Body);
+	if (!LoadObject<UObject>(nullptr, *BodyObj, nullptr, LOAD_NoWarn | LOAD_Quiet))
+	{
+		UE_LOG(LogFourfold, Warning, TEXT("MetaHuman body %s missing (content not copied in?): keeping the fighter"), *Body);
+		return;
+	}
+	Character.bMetaHuman = true;
+	Character.MeshPath = Body;
+	Character.Name = Root["name"].is_string() ? FourfoldAnimLib::ToF(Root["name"].as_string()) : TEXT("MetaHuman");
+	Library.asset_root = Root["anim_root"].as_string();
+	const ff::Value& Parts = Root["parts"];
+	if (Parts.is_array())
+	{
+		for (const ff::Value& P : Parts.as_array())
+		{
+			if (!P.is_dict() || !P["asset"].is_string() || !P["name"].is_string())
+			{
+				continue;
+			}
+			FFourfoldCharacterPart Part;
+			Part.Name = FourfoldAnimLib::ToF(P["name"].as_string());
+			TArray<FString> Mats;
+			if (P["materials"].is_array())
+			{
+				for (const ff::Value& M : P["materials"].as_array())
+				{
+					Mats.Add(M.is_string() ? FourfoldAnimLib::ToF(M.as_string()) : FString());
+				}
+			}
+			if (Part.Name == TEXT("Body"))
+			{
+				Character.BodyMaterials = Mats;
+				continue;
+			}
+			Part.Materials = Mats;
+			if (P["tint_param"].is_string())
+			{
+				Part.TintParam = FName(*FourfoldAnimLib::ToF(P["tint_param"].as_string()));
+			}
+			Part.bGroom = P["kind"].is_string() && P["kind"].as_string() == "groom";
+			Part.Asset = FourfoldAnimLib::ToF(P["asset"].as_string());
+			if (P["binding"].is_string())
+			{
+				Part.Binding = FourfoldAnimLib::ToF(P["binding"].as_string());
+			}
+			Character.Parts.Add(Part);
+		}
+	}
+	const ff::Value& Tints = Root["tints"];
+	if (Tints.is_dict())
+	{
+		for (const auto& It : Tints.as_dict())
+		{
+			const ff::Value& C = It.second;
+			if (C.is_array() && C.as_array().size() >= 3)
+			{
+				Character.RoleTints.Add(FourfoldAnimLib::ToF(It.first),
+				                        FLinearColor(float(C.as_array()[0].as_float()), float(C.as_array()[1].as_float()),
+				                                     float(C.as_array()[2].as_float()), 1.0f));
+			}
+		}
+	}
+	UE_LOG(LogFourfold, Log, TEXT("Character: MetaHuman %s (%d parts), clips from %s"), *Character.Name, Character.Parts.Num(),
+	       *FourfoldAnimLib::ToF(Library.asset_root));
 }

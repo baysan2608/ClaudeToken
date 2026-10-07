@@ -1,0 +1,109 @@
+{
+ "schema": "fourfold.metahuman/1",
+ "name": "Kellan",
+ "body": "/Game/MetaHumans/Kellan/Male/Medium/NormalWeight/Body/m_med_nrw_body",
+ "parts": [
+  {
+   "name": "Mustache",
+   "kind": "groom",
+   "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Mustache_S_Stubble",
+   "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Mustache_S_Stubble_m_head_Archetype_Binding",
+   "attach": null
+  },
+  {
+   "name": "Eyelashes",
+   "kind": "groom",
+   "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Eyelashes_S_Sparse",
+   "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Eyelashes_S_Sparse_m_med_nrw_head_skmesh_Face_Archetype_Binding",
+   "attach": null
+  },
+  {
+   "name": "Eyebrows",
+   "kind": "groom",
+   "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Eyebrows_M_Full",
+   "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Eyebrows_M_Full_m_head_Archetype_Binding",
+   "attach": null
+  },
+  {
+   "name": "Hair",
+   "kind": "groom",
+   "asset": "/Game/MetaHumans/Kellan/MaleHair/Hair/Hair_S_360Waves",
+   "binding": "/Game/MetaHumans/Kellan/MaleHair/GroomBinding/Hair_S_360Waves_m_med_nrw_head_skmesh_Face_Archetype_Binding",
+   "attach": null
+  },
+  {
+   "name": "Face",
+   "kind": "mesh",
+   "asset": "/Game/MetaHumans/Kellan/Face/Kellan_FaceMesh",
+   "attach": null,
+   "materials": []
+  },
+  {
+   "name": "Body",
+   "kind": "mesh",
+   "asset": "/Game/MetaHumans/Kellan/Male/Medium/NormalWeight/Body/m_med_nrw_body",
+   "attach": null,
+   "materials": [
+    "/Game/MetaHumans/Kellan/Body/Materials/MI_BodySynthesized_Simplified"
+   ]
+  },
+  {
+   "name": "Feet",
+   "kind": "mesh",
+   "asset": "/Game/MetaHumans/Common/Male/Medium/NormalWeight/Shoes/RunningShoes/m_med_nrw_shs_runningshoes_High",
+   "attach": null,
+   "materials": [
+    "/Game/Fourfold/Characters/MetaHuman/Materials/MI_Fabric_Feet_Simplified_FF"
+   ],
+   "tint_param": "FF_Tint",
+   "source_materials": [
+    "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Feet_Simplified"
+   ]
+  },
+  {
+   "name": "Legs",
+   "kind": "mesh",
+   "asset": "/Game/MetaHumans/Common/Male/Medium/NormalWeight/Bottoms/Cargopants/m_med_nrw_btm_cargopants_High",
+   "attach": null,
+   "materials": [
+    "/Game/Fourfold/Characters/MetaHuman/Materials/MI_Fabric_Legs_Simplified_FF"
+   ],
+   "tint_param": "FF_Tint",
+   "source_materials": [
+    "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Legs_Simplified"
+   ]
+  },
+  {
+   "name": "Torso",
+   "kind": "mesh",
+   "asset": "/Game/MetaHumans/Common/Male/Medium/NormalWeight/Tops/Hoodie/Meshes/m_med_nrw_top_hoodie_nrm_High",
+   "attach": null,
+   "materials": [
+    "/Game/Fourfold/Characters/MetaHuman/Materials/MI_Fabric_Torso_Simplified_FF"
+   ],
+   "tint_param": "FF_Tint",
+   "source_materials": [
+    "/Game/MetaHumans/Kellan/Shared/Materials/MI_Fabric_Torso_Simplified"
+   ]
+  }
+ ],
+ "anim_root": "/Game/Fourfold/Characters/MetaHuman/Anims",
+ "skeleton": "/Game/MetaHumans/Common/Female/Medium/NormalWeight/Body/metahuman_base_skel",
+ "tints": {
+  "player": [
+   0.45,
+   0.7,
+   1.6
+  ],
+  "rival": [
+   1.6,
+   0.5,
+   0.42
+  ],
+  "dummy": [
+   1.0,
+   0.95,
+   0.85
+  ]
+ }
+}

@@ -58,12 +58,15 @@ protected:
 	 *  on knockdowns handed back to the get-up clip through a pose snapshot. */
 	void UpdatePhysicalReactions(const ff::ActorView& Cur, float Dt, bool bHit, const FVector& HitDir, float Strength);
 	void SetBodyPhysics(bool bOn);
+	void BuildCharacterParts();
 	void AlignGetup(const FVector& PelvisW, const FVector& HeadW, float Window);
 	void ResetGetupAlign();
 
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USceneComponent> Root;
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") TObjectPtr<USkeletalMeshComponent> BodyMesh;
 	UPROPERTY(Transient) TObjectPtr<UPhysicalAnimationComponent> PhysAnim;
+	/** MetaHuman parts (face, clothing: leader-posed meshes; hair / brows / lashes: grooms on the face). */
+	UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PartComponents;
 	UPROPERTY(VisibleAnywhere, Category = "Fourfold") int32 SimActorId = -1;
 	UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> BodyMaterials;
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> FallbackParts;

@@ -18,8 +18,8 @@ import traceback
 
 import unreal
 
-PARTS = ["fx", "character", "animation", "mocap", "world", "audio"]
-TITLES = {"fx": "VFX textures / meshes / materials", "character": "fighter mesh + materials", "animation": "animation sequences", "mocap": "retargeted motion capture (GASP)",
+PARTS = ["fx", "character", "animation", "mocap", "metahuman", "world", "audio"]
+TITLES = {"fx": "VFX textures / meshes / materials", "character": "fighter mesh + materials", "animation": "animation sequences", "mocap": "retargeted motion capture (GASP)", "metahuman": "clips on the MetaHuman skeleton",
           "world": "arena level, environment, lighting", "audio": "sounds"}
 
 

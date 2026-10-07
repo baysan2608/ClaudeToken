@@ -18,6 +18,9 @@
 #include "Animation/PoseSnapshot.h"
 #include "Camera/PlayerCameraManager.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "GroomAsset.h"
+#include "GroomBindingAsset.h"
+#include "GroomComponent.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -188,6 +191,8 @@ void AFourfoldFighter::SetupBody()
 	}
 	BodyMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	BodyMesh->SetAnimInstanceClass(UFourfoldAnimInstance::StaticClass());
+
+	BuildCharacterParts();
 
 	// Physical reactions need the physics asset's bodies; collision stays off until a reaction switches it on.
 	if (Mesh->GetPhysicsAsset() && !PhysAnim)
@@ -1037,4 +1042,98 @@ void AFourfoldFighter::AlignGetup(const FVector& PelvisW, const FVector& HeadW, 
 	S.AlignLen = FMath::Max(Window, 0.3f);
 	S.AlignT = 0.0f;
 	S.bAligned = true;
+}
+
+void AFourfoldFighter::BuildCharacterParts()
+{
+	for (USceneComponent* C : PartComponents)
+	{
+		if (C)
+		{
+			C->DestroyComponent();
+		}
+	}
+	PartComponents.Reset();
+	const UFourfoldAnimLibrarySubsystem* Lib = UFourfoldAnimLibrarySubsystem::Get(this);
+	if (!Lib || !Lib->GetCharacterInfo().bMetaHuman)
+	{
+		return;
+	}
+	auto Obj = [](const FString& Path) { return Path.Contains(TEXT(".")) ? Path : Path + TEXT(".") + FPaths::GetBaseFilename(Path); };
+	const FFourfoldCharacterInfo& Info = Lib->GetCharacterInfo();
+	const FLinearColor* Tint = Info.RoleTints.Find(Role);
+	auto ApplyMaterials = [&](USkeletalMeshComponent* C, const TArray<FString>& Mats, FName TintParam) {
+		for (int32 i = 0; i < Mats.Num(); ++i)
+		{
+			if (Mats[i].IsEmpty())
+			{
+				continue;
+			}
+			if (UMaterialInterface* M = LoadObject<UMaterialInterface>(nullptr, *Obj(Mats[i]), nullptr, LOAD_NoWarn | LOAD_Quiet))
+			{
+				C->SetMaterial(i, M);
+				if (!TintParam.IsNone() && Tint)
+				{
+					if (UMaterialInstanceDynamic* MID = C->CreateDynamicMaterialInstance(i, M))
+					{
+						MID->SetVectorParameterValue(TintParam, *Tint);
+					}
+				}
+			}
+		}
+	};
+	ApplyMaterials(BodyMesh, Info.BodyMaterials, NAME_None);
+	USkeletalMeshComponent* Face = nullptr;
+	// meshes first (the face carries the grooms), all following the body's final pose (animation + physics)
+	for (const FFourfoldCharacterPart& P : Lib->GetCharacterInfo().Parts)
+	{
+		if (P.bGroom)
+		{
+			continue;
+		}
+		USkeletalMesh* M = LoadObject<USkeletalMesh>(nullptr, *Obj(P.Asset), nullptr, LOAD_NoWarn | LOAD_Quiet);
+		if (!M)
+		{
+			UE_LOG(LogFourfold, Warning, TEXT("MetaHuman part %s: mesh %s missing"), *P.Name, *P.Asset);
+			continue;
+		}
+		USkeletalMeshComponent* C = NewObject<USkeletalMeshComponent>(this, *FString::Printf(TEXT("Part_%s"), *P.Name));
+		C->SetupAttachment(BodyMesh);
+		C->SetSkeletalMeshAsset(M);
+		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		C->SetGenerateOverlapEvents(false);
+		C->RegisterComponent();
+		C->SetLeaderPoseComponent(BodyMesh);
+		ApplyMaterials(C, P.Materials, P.TintParam);
+		PartComponents.Add(C);
+		if (P.Name == TEXT("Face"))
+		{
+			Face = C;
+		}
+	}
+	for (const FFourfoldCharacterPart& P : Lib->GetCharacterInfo().Parts)
+	{
+		if (!P.bGroom)
+		{
+			continue;
+		}
+		UGroomAsset* G = LoadObject<UGroomAsset>(nullptr, *Obj(P.Asset), nullptr, LOAD_NoWarn | LOAD_Quiet);
+		if (!G)
+		{
+			continue;
+		}
+		UGroomComponent* C = NewObject<UGroomComponent>(this, *FString::Printf(TEXT("Groom_%s"), *P.Name));
+		C->SetupAttachment(Face ? Face : BodyMesh.Get());
+		if (!P.Binding.IsEmpty())
+		{
+			if (UGroomBindingAsset* B = LoadObject<UGroomBindingAsset>(nullptr, *Obj(P.Binding), nullptr, LOAD_NoWarn | LOAD_Quiet))
+			{
+				C->SetBindingAsset(B);
+			}
+		}
+		C->SetGroomAsset(G);
+		C->RegisterComponent();
+		PartComponents.Add(C);
+	}
+	UE_LOG(LogFourfold, Log, TEXT("Fighter %d: MetaHuman %s, %d parts"), SimActorId, *Lib->GetCharacterInfo().Name, PartComponents.Num());
 }

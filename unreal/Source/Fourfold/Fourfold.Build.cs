@@ -16,7 +16,8 @@ public class Fourfold : ModuleRules
 		// Slate / SlateCore: HUD, touch overlay, menus, Lab panel. ApplicationCore: FPlatformApplicationMisc (screen density).
 		// Input is read from APlayerController key state (Engine + InputCore); no Enhanced Input assets are needed.
 		PrivateDependencyModuleNames.AddRange(new string[] {
-			"Slate", "SlateCore", "ApplicationCore"
+			"Slate", "SlateCore", "ApplicationCore",
+			"HairStrandsCore"   // MetaHuman grooms (GroomComponent)
 		});
 
 		// "Logic/FFG*.h" from the module's own sources (Private is also a default include path; listed for clarity).

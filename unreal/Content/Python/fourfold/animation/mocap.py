@@ -263,7 +263,7 @@ def build(force=False):
         for section, slots in MAP.items():
             amap[section] = {k: v for k, v in slots.items() if v in have}
         # a checkout without the (git-ignored) GASP content keeps the hand-keyed clips
-        amap["fallbacks"] = {"clips": {c: FALLBACK[c] for c in have if c in FALLBACK}}
+        amap["fallbacks"] = {"clips": {c: FALLBACK[c] for c in sorted(have) if c in FALLBACK}}
         with open(os.path.join(data, "anim_map_mocap.json"), "w") as f:
             json.dump(amap, f, indent=1)
         rep["notes"].append(f"{len(rows)} mocap clips written to clips_mocap.json")
