@@ -100,3 +100,9 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   T1 / T2 while a stone flies (the prediction follows distance); leave as is unless it reads as flicker on device.
   Next in A: answers on the attack slots that also counter (thrust / ground / sweep); a radial near the fighter was
   not needed on desktop (the strip sits right under the player's ground arcs).
+- 2026-10-08 - A: attack slots that also counter. `CounterHints` evaluates thrust / ground / sweep / strike too (instant
+  volumes only with contact moves, as the AI) and adds the best one that works (partial or better) as a fifth answer:
+  e.g. a 20 kg stone vs Earth = ground "Block", vs Water / Air = thrust "Deflect", vs Fire = thrust "Body burst". The
+  strip shows it with its key (`U` / `N` / `H` / `J`, pad `Y` / `LT` / `B` / `X`, touch ATTACK ↑ / ↓ / ↔); on touch the
+  matching ATTACK flick petal lights in the band colour (a strike answer: "TAP: ..." above the button). Touch petals
+  now carry the tier like the strip ("Sink T2").

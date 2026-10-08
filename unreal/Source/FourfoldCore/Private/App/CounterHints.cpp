@@ -17,7 +17,9 @@ namespace ff {
 namespace CounterHints {
 
 namespace {
-const char* const kSlots[4] = {"guard", "push", "sink", "tech"};
+const char* const kSlots[8] = {"guard", "push", "sink", "tech", "thrust", "ground", "sweep", "strike"};
+
+bool is_attack_slot(const std::string& slot) { return slot == "thrust" || slot == "ground" || slot == "sweep" || slot == "strike"; }
 
 int band_rank(const IxResult& r) {
 	if (r.outcome == "pass") return 0;
@@ -118,11 +120,15 @@ Result query(CombatWorld& w, ActorState& me) {
 	res.threat_cls = best.cls;
 	res.tti = best.tti;
 	res.pos = best.body != nullptr ? best.body->pos : best.agent->pos;
+	CounterHintView best_attack;   // attack slots: only the one that answers best (the strip stays short)
+	int best_attack_rank = 1;      // an attack that fails or passes is no answer
 	for (const char* slot : kSlots) {
 		const std::string id = Moves::resolve(me.element, me.sub(), slot);
 		if (id.empty()) continue;
 		const Dict def = Moves::defs().get(id).as_dict();
 		if (std::string(slot) != "guard" && !def.has("counter")) continue;
+		// as the AI: an instant volume is answered where it lands - only contact moves (and push / sink) meet it
+		if (is_attack_slot(slot) && best.kind == "volume" && AiPlanner::meet_kind(def, slot) != "contact") continue;
 		if (std::string(slot) == "guard" && id != "guard" && !def.has("counter") && dstr(def, "verb", "") != "barrier") continue;
 		if (std::string(slot) == "tech" && best.body == nullptr) continue;
 		AiPlanner::KitMove c;
@@ -157,8 +163,16 @@ Result query(CombatWorld& w, ActorState& me) {
 		v.band = band_name(top);
 		v.tier = top_tier;
 		v.perfect = top_perfect;
+		if (is_attack_slot(slot)) {
+			if (top > best_attack_rank) {   // strictly better: earlier slots (thrust, ground, sweep, strike) win ties
+				best_attack_rank = top;
+				best_attack = v;
+			}
+			continue;
+		}
 		res.hints.push_back(v);
 	}
+	if (!best_attack.slot.empty()) res.hints.push_back(best_attack);
 	return res;
 }
 

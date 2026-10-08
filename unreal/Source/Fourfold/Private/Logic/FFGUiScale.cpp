@@ -30,12 +30,18 @@ TouchContext TouchContextFromHud(const ff::HudModel& h) {
 	c.guard_now = h.has_threat && h.threat_tti <= h.perfect_window;
 	for (const ff::CounterHintView& v : h.counters) {
 		const int band = v.band == "full" ? 3 : v.band == "partial" ? 2 : v.band == "fail" ? 1 : 0;
+		// as the HUD strip: the charge tier the answer needs ("Sink T2")
+		const std::string label = v.tier > 0 ? v.label + " T" + std::to_string(v.tier) : v.label;
 		if (v.slot == "push") {
-			c.counter_up = v.label;
+			c.counter_up = label;
 			c.counter_band_up = band;
 		} else if (v.slot == "sink") {
-			c.counter_down = v.label;
+			c.counter_down = label;
 			c.counter_band_down = band;
+		} else if (v.slot == "thrust" || v.slot == "ground" || v.slot == "sweep" || v.slot == "strike") {
+			c.counter_attack_slot = v.slot;
+			c.counter_attack = label;
+			c.counter_band_attack = band;
 		}
 	}
 	if (h.charge.active && h.charge.max_tier > 0) {

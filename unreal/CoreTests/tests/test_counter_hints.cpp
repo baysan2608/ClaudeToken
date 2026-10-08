@@ -32,6 +32,7 @@ FF_TEST(test_counter_hints, test_labels) {
 }
 
 FF_TEST(test_counter_hints, test_stone_incoming_per_element) {
+	int attack_answers = 0;
 	for (int el = 0; el < 4; ++el) {
 		SimHarness h(5);
 		ActorState* p = h.actor("player", V3(0, 0, 4), 0, Dict(), el);
@@ -48,6 +49,15 @@ FF_TEST(test_counter_hints, test_stone_incoming_per_element) {
 		std::string line;
 		for (const CounterHintView& v : r.hints) line += v.slot + "=" + v.label + "/" + v.band + "@T" + std::to_string(v.tier) + (v.perfect ? "P " : " ");
 		note(S("element ", el, " vs 20 kg stone: ", line));
+		int attacks = 0;
+		for (const CounterHintView& v : r.hints) {
+			if (v.slot == "thrust" || v.slot == "ground" || v.slot == "sweep" || v.slot == "strike") {
+				++attacks;
+				check(v.band == "full" || v.band == "partial", S("element ", el, ": an attack shown as an answer works (", v.band, ")"));
+			}
+		}
+		check(attacks <= 1, S("element ", el, ": at most one attack answer"));
+		attack_answers += attacks;
 		check(st->pos.distance_to(before) < 1e-6 && h.w->bodies.size() == bodies, S("element ", el, ": the query changes nothing"));
 		// the HUD model carries the same answers
 		HudBuilder::Context c;
@@ -56,6 +66,7 @@ FF_TEST(test_counter_hints, test_stone_incoming_per_element) {
 		const HudModel hm = HudBuilder::build(c);
 		check(hm.has_threat && hm.counters.size() == r.hints.size(), S("element ", el, ": HUD model gets the counters"));
 	}
+	check(attack_answers > 0, "some element answers a stone with an attack slot");
 }
 
 FF_TEST(test_counter_hints, test_nothing_coming) {

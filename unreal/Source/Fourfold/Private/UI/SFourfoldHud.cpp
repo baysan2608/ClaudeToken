@@ -725,10 +725,16 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 		FPill Pl;
 		const bool bNow = C.slot == "guard" && Hud.threat_tti <= Hud.perfect_window;   // press now for a perfect guard
 		// the input that gives this answer on the device in use (desktop chords: K + J push, K + N sink)
-		const int32 Slot = C.slot == "guard" ? 0 : C.slot == "push" ? 1 : C.slot == "sink" ? 2 : 3;
-		static const TCHAR* const kTouchKeys[4] = {TEXT("GUARD"), TEXT("GUARD ↑"), TEXT("GUARD ↓"), TEXT("TECH")};
-		static const TCHAR* const kDeskKeys[4] = {TEXT("K"), TEXT("K + J"), TEXT("K + N"), TEXT("L")};
-		static const TCHAR* const kPadKeys[4] = {TEXT("RB"), TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT")};
+		static const char* const kSlots[8] = {"guard", "push", "sink", "tech", "thrust", "ground", "sweep", "strike"};
+		int32 Slot = 0;
+		while (Slot < 7 && C.slot != kSlots[Slot])
+		{
+			++Slot;
+		}
+		static const TCHAR* const kTouchKeys[8] = {TEXT("GUARD"), TEXT("GUARD ↑"), TEXT("GUARD ↓"), TEXT("TECH"),
+		                                           TEXT("ATTACK ↑"), TEXT("ATTACK ↓"), TEXT("ATTACK ↔"), TEXT("ATTACK")};
+		static const TCHAR* const kDeskKeys[8] = {TEXT("K"), TEXT("K + J"), TEXT("K + N"), TEXT("L"), TEXT("U"), TEXT("N"), TEXT("H"), TEXT("J")};
+		static const TCHAR* const kPadKeys[8] = {TEXT("RB"), TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT"), TEXT("Y"), TEXT("LT"), TEXT("B"), TEXT("X")};
 		const TCHAR* const* Keys = Input.Device == TEXT("gamepad") ? kPadKeys : Input.Device == TEXT("keyboard") ? kDeskKeys : kTouchKeys;
 		Pl.Key = Keys[Slot];
 		if (bNow)

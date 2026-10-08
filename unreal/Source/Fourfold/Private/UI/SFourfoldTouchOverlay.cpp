@@ -571,25 +571,40 @@ void SFourfoldTouchOverlay::DrawPetals(const FDrawCtx& D) const
 {
 	const ffg::TouchContext& Ctx = Touch.ctx;
 	const FLinearColor EC = FFUi::ElementColor(Ctx.element);
+	auto BandColor = [](int32 Band) {
+		return Band == 3 ? FLinearColor(0.2f, 1.0f, 0.35f) : Band == 2 ? FLinearColor(1.0f, 0.6f, 0.08f)
+		     : Band == 1 ? FLinearColor(1.0f, 0.12f, 0.08f) : FLinearColor(0.45f, 0.45f, 0.45f);
+	};
 	const bool bAtkHeld = Touch.AttackHeld();
 	const bool bAnyAtkPetal = !Ctx.petal_up.empty() || !Ctx.petal_down.empty() || !Ctx.petal_side.empty();
-	if ((bAtkHeld || D.bStrong) && bAnyAtkPetal && !D.bTechLive)
+	// an attack that also answers the incoming threat lights its flick petal (a tap answer sits above the button)
+	const bool bAtkAnswer = Ctx.threat && !Ctx.counter_attack.empty() && !D.bTechLive;
+	const ff::Gesture AnswerG = Ctx.counter_attack_slot == "thrust" ? ff::Gesture::Up : Ctx.counter_attack_slot == "ground" ? ff::Gesture::Down
+	                          : Ctx.counter_attack_slot == "sweep" ? ff::Gesture::Side : ff::Gesture::None;
+	if ((bAtkHeld || D.bStrong || bAtkAnswer) && bAnyAtkPetal && !D.bTechLive)
 	{
 		const ffg::FlickRecognizer& Fl = Touch.AttackFlick();
 		const ff::Gesture Hot = bAtkHeld ? Fl.hot : ff::Gesture::None;
-		const float A = bAtkHeld ? 1.0f : 0.38f;
 		const ff::Gesture Gs[3] = {ff::Gesture::Up, ff::Gesture::Down, ff::Gesture::Side};
 		const std::string* Names[3] = {&Ctx.petal_up, &Ctx.petal_down, &Ctx.petal_side};
 		for (int32 i = 0; i < 3; ++i)
 		{
-			if (Names[i]->empty())
+			const bool bAnswer = bAtkAnswer && AnswerG == Gs[i];
+			if (Names[i]->empty() || (!bAtkHeld && !D.bStrong && !bAnswer))
 			{
 				continue;
 			}
 			const ffg::PetalAnchor An = Touch.layout.AttackPetalAnchor(Gs[i]);
 			const bool bHot = Hot == Gs[i] || (Fl.fired && Fl.last == Gs[i] && bAtkHeld);
-			DrawPill(D, V(An.pos), An.align, S(*Names[i]), EC, bHot, A, int32(Gs[i]));
+			const float A = (bAtkHeld || bAnswer) ? 1.0f : 0.38f;
+			DrawPill(D, V(An.pos), An.align, S(bAnswer ? Ctx.counter_attack : *Names[i]), bAnswer ? BandColor(Ctx.counter_band_attack) : EC,
+			         bHot || bAnswer, A, int32(Gs[i]));
 		}
+	}
+	if (bAtkAnswer && AnswerG == ff::Gesture::None && !bAtkHeld)
+	{
+		const ffg::PetalAnchor An = Touch.layout.AttackPetalAnchor(ff::Gesture::Up);
+		DrawPill(D, V(An.pos), An.align, TEXT("TAP: ") + S(Ctx.counter_attack), BandColor(Ctx.counter_band_attack), true, 1.0f);
 	}
 	const bool bGrdHeld = Touch.ButtonHeld(ffg::TouchId::Guard);
 	const bool bAnyGrdPetal = !Ctx.guard_petal_up.empty() || !Ctx.guard_petal_down.empty();
@@ -608,8 +623,7 @@ void SFourfoldTouchOverlay::DrawPetals(const FDrawCtx& D) const
 				continue;
 			}
 			const bool bAnswer = Ctx.threat && !Answers[i]->empty();
-			const FLinearColor BandCol = Bands[i] == 3 ? FLinearColor(0.2f, 1.0f, 0.35f) : Bands[i] == 2 ? FLinearColor(1.0f, 0.6f, 0.08f)
-			                           : Bands[i] == 1 ? FLinearColor(1.0f, 0.12f, 0.08f) : FLinearColor(0.45f, 0.45f, 0.45f);
+			const FLinearColor BandCol = BandColor(Bands[i]);
 			const float GA = (bGrdHeld || bAnswer) ? 1.0f : 0.38f;
 			const ffg::PetalAnchor An = Touch.layout.GuardPetalAnchor(Gs[i]);
 			DrawPill(D, V(An.pos), An.align, S(bAnswer ? *Answers[i] : *Names[i]), bAnswer ? BandCol : EC, GHot == Gs[i] || bAnswer, GA, int32(Gs[i]));

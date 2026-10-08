@@ -49,6 +49,9 @@ struct TouchContext {
 	bool guard_now = false;                         // the threat is inside the perfect-guard window: press GUARD now
 	std::string counter_up, counter_down;
 	int counter_band_up = 0, counter_band_down = 0;
+	// the attack slot that also answers it best ("thrust" | "ground" | "sweep" | "strike", "" = none): its ATTACK petal
+	std::string counter_attack_slot, counter_attack;
+	int counter_band_attack = 0;
 	std::string shape_label;                        // what T+A does now ("" = no technique running)
 	std::string charge_slot;                        // "attack" | "guard" | "tech" | "evade" | "" (charge ring owner)
 	int charge_tier = 0;

@@ -1,6 +1,7 @@
 // Fourfold core - context counters for the HUD (docs/game/CONTROLS_HUD_PLAN.md part A). Not a port: a read-only query
 // over the sim. Picks the most urgent threat coming at the player (a hostile body, or a foe's volume attack in its
-// startup / charge) and evaluates the current element / sub-element's guard (+ perfect), push, sink and technique against
+// startup / charge) and evaluates the current element / sub-element's guard (+ perfect), push, sink, technique and the
+// best-answering attack slot (thrust / ground / sweep / strike, partial or better only) against
 // it with the counter rule itself (Interactions::predict over the AI planner's counter agents), so the petals always say
 // what the sim would do. Timing, cost and reach gates are left to the player.
 #pragma once

@@ -1760,6 +1760,15 @@ FFT_TEST(ui_scale_and_insets) {
 	FFT_CHECK(ffg::TouchContextFromHud(h).guard_now);
 	h.threat_tti = h.perfect_window * 1.5f;
 	FFT_CHECK(!ffg::TouchContextFromHud(h).guard_now);
+	// the attack slot that answers the threat reaches the ATTACK petals
+	ff::CounterHintView v;
+	v.slot = "thrust";
+	v.label = "Deflect";
+	v.band = "partial";
+	v.tier = 2;
+	h.counters.push_back(v);
+	const ffg::TouchContext ca = ffg::TouchContextFromHud(h);
+	FFT_CHECK(ca.counter_attack_slot == "thrust" && ca.counter_attack == "Deflect T2" && ca.counter_band_attack == 2);
 }
 
 // =================================================================================== real data files (when present)

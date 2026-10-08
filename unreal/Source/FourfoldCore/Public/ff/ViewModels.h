@@ -19,7 +19,7 @@ namespace ff {
 // ------------------------------------------------------------------ HUD / touch overlay
 // One answer to the incoming threat (context counters on the GUARD button, docs/game/CONTROLS_HUD_PLAN.md part A).
 struct CounterHintView {
-	std::string slot;        // "guard" | "push" | "sink" | "tech"
+	std::string slot;        // "guard" | "push" | "sink" | "tech" | one attack slot: "thrust" | "ground" | "sweep" | "strike"
 	std::string label;       // the answer as a verb: "Send back", "Sink", "Melt", "Ground", ... ("No effect" for a pass)
 	std::string move;        // short name of the move that gives it
 	std::string outcome;     // the counter rule's outcome (block, reflect, transform, ...)
@@ -87,7 +87,7 @@ struct HudModel {
 	float threat_tti = 0.0f;          // seconds to impact
 	float perfect_window = 0.18f;     // a guard pressed this close before impact is perfect (Moves::PERFECT_WINDOW)
 	Vec3 threat_world;
-	std::vector<CounterHintView> counters;   // guard, push, sink, tech (those the sub-element has)
+	std::vector<CounterHintView> counters;   // guard, push, sink, tech (those the sub-element has), then the best attack answer
 };
 
 // ------------------------------------------------------------------ menus
