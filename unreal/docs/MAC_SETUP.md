@@ -95,6 +95,11 @@ On the first editor start a message about a missing map (`L_Lab`) is expected â€
    Or from a terminal: `bash unreal/Tools/mac/ios.sh` (build + cook + install + start; `--fast` reinstalls the last
    cook, `--check` only checks the device). The install step needs the USB cable: over Wi-Fi it fails with
    "No device found with udid".
+   **iOS 27 devices: use the script, not the editor's Launch.** iOS 27 kills apps built with the iOS 27 SDK that do not use
+   the UIScene lifecycle (crash `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`, SIGTRAP at launch).
+   UE 5.8 has `bUseSceneBasedLifecycle`, but the Launcher engine's precompiled code is built without it, so the script
+   marks the executable as linked against SDK 26.0 and re-signs it before installing. Proper fix: an engine built from
+   source with `bUseSceneBasedLifecycle=True` (needed before App Store submission).
    Or generate the Xcode workspace (step 3), open `Fourfold (IOS).xcworkspace`, pick the *Fourfold* scheme and your
    device, **Run**.
 4. On the device, play the Lab and Free Spar (Hard) for 10 minutes each. Open the console with a **four-finger tap**

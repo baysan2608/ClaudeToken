@@ -54,7 +54,8 @@ HOW TO BUILD / RUN / TEST
 - Play: Content Browser > Fourfold/Maps/L_Lab > Play. Keys: WASD move, J strike (hold = charge),
   U/N/H thrust/ground/sweep, Esc pause. Mobile preview: Settings > Preview Platform > iOS.
 - iPhone/iPad: unreal/docs/MAC_SETUP.md section 6 (bundle id, team id, Platforms > iOS > Launch), or
-  `bash unreal/Tools/mac/ios.sh` (cabled device, Developer Mode on; `--fast` reinstalls the last cook).
+  `bash unreal/Tools/mac/ios.sh` (cabled device, Developer Mode on; `--fast` reinstalls the last cook). On iOS 27 only the
+  script works: the editor's Launch build crashes at start (UIScene lifecycle check; MAC_SETUP section 6).
 - Engine-free gameplay core tests (must stay green): `bash unreal/CoreTests/run_all.sh`
   (535 tests incl. the 13,300-row golden counter matrix that must match the Godot reference;
   export PATH="$HOME/Library/Python/3.9/bin:$PATH"; FF_COMPILERS=clang++ bash unreal/CoreTests/run_all.sh).

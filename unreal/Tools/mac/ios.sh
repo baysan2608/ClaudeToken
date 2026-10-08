@@ -6,7 +6,8 @@
 #   bash unreal/Tools/mac/ios.sh --check   only check the device and exit
 #   add --no-launch to install without starting the app
 # Device: the first paired physical iOS device, or IOS_DEVICE=<name or UDID>. Log: logs/ios_deploy.log
-# Needs: iPad Developer Mode on, unlocked, USB cable (the install step uses usbmux; Wi-Fi only works for Xcode itself).
+# Needs: iPad Developer Mode on, unlocked, USB cable.
+# On iOS 27 use this, not the editor's Launch: it also patches the iOS 27 launch crash (see the note before the install).
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 UPROJ="$REPO/unreal/Fourfold.uproject"
@@ -59,9 +60,9 @@ fi
 
 if [[ "$MODE" == fast ]]; then
   [[ -d "$REPO/unreal/Saved/StagedBuilds/IOS/cookeddata" ]] || { echo "No previous iOS cook; run without --fast."; exit 1; }
-  STEPS=(-skipcook -stage -pak -package -deploy -nocompileeditor)
+  STEPS=(-skipcook -stage -pak -package -nocompileeditor)
 else
-  STEPS=(-build -cook -stage -pak -package -deploy)
+  STEPS=(-build -cook -stage -pak -package)
 fi
 echo "== BuildCookRun ($MODE) -> $LOG"
 "$UE/Engine/Build/BatchFiles/RunUAT.sh" BuildCookRun -project="$UPROJ" -platform=IOS -clientconfig=Development \
@@ -72,9 +73,28 @@ if [[ $RC -ne 0 ]]; then
   grep -E "error:|Error:|AutomationException|Failed to deploy" "$LOG" | tail -8 | cut -c1-300
   exit $RC
 fi
+# iOS 27 traps at launch (_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption) when an app linked against
+# SDK 27+ has no UIScene lifecycle. UE 5.8 can adopt it (IOSRuntimeSettings bUseSceneBasedLifecycle), but only in an
+# engine built from source: the Launcher engine's precompiled ApplicationCore has no IOSSceneDelegate. Until then, mark
+# the executable as linked against SDK 26.0 (warning only) and re-sign with the same certificate and entitlements.
+APP="$REPO/unreal/Saved/StagedBuilds/IOS/Fourfold.app"
+SDKV="$(xcrun vtool -show-build "$APP/Fourfold" 2>/dev/null | awk '$1 == "sdk" {print $2; exit}')"
+if [[ "${SDKV%%.*}" -ge 27 ]]; then
+  echo "== Executable linked against SDK $SDKV: marking it 26.0 and re-signing (no UIScene lifecycle yet)"
+  SIGN="$(mktemp -d -t fourfold_sign)"
+  codesign -d --entitlements - --xml "$APP" > "$SIGN/ents.plist" 2> /dev/null \
+    && codesign -d --extract-certificates="$SIGN/cert" "$APP" 2> /dev/null \
+    && codesign --remove-signature "$APP/Fourfold" \
+    && xcrun vtool -set-build-version ios 17.0 26.0 -replace -output "$SIGN/Fourfold" "$APP/Fourfold" \
+    && mv "$SIGN/Fourfold" "$APP/Fourfold" && chmod +x "$APP/Fourfold" \
+    && codesign -f -s "$(shasum "$SIGN/cert0" | cut -c1-40)" --entitlements "$SIGN/ents.plist" --generate-entitlement-der "$APP" 2> /dev/null \
+    && codesign -v "$APP" || { echo "== Re-signing failed"; exit 1; }
+fi
+echo "== Installing on $NAME"
+xcrun devicectl device install app --device "$UDID" "$APP" >> "$LOG" 2>&1 || { echo "== Install failed (see $LOG)"; exit 1; }
 echo "== Installed $BUNDLE on $NAME"
 if [[ $LAUNCH == 1 ]]; then
-  xcrun devicectl device process launch --device "$UDID" "$BUNDLE" > /dev/null 2>&1 \
+  xcrun devicectl device process launch --device "$UDID" --terminate-existing "$BUNDLE" > /dev/null 2>&1 \
     && echo "== Started. Four-finger tap opens the console: stat unit / stat fps" \
     || echo "== Installed, but could not start it remotely: tap the Fourfold icon (unlock the device first)."
 fi
