@@ -46,7 +46,8 @@ IFS='|' read -r UDID NAME OSV TUNNEL PAIRING DEVMODE <<< "$DEV"
 echo "   $NAME  iOS $OSV  udid $UDID  connection=$TUNNEL  pairing=$PAIRING  developer-mode=$DEVMODE"
 OK=1
 [[ "$PAIRING" == paired ]] || { echo "   Not paired: unlock the device and tap Trust on it."; OK=0; }
-[[ "$DEVMODE" == enabled ]] || { echo "   Developer Mode is off: Settings > Privacy & Security > Developer Mode > On, restart, confirm."; OK=0; }
+[[ "$DEVMODE" == enabled ]] || { echo "   Developer Mode is off. Cabled + unlocked, open Xcode > Window > Devices and Simulators and select the device
+   (that reveals the switch), then on it: Settings > Privacy & Security > Developer Mode (bottom) > On, restart, confirm."; OK=0; }
 [[ "$TUNNEL" != unavailable ]] || { echo "   Not reachable: plug in the USB cable and unlock the device."; OK=0; }
 [[ $OK == 1 ]] || exit 1
 [[ "$MODE" == check ]] && { echo "   Ready."; exit 0; }

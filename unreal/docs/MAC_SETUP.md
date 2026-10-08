@@ -80,7 +80,9 @@ On the first editor start a message about a missing map (`L_Lab`) is expected �
    The Mac itself renders with the desktop renderer (Lumen), which looks richer than the phone.
 
 ## 6. Play on an iPhone / iPad
-1. On the device: **Settings ▸ Privacy & Security ▸ Developer Mode ▸ On** (restart), connect it by cable, tap *Trust*.
+1. Connect the device by cable, unlock it, tap *Trust*. The Developer Mode switch stays hidden until a Mac with Xcode
+   has seen the device: open Xcode ▸ **Window ▸ Devices and Simulators** and select it (or start a deploy once).
+   Then on the device: **Settings ▸ Privacy & Security ▸ Developer Mode** (bottom of the list) **▸ On**, restart, confirm.
 2. Signing (UE 5.8 only has the modern Xcode workflow; the generated Xcode project takes its bundle id and team from
    **Xcode Projects**, not from the iOS page). In the editor: **Edit ▸ Project Settings ▸ Platforms ▸ Xcode Projects**:
    keep **Use Automatic Code Signing** on, set **Apple Dev Account Team ID** (developer.apple.com ▸ Account ▸ Membership
