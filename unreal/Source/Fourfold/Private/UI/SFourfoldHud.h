@@ -106,6 +106,7 @@ private:
 	void DrawChargeBar(const FPaintCtx& H) const;
 	void DrawCounters(const FPaintCtx& H) const;
 	void DrawChain(const FPaintCtx& H) const;
+	void DrawElementWheel(const FPaintCtx& H) const;
 	void DrawMarker(const FPaintCtx& H) const;
 
 	ff::HudModel Hud;
@@ -118,6 +119,10 @@ private:
 	float Alpha = 0.35f;
 	float Calm = 0.0f;
 	float LastHealth = 100.0f;
+
+	// element quarter-wheel (desktop / gamepad): bright after a switch, then calm
+	int32 WheelElement = -1, WheelSub = -1;
+	float WheelT = 0.0f;   // s since the last element / sub-element switch
 
 	// toast / flash
 	FString ToastText;

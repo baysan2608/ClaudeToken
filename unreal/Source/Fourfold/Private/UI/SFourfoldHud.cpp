@@ -122,6 +122,13 @@ void SFourfoldHud::UpdateFrame(const ff::HudModel& InHud, const ff::Snapshot& Sn
 	const float Dt = FMath::Clamp(In.RealDt, 0.0f, 0.1f);
 	ToastT = FMath::Max(0.0f, ToastT - Dt);
 	FlashT = FMath::Max(0.0f, FlashT - Dt);
+	WheelT += Dt;
+	if (Hud.element != WheelElement || Hud.sub != WheelSub)
+	{
+		WheelElement = Hud.element;
+		WheelSub = Hud.sub;
+		WheelT = 0.0f;
+	}
 
 	const ff::ActorView* Player = Snap.FindActor(Hud.player_id);
 	bHasPlayer = Hud.valid && Player != nullptr;
@@ -489,8 +496,15 @@ int32 SFourfoldHud::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 		// Sub-element line, then the resource bars that matter right now.
 		const FLinearColor Ec = FFUi::ElementColor(Hud.element);
 		const double SubBase = Y + 3 * Row + H.FsStat + H.GrowStat * 0.2;
-		H.TextBase(FString::Printf(TEXT("%s / %s"), *HS(Hud.element_name), *HS(Hud.sub_name)), X, SubBase, H.FsStat, WithA(Ec, 0.95f * Alpha), -1, 0.0,
-		           0.45f * Alpha);
+		if (Input.Device == TEXT("touch"))   // desktop / gamepad: the element wheel names it
+		{
+			H.TextBase(FString::Printf(TEXT("%s / %s"), *HS(Hud.element_name), *HS(Hud.sub_name)), X, SubBase, H.FsStat, WithA(Ec, 0.95f * Alpha), -1, 0.0,
+			           0.45f * Alpha);
+		}
+		else
+		{
+			DrawElementWheel(H);
+		}
 		double Ry = SubBase + 4.0 * U + H.GrowBar * 0.5;
 		const double ResStep = FMath::Max(9.0 * U + H.GrowBar + H.GrowStat * 0.2, H.FsStat + 2.0 * U);
 		double HeatBase = Ry + 6.0 * U + H.GrowBar * 0.5 + H.GrowStat * 0.35;
@@ -835,6 +849,67 @@ void SFourfoldHud::DrawChain(const FPaintCtx& H) const
 	const FVector2D BarPos(Anchor.X - Total * 0.5 + HeadW, Y + Hh + 3.0f * U);
 	H.P.Rect(BarPos, FVector2D(BarW, 3.0f * U), FLinearColor(0, 0, 0, 0.45f), 1.5f * U);
 	H.P.Rect(BarPos, FVector2D(BarW * Left, 3.0f * U), WithA(Ec, 0.95f), 1.5f * U);
+}
+
+void SFourfoldHud::DrawElementWheel(const FPaintCtx& H) const
+{
+	// Desktop / gamepad element quarter-wheel (CONTROLS_HUD_PLAN part D) in the bottom-left corner: the four elements on
+	// the outer band with their keys, the current element's sub-elements on the inner band, the names beside it. Touch
+	// has the chip arc instead.
+	const float U = H.U;
+	const bool bPad = Input.Device == TEXT("gamepad");
+	const float A = WheelT < 1.5f ? 1.0f : FMath::Lerp(1.0f, 0.8f, FMath::Clamp((WheelT - 1.5f) / 0.6f, 0.0f, 1.0f));
+	const float Pop = Input.bReducedMotion ? 0.0f : FMath::Clamp(1.0f - WheelT / 0.25f, 0.0f, 1.0f);
+	const FVector2D C(H.SrPos.X + 10.0 * U, H.SrEnd().Y - 10.0 * U);
+	const float R1 = 104.0f * U, W1 = 24.0f * U;   // elements
+	const float R2 = 70.0f * U, W2 = 14.0f * U;    // sub-elements
+	const float Gap = FMath::DegreesToRadians(3.0f);
+	const float Q = 0.5f * PI / 4.0f;              // one sector of the quarter
+	auto SectorA0 = [&](int32 I) { return -0.5f * PI + Q * float(I); };   // from straight up, clockwise toward the right
+	static const TCHAR* const kKeys[4] = {TEXT("1"), TEXT("2"), TEXT("3"), TEXT("4")};
+	static const TCHAR* const kPad[4] = {TEXT("◂"), TEXT("▾"), TEXT("▸"), TEXT("▴")};
+	const float FsKey = H.Fs(10.0f, kTextMm * 0.8f);
+	const FSlateFontInfo FKey = FFUi::Font(FsKey, true, 1, FLinearColor(0, 0, 0, 0.7f * A));
+	H.P.Arc(C, R1, -0.5f * PI, 0.0f, W1 + 6.0f * U, FLinearColor(0, 0, 0, 0.55f * A));
+	for (int32 E = 0; E < 4; ++E)
+	{
+		const bool bOn = E == Hud.element;
+		const bool bLocked = !Hud.elements_unlocked[size_t(E)];
+		const FLinearColor Ec = FFUi::ElementColor(E);
+		const float A0 = SectorA0(E) + Gap * 0.5f, A1 = SectorA0(E) + Q - Gap * 0.5f;
+		const float Rr = R1 + (bOn ? 3.0f * U * (1.0f + Pop) : 0.0f);
+		H.P.Arc(C, Rr, A0, A1, bOn ? W1 + 2.0f * U : W1, WithA(Ec, (bLocked ? 0.08f : bOn ? 0.92f : 0.3f) * A), 12);
+		const float Am = 0.5f * (A0 + A1);
+		const FVector2D Gc = C + FVector2D(FMath::Cos(Am), FMath::Sin(Am)) * Rr;
+		const FFUi::EGlyph G = FFUi::EGlyph(int32(FFUi::EGlyph::Earth) + E);
+		if (bOn)
+		{
+			H.P.GlyphHalo(G, Gc, W1 * 0.36f, FLinearColor(1, 1, 1, A), FMath::Max(1.5f, 2.0f * U));
+		}
+		else
+		{
+			H.P.Glyph(G, Gc, W1 * 0.32f, FLinearColor(1, 1, 1, (bLocked ? 0.2f : 0.7f) * A), FMath::Max(1.2f, 1.6f * U));
+		}
+		const FVector2D Kc = C + FVector2D(FMath::Cos(Am), FMath::Sin(Am)) * (Rr + W1 * 0.5f + 9.0f * U);
+		H.P.TextCentered(bPad ? kPad[E] : kKeys[E], Kc, FKey, FLinearColor(1, 1, 1, (bOn ? 0.95f : 0.55f) * A));
+	}
+	const FLinearColor Ec = FFUi::ElementColor(Hud.element);
+	H.P.Arc(C, R2, -0.5f * PI, 0.0f, W2 + 5.0f * U, FLinearColor(0, 0, 0, 0.5f * A));
+	for (int32 S = 0; S < 4; ++S)
+	{
+		const bool bOn = S == Hud.sub;
+		const bool bLocked = !Hud.subs_unlocked[size_t(S)];
+		const float A0 = SectorA0(S) + Gap * 0.5f, A1 = SectorA0(S) + Q - Gap * 0.5f;
+		H.P.Arc(C, R2, A0, A1, W2, bOn ? WithA(FMath::Lerp(Ec, FLinearColor::White, 0.35f), 0.95f * A) : WithA(Ec, (bLocked ? 0.06f : 0.22f) * A), 10);
+	}
+	// names beside the wheel, with the sub-element keys
+	const float FsName = H.Fs(15.0f, kTextMm * 1.3f);
+	const double Tx = C.X + R1 + W1 * 0.5 + 18.0 * U;
+	const double Base = C.Y - 6.0 * U;
+	const FString Name = FString::Printf(TEXT("%s  ·  %s"), *HS(Hud.element_name).ToUpper(), *HS(Hud.sub_name).ToUpper());
+	H.TextBase(Name, Tx, Base - FsKey - 6.0f * U, FsName, WithA(FMath::Lerp(Ec, FLinearColor::White, 0.25f), A), -1, 0.0, 0.6f * A);
+	H.TextBase(bPad ? TEXT("LB + D-pad  sub-element") : TEXT("Q / E  sub-element    1-4  element"), Tx, Base, FsKey, FLinearColor(1, 1, 1, 0.55f * A), -1,
+	           0.0, 0.5f * A);
 }
 
 void SFourfoldHud::DrawRings(const FPaintCtx& H) const

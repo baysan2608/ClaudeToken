@@ -117,3 +117,7 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   Still open in C: world glyphs on usable sources (pool, loose stone, fire field, wall) - needs B's pull / draw.
 - 2026-10-08 - B: draft for the owner in `FORMS_PROPOSAL.md` (four forms x 16 sub-elements, how they would be built
   through the Godot kits, a smaller "circle + pull" first slice, four questions). Not started until the owner answers.
+- 2026-10-08 - D: desktop / gamepad element quarter-wheel in the bottom-left corner (touch keeps its chip arc): the four
+  elements on the outer band with their keys (`1`-`4`, pad d-pad arrows), the current element's sub-elements on the
+  inner band, "EARTH · STONE" and the Q / E (LB + d-pad) hint beside it; bright for 1.5 s after a switch, then calm. It
+  replaces the small top-left element line on desktop.
