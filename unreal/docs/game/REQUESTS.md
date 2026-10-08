@@ -57,3 +57,12 @@ file, the exact change and the reason. Nothing here blocks compiling; the game d
   `Core / CoreUObject / Engine / InputCore / FourfoldCore`. Input comes from `APlayerController` key state, so no
   Enhanced Input assets are needed. The configured `DefaultPlayerInputClass` (EnhancedPlayerInput) still fills the
   key state the game reads.
+
+## FX (owner: `fx`)
+1. (2026-10-08, seen in `-scenario=spar -autoplay=duel` captures) A long thin black ribbon / line lies on the ground
+   from the earth fighter toward the camera, curled at its start, with a faint red-orange glow in places - it looks like
+   the magma rift / ground crack view rendering unlit (no emissive). It stays for several seconds and reads as a
+   rendering bug from the default camera. Reproduce: `bash unreal/Tools/mac/shot.sh logs/x 25,30,35 -scenario=spar
+   -autoplay=duel -FFShotUI`.
+2. (2026-10-08) Fireball impact smoke in the Lab (`-FFLabSpawn=fireball@10`) hides the player for 6+ s as a dense dark
+   cloud; consider a shorter, lighter plume near fighters so the HUD's ground arcs and callouts stay readable.
