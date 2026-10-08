@@ -716,14 +716,26 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 		FString Key, Txt;
 		FLinearColor Col;
 		float W;
+		bool bNow = false;
 	};
 	TArray<FPill> Pills;
 	float Total = 0.0f;
 	for (const ff::CounterHintView& C : Hud.counters)
 	{
 		FPill Pl;
-		const bool bNow = C.slot == "guard" && Hud.threat_tti <= 0.2f;   // press now for a perfect guard
-		Pl.Key = C.slot == "guard" ? (bNow ? TEXT("GUARD  NOW") : TEXT("GUARD")) : C.slot == "push" ? TEXT("GUARD ↑") : C.slot == "sink" ? TEXT("GUARD ↓") : TEXT("TECH");
+		const bool bNow = C.slot == "guard" && Hud.threat_tti <= Hud.perfect_window;   // press now for a perfect guard
+		// the input that gives this answer on the device in use (desktop chords: K + J push, K + N sink)
+		const int32 Slot = C.slot == "guard" ? 0 : C.slot == "push" ? 1 : C.slot == "sink" ? 2 : 3;
+		static const TCHAR* const kTouchKeys[4] = {TEXT("GUARD"), TEXT("GUARD ↑"), TEXT("GUARD ↓"), TEXT("TECH")};
+		static const TCHAR* const kDeskKeys[4] = {TEXT("K"), TEXT("K + J"), TEXT("K + N"), TEXT("L")};
+		static const TCHAR* const kPadKeys[4] = {TEXT("RB"), TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT")};
+		const TCHAR* const* Keys = Input.Device == TEXT("gamepad") ? kPadKeys : Input.Device == TEXT("keyboard") ? kDeskKeys : kTouchKeys;
+		Pl.Key = Keys[Slot];
+		if (bNow)
+		{
+			Pl.Key += TEXT("  NOW");
+			Pl.bNow = true;
+		}
 		Pl.Txt = HS(C.label);
 		if (C.tier > 0)
 		{
@@ -747,9 +759,11 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 	           FsKey, FLinearColor(1, 1, 1, 0.7f), 0, Total, 0.5f);
 	for (const FPill& Pl : Pills)
 	{
-		H.P.RoundRect(FVector2D(X, Y), FVector2D(Pl.W, Hh), FLinearColor(0.02f, 0.02f, 0.03f, 0.6f), WithA(Pl.Col, 0.9f * Pulse), 2.0f * U, 6.0f * U);
-		H.P.Text(Pl.Key, FVector2D(X + Pad, Y + 0.5f * Pad), FKey, FLinearColor(1, 1, 1, 0.6f));
-		H.P.Text(Pl.Txt, FVector2D(X + Pad, Y + 0.7f * Pad + FsKey), FTxt, Pl.Col);
+		// inside the perfect window the guard pill lights up (the honest telegraph: press now)
+		const FLinearColor Fill = Pl.bNow ? WithA(FMath::Lerp(Pl.Col, FLinearColor::Black, 0.45f), 0.92f) : FLinearColor(0.02f, 0.02f, 0.03f, 0.6f);
+		H.P.RoundRect(FVector2D(X, Y), FVector2D(Pl.W, Hh), Fill, WithA(Pl.bNow ? FLinearColor::White : Pl.Col, 0.9f * Pulse), (Pl.bNow ? 3.0f : 2.0f) * U, 6.0f * U);
+		H.P.Text(Pl.Key, FVector2D(X + Pad, Y + 0.5f * Pad), FKey, FLinearColor(1, 1, 1, Pl.bNow ? 1.0f : 0.6f));
+		H.P.Text(Pl.Txt, FVector2D(X + Pad, Y + 0.7f * Pad + FsKey), FTxt, Pl.bNow ? FLinearColor::White : Pl.Col);
 		X += Pl.W + Gap;
 	}
 }

@@ -85,6 +85,7 @@ struct HudModel {
 	bool has_threat = false;
 	std::string threat_cls;
 	float threat_tti = 0.0f;          // seconds to impact
+	float perfect_window = 0.18f;     // a guard pressed this close before impact is perfect (Moves::PERFECT_WINDOW)
 	Vec3 threat_world;
 	std::vector<CounterHintView> counters;   // guard, push, sink, tech (those the sub-element has)
 };

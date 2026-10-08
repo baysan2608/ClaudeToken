@@ -1753,6 +1753,13 @@ FFT_TEST(ui_scale_and_insets) {
 	h.charge.tier = 1;
 	const ffg::TouchContext c = ffg::TouchContextFromHud(h);
 	FFT_CHECK(c.element == 3 && c.sub == 2 && c.charge_slot == "guard" && c.sub_names[2] == "Vacuum" && c.has_charge);
+	FFT_CHECK(!c.guard_now);
+	// a threat inside the perfect-guard window lights GUARD; just outside it does not
+	h.has_threat = true;
+	h.threat_tti = h.perfect_window * 0.9f;
+	FFT_CHECK(ffg::TouchContextFromHud(h).guard_now);
+	h.threat_tti = h.perfect_window * 1.5f;
+	FFT_CHECK(!ffg::TouchContextFromHud(h).guard_now);
 }
 
 // =================================================================================== real data files (when present)

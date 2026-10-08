@@ -265,6 +265,7 @@ HudModel build(const Context& c) {
 		h.has_threat = ch.valid;
 		h.threat_cls = ch.threat_cls;
 		h.threat_tti = static_cast<float>(ch.tti);
+		h.perfect_window = static_cast<float>(Moves::PERFECT_WINDOW);
 		h.threat_world = ch.pos;
 		h.counters = ch.hints;
 	}

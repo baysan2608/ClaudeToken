@@ -250,6 +250,15 @@ int32 SFourfoldTouchOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 		DrawChip(D, E, D.Op * ChipDim);
 	}
 	DrawRoundButton(D, ffg::TI(ffg::TouchId::Guard), int32(FFUi::EGlyph::Guard), TEXT("GUARD"), FLinearColor::White, D.Op);
+	if (Touch.ctx.guard_now)
+	{
+		// the perfect-guard window is open: the button rings bright (the same honest telegraph as the HUD's "NOW" pill)
+		const int32 G = ffg::TI(ffg::TouchId::Guard);
+		const FVector2D Gc = V(Touch.layout.centers[G]);
+		const float Gr = Touch.layout.radii[G];
+		D.P.Ring(Gc, Gr * 1.12f, D.Rw * 3.2f, Col(1, 1, 1, 0.9f));
+		D.P.Circle(Gc, Gr * 0.96f, Col(1, 1, 1, 0.18f));
+	}
 	DrawRoundButton(D, ffg::TI(ffg::TouchId::Evade), int32(FFUi::EGlyph::Evade), TEXT("EVADE"), FLinearColor::White, D.Op);
 	DrawAttack(D);
 	DrawTechnique(D);

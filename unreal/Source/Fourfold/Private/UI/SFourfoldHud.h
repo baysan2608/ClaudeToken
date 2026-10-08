@@ -36,6 +36,7 @@ public:
 		FString PerfText;
 		TArray<FString> DebugLines;
 		const std::vector<ff::Event>* Events = nullptr;   // this frame's sim events (outcome callouts)
+		FString Device = TEXT("keyboard");                // last input device: keyboard | gamepad | touch (key hints)
 	};
 
 	void Construct(const FArguments& InArgs);

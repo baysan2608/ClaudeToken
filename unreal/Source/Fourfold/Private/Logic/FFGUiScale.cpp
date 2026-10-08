@@ -27,6 +27,7 @@ TouchContext TouchContextFromHud(const ff::HudModel& h) {
 	c.guard_petal_down = h.guard_petal_down;
 	c.shape_label = h.shape_label;
 	c.threat = h.has_threat;
+	c.guard_now = h.has_threat && h.threat_tti <= h.perfect_window;
 	for (const ff::CounterHintView& v : h.counters) {
 		const int band = v.band == "full" ? 3 : v.band == "partial" ? 2 : v.band == "fail" ? 1 : 0;
 		if (v.slot == "push") {

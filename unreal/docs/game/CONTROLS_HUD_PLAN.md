@@ -93,3 +93,10 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   plus a flick toward the petal column picks element and sub-element in one stroke without the long-press (logic test
   `touch_chip_flick_picks_sub_without_long_press`). The chip arc already sits as a quarter-wheel around the button
   cluster, so no separate wheel was added; to check on a phone: flick distance (1.6 chip radii) and direction slack.
+- 2026-10-08 - A: the counter pills name the input on the device in use (keyboard `K` / `K + J` / `K + N` / `L`,
+  gamepad `RB` / `RB + X` / `RB + LT` / `RT`, touch GUARD / GUARD ↑ / GUARD ↓ / TECH). Perfect-window telegraph from the
+  sim's own `Moves::PERFECT_WINDOW` (`HudModel::perfect_window`): the guard pill fills and reads "NOW", and on touch the
+  GUARD button rings bright (`TouchContext::guard_now`). Seen: the lowest tier that reaches a band can swap between
+  T1 / T2 while a stone flies (the prediction follows distance); leave as is unless it reads as flicker on device.
+  Next in A: answers on the attack slots that also counter (thrust / ground / sweep); a radial near the fighter was
+  not needed on desktop (the strip sits right under the player's ground arcs).

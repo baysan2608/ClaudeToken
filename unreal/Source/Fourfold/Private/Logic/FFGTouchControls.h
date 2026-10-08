@@ -46,6 +46,7 @@ struct TouchContext {
 	// Context counters: a threat is coming; what push / sink do to it ("" = no answer) and their bands
 	// (0 none, 1 fail, 2 partial, 3 full) - the petals show these, lit, without the button held.
 	bool threat = false;
+	bool guard_now = false;                         // the threat is inside the perfect-guard window: press GUARD now
 	std::string counter_up, counter_down;
 	int counter_band_up = 0, counter_band_down = 0;
 	std::string shape_label;                        // what T+A does now ("" = no technique running)
