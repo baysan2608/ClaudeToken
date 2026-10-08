@@ -500,6 +500,46 @@ FFT_TEST(touch_element_chip_and_sub_ring) {
 	FFT_CHECK(r.Tick().element_select == -1);
 }
 
+FFT_TEST(touch_chip_flick_picks_sub_without_long_press) {
+	TouchRig r;
+	ffg::TouchContext c;
+	c.element = 0;
+	r.t.SetContext(c);
+	const auto rects = r.t.layout.RingRects();
+	const Vec2 fire = r.C(ffg::TouchId::Elem2);
+	const float rad = r.t.layout.radii[ffg::TI(ffg::TouchId::Elem2)];
+	// touch Fire and slide straight onto petal 3: the ring opens on the slide, lift picks Fire + sub 3 in one stroke
+	r.t.TouchDown(0, fire);
+	r.t.TouchMove(0, rects[3].Center());
+	FFT_CHECK(r.t.GetRingMode() == ffg::RingMode::Slide);
+	FFT_CHECK(r.t.RingHover() == 3);
+	r.t.TouchUp(0, rects[3].Center(), false);
+	const ff::InputFrame& f = r.Tick();
+	FFT_CHECK(f.element_select == 2 && f.sub_select == 3);
+	FFT_CHECK(!r.t.IsRingOpen());
+	// a short flick toward the column that stops short of it aims at the petal nearest its height
+	int near = 0;
+	for (int i = 1; i < 4; ++i)
+		if (std::abs(rects[static_cast<size_t>(i)].Center().y - fire.y) < std::abs(rects[static_cast<size_t>(near)].Center().y - fire.y)) near = i;
+	const Vec2 flick(fire.x - rad * 2.0f, rects[static_cast<size_t>(near)].Center().y);
+	r.t.TouchDown(0, fire);
+	r.t.TouchMove(0, flick);
+	FFT_CHECK(r.t.RingHover() == near);
+	r.t.TouchUp(0, flick, false);
+	FFT_CHECK(r.Tick().sub_select == near);
+	// sliding away from the column (or not far enough) opens nothing and picks nothing
+	r.t.TouchDown(0, fire);
+	r.t.TouchMove(0, fire + Vec2(rad * 2.5f, 0.0f));
+	FFT_CHECK(!r.t.IsRingOpen());
+	r.t.TouchUp(0, fire + Vec2(rad * 2.5f, 0.0f), false);
+	FFT_CHECK(r.Tick().sub_select == -1);
+	r.t.TouchDown(0, fire);
+	r.t.TouchMove(0, fire - Vec2(rad * 1.2f, 0.0f));
+	FFT_CHECK(!r.t.IsRingOpen());
+	r.t.TouchUp(0, fire - Vec2(rad * 1.2f, 0.0f), false);
+	FFT_CHECK(r.Tick().sub_select == -1);
+}
+
 FFT_TEST(touch_pause_on_lift_only) {
 	TouchRig r;
 	r.t.TouchDown(0, r.C(ffg::TouchId::Pause));

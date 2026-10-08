@@ -97,6 +97,9 @@ public:
 	// The four sub-element petals (index = sub) of the ring opened from an element chip.
 	std::array<Rect, 4> RingRects() const;
 	int RingHit(Vec2 pos) const;
+	// The petal a finger that started on element chip `element` aims at: the petal under it, else - once it has slid
+	// clearly off the chip toward the petal column - the petal nearest its height (a quick flick need not land on it).
+	int RingAim(int element, Vec2 pos) const;
 	PetalAnchor AttackPetalAnchor(ff::Gesture which) const;
 	PetalAnchor GuardPetalAnchor(ff::Gesture which) const;
 

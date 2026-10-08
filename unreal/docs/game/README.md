@@ -76,6 +76,8 @@ The contracts are in ARCHITECTURE §7 and §8.4. Related docs: [API_NOTES.md](AP
   (the shape pill appears);
 - EVADE: tap or hold;
 - element chips: tap to select. Tap the active chip again, or long-press and slide, to open the sub-element ring;
+  or touch any chip and flick toward the petal column: the ring opens on the slide and the petal under the finger
+  (or nearest its height) is chosen on lift - element + sub-element in one stroke (`TouchLayout::RingAim`);
 - target and pause buttons.
 
 Sizes are in millimetres (`ffg::PxPerMm` from the physical screen density), inside the safe area. Settings cover

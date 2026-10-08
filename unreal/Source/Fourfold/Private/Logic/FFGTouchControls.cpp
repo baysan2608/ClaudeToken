@@ -410,11 +410,18 @@ void TouchControls::SelectSub(int s) {
 
 void TouchControls::ChipDrag(Vec2 pos) {
 	if (ring_mode_ == RingMode::Slide) {
-		ring_hover_ = layout.RingHit(pos);
+		ring_hover_ = layout.RingAim(chip_el_, pos);
 		return;
 	}
 	const int b = TI(TouchId::Elem0) + std::max(chip_el_, 0);
 	if (pos.distance_to(layout.centers[b]) > layout.radii[b] * 1.6f) chip_moved_ = true;
+	// sliding off the chip toward the petal column opens the ring at once (no long-press): chip + flick picks element
+	// and sub-element in one stroke
+	const int aim = chip_moved_ && !TechLive() ? layout.RingAim(chip_el_, pos) : -1;
+	if (aim >= 0) {
+		OpenRing(RingMode::Slide);
+		ring_hover_ = aim;
+	}
 }
 
 void TouchControls::ChipRelease(bool cancelled) {

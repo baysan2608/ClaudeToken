@@ -88,3 +88,8 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   the centre charge bar is only the fallback when the player's ring is off screen (touch keeps its button ring).
   Seen: other HUD texts ("You're down", body labels) can still sit under a callout; FX issues sent to `fx` via
   docs/game/REQUESTS.md. Next in D: the element quarter-wheel with flick switching.
+- 2026-10-08 - Touch: fixed a crash on the first touch-overlay paint (a glyph stroke closed by adding an element of the
+  array to itself; UE 5.8 asserts). `-FFTouchUi` shows the touch overlay in Mac captures. D, element switching: a chip
+  plus a flick toward the petal column picks element and sub-element in one stroke without the long-press (logic test
+  `touch_chip_flick_picks_sub_without_long_press`). The chip arc already sits as a quarter-wheel around the button
+  cluster, so no separate wheel was added; to check on a phone: flick distance (1.6 chip radii) and direction slack.

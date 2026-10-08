@@ -1,6 +1,8 @@
 // Fourfold game logic island - touch HUD geometry (see FFGTouchLayout.h).
 #include "FFGTouchLayout.h"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 
 namespace ffg {
@@ -140,6 +142,20 @@ int TouchLayout::RingHit(Vec2 pos) const {
 	for (int i = 0; i < 4; ++i)
 		if (rects[static_cast<size_t>(i)].Grow(slack).Has(pos)) return i;
 	return -1;
+}
+
+int TouchLayout::RingAim(int element, Vec2 pos) const {
+	const int hit = RingHit(pos);
+	if (hit >= 0) return hit;
+	const int b = TI(TouchId::Elem0) + std::max(0, std::min(element, 3));
+	const Vec2 d = pos - centers[b];
+	const float inward = left_handed ? d.x : -d.x;   // toward the petal column
+	if (inward < radii[b] * 1.6f || inward < std::abs(d.y) * 0.7f) return -1;
+	const std::array<Rect, 4> rects = RingRects();
+	int best = 0;
+	for (int i = 1; i < 4; ++i)
+		if (std::abs(rects[static_cast<size_t>(i)].Center().y - pos.y) < std::abs(rects[static_cast<size_t>(best)].Center().y - pos.y)) best = i;
+	return best;
 }
 
 PetalAnchor TouchLayout::AttackPetalAnchor(ff::Gesture which) const {
