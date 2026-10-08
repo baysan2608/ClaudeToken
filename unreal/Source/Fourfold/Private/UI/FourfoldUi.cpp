@@ -132,7 +132,8 @@ namespace FFUi
 	{
 		if (P.Num() > 0)
 		{
-			P.Add(P[0]);
+			const FVector2f First = P[0];   // a copy: adding an element of the array to itself may reallocate under it
+			P.Add(First);
 		}
 		return P;
 	}
@@ -165,7 +166,8 @@ namespace FFUi
 		}
 		if (bClosed && Cur.Num() > 0)
 		{
-			Cur.Add(Cur[0]);
+			const FVector2f First = Cur[0];
+			Cur.Add(First);
 		}
 		return Cur;
 	}

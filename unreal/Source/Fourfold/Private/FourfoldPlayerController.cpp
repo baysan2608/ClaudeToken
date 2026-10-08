@@ -742,7 +742,9 @@ void AFourfoldPlayerController::UpdateInputRouting()
 	bGameplayInput = bWant;
 
 	const UFourfoldSettingsSubsystem* SettingsSys = UFourfoldSettingsSubsystem::Get(this);
-	const int32 TouchMode = SettingsSys ? SettingsSys->GetSettings().TouchUiMode : 0;
+	// -FFTouchUi (dev captures on the Mac): the touch overlay as on a phone, without touching the saved settings
+	static const bool bForceTouch = FParse::Param(FCommandLine::Get(), TEXT("FFTouchUi"));
+	const int32 TouchMode = bForceTouch ? 1 : SettingsSys ? SettingsSys->GetSettings().TouchUiMode : 0;
 	SFourfoldTouchOverlay& Touch = Impl->Ui->GetTouch().Get();
 	Impl->bTouchUi = TouchMode == 1 || (TouchMode == 0 && (kMobile || Touch.SawTouch()));
 	Touch.SetActive(bGameplayInput && Impl->bTouchUi);
