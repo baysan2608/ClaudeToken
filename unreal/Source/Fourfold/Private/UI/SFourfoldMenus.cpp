@@ -590,9 +590,9 @@ void SFourfoldMenus::BuildPause(FFFPageBuilder& B)
 void SFourfoldMenus::BuildWatch(FFFPageBuilder& B)
 {
 	TSharedRef<SHorizontalBox> Row = B.Row();
-	Row->AddSlot().FillWidth(2.0f).VAlign(VAlign_Center).Padding(FMargin(FFUi::Mm(1.0f), 0.0f))
+	Row->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(FMargin(FFUi::Mm(1.0f), 0.0f))
 	[
-		SNew(STextBlock).Text(T(TEXT("Watching: two AI fighters duel"))).Font(FFUi::Font(FFUi::Mm(2.8f), true)).ColorAndOpacity(FSlateColor(FFUi::Ink))
+		SNew(STextBlock).Text(T(TEXT("Watching: AI vs AI"))).Font(FFUi::Font(FFUi::Mm(2.8f), true)).ColorAndOpacity(FSlateColor(FFUi::Ink))
 	];
 	B.RowButton(Row, T(TEXT("Back")), FSimpleDelegate::CreateLambda([this]() {
 		if (Host.QuitToTitle)

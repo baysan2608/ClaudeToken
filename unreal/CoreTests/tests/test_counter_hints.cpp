@@ -24,6 +24,11 @@ FF_TEST(test_counter_hints, test_labels) {
 	check(CounterHints::label_for("water_freeze", "") == "Freeze", "kit outcomes drop the element prefix");
 	check(CounterHints::label_for("earth_melt_in", "") == "Melt in", "underscores become spaces");
 	check(CounterHints::label_for("pass", "") == "No effect", "pass reads as No effect");
+	check(CounterHints::threat_label("stone_heavy") == "Heavy stone", "weight reads first");
+	check(CounterHints::threat_label("wall_stone") == "Stone wall", "form prefixes read last");
+	check(CounterHints::threat_label("water_jet") == "Water jet", "plain classes keep their order");
+	check(CounterHints::threat_label("fireball") == "Fireball", "single words are capitalised");
+	check(CounterHints::threat_label("") == "", "empty stays empty");
 }
 
 FF_TEST(test_counter_hints, test_stone_incoming_per_element) {

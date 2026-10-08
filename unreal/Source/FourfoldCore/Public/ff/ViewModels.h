@@ -31,6 +31,8 @@ struct CounterHintView {
 // The counter rule's outcome as a short verb for HUD text ("reflect" -> "Send back", "transform" + to "lava" -> "To lava",
 // kit outcomes "water_freeze" -> "Freeze"); "" for a pass (nothing happened).
 FOURFOLDCORE_API std::string CounterOutcomeLabel(const std::string& outcome, const std::string& to);
+// A threat class as HUD text: "stone_heavy" -> "Heavy stone", "wall_stone" -> "Stone wall", "water_jet" -> "Water jet".
+FOURFOLDCORE_API std::string ThreatLabel(const std::string& cls);
 
 struct HudModel {
 	bool valid = false;               // false when there is no player actor

@@ -30,6 +30,8 @@ struct Result {
 Result query(CombatWorld& w, ActorState& me);
 // "reflect" -> "Send back", "water_freeze" -> "Freeze", "transform" + to "lava" -> "To lava", ...
 std::string label_for(const std::string& outcome, const std::string& to);
+// "stone_heavy" -> "Heavy stone", "wall_stone" -> "Stone wall", "water_jet" -> "Water jet"
+std::string threat_label(const std::string& cls);
 
 }  // namespace CounterHints
 }  // namespace ff

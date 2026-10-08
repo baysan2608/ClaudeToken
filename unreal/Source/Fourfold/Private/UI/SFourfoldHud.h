@@ -84,16 +84,19 @@ private:
 		bool bPlayer = false;
 		bool bCharge = false;
 	};
-	/** Outcome callout at an impact ("Send back", "Melt", "Overwhelmed"), rising and fading. */
+	/** Outcome callout at an impact ("Send back", "Melt", "Overwhelmed"), rising and fading. Repeats of the same outcome
+	 *  nearby merge into one ("BLOCK x3"); callouts that would overlap on screen stack upward (Lift, eased at paint). */
 	struct FCallout
 	{
 		ff::Vec3 World;
 		FString Text;
 		FLinearColor Col;
 		float T = 0.0f;
+		int32 Count = 1;
 		bool bPerfect = false;
 		bool bVisible = false;
 		FVector2D Px = FVector2D::ZeroVector;
+		mutable float Lift = -1.0f;   // local px above the anchor; < 0 until first painted
 	};
 	struct FPaintCtx;
 	void DrawRings(const FPaintCtx& H) const;

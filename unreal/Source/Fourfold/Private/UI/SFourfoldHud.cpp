@@ -17,6 +17,7 @@ namespace
 	constexpr float kToastMm = 3.0f;
 	constexpr float kBarMm = 0.6f;
 	constexpr float kHotRockC = 300.0f;
+	constexpr float kCalloutLife = 1.25f;   // s an outcome callout stays up
 
 	FString HS(const std::string& Str) { return FString(UTF8_TO_TCHAR(Str.c_str())); }
 	FString HS(std::string_view Sv) { return FString(UTF8_TO_TCHAR(std::string(Sv).c_str())); }
@@ -214,7 +215,7 @@ void SFourfoldHud::UpdateFrame(const ff::HudModel& InHud, const ff::Snapshot& Sn
 	{
 		C.T += Dt;
 	}
-	Callouts.RemoveAll([](const FCallout& C) { return C.T > 1.25f; });
+	Callouts.RemoveAll([](const FCallout& C) { return C.T > kCalloutLife; });
 	if (In.Events)
 	{
 		for (const ff::Event& E : *In.Events)
@@ -248,15 +249,24 @@ void SFourfoldHud::UpdateFrame(const ff::HudModel& InHud, const ff::Snapshot& Sn
 			{
 				C.Col = C4(0.85f, 0.9f, 1.0f, 1);
 			}
-			const bool bDup = Callouts.ContainsByPredicate([&](const FCallout& O) {
-				return O.T < 0.25f && O.Text == C.Text && (O.World - C.World).length() < 1.2f;
+			// the same outcome again close by (a volley, a stream) counts up on the live callout instead of stacking a copy
+			FCallout* Same = Callouts.FindByPredicate([&](const FCallout& O) {
+				return O.T < 0.9f && O.Text == C.Text && (O.World - C.World).length() < 2.5f;
 			});
-			if (!bDup)
+			if (Same)
+			{
+				++Same->Count;
+				Same->T = FMath::Min(Same->T, 0.05f);   // pops again
+				Same->World = C.World;
+				Same->Col = C.Col;
+				Same->bPerfect |= C.bPerfect;
+			}
+			else
 			{
 				Callouts.Add(C);
 			}
 		}
-		while (Callouts.Num() > 5)
+		while (Callouts.Num() > 4)
 		{
 			Callouts.RemoveAt(0);
 		}
@@ -721,7 +731,7 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 	const float Hh = FsKey + FsTxt + 1.6f * Pad;
 	double X = H.SrCenter().X - Total * 0.5;
 	const double Y = H.SrEnd().Y - 112.0 * U - Hh;
-	H.TextBase(FString::Printf(TEXT("%s  %.1f s"), *HS(Hud.threat_cls).ToUpper(), Hud.threat_tti), H.SrCenter().X - Total * 0.5, Y - 4.0 * U,
+	H.TextBase(FString::Printf(TEXT("%s  %.1f s"), *HS(ff::ThreatLabel(Hud.threat_cls)).ToUpper(), Hud.threat_tti), H.SrCenter().X - Total * 0.5, Y - 4.0 * U,
 	           FsKey, FLinearColor(1, 1, 1, 0.7f), 0, Total, 0.5f);
 	for (const FPill& Pl : Pills)
 	{
@@ -755,13 +765,13 @@ void SFourfoldHud::DrawRings(const FPaintCtx& H) const
 		const float W = FMath::Max(2.0f * U, 0.35f * H.FloorPpm);
 		const FLinearColor HealthCol = Rg.bPlayer ? C4(0.95f, 0.93f, 0.88f, 1) : C4(0.98f, 0.55f, 0.45f, 1);
 		// dim full circles under the gauges, then the gauges
-		Arc(Rg.Ring[0], 1.0f, W * 2.2f, FLinearColor(0, 0, 0, 0.28f));
+		Arc(Rg.Ring[0], 1.0f, W * 2.2f, FLinearColor(0, 0, 0, 0.4f));
 		Arc(Rg.Ring[0], Rg.Frac[0], W * 1.4f, WithA(HealthCol, 0.9f));
-		Arc(Rg.Ring[1], 1.0f, W * 1.6f, FLinearColor(0, 0, 0, 0.22f));
+		Arc(Rg.Ring[1], 1.0f, W * 1.6f, FLinearColor(0, 0, 0, 0.32f));
 		Arc(Rg.Ring[1], Rg.Frac[1], W, C4(0.72f, 0.82f, 0.95f, 0.85f));
 		if (Rg.bPlayer)
 		{
-			Arc(Rg.Ring[2], 1.0f, W * 1.4f, FLinearColor(0, 0, 0, 0.2f));
+			Arc(Rg.Ring[2], 1.0f, W * 1.4f, FLinearColor(0, 0, 0, 0.3f));
 			Arc(Rg.Ring[2], Rg.Frac[2], W * 0.8f, C4(0.96f, 0.82f, 0.45f, 0.85f));
 		}
 		if (Rg.bCharge)
@@ -779,7 +789,9 @@ void SFourfoldHud::DrawRings(const FPaintCtx& H) const
 
 void SFourfoldHud::DrawCallouts(const FPaintCtx& H) const
 {
-	const float U = H.U;
+	// Oldest first: each callout keeps clear of the ones already placed by lifting itself above them, so a burst of
+	// impacts reads as a short stack instead of overprinted words.
+	TArray<FBox2D> Placed;
 	for (const FCallout& C : Callouts)
 	{
 		if (!C.bVisible)
@@ -787,12 +799,34 @@ void SFourfoldHud::DrawCallouts(const FPaintCtx& H) const
 			continue;
 		}
 		const float Pop = 1.0f + 0.45f * (1.0f - FMath::Clamp(C.T / 0.12f, 0.0f, 1.0f));
-		const float A = 1.0f - FMath::Clamp((C.T - 0.85f) / 0.4f, 0.0f, 1.0f);
-		const float Px = H.Fs(C.bPerfect ? 30.0f : 24.0f, kLineMm * 1.6f) * Pop;
+		const float A = 1.0f - FMath::Clamp((C.T - (kCalloutLife - 0.4f)) / 0.4f, 0.0f, 1.0f);
+		const float Base = H.Fs(C.bPerfect ? 30.0f : 24.0f, kLineMm * 1.6f);
+		FString Txt = C.bPerfect ? TEXT("PERFECT  ") + C.Text.ToUpper() : C.Text.ToUpper();
+		if (C.Count > 1)
+		{
+			Txt += FString::Printf(TEXT("  x%d"), C.Count);
+		}
+		// layout at the settled size so the pop does not shove its neighbours
+		const FVector2D Sz = FFUi::Measure(Txt, FFUi::Font(Base, true));
+		const FVector2D Anchor = C.Px * H.PixelToLocal;
+		float Want = 0.0f;
+		for (int32 Guard = 0; Guard < 8; ++Guard)
+		{
+			const FVector2D Ctr = Anchor - FVector2D(0.0, Want);
+			const FBox2D Box(Ctr - Sz * 0.5, Ctr + Sz * 0.5);
+			const FBox2D* Hit = Placed.FindByPredicate([&](const FBox2D& B) { return B.Intersect(Box); });
+			if (!Hit)
+			{
+				break;
+			}
+			Want = float(Anchor.Y - Hit->Min.Y + Sz.Y * 0.5 + 2.0);
+		}
+		C.Lift = C.Lift < 0.0f || Input.bReducedMotion ? Want : FMath::FInterpTo(C.Lift, Want, Input.RealDt, 16.0f);
+		const FVector2D Ctr = Anchor - FVector2D(0.0, C.Lift);
+		Placed.Add(FBox2D(Anchor - FVector2D(0.0, Want) - Sz * 0.5, Anchor - FVector2D(0.0, Want) + Sz * 0.5));
+		const float Px = Base * Pop;
 		const FSlateFontInfo F = FFUi::Font(Px, true, FMath::Max(1, FMath::RoundToInt(Px / 8.0f)), FLinearColor(0, 0, 0, 0.75f * A));
-		const FString Txt = C.bPerfect ? TEXT("PERFECT  ") + C.Text.ToUpper() : C.Text.ToUpper();
-		H.P.TextCentered(Txt, C.Px * H.PixelToLocal, F, WithA(C.Col, A));
-		(void)U;
+		H.P.TextCentered(Txt, Ctr, F, WithA(C.Col, A));
 	}
 }
 

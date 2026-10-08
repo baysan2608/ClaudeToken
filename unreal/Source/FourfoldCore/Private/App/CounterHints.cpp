@@ -10,6 +10,7 @@
 #include "Sim/Interactions.h"
 #include "Util/GdUtil.h"
 
+#include <algorithm>
 #include <cctype>
 
 namespace ff {
@@ -61,6 +62,39 @@ std::string label_for(const std::string& outcome, const std::string& to) {
 	for (char& ch : s)
 		if (ch == '_') ch = ' ';
 	if (!s.empty()) s[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(s[0])));
+	return s;
+}
+
+std::string threat_label(const std::string& cls) {
+	std::vector<std::string> parts;
+	size_t at = 0;
+	while (at <= cls.size()) {
+		const size_t us = cls.find('_', at);
+		const size_t end = us == std::string::npos ? cls.size() : us;
+		if (end > at) parts.push_back(cls.substr(at, end - at));
+		at = end + 1;
+	}
+	if (parts.empty()) return std::string();
+	// form prefixes name the shape of a material ("wall_stone" -> "stone wall"); weight suffixes read first ("heavy stone")
+	static const char* const kForms[] = {"wall", "wave", "screen", "plate", "guard", "ward", "shield", "aura", "grip"};
+	static const char* const kWeights[] = {"heavy", "light", "ranged"};
+	if (parts.size() > 1) {
+		for (const char* f : kForms) {
+			if (parts.front() == f) {
+				std::rotate(parts.begin(), parts.begin() + 1, parts.end());
+				break;
+			}
+		}
+		for (const char* m : kWeights) {
+			if (parts.back() == m) {
+				std::rotate(parts.rbegin(), parts.rbegin() + 1, parts.rend());
+				break;
+			}
+		}
+	}
+	std::string s;
+	for (const std::string& p : parts) s += (s.empty() ? "" : " ") + p;
+	s[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(s[0])));
 	return s;
 }
 
@@ -133,5 +167,7 @@ Result query(CombatWorld& w, ActorState& me) {
 std::string CounterOutcomeLabel(const std::string& outcome, const std::string& to) {
 	return outcome == "pass" || outcome.empty() ? std::string() : CounterHints::label_for(outcome, to);
 }
+
+std::string ThreatLabel(const std::string& cls) { return CounterHints::threat_label(cls); }
 
 }  // namespace ff
