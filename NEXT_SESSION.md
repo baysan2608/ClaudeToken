@@ -55,9 +55,9 @@ HOW TO BUILD / RUN / TEST
   U/N/H thrust/ground/sweep, Esc pause. Mobile preview: Settings > Preview Platform > iOS.
 - iPhone/iPad: unreal/docs/MAC_SETUP.md section 6 (bundle id, team id, Platforms > iOS > Launch).
 - Engine-free gameplay core tests (must stay green): `bash unreal/CoreTests/run_all.sh`
-  (534 tests incl. the 13,300-row golden counter matrix that must match the Godot reference;
+  (535 tests incl. the 13,300-row golden counter matrix that must match the Godot reference;
   export PATH="$HOME/Library/Python/3.9/bin:$PATH"; FF_COMPILERS=clang++ bash unreal/CoreTests/run_all.sh).
-- Game-module logic tests (61): cmake -S unreal/Source/Fourfold/Private/Logic/tests -B <dir> -G Ninja
+- Game-module logic tests (62): cmake -S unreal/Source/Fourfold/Private/Logic/tests -B <dir> -G Ninja
   -DCMAKE_CXX_COMPILER=clang++ && cmake --build <dir> && <dir>/ffg_logic_tests.
 - Play the game (owner): UnrealEditor.app/Contents/MacOS/UnrealEditor "$PWD/unreal/Fourfold.uproject"
   /Game/Fourfold/Maps/L_Lab -game -windowed -ResX=1600 -ResY=900 -FFExec="2:t.MaxFPS 60|2:r.DynamicRes.FrameTimeBudget 16.67"
@@ -82,7 +82,7 @@ LAYOUT (unreal/)
 - docs/<stream>/: README, API_NOTES, REQUESTS, PROGRESS per stream.
 
 CURRENT STATE (end of 2026-10-07, second Mac session) - details: unreal/docs/QUALITY_PLAN.md
-- Builds green (UE 5.8.3 + Xcode 27 beta); CoreTests 534/534; logic tests 61/61; setup_report clean.
+- Builds green (UE 5.8.3 + Xcode 27 beta); CoreTests 535/535; logic tests 62/62; setup_report clean.
 - Perf (Mac, duel, 1600x900): the old "75 % TSR" never applied (rendered at 100 %, ~18 ms). Now manual 75 % default +
   dynamic resolution 50..100 % (budget 1000 / frame-rate cap): 60 fps at ~72-81 %, 0 dropped frames. Persistent
   Niagara fire / steam adds ~1.7 ms when used. Apple per-pass GPU timings overlap: only A/B toggles give real costs.
@@ -93,9 +93,13 @@ CURRENT STATE (end of 2026-10-07, second Mac session) - details: unreal/docs/QUA
   stops (ffg::LocoTransition), turn-in-place with planted feet (ffg::TurnInPlace), physical hit flinch, ragdoll
   knockdowns, get-ups aligned to the lying body.
 - Controls + HUD redesign (owner: counters + world HUD first, outcome colours always on, touch forms from buttons):
-  part A context counters DONE and seen in game (strip above the charge bar + touch GUARD petals, from the sim's own
-  counter rule via App/CounterHints). Part D first pass COMMITTED BUT NOT YET SEEN IN GAME: ground arcs at both
-  fighters' feet (corner bars step back), rival charge rim, outcome callouts, "GUARD NOW" cue.
+  A, D and the chain part of C DONE and checked in game on 2026-10-08 (details + progress: unreal/docs/game/
+  CONTROLS_HUD_PLAN.md): counter strip with the real keys per device + best attack answer, perfect-window "NOW",
+  "CHARGING" for held charges; ground arcs, tiered charge rims, merged / stacked outcome callouts; chain / weave prompts;
+  desktop element quarter-wheel; touch: chip + flick picks element + sub in one stroke, lit petals. Fixed a touch-UI
+  crash (UE 5.8 self-add assert). B (form gestures) waits for the owner: unreal/docs/game/FORMS_PROPOSAL.md.
+  Dev: -FFTouchUi shows the touch overlay in Mac captures. Seen: the Lab "terrace" ledge (sim.json arena_lab, z 10..14)
+  fills the bottom of the screen from the spawn camera.
 - VFX (FX stream, own paths: unreal/Source/FourfoldFX/**, Shaders/**, Content/Python/fourfold/fx/**,
   Data/fx_config.json, docs/fx/**, Tools/vfx/**, QUALITY_PLAN row 6): Niagara cues + pre-warm, persistent fire /
   steam / trails, Chaos-style physics debris. Its handoff: unreal/docs/fx/PROGRESS.md "Handoff 2026-10-07".
@@ -109,13 +113,9 @@ CURRENT STATE (end of 2026-10-07, second Mac session) - details: unreal/docs/QUA
   AAA level; a well-known animated elemental martial-arts series is a feel reference only (100 % original IP).
 
 WHAT TO DO (priority order)
-1. FIRST: check HUD part D in game (bash unreal/Tools/mac/shot.sh logs/hudD 16,18,20,22 -scenario=lab -FFShotUI
-   -FFLabSpawn=stone_45@5,fireball@8 and a duel -scenario=spar -autoplay=duel): arcs readable and not clipping,
-   callouts at impacts, rival rim while it charges; tune sizes / colours; then let the owner play it.
-2. Finish the HUD plan (unreal/docs/game/CONTROLS_HUD_PLAN.md): A leftovers (desktop radial near the fighter, attack
-   slots that counter), D leftovers (element quarter-wheel with flick switching, charge glyphs at the hands instead of
-   the centre bar), then part B (form gestures from the buttons: circle / lift-then-push / pull / zig-zag variants,
-   needs move design with the owner), then C (environment + chain prompts).
+1. HUD: let the owner play it (desktop + touch: -FFTouchUi); get answers to unreal/docs/game/FORMS_PROPOSAL.md, then
+   part B (form gestures: Godot kit slots + moves first, then the Unreal recogniser) and C's world glyphs.
+2. (was: HUD part D check / HUD plan A + D + C chains - done 2026-10-08.)
 3. Locomotion: pivots, walk / strafe starts / stops in 8 directions, element stances on MetaHuman proportions; check
    foot planting up close (-scenario=lab -FFMove=...).
 4. Outfit polish: pale seam at the neck base; per-element outfit variants.
