@@ -115,3 +115,5 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   rival holding a charge (e.g. lightning) is a threat with no known release time - the strip now reads "CHARGING"
   instead of a fake 0.1 s countdown and "NOW" only lights when the impact time is known (`HudModel::threat_charging`).
   Still open in C: world glyphs on usable sources (pool, loose stone, fire field, wall) - needs B's pull / draw.
+- 2026-10-08 - B: draft for the owner in `FORMS_PROPOSAL.md` (four forms x 16 sub-elements, how they would be built
+  through the Godot kits, a smaller "circle + pull" first slice, four questions). Not started until the owner answers.
