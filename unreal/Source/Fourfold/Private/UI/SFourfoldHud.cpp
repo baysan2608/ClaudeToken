@@ -173,7 +173,7 @@ void SFourfoldHud::UpdateFrame(const ff::HudModel& InHud, const ff::Snapshot& Sn
 			FFootRing Rg;
 			Rg.bPlayer = bP;
 			Rg.Element = A.element;
-			Rg.bCharge = !bP && A.charge.active && A.charge.max_tier > 0;
+			Rg.bCharge = A.charge.active && A.charge.max_tier > 0;
 			const ff::Vec3 C = A.pos + ff::Vec3(0.0f, 0.04f, 0.0f);
 			bool bOk = true;
 			for (int32 k = 0; k < 4 && bOk; ++k)
@@ -660,6 +660,19 @@ void SFourfoldHud::DrawChargeBar(const FPaintCtx& H) const
 	}
 	const float U = H.U;
 	const int32 Tier = FMath::Clamp(Cv.tier, 0, 3);
+	const FString Name = Hud.charge_move_name.empty() ? FString() : HS(Hud.charge_move_name);
+	// World HUD: with the player's ground rim on screen the tiers live there; only the move name + tier sit under it.
+	const FFootRing* Own = Rings.FindByPredicate([](const FFootRing& Rg) { return Rg.bPlayer && Rg.bCharge && Rg.Ring[3].Num() > 2; });
+	if (Own)
+	{
+		const TArray<FVector2D>& R = Own->Ring[3];
+		const FVector2D Front = R[(R.Num() - 1) / 2] * H.PixelToLocal;
+		const float Fs = H.Fs(13.0f, kTextMm * 1.1f);
+		const FLinearColor Col = Tier > 0 ? FMath::Lerp(FFUi::ElementColor(ChargeElement), FLinearColor::White, 0.35f) : FLinearColor(1, 1, 1, 0.9f);
+		const FString Txt = Tier > 0 ? FString::Printf(TEXT("%s  T%d"), *Name.ToUpper(), Tier) : Name.ToUpper();
+		H.TextBase(Txt, Front.X - 200.0 * U, Front.Y + Fs * 1.45f, Fs, Col, 0, 400.0 * U, 0.7f);
+		return;
+	}
 	const float W = FMath::Max(150.0f * U, 28.0f * H.FloorPpm);
 	const float Hh = FMath::Max(6.0f * U, 1.2f * H.FloorPpm);
 	const double X = H.SrCenter().X - W * 0.5;
@@ -678,7 +691,6 @@ void SFourfoldHud::DrawChargeBar(const FPaintCtx& H) const
 		}
 		H.P.RoundRect(Pos, FVector2D(Seg, Hh), FLinearColor::Transparent, FLinearColor(1, 1, 1, 0.35f), 1.0f, Hh * 0.3f);
 	}
-	const FString Name = Hud.charge_move_name.empty() ? FString() : HS(Hud.charge_move_name);
 	H.TextBase(FString::Printf(TEXT("%s  T%d"), *Name, Tier), X, Y - 4.0 * U, H.Fs(12.0f, kTextMm), FLinearColor(1, 1, 1, 0.95f), 0, W, 0.6f);
 }
 
@@ -776,13 +788,24 @@ void SFourfoldHud::DrawRings(const FPaintCtx& H) const
 		}
 		if (Rg.bCharge)
 		{
-			// rival intent: one lit segment per charge tier reached, the next one filling, pulsing faster with the tier
+			// charge (the rival's intent, the player's own wind-up): the rim fills from the camera side, one step per tier,
+			// with dark notches at the tier steps, pulsing faster per tier reached
 			const FLinearColor Ec = FFUi::ElementColor(Rg.Element);
 			const int32 Mx = FMath::Clamp(Rg.ChargeMax, 1, 3);
 			const float Pulse = 0.7f + 0.3f * FMath::Sin(float(FPlatformTime::Seconds()) * (6.0f + 4.0f * float(Rg.ChargeTier)));
 			const float Lit = FMath::Clamp((float(Rg.ChargeTier) + Rg.Frac[3]) / float(Mx), 0.0f, 1.0f);
+			Arc(Rg.Ring[3], 1.0f, W * 2.6f, FLinearColor(0, 0, 0, 0.3f));
 			Arc(Rg.Ring[3], 1.0f, W * 1.8f, WithA(Ec, 0.18f));
 			Arc(Rg.Ring[3], Lit, W * 1.8f, WithA(Ec, 0.95f * Pulse));
+			const int32 N = Rg.Ring[3].Num() - 1;
+			for (int32 K = 1; K < Mx && N > 2; ++K)
+			{
+				const int32 Half = FMath::RoundToInt(float(K) / float(Mx) * float(N) * 0.5f);
+				for (const int32 I : {N / 2 - Half, N / 2 + Half})
+				{
+					H.P.Circle(Rg.Ring[3][FMath::Clamp(I, 0, N)] * H.PixelToLocal, W * 1.3f, FLinearColor(0, 0, 0, 0.75f));
+				}
+			}
 		}
 	}
 }

@@ -80,3 +80,11 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   from the player's side, PERFECT prefix). Guard pill reads "GUARD NOW" in the last 0.2 s before impact.
   Next in D: the element quarter-wheel with flick switching; charge glyphs at the hands replacing the centre bar.
 
+- 2026-10-08 - D checked in game (Lab threats + autoplay duel captures, `logs/hudD*`): arcs readable at the feet,
+  counter strip names the threat in words ("HEAVY STONE 0.7 s", `ff::ThreatLabel`), rival rim visible. Fixes: callouts
+  of the same outcome nearby merge ("TO SNOW x12", "PERFECT BLOCK x3"), the rest stack upward instead of overprinting
+  (max 4); arc underlays darker for light floors. Charge moved into the world: the player's own wind-up is the same
+  rim as the rival's (fills from the camera side, dark notches at the tier steps) with the move name + tier under it;
+  the centre charge bar is only the fallback when the player's ring is off screen (touch keeps its button ring).
+  Seen: other HUD texts ("You're down", body labels) can still sit under a callout; FX issues sent to `fx` via
+  docs/game/REQUESTS.md. Next in D: the element quarter-wheel with flick switching.
