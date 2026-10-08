@@ -90,6 +90,9 @@ On the first editor start a message about a missing map (`L_Lab`) is expected �
    `Config/DefaultEngine.ini` (two values) before opening the editor. If you change them after generating the Xcode
    project, regenerate it (step 3).
 3. Toolbar **Platforms ▸ iOS ▸ <your device> ▸ Launch** (cooks and installs; the first cook takes a while).
+   Or from a terminal: `bash unreal/Tools/mac/ios.sh` (build + cook + install + start; `--fast` reinstalls the last
+   cook, `--check` only checks the device). The install step needs the USB cable: over Wi-Fi it fails with
+   "No device found with udid".
    Or generate the Xcode workspace (step 3), open `Fourfold (IOS).xcworkspace`, pick the *Fourfold* scheme and your
    device, **Run**.
 4. On the device, play the Lab and Free Spar (Hard) for 10 minutes each. Open the console with a **four-finger tap**
