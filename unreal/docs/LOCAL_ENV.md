@@ -5,7 +5,7 @@ Verified 2026-10-07. Use these paths in scripts and docs.
 | Tool | Path | Version |
 |---|---|---|
 | Mac | Apple M4 Pro, 24 GB | macOS 27.0.1 |
-| Unreal Engine | `/Users/Shared/Epic Games/UE_5.8` | 5.8.3 (CL 58210709); iOS + VisionOS platforms installed |
+| Unreal Engine | `/Users/Shared/Epic Games/UE_5.8` | 5.8.3 (CL 58210709); VisionOS installed; iOS target platform NOT installed as of 2026-10-08 (Engine/Binaries/IOS missing: enable iOS in Launcher ▸ Library ▸ 5.8 ▸ Options) |
 | Editor | `/Users/Shared/Epic Games/UE_5.8/Engine/Binaries/Mac/UnrealEditor.app` | |
 | Build script | `/Users/Shared/Epic Games/UE_5.8/Engine/Build/BatchFiles/Mac/Build.sh` | |
 | Xcode | `~/Downloads/Xcode-beta.app` (selected by `xcode-select`) | Xcode 27.0 beta (27A5218g), Mac SDK 27.0, Apple clang 21.0.0. UE 5.8 `Apple_SDK.json` accepts Xcode 15.2 – 27.9, so this is within range. |
