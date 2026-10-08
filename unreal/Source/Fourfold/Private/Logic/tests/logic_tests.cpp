@@ -1758,6 +1758,9 @@ FFT_TEST(ui_scale_and_insets) {
 	h.has_threat = true;
 	h.threat_tti = h.perfect_window * 0.9f;
 	FFT_CHECK(ffg::TouchContextFromHud(h).guard_now);
+	h.threat_charging = true;   // a held charge: release time unknown
+	FFT_CHECK(!ffg::TouchContextFromHud(h).guard_now);
+	h.threat_charging = false;
 	h.threat_tti = h.perfect_window * 1.5f;
 	FFT_CHECK(!ffg::TouchContextFromHud(h).guard_now);
 	// the attack slot that answers the threat reaches the ATTACK petals
@@ -1769,6 +1772,12 @@ FFT_TEST(ui_scale_and_insets) {
 	h.counters.push_back(v);
 	const ffg::TouchContext ca = ffg::TouchContextFromHud(h);
 	FFT_CHECK(ca.counter_attack_slot == "thrust" && ca.counter_attack == "Deflect T2" && ca.counter_band_attack == 2);
+	FFT_CHECK(!ca.chain_up && !ca.chain_down && !ca.chain_side && !ca.chain_tap);
+	// an open chain window lights the matching ATTACK inputs
+	h.chain.open = true;
+	h.chain.slots = {"thrust", "sweep"};
+	const ffg::TouchContext cc = ffg::TouchContextFromHud(h);
+	FFT_CHECK(cc.chain_up && !cc.chain_down && cc.chain_side && !cc.chain_tap);
 }
 
 // =================================================================================== real data files (when present)

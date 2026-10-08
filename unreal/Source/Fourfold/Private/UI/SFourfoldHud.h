@@ -105,6 +105,7 @@ private:
 	float DrawStatuses(const FPaintCtx& H, const std::vector<ff::StatusView>& Statuses, int32 ActorId, FVector2D Origin, bool bCentred) const;
 	void DrawChargeBar(const FPaintCtx& H) const;
 	void DrawCounters(const FPaintCtx& H) const;
+	void DrawChain(const FPaintCtx& H) const;
 	void DrawMarker(const FPaintCtx& H) const;
 
 	ff::HudModel Hud;

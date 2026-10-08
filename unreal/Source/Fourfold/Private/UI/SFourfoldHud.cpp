@@ -24,6 +24,23 @@ namespace
 	FLinearColor C4(float R, float G, float B, float A) { return FFUi::SRGB(R, G, B, FMath::Clamp(A, 0.0f, 1.0f)); }
 	FLinearColor WithA(const FLinearColor& C, float A) { return FLinearColor(C.R, C.G, C.B, FMath::Clamp(A, 0.0f, 1.0f)); }
 
+	/** The input that triggers a slot on the device in use (desktop chords: K + J push, K + N sink). */
+	FString SlotKey(const FString& Device, const std::string& Slot)
+	{
+		static const char* const kSlots[8] = {"guard", "push", "sink", "tech", "thrust", "ground", "sweep", "strike"};
+		static const TCHAR* const kTouchKeys[8] = {TEXT("GUARD"), TEXT("GUARD ↑"), TEXT("GUARD ↓"), TEXT("TECH"),
+		                                           TEXT("ATTACK ↑"), TEXT("ATTACK ↓"), TEXT("ATTACK ↔"), TEXT("ATTACK")};
+		static const TCHAR* const kDeskKeys[8] = {TEXT("K"), TEXT("K + J"), TEXT("K + N"), TEXT("L"), TEXT("U"), TEXT("N"), TEXT("H"), TEXT("J")};
+		static const TCHAR* const kPadKeys[8] = {TEXT("RB"), TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT"), TEXT("Y"), TEXT("LT"), TEXT("B"), TEXT("X")};
+		int32 I = 0;
+		while (I < 7 && Slot != kSlots[I])
+		{
+			++I;
+		}
+		const TCHAR* const* Keys = Device == TEXT("gamepad") ? kPadKeys : Device == TEXT("keyboard") ? kDeskKeys : kTouchKeys;
+		return Keys[I];
+	}
+
 	struct FStatusStyle
 	{
 		const TCHAR* Code;
@@ -528,6 +545,7 @@ int32 SFourfoldHud::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 		}
 		DrawChargeBar(H);
 		DrawCounters(H);
+		DrawChain(H);
 
 		// Objective + challenge.
 		const double ObjBase = H.SrEnd().Y - 10.0 * U;
@@ -709,7 +727,7 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 	const FSlateFontInfo FTxt = FFUi::Font(FsTxt, true, FMath::Max(1, FMath::RoundToInt(FsTxt / 7.0f)), FLinearColor(0, 0, 0, 0.6f));
 	const float Pad = 8.0f * U, Gap = 6.0f * U;
 	// near impact the strip pulses (the perfect window is close)
-	const float Urgent = FMath::Clamp(1.0f - (Hud.threat_tti - 0.15f) / 0.6f, 0.0f, 1.0f);
+	const float Urgent = Hud.threat_charging ? 0.35f : FMath::Clamp(1.0f - (Hud.threat_tti - 0.15f) / 0.6f, 0.0f, 1.0f);
 	const float Pulse = 0.75f + 0.25f * FMath::Sin(float(FPlatformTime::Seconds()) * 18.0f) * Urgent;
 	struct FPill
 	{
@@ -723,20 +741,9 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 	for (const ff::CounterHintView& C : Hud.counters)
 	{
 		FPill Pl;
-		const bool bNow = C.slot == "guard" && Hud.threat_tti <= Hud.perfect_window;   // press now for a perfect guard
-		// the input that gives this answer on the device in use (desktop chords: K + J push, K + N sink)
-		static const char* const kSlots[8] = {"guard", "push", "sink", "tech", "thrust", "ground", "sweep", "strike"};
-		int32 Slot = 0;
-		while (Slot < 7 && C.slot != kSlots[Slot])
-		{
-			++Slot;
-		}
-		static const TCHAR* const kTouchKeys[8] = {TEXT("GUARD"), TEXT("GUARD ↑"), TEXT("GUARD ↓"), TEXT("TECH"),
-		                                           TEXT("ATTACK ↑"), TEXT("ATTACK ↓"), TEXT("ATTACK ↔"), TEXT("ATTACK")};
-		static const TCHAR* const kDeskKeys[8] = {TEXT("K"), TEXT("K + J"), TEXT("K + N"), TEXT("L"), TEXT("U"), TEXT("N"), TEXT("H"), TEXT("J")};
-		static const TCHAR* const kPadKeys[8] = {TEXT("RB"), TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT"), TEXT("Y"), TEXT("LT"), TEXT("B"), TEXT("X")};
-		const TCHAR* const* Keys = Input.Device == TEXT("gamepad") ? kPadKeys : Input.Device == TEXT("keyboard") ? kDeskKeys : kTouchKeys;
-		Pl.Key = Keys[Slot];
+		// press now for a perfect guard (only when the impact time is known: a held charge lands whenever released)
+		const bool bNow = C.slot == "guard" && !Hud.threat_charging && Hud.threat_tti <= Hud.perfect_window;
+		Pl.Key = SlotKey(Input.Device, C.slot);   // the input that gives this answer on the device in use
 		if (bNow)
 		{
 			Pl.Key += TEXT("  NOW");
@@ -761,7 +768,8 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 	const float Hh = FsKey + FsTxt + 1.6f * Pad;
 	double X = H.SrCenter().X - Total * 0.5;
 	const double Y = H.SrEnd().Y - 112.0 * U - Hh;
-	H.TextBase(FString::Printf(TEXT("%s  %.1f s"), *HS(ff::ThreatLabel(Hud.threat_cls)).ToUpper(), Hud.threat_tti), H.SrCenter().X - Total * 0.5, Y - 4.0 * U,
+	const FString When = Hud.threat_charging ? FString(TEXT("CHARGING")) : FString::Printf(TEXT("%.1f s"), Hud.threat_tti);
+	H.TextBase(FString::Printf(TEXT("%s  %s"), *HS(ff::ThreatLabel(Hud.threat_cls)).ToUpper(), *When), H.SrCenter().X - Total * 0.5, Y - 4.0 * U,
 	           FsKey, FLinearColor(1, 1, 1, 0.7f), 0, Total, 0.5f);
 	for (const FPill& Pl : Pills)
 	{
@@ -772,6 +780,61 @@ void SFourfoldHud::DrawCounters(const FPaintCtx& H) const
 		H.P.Text(Pl.Txt, FVector2D(X + Pad, Y + 0.7f * Pad + FsKey), FTxt, Pl.bNow ? FLinearColor::White : Pl.Col);
 		X += Pl.W + Gap;
 	}
+}
+
+void SFourfoldHud::DrawChain(const FPaintCtx& H) const
+{
+	// Chain prompt (CONTROLS_HUD_PLAN part C): inside the chain window the attacks that would chain now, with their keys,
+	// under the player's ground arcs; a bar drains as the window closes.
+	const ff::ChainView& Ch = Hud.chain;
+	if (!Ch.open || Ch.slots.empty())
+	{
+		return;
+	}
+	const float U = H.U;
+	const FLinearColor Ec = FFUi::ElementColor(Hud.element);
+	const float FsKey = H.Fs(10.0f, kTextMm * 0.8f);
+	const float FsTxt = H.Fs(13.0f, kTextMm);
+	const FSlateFontInfo FKey = FFUi::Font(FsKey, false);
+	const FSlateFontInfo FTxt = FFUi::Font(FsTxt, true, FMath::Max(1, FMath::RoundToInt(FsTxt / 7.0f)), FLinearColor(0, 0, 0, 0.6f));
+	const float Pad = 6.0f * U, Gap = 5.0f * U;
+	TArray<FString> Keys, Names;
+	TArray<float> Ws;
+	const FString Head = Ch.weave ? FString::Printf(TEXT("WEAVE %d"), Ch.n + 1) : FString::Printf(TEXT("CHAIN %d"), Ch.n + 1);
+	const float HeadW = FFUi::Measure(Head, FTxt).X + Pad;
+	float Total = HeadW;
+	for (size_t i = 0; i < Ch.slots.size(); ++i)
+	{
+		Keys.Add(SlotKey(Input.Device, Ch.slots[i]));
+		Names.Add(HS(i < Ch.moves.size() ? Ch.moves[i] : std::string()));
+		Ws.Add(FMath::Max(FFUi::Measure(Names.Last(), FTxt).X, FFUi::Measure(Keys.Last(), FKey).X) + 2.0f * Pad);
+		Total += Ws.Last() + Gap;
+	}
+	const float Hh = FsKey + FsTxt + 1.4f * Pad;
+	// under the player's arcs when they are on screen, else just above the counter strip
+	FVector2D Anchor(H.SrCenter().X, H.SrEnd().Y - 170.0 * U);
+	if (const FFootRing* Own = Rings.FindByPredicate([](const FFootRing& Rg) { return Rg.bPlayer && Rg.Ring[0].Num() > 2; }))
+	{
+		const TArray<FVector2D>& R = Own->Ring[0];
+		Anchor = R[(R.Num() - 1) / 2] * H.PixelToLocal + FVector2D(0.0, 14.0 * U);
+	}
+	double X = Anchor.X - Total * 0.5;
+	const double Y = Anchor.Y;
+	H.P.Text(Head, FVector2D(X, Y + 0.5f * Pad + FsKey * 0.5f), FTxt, FMath::Lerp(Ec, FLinearColor::White, 0.4f));
+	X += HeadW;
+	for (int32 i = 0; i < Keys.Num(); ++i)
+	{
+		H.P.RoundRect(FVector2D(X, Y), FVector2D(Ws[i], Hh), FLinearColor(0.02f, 0.02f, 0.03f, 0.62f), WithA(Ec, 0.95f), 2.0f * U, 6.0f * U);
+		H.P.Text(Keys[i], FVector2D(X + Pad, Y + 0.4f * Pad), FKey, FLinearColor(1, 1, 1, 0.7f));
+		H.P.Text(Names[i], FVector2D(X + Pad, Y + 0.6f * Pad + FsKey), FTxt, FMath::Lerp(Ec, FLinearColor::White, 0.25f));
+		X += Ws[i] + Gap;
+	}
+	// the window drains
+	const float Left = Ch.window > 1e-4f ? FMath::Clamp(Ch.left / Ch.window, 0.0f, 1.0f) : 1.0f;
+	const float BarW = Total - HeadW - Gap;
+	const FVector2D BarPos(Anchor.X - Total * 0.5 + HeadW, Y + Hh + 3.0f * U);
+	H.P.Rect(BarPos, FVector2D(BarW, 3.0f * U), FLinearColor(0, 0, 0, 0.45f), 1.5f * U);
+	H.P.Rect(BarPos, FVector2D(BarW * Left, 3.0f * U), WithA(Ec, 0.95f), 1.5f * U);
 }
 
 void SFourfoldHud::DrawRings(const FPaintCtx& H) const

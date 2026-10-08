@@ -34,6 +34,17 @@ FOURFOLDCORE_API std::string CounterOutcomeLabel(const std::string& outcome, con
 // A threat class as HUD text: "stone_heavy" -> "Heavy stone", "wall_stone" -> "Stone wall", "water_jet" -> "Water jet".
 FOURFOLDCORE_API std::string ThreatLabel(const std::string& cls);
 
+// Chain prompts (docs/game/CONTROLS_HUD_PLAN.md part C): the attack slots that would chain out of the player's recovery
+// right now (App/ChainHints, MOVESET §9.1). open = false outside a chain window.
+struct ChainView {
+	bool open = false;
+	int n = 0;                         // moves in the string so far
+	bool weave = false;                // element / sub-element switched: the chain costs Focus
+	float left = 0.0f, window = 0.0f;  // s until the window closes / its whole length
+	std::vector<std::string> slots;    // strike | thrust | ground | sweep
+	std::vector<std::string> moves;    // their short names
+};
+
 struct HudModel {
 	bool valid = false;               // false when there is no player actor
 	int player_id = -1;
@@ -86,8 +97,10 @@ struct HudModel {
 	std::string threat_cls;
 	float threat_tti = 0.0f;          // seconds to impact
 	float perfect_window = 0.18f;     // a guard pressed this close before impact is perfect (Moves::PERFECT_WINDOW)
+	bool threat_charging = false;     // a foe is charging it: it lands whenever released (no countdown, no "now")
 	Vec3 threat_world;
 	std::vector<CounterHintView> counters;   // guard, push, sink, tech (those the sub-element has), then the best attack answer
+	ChainView chain;                         // chain prompts
 };
 
 // ------------------------------------------------------------------ menus

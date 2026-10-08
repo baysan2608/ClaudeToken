@@ -52,6 +52,8 @@ struct TouchContext {
 	// the attack slot that also answers it best ("thrust" | "ground" | "sweep" | "strike", "" = none): its ATTACK petal
 	std::string counter_attack_slot, counter_attack;
 	int counter_band_attack = 0;
+	// chain window open: which ATTACK inputs would chain now (flick up / down / side, plain tap)
+	bool chain_up = false, chain_down = false, chain_side = false, chain_tap = false;
 	std::string shape_label;                        // what T+A does now ("" = no technique running)
 	std::string charge_slot;                        // "attack" | "guard" | "tech" | "evade" | "" (charge ring owner)
 	int charge_tier = 0;

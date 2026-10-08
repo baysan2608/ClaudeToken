@@ -106,3 +106,12 @@ everything new maps onto sim inputs (`ff::InputFrame`) so the AI, replays and te
   strip shows it with its key (`U` / `N` / `H` / `J`, pad `Y` / `LT` / `B` / `X`, touch ATTACK ↑ / ↓ / ↔); on touch the
   matching ATTACK flick petal lights in the band colour (a strike answer: "TAP: ..." above the button). Touch petals
   now carry the tier like the strip ("Sink T2").
+- 2026-10-08 - C, chain ribbon (no dependency on B): `App/ChainHints` (core, read-only twin of
+  `CombatWorld::_chain_ok`, CoreTests `test_chain_hints`) lists the attack slots that would chain out of the player's
+  recovery right now (same sub-element after contact, each slot once, at most 3; a weave also needs Focus).
+  `HudModel::chain`; the HUD shows "CHAIN 2" / "WEAVE 3" + key pills with the move names under the player's arcs and a
+  bar that drains as the window closes; on touch the matching ATTACK flick petals light up. Seen in autoplay duels
+  ("CHAIN 2: Comet Flame / Blue Furrow / Corona", "WEAVE 3: Magma Surge / Spatter Arc"). Fix from the same captures: a
+  rival holding a charge (e.g. lightning) is a threat with no known release time - the strip now reads "CHARGING"
+  instead of a fake 0.1 s countdown and "NOW" only lights when the impact time is known (`HudModel::threat_charging`).
+  Still open in C: world glyphs on usable sources (pool, loose stone, fire field, wall) - needs B's pull / draw.

@@ -119,6 +119,7 @@ Result query(CombatWorld& w, ActorState& me) {
 	res.valid = true;
 	res.threat_cls = best.cls;
 	res.tti = best.tti;
+	res.charging = best.charging;
 	res.pos = best.body != nullptr ? best.body->pos : best.agent->pos;
 	CounterHintView best_attack;   // attack slots: only the one that answers best (the strip stays short)
 	int best_attack_rank = 1;      // an attack that fails or passes is no answer

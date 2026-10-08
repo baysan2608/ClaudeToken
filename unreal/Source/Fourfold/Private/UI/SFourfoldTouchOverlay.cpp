@@ -581,7 +581,10 @@ void SFourfoldTouchOverlay::DrawPetals(const FDrawCtx& D) const
 	const bool bAtkAnswer = Ctx.threat && !Ctx.counter_attack.empty() && !D.bTechLive;
 	const ff::Gesture AnswerG = Ctx.counter_attack_slot == "thrust" ? ff::Gesture::Up : Ctx.counter_attack_slot == "ground" ? ff::Gesture::Down
 	                          : Ctx.counter_attack_slot == "sweep" ? ff::Gesture::Side : ff::Gesture::None;
-	if ((bAtkHeld || D.bStrong || bAtkAnswer) && bAnyAtkPetal && !D.bTechLive)
+	// inside a chain window the flicks that would chain light up (part C chain prompts)
+	const bool bChains[3] = {Ctx.chain_up, Ctx.chain_down, Ctx.chain_side};
+	const bool bAnyChain = (Ctx.chain_up || Ctx.chain_down || Ctx.chain_side) && !D.bTechLive;
+	if ((bAtkHeld || D.bStrong || bAtkAnswer || bAnyChain) && bAnyAtkPetal && !D.bTechLive)
 	{
 		const ffg::FlickRecognizer& Fl = Touch.AttackFlick();
 		const ff::Gesture Hot = bAtkHeld ? Fl.hot : ff::Gesture::None;
@@ -590,13 +593,14 @@ void SFourfoldTouchOverlay::DrawPetals(const FDrawCtx& D) const
 		for (int32 i = 0; i < 3; ++i)
 		{
 			const bool bAnswer = bAtkAnswer && AnswerG == Gs[i];
-			if (Names[i]->empty() || (!bAtkHeld && !D.bStrong && !bAnswer))
+			const bool bChain = bChains[i] && !bAnswer;
+			if (Names[i]->empty() || (!bAtkHeld && !D.bStrong && !bAnswer && !bChain))
 			{
 				continue;
 			}
 			const ffg::PetalAnchor An = Touch.layout.AttackPetalAnchor(Gs[i]);
-			const bool bHot = Hot == Gs[i] || (Fl.fired && Fl.last == Gs[i] && bAtkHeld);
-			const float A = (bAtkHeld || bAnswer) ? 1.0f : 0.38f;
+			const bool bHot = Hot == Gs[i] || (Fl.fired && Fl.last == Gs[i] && bAtkHeld) || bChain;
+			const float A = (bAtkHeld || bAnswer || bChain) ? 1.0f : 0.38f;
 			DrawPill(D, V(An.pos), An.align, S(bAnswer ? Ctx.counter_attack : *Names[i]), bAnswer ? BandColor(Ctx.counter_band_attack) : EC,
 			         bHot || bAnswer, A, int32(Gs[i]));
 		}

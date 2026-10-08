@@ -24,6 +24,7 @@ struct Result {
 	bool valid = false;
 	std::string threat_cls;
 	double tti = 0.0;
+	bool charging = false;   // a foe's charge / channel: the release time is unknown (tti is a floor)
 	Vec3 pos;
 	std::vector<CounterHintView> hints;
 };

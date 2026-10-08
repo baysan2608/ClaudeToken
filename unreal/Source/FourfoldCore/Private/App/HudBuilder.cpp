@@ -1,6 +1,7 @@
 // Fourfold core - ports of the HUD context builders of game/game.gd.
 #include "App/HudBuilder.h"
 
+#include "App/ChainHints.h"
 #include "App/CounterHints.h"
 
 #include "Combat/Acts.h"
@@ -266,8 +267,19 @@ HudModel build(const Context& c) {
 		h.threat_cls = ch.threat_cls;
 		h.threat_tti = static_cast<float>(ch.tti);
 		h.perfect_window = static_cast<float>(Moves::PERFECT_WINDOW);
+		h.threat_charging = ch.charging;
 		h.threat_world = ch.pos;
 		h.counters = ch.hints;
+	}
+	{
+		const ChainHints::Result cr = ChainHints::query(w, p);
+		h.chain.open = cr.open;
+		h.chain.n = cr.n;
+		h.chain.weave = cr.weave;
+		h.chain.left = static_cast<float>(cr.left);
+		h.chain.window = static_cast<float>(cr.window);
+		h.chain.slots = cr.slots;
+		h.chain.moves = cr.moves;
 	}
 
 	const Dict ar = attack_ring_context(p);
