@@ -156,7 +156,7 @@ def build_leaf(mat, tex, notes):
     bc = g.texture("BaseColor", tex.get("BC"), ST.SAMPLERTYPE_COLOR, -1400, -200, uv)
     nm = g.texture("Normal", tex.get("N"), ST.SAMPLERTYPE_NORMAL, -1400, 50, uv)
     orm = g.texture("ORM", tex.get("ORM"), ST.SAMPLERTYPE_MASKS, -1400, 300, uv)
-    op = g.texture("Opacity", tex.get("OP"), ST.SAMPLERTYPE_GRAYSCALE, -1400, 550, uv)
+    op = g.texture("Opacity", tex.get("OP"), ST.SAMPLERTYPE_LINEAR_GRAYSCALE, -1400, 550, uv)
     w, opos = _wind(g, -600, 900, 2.5)
     var = g.scalar("ColorVariation", 0.12, -1000, -100, "Leaf")
     tint = g.custom(TINT_CODE, F3, ["Base", "OP", "Var"], [], -900, -250, "per-tree tint")
