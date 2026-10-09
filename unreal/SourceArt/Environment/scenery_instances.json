@@ -1,0 +1,1087 @@
+{
+ "schema": "fourfold.env.instances/1",
+ "units": "cm, Unreal axes; height_m = target tree height",
+ "source": "Tools/world/scenery_instances.py (positions = build_scenery.build_trees, rng 777)",
+ "trees": [
+  {
+   "species": "Broadleaf",
+   "variant": 37454,
+   "height_m": 6.37,
+   "yaw_deg": 89.7,
+   "lean_deg": -0.15,
+   "location_cm": [
+    -3397.9,
+    -2850.5,
+    -24.2
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 559,
+   "height_m": 12.32,
+   "yaw_deg": 9.7,
+   "lean_deg": 0.59,
+   "location_cm": [
+    3210.6,
+    -748.3,
+    -21.4
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 38156,
+   "height_m": 7.96,
+   "yaw_deg": 122.2,
+   "lean_deg": 1.49,
+   "location_cm": [
+    -4900.2,
+    -2248.7,
+    -28.7
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 59028,
+   "height_m": 15.37,
+   "yaw_deg": 251.4,
+   "lean_deg": 0.14,
+   "location_cm": [
+    -2223.0,
+    1032.1,
+    -21.0
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 57407,
+   "height_m": 8.63,
+   "yaw_deg": 157.7,
+   "lean_deg": -0.86,
+   "location_cm": [
+    290.6,
+    -6240.9,
+    -39.7
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 53463,
+   "height_m": 16.45,
+   "yaw_deg": 180.9,
+   "lean_deg": -0.94,
+   "location_cm": [
+    4251.1,
+    -1938.6,
+    -24.0
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 55362,
+   "height_m": 14.01,
+   "yaw_deg": 348.0,
+   "lean_deg": -0.35,
+   "location_cm": [
+    958.7,
+    4996.6,
+    -23.6
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 7900,
+   "height_m": 18.66,
+   "yaw_deg": 327.9,
+   "lean_deg": -0.26,
+   "location_cm": [
+    5691.5,
+    4314.5,
+    -6.0
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 51481,
+   "height_m": 11.29,
+   "yaw_deg": 212.3,
+   "lean_deg": -0.49,
+   "location_cm": [
+    969.2,
+    2984.0,
+    -21.3
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 39700,
+   "height_m": 13.24,
+   "yaw_deg": 217.8,
+   "lean_deg": -1.9,
+   "location_cm": [
+    -485.9,
+    -6827.9,
+    -37.0
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 35807,
+   "height_m": 13.37,
+   "yaw_deg": 64.1,
+   "lean_deg": 0.22,
+   "location_cm": [
+    2094.1,
+    2288.4,
+    -21.1
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 42622,
+   "height_m": 13.93,
+   "yaw_deg": 194.8,
+   "lean_deg": -0.88,
+   "location_cm": [
+    4076.0,
+    1136.6,
+    -26.5
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 14307,
+   "height_m": 16.03,
+   "yaw_deg": 139.2,
+   "lean_deg": -2.23,
+   "location_cm": [
+    3782.7,
+    5569.9,
+    -6.2
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 48068,
+   "height_m": 6.75,
+   "yaw_deg": 282.0,
+   "lean_deg": 0.11,
+   "location_cm": [
+    -6145.2,
+    1465.6,
+    -30.1
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 36358,
+   "height_m": 16.7,
+   "yaw_deg": 69.2,
+   "lean_deg": -0.08,
+   "location_cm": [
+    4234.7,
+    -5951.2,
+    -29.3
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 60148,
+   "height_m": 13.63,
+   "yaw_deg": 190.3,
+   "lean_deg": 1.52,
+   "location_cm": [
+    -3266.8,
+    6873.4,
+    -1.7
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 25587,
+   "height_m": 10.32,
+   "yaw_deg": 237.4,
+   "lean_deg": 2.35,
+   "location_cm": [
+    2315.2,
+    -6410.1,
+    -40.9
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 16529,
+   "height_m": 11.37,
+   "yaw_deg": 84.1,
+   "lean_deg": -0.36,
+   "location_cm": [
+    -1443.2,
+    -6581.2,
+    -40.0
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 43015,
+   "height_m": 15.48,
+   "yaw_deg": 99.0,
+   "lean_deg": 1.96,
+   "location_cm": [
+    -431.4,
+    -5992.8,
+    -41.6
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 2798,
+   "height_m": 17.37,
+   "yaw_deg": 347.0,
+   "lean_deg": -0.11,
+   "location_cm": [
+    1680.7,
+    -4531.5,
+    -30.4
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 53074,
+   "height_m": 9.11,
+   "yaw_deg": 226.0,
+   "lean_deg": 0.14,
+   "location_cm": [
+    -4346.8,
+    3264.0,
+    -9.9
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 9757,
+   "height_m": 14.01,
+   "yaw_deg": 28.8,
+   "lean_deg": -0.95,
+   "location_cm": [
+    2244.5,
+    829.6,
+    -21.0
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 33647,
+   "height_m": 9.94,
+   "yaw_deg": 89.4,
+   "lean_deg": 1.76,
+   "location_cm": [
+    458.9,
+    3454.3,
+    -22.4
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 17622,
+   "height_m": 7.26,
+   "yaw_deg": 306.3,
+   "lean_deg": 0.96,
+   "location_cm": [
+    -1580.2,
+    6344.3,
+    -21.9
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 25215,
+   "height_m": 8.31,
+   "yaw_deg": 324.5,
+   "lean_deg": 0.74,
+   "location_cm": [
+    -2789.4,
+    5291.5,
+    -10.3
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 51467,
+   "height_m": 14.34,
+   "yaw_deg": 61.7,
+   "lean_deg": 0.99,
+   "location_cm": [
+    3807.4,
+    -524.0,
+    -23.7
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 1564,
+   "height_m": 14.51,
+   "yaw_deg": 40.4,
+   "lean_deg": -3.73,
+   "location_cm": [
+    4068.2,
+    2946.0,
+    -23.2
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 23983,
+   "height_m": 17.91,
+   "yaw_deg": 206.8,
+   "lean_deg": -0.4,
+   "location_cm": [
+    4729.5,
+    717.1,
+    -29.9
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 31166,
+   "height_m": 13.12,
+   "yaw_deg": 21.2,
+   "lean_deg": 1.18,
+   "location_cm": [
+    899.0,
+    -6532.5,
+    -39.8
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 38979,
+   "height_m": 13.07,
+   "yaw_deg": 255.4,
+   "lean_deg": 1.73,
+   "location_cm": [
+    -5069.4,
+    -111.4,
+    -32.5
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 18011,
+   "height_m": 15.42,
+   "yaw_deg": 104.0,
+   "lean_deg": 0.54,
+   "location_cm": [
+    -5941.7,
+    270.1,
+    -38.7
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 7488,
+   "height_m": 16.32,
+   "yaw_deg": 203.6,
+   "lean_deg": -1.24,
+   "location_cm": [
+    1241.6,
+    2361.5,
+    -21.0
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 21659,
+   "height_m": 9.35,
+   "yaw_deg": 173.2,
+   "lean_deg": -0.65,
+   "location_cm": [
+    5601.5,
+    1202.4,
+    -32.6
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 6710,
+   "height_m": 7.59,
+   "yaw_deg": 148.8,
+   "lean_deg": -0.18,
+   "location_cm": [
+    5142.9,
+    1878.8,
+    -30.6
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 13341,
+   "height_m": 8.87,
+   "yaw_deg": 342.5,
+   "lean_deg": -0.37,
+   "location_cm": [
+    -2709.5,
+    7511.3,
+    -16.9
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 52270,
+   "height_m": 5.76,
+   "yaw_deg": 278.0,
+   "lean_deg": -3.17,
+   "location_cm": [
+    -1022.7,
+    -3712.7,
+    -25.4
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 23787,
+   "height_m": 12.24,
+   "yaw_deg": 93.9,
+   "lean_deg": 1.68,
+   "location_cm": [
+    3241.9,
+    -2328.1,
+    -23.8
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 6969,
+   "height_m": 8.92,
+   "yaw_deg": 166.9,
+   "lean_deg": -1.43,
+   "location_cm": [
+    5681.8,
+    313.6,
+    -31.8
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 10671,
+   "height_m": 5.24,
+   "yaw_deg": 113.1,
+   "lean_deg": -1.72,
+   "location_cm": [
+    45.3,
+    -2430.4,
+    -21.0
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 35866,
+   "height_m": 15.17,
+   "yaw_deg": 249.3,
+   "lean_deg": 0.17,
+   "location_cm": [
+    4266.7,
+    2150.2,
+    -24.7
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 41304,
+   "height_m": 7.84,
+   "yaw_deg": 294.9,
+   "lean_deg": -1.43,
+   "location_cm": [
+    5371.5,
+    3222.1,
+    -23.5
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 41685,
+   "height_m": 8.34,
+   "yaw_deg": 168.9,
+   "lean_deg": -0.99,
+   "location_cm": [
+    -4801.2,
+    6420.0,
+    2.3
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 40393,
+   "height_m": 7.03,
+   "yaw_deg": 278.8,
+   "lean_deg": 1.63,
+   "location_cm": [
+    -6690.8,
+    377.5,
+    -37.9
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 23512,
+   "height_m": 5.9,
+   "yaw_deg": 253.3,
+   "lean_deg": 1.17,
+   "location_cm": [
+    -3093.1,
+    384.1,
+    -21.4
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 22126,
+   "height_m": 18.94,
+   "yaw_deg": 348.4,
+   "lean_deg": 1.73,
+   "location_cm": [
+    -5584.8,
+    4292.4,
+    -0.5
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 16235,
+   "height_m": 8.41,
+   "yaw_deg": 70.2,
+   "lean_deg": 0.7,
+   "location_cm": [
+    2481.9,
+    -4244.9,
+    -30.3
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 4859,
+   "height_m": 15.44,
+   "yaw_deg": 214.4,
+   "lean_deg": 1.2,
+   "location_cm": [
+    -1316.8,
+    7334.9,
+    -30.7
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 20417,
+   "height_m": 6.6,
+   "yaw_deg": 190.9,
+   "lean_deg": -1.88,
+   "location_cm": [
+    -138.2,
+    -5188.9,
+    -36.4
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 58763,
+   "height_m": 14.82,
+   "yaw_deg": 68.0,
+   "lean_deg": -0.53,
+   "location_cm": [
+    -903.4,
+    -6576.2,
+    -39.9
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 11399,
+   "height_m": 7.55,
+   "yaw_deg": 327.2,
+   "lean_deg": 0.33,
+   "location_cm": [
+    6747.6,
+    595.1,
+    -30.8
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 8345,
+   "height_m": 8.69,
+   "yaw_deg": 34.7,
+   "lean_deg": 2.13,
+   "location_cm": [
+    -1780.8,
+    4167.8,
+    -22.0
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 60522,
+   "height_m": 9.46,
+   "yaw_deg": 319.8,
+   "lean_deg": 1.16,
+   "location_cm": [
+    -3239.3,
+    -1385.5,
+    -21.7
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 28601,
+   "height_m": 10.55,
+   "yaw_deg": 118.2,
+   "lean_deg": 0.75,
+   "location_cm": [
+    1996.8,
+    3843.6,
+    -22.4
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 12291,
+   "height_m": 7.0,
+   "yaw_deg": 57.5,
+   "lean_deg": -1.07,
+   "location_cm": [
+    -4364.2,
+    -3973.6,
+    -25.1
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 40760,
+   "height_m": 6.02,
+   "yaw_deg": 256.5,
+   "lean_deg": -0.82,
+   "location_cm": [
+    -2038.3,
+    -6482.6,
+    -38.6
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 46389,
+   "height_m": 10.53,
+   "yaw_deg": 135.5,
+   "lean_deg": 0.04,
+   "location_cm": [
+    -1368.8,
+    3339.9,
+    -21.8
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 45030,
+   "height_m": 16.28,
+   "yaw_deg": 221.0,
+   "lean_deg": -0.81,
+   "location_cm": [
+    -2374.6,
+    -3126.4,
+    -22.3
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 58715,
+   "height_m": 7.33,
+   "yaw_deg": 224.8,
+   "lean_deg": 0.9,
+   "location_cm": [
+    1349.2,
+    7132.7,
+    -32.1
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 20936,
+   "height_m": 14.49,
+   "yaw_deg": 57.5,
+   "lean_deg": -0.29,
+   "location_cm": [
+    -6303.3,
+    3429.2,
+    -1.1
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 61989,
+   "height_m": 13.13,
+   "yaw_deg": 169.5,
+   "lean_deg": -0.89,
+   "location_cm": [
+    -2252.1,
+    2509.8,
+    -20.5
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 53175,
+   "height_m": 16.79,
+   "yaw_deg": 146.9,
+   "lean_deg": 0.46,
+   "location_cm": [
+    296.8,
+    -3204.4,
+    -21.8
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 46081,
+   "height_m": 14.55,
+   "yaw_deg": 326.1,
+   "lean_deg": -2.52,
+   "location_cm": [
+    -1796.1,
+    -3320.9,
+    -22.4
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 37283,
+   "height_m": 17.65,
+   "yaw_deg": 63.1,
+   "lean_deg": 1.26,
+   "location_cm": [
+    -4957.9,
+    4976.4,
+    6.0
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 36635,
+   "height_m": 16.58,
+   "yaw_deg": 33.0,
+   "lean_deg": -1.54,
+   "location_cm": [
+    -4441.4,
+    -2734.5,
+    -26.6
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 48836,
+   "height_m": 8.61,
+   "yaw_deg": 116.1,
+   "lean_deg": 0.21,
+   "location_cm": [
+    -2423.2,
+    7129.1,
+    -19.2
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 21284,
+   "height_m": 13.03,
+   "yaw_deg": 128.6,
+   "lean_deg": 0.07,
+   "location_cm": [
+    -3679.2,
+    673.3,
+    -24.4
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 22034,
+   "height_m": 7.8,
+   "yaw_deg": 240.0,
+   "lean_deg": -0.8,
+   "location_cm": [
+    2364.5,
+    -3559.4,
+    -26.9
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 64913,
+   "height_m": 15.71,
+   "yaw_deg": 203.2,
+   "lean_deg": -2.84,
+   "location_cm": [
+    -3492.8,
+    -2368.3,
+    -23.4
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 25386,
+   "height_m": 11.89,
+   "yaw_deg": 176.9,
+   "lean_deg": -1.31,
+   "location_cm": [
+    -7290.0,
+    287.1,
+    -35.2
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 45454,
+   "height_m": 8.74,
+   "yaw_deg": 307.8,
+   "lean_deg": -0.19,
+   "location_cm": [
+    2955.2,
+    5089.4,
+    -15.8
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 42077,
+   "height_m": 16.0,
+   "yaw_deg": 36.6,
+   "lean_deg": -1.64,
+   "location_cm": [
+    -1475.6,
+    3829.0,
+    -22.6
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 13800,
+   "height_m": 7.28,
+   "yaw_deg": 92.9,
+   "lean_deg": 1.27,
+   "location_cm": [
+    3690.2,
+    -2927.0,
+    -24.7
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 25767,
+   "height_m": 15.4,
+   "yaw_deg": 124.9,
+   "lean_deg": -1.02,
+   "location_cm": [
+    522.0,
+    6393.7,
+    -29.1
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 14365,
+   "height_m": 16.16,
+   "yaw_deg": 204.8,
+   "lean_deg": -1.1,
+   "location_cm": [
+    -1886.5,
+    5848.8,
+    -13.7
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 21646,
+   "height_m": 18.07,
+   "yaw_deg": 131.9,
+   "lean_deg": -3.31,
+   "location_cm": [
+    6519.5,
+    2489.9,
+    -31.3
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 6593,
+   "height_m": 8.45,
+   "yaw_deg": 86.3,
+   "lean_deg": -0.25,
+   "location_cm": [
+    -474.2,
+    -2128.7,
+    -21.0
+   ]
+  },
+  {
+   "species": "Fir",
+   "variant": 51779,
+   "height_m": 12.91,
+   "yaw_deg": 104.0,
+   "lean_deg": 1.57,
+   "location_cm": [
+    2656.0,
+    -2185.6,
+    -22.5
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 8445,
+   "height_m": 7.86,
+   "yaw_deg": 262.3,
+   "lean_deg": 1.35,
+   "location_cm": [
+    541.8,
+    -4647.1,
+    -33.0
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 26407,
+   "height_m": 12.19,
+   "yaw_deg": 66.2,
+   "lean_deg": -0.89,
+   "location_cm": [
+    4224.1,
+    3673.5,
+    -19.1
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 56043,
+   "height_m": 7.86,
+   "yaw_deg": 57.5,
+   "lean_deg": 1.37,
+   "location_cm": [
+    3138.8,
+    1208.9,
+    -21.5
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 49958,
+   "height_m": 9.52,
+   "yaw_deg": 133.9,
+   "lean_deg": -1.26,
+   "location_cm": [
+    -7265.0,
+    -2542.9,
+    -17.5
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 38531,
+   "height_m": 10.84,
+   "yaw_deg": 309.7,
+   "lean_deg": 1.78,
+   "location_cm": [
+    -5582.9,
+    -2465.5,
+    -26.2
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 40247,
+   "height_m": 5.92,
+   "yaw_deg": 259.8,
+   "lean_deg": -0.24,
+   "location_cm": [
+    -902.4,
+    -5181.2,
+    -36.0
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 2100,
+   "height_m": 7.49,
+   "yaw_deg": 163.4,
+   "lean_deg": -0.57,
+   "location_cm": [
+    5653.5,
+    5197.5,
+    3.2
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 41329,
+   "height_m": 7.29,
+   "yaw_deg": 177.9,
+   "lean_deg": -0.3,
+   "location_cm": [
+    5840.2,
+    3838.5,
+    -14.6
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 15699,
+   "height_m": 7.57,
+   "yaw_deg": 3.0,
+   "lean_deg": -1.28,
+   "location_cm": [
+    -5886.3,
+    2976.2,
+    -8.0
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 22579,
+   "height_m": 10.8,
+   "yaw_deg": 81.7,
+   "lean_deg": 0.61,
+   "location_cm": [
+    -1235.1,
+    -2188.8,
+    -21.0
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 61571,
+   "height_m": 12.75,
+   "yaw_deg": 321.8,
+   "lean_deg": -0.39,
+   "location_cm": [
+    2605.2,
+    7656.6,
+    -25.7
+   ]
+  },
+  {
+   "species": "FirSlim",
+   "variant": 21342,
+   "height_m": 10.91,
+   "yaw_deg": 223.3,
+   "lean_deg": 1.61,
+   "location_cm": [
+    6083.0,
+    -764.3,
+    -28.9
+   ]
+  },
+  {
+   "species": "Broadleaf",
+   "variant": 19789,
+   "height_m": 8.78,
+   "yaw_deg": 28.3,
+   "lean_deg": -1.61,
+   "location_cm": [
+    4960.2,
+    -3972.7,
+    -24.1
+   ]
+  }
+ ]
+}

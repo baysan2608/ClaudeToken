@@ -18,11 +18,12 @@ from . import common as C
 __all__ = ["build_all"]
 
 
-def build_all(force=False, lighting="auto"):
+def build_all(force=False, lighting="auto", force_level=None):
+    """force_level: rebuild only the level (None = same as force)."""
     report = C.new_report()
     info = {}
     try:
-        from . import textures, materials, meshes, level
+        from . import textures, materials, meshes, level, foliage
         # 1. textures
         t_rep = C.new_report()
         try:
@@ -47,10 +48,18 @@ def build_all(force=False, lighting="auto"):
             imported = {}
             s_rep["failed"].append({"item": "meshes", "error": f"{e}\n{traceback.format_exc()}"})
         C.merge(report, s_rep)
+        # 3b. scanned trees (Poly Haven) replacing the card trees, when prepared
+        f_rep = C.new_report()
+        try:
+            forest = foliage.import_all(force, f_rep)
+        except Exception as e:  # noqa: BLE001
+            forest = {}
+            f_rep["failed"].append({"item": "foliage", "error": f"{e}\n{traceback.format_exc()}"})
+        C.merge(report, f_rep)
         # 4. level (+ lighting build)
         l_rep = C.new_report()
         try:
-            mode = level.build_level(force, imported, lighting, l_rep)
+            mode = level.build_level(force if force_level is None else force_level, imported, lighting, l_rep, forest=forest)
             if mode:
                 info["lighting"] = mode
         except Exception as e:  # noqa: BLE001

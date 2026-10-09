@@ -6,9 +6,9 @@ Actors (all tagged "FourfoldWorld" so a rebuild can remove exactly what this scr
                  (the game hides a solid's primitives from the main pass when the camera is behind it, shadows stay)
   * dressing     floor, pool basin + water, metal plate, banners, lanterns, rings (static, baked) and the scenery (movable, lit
                  dynamically by the stationary sun + the sky light / volumetric lightmap): ground, ridges, sky dome, halls, ...
-  * lighting     stationary sun (warm, from the south-west, 55 degrees up, behind the default camera), stationary sky light captured from the dome, exponential
+  * lighting     movable low sun (22 degrees up, side / back light for the duel camera), stationary sky light captured from the dome, exponential
                  height fog, reflection captures, point lights at the lanterns / braziers (stationary, baked), post-process volume
-                 with FIXED exposure (EV100 -0.263 => exposure scale 1: emissive 1.0 shows as 1.0, a diffuse white under 3.14 lux as 1.0),
+                 with MANUAL exposure, bias 0 (exposure scale 1: emissive 1.0 shows as 1.0, a diffuse white under 3.14 lux as 1.0),
                  Lightmass importance + character-indirect volumes
 Everything is created through EditorActorSubsystem / LevelEditorSubsystem (see docs/world/API_NOTES.md)."""
 import json
@@ -23,9 +23,10 @@ SOLID_MESH = {"north_wall": "SM_Env_WallN", "south_wall": "SM_Env_WallS", "west_
               "cover_wall": "SM_Env_CoverWall", "terrace": "SM_Env_Terrace", "step_block": "SM_Env_StepBlock",
               "high_ledge": "SM_Env_HighLedge", "pillar_ne": "SM_Env_Pillar", "pillar_sw": "SM_Env_Pillar"}
 FIXED_EV100 = -0.263            # exposure scale exactly 1.0  (1 / (1.2 * 2^EV))
-SUN_PITCH, SUN_YAW = -42.0, -37.9          # afternoon sun (fx FFKeyDir in Shaders/Common/FFLighting.ush matches)
-SUN_COLOR = (255, 214, 168)
-SUN_LUX = 10.0                             # with auto exposure (EV100 0..5): sky + clouds read physically
+SUN_PITCH, SUN_YAW = -22.0, 20.0           # low late-afternoon sun, side / back light for the duel camera (looks along -Y):
+                                          # rim light on the fighters, long shadows toward the lens (fx FFKeyDir matches)
+SUN_COLOR = (255, 240, 222)               # near white: the atmosphere warms it at this elevation
+SUN_LUX = 14.0                             # fixed exposure (manual, bias 0 = scale 1, see _post_process); 22 deg up
 SKY_INTENSITY = 1.0
 
 
@@ -189,7 +190,7 @@ class Builder:
         for k, v in (("intensity", SUN_LUX), ("light_color", unreal.Color(*SUN_COLOR, 255)), ("cast_shadows", True),
                      ("dynamic_shadow_distance_stationary_light", 3800.0), ("dynamic_shadow_distance_movable_light", 3800.0),
                      ("dynamic_shadow_cascades", 2), ("cascade_distribution_exponent", 2.2), ("cascade_transition_fraction", 0.15),
-                     ("light_source_angle", 0.8), ("atmosphere_sun_light", True),
+                     ("light_source_angle", 0.5), ("atmosphere_sun_light", True),
                      ("cast_cloud_shadows", False), ("use_ray_traced_distance_field_shadows", False),   # cloud shadow map: 9 ms GPU ("cast_shadows_on_clouds", True),
                      # per-pixel transmittance banded the courtyard floor into long dark stripes (arena sits on the planet top)
                      ("per_pixel_atmosphere_transmittance", False), ("forward_shading_priority", 1),
@@ -222,12 +223,12 @@ class Builder:
         # fog
         fog = self.spawn(unreal.ExponentialHeightFog, (0, 0, 400), label="FF_Fog", folder="Fourfold/Lighting")
         fc = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
-        for k, v in (("fog_density", 0.012), ("fog_height_falloff", 0.25), ("start_distance", 600.0), ("fog_max_opacity", 0.9),
-                     ("fog_inscattering_luminance", unreal.LinearColor(0.50, 0.40, 0.31, 1.0)), ("enable_volumetric_fog", True),
+        for k, v in (("fog_density", 0.014), ("fog_height_falloff", 0.6), ("start_distance", 2500.0), ("fog_max_opacity", 0.85),
+                     ("fog_inscattering_luminance", unreal.LinearColor(0.09, 0.11, 0.14, 1.0)), ("enable_volumetric_fog", True),
                      ("volumetric_fog_scattering_distribution", 0.55), ("volumetric_fog_extinction_scale", 0.6),
                      ("volumetric_fog_distance", 5000.0),
-                     ("directional_inscattering_luminance", unreal.LinearColor(0.35, 0.25, 0.15, 1.0)),
-                     ("directional_inscattering_exponent", 12.0)):
+                     ("directional_inscattering_luminance", unreal.LinearColor(0.55, 0.36, 0.18, 1.0)),
+                     ("directional_inscattering_exponent", 16.0)):
             C.set_prop(fc, k, v, rep, quiet=True)
         # reflection captures: Lumen reflections on the Mac; the captures are only a fallback, so none are placed
         for label, loc, radius in ():
@@ -265,19 +266,21 @@ class Builder:
         try:
             st = ppv.get_editor_property("settings")
             vals = [
-                ("auto_exposure_method", C.enum("AutoExposureMethod", "AEM_BASIC", "AEM_HISTOGRAM")),
-                ("auto_exposure_min_brightness", 0.0), ("auto_exposure_max_brightness", 5.0),
-                ("auto_exposure_bias", -0.35), ("auto_exposure_speed_up", 2.0), ("auto_exposure_speed_down", 1.5),
-                ("bloom_intensity", 0.55), ("bloom_threshold", 1.0),
+                # manual exposure: scale = 2^bias = 1 from the first frame on every platform (iOS ran Basic auto exposure,
+                # the Mac was locked at 1 by r.EyeAdaptationQuality=0); FX emissive levels assume exactly this
+                ("auto_exposure_method", C.enum("AutoExposureMethod", "AEM_MANUAL")),
+                ("auto_exposure_apply_physical_camera_exposure", False), ("auto_exposure_bias", 0.0),
+                ("local_exposure_highlight_contrast_scale", 0.8), ("local_exposure_shadow_contrast_scale", 0.85),
+                ("bloom_intensity", 0.45), ("bloom_threshold", 0.8),
                 ("motion_blur_amount", 0.35), ("motion_blur_max", 2.0), ("lens_flare_intensity", 0.0),
-                ("vignette_intensity", 0.32),
+                ("vignette_intensity", 0.38), ("film_grain_intensity", 0.08),
                 ("ambient_occlusion_intensity", 0.6), ("ambient_occlusion_radius", 120.0),
                 ("film_toe", 0.6), ("film_shoulder", 0.26), ("film_slope", 0.86),
-                ("white_temp", 6200.0),
+                ("white_temp", 6500.0),
                 ("color_saturation", unreal.Vector4(1.08, 1.08, 1.08, 1.0)),
                 ("color_contrast", unreal.Vector4(1.12, 1.12, 1.12, 1.0)),
-                ("color_gamma_shadows", unreal.Vector4(0.97, 0.98, 1.02, 1.0)),
-                ("color_gain_highlights", unreal.Vector4(1.02, 0.99, 0.95, 1.0)),
+                ("color_gamma_shadows", unreal.Vector4(0.96, 0.98, 1.04, 1.0)),
+                ("color_gain_highlights", unreal.Vector4(1.04, 1.0, 0.93, 1.0)),
                 ("scene_color_tint", unreal.LinearColor(1.0, 0.985, 0.96, 1.0)),
             ]
             for k, v in vals:
@@ -389,7 +392,7 @@ class Builder:
             return False
 
 
-def build_level(force, meshes, lighting, report):
+def build_level(force, meshes, lighting, report, forest=None):
     """Creates (or rebuilds) L_Lab.  Returns the lighting mode used or None when nothing was built."""
     paths = C.project_paths()
     sim = C.load_json(paths["sim_json"], report, "sim.json")
@@ -422,6 +425,9 @@ def build_level(force, meshes, lighting, report):
     b.mirror_y = M.detect_mirror_y(meshes, report)
     try:
         b.build_arena(meshes, sim, layout)
+        if forest:
+            from . import foliage
+            foliage.place(b, forest, report)
         b.build_lighting(layout)
         b.world_settings()
     except Exception as e:  # noqa: BLE001
