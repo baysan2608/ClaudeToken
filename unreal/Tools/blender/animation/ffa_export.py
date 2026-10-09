@@ -66,7 +66,10 @@ def make_action(arm, res):
     q = _quats(res)
 
     def curve(path, idx, group, vals):
-        fc = act.fcurves.new(path, index=idx, action_group=group)
+        if hasattr(act, "fcurves"):               # Blender < 5: legacy action API
+            fc = act.fcurves.new(path, index=idx, action_group=group)
+        else:                                     # Blender 4.4+ layered actions (the only API in 5.x)
+            fc = act.fcurve_ensure_for_datablock(arm, path, index=idx, group_name=group)
         fc.keyframe_points.add(len(vals))
         co = np.empty(2 * len(vals))
         co[0::2] = frames
@@ -126,7 +129,9 @@ def check_fbx(path, res, frames=None, tol_deg=0.25, tol_m=0.001):
             M = np.array(pb.matrix.to_3x3())
             c = (np.trace(M.T @ W[b]) - 1.0) * 0.5
             worst_a = max(worst_a, math.degrees(math.acos(max(-1.0, min(1.0, c)))))
-            worst_p = max(worst_p, float(np.linalg.norm(np.array(pb.head) - Hd[b])))
+            # the frozen exporter writes centimetres (the importer puts 0.01 on the armature object): compare in
+            # world space, where the units cancel
+            worst_p = max(worst_p, float(np.linalg.norm(np.array(a.matrix_world @ pb.head) - Hd[b])))
     names = {b.name for b in a.data.bones}
     want = {b["name"] for b in spec.BONES}
     ok = worst_a < tol_deg and worst_p < tol_m and names == want and nkeys == res.frames + 1 and f0 == 0

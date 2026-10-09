@@ -241,7 +241,8 @@ def video(res, path, views=("game", "front"), size=(640, 360), loops=1, slow=1, 
             shutil.copy(cache[f], os.path.join(tmp, f"f{k:05d}.png"))
             k += 1
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-framerate", "60", "-i", os.path.join(tmp, "f%05d.png"),
+    from ffa_compare import ffmpeg
+    cmd = [ffmpeg(), "-y", "-loglevel", "error", "-framerate", "60", "-i", os.path.join(tmp, "f%05d.png"),
            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "30", "-preset", "slow", "-movflags", "+faststart", path]
     subprocess.run(cmd, check=True)
     if tmpdir is None:

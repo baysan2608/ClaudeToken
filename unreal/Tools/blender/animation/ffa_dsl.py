@@ -61,7 +61,25 @@ def ease(kind, u):
         return 1 - (1 - u) ** 5
     if kind == "acc":            # accelerate (gravity-like) then a hard stop
         return u ** 2.5
+    if kind == "brake":          # speeds up, peaks at 2/3, stops at the key (the hips braking into a contact)
+        return u * u * u * (4.0 - 3.0 * u)
     raise ValueError(kind)
+
+
+def ease_slope(kind, at_end):
+    """d ease / du at the start (at_end False) or the end of a segment (units of the segment's full change)."""
+    if kind == "hold":
+        return 0.0
+    h = 1e-4
+    if at_end:
+        return (ease(kind, 1.0) - ease(kind, 1.0 - h)) / h
+    return (ease(kind, h) - ease(kind, 0.0)) / h
+
+
+ACCEL_EASES = ("in", "in3", "in4", "acc")
+PROXIMAL = ("pel", "spine", "neck", "gaze", "clav_l", "clav_r")
+FLOW_EASES = ("io", "io3")         # segments that FLOW through their keys (monotone cubic) when Clip.flow is on
+FLOW_SKIP = ("fing_l", "fing_r", "foot_l", "foot_r")
 
 
 # ------------------------------------------------------------------------------------------------ orientation blend
@@ -319,7 +337,9 @@ def mirror_state(st):
     out = {}
     px, py, pz, pp, ps, pyw = st["pel"]
     out["pel"] = (-px, py, pz, pp, -ps, -pyw)
-    for ch in ("spine", "neck"):
+    for ch in ("spine", "neck", "spine_d"):
+        if ch not in st:
+            continue
         a, b, c = st[ch]
         out[ch] = (a, -b, -c)
     w, gy, gp = st["gaze"]
@@ -354,7 +374,7 @@ class Clip:
                  style="", hands=("relaxed", "relaxed"), strike=None, speed=0.0, notes="", start=None,
                  offsets=None, mirror=False, base_end=None, plants=None, auto_hips=False, treadmill=None,
                  metric=None, end_pose=None, start_pose_free=False, no_balance=False, antic=None, follow=None,
-                 base_check=True):
+                 base_check=True, flow=True, chain=1.0, settle=1.0, wave=1.0):
         self.name = name
         self.frames = int(frames)
         self.base = base                      # name of the base stance clip (None for free clips)
@@ -383,6 +403,10 @@ class Clip:
         self.base_check = base_check          # False for gait loops (they blend from the base, not start on it)
         self.max_hand_turn = 30.0             # deg / frame: hand orientations roll no faster (forearm roll speed)
         self.max_joint_turn = 34.0            # deg / frame: arm joints turn no faster (key frames stay exact)
+        self.flow = flow                      # "io" segments flow through their keys (no dead stop at every key)
+        self.chain = chain                    # kinetic-chain timing scale (hips lead, hands whip in; 0 = off)
+        self.settle = settle                  # follow-through spring after each contact (0 = off)
+        self.wave = wave                      # spine wave: the upper back lags the lower back by this many frames
         self.antic = antic                    # anticipation-peak frame for the contact sheet
         self.follow = follow                  # follow-through frame for the contact sheet
         start_state = start if start is not None else (BASES[base] if base else neutral_state())
@@ -407,6 +431,52 @@ class Clip:
     def hold(self, frame, ease="lin"):
         """Holds the previous key's pose until `frame`."""
         return self.k(frame, ease=ease)
+
+    def retime(self, contact=None, frames=None):
+        """Re-time an authored clip: the keys before the first contact are stretched onto [0, contact], the keys after
+        it onto [contact, frames] (piecewise linear through every contact, rounded, kept strictly increasing).  Used to
+        fit a clip to the sim's startup / active + recovery (clips/timing.py) without re-keying it."""
+        n0 = self.frames
+        cs0 = list(self.contacts)
+        if not cs0 or self.loop:
+            return self
+        c0 = cs0[0]
+        c1 = int(contact if contact is not None else c0)
+        n1 = int(frames if frames is not None else n0)
+        if n0 == n1 and c0 == c1:
+            return self
+        src = [0.0, float(c0), float(n0)]
+        dst = [0.0, float(c1), float(n1)]
+        for c in cs0[1:]:                       # later contacts keep their place inside the post-contact span
+            src.insert(-1, float(c))
+            dst.insert(-1, c1 + (c - c0) * (n1 - c1) / max(n0 - c0, 1))
+
+        def remap(f):
+            for i in range(len(src) - 1):
+                if f <= src[i + 1] or i == len(src) - 2:
+                    a0, a1, b0, b1 = src[i], src[i + 1], dst[i], dst[i + 1]
+                    return b0 + (f - a0) * (b1 - b0) / max(a1 - a0, 1e-9)
+            return f
+        keys = []
+        last = -1
+        for f, st, e, pth in self.keys:
+            g = int(round(remap(f)))
+            if f in cs0:
+                g = int(round(dst[src.index(float(f))]))
+            g = max(g, last + 1) if keys else 0
+            keys.append((g, st, e, pth))
+            last = g
+        if keys[-1][0] > n1:
+            raise ValueError(f"{self.name}: retime({c1}, {n1}) leaves no room for the keys")
+        self.keys = keys
+        self.contacts = [int(round(dst[src.index(float(c))])) for c in cs0]
+        self.contact = self.contacts[0]
+        if self.antic is not None:
+            self.antic = int(round(remap(self.antic)))
+        if self.follow is not None:
+            self.follow = int(round(remap(self.follow)))
+        self.frames = n1
+        return self
 
     def state_at_key(self, i=-1):
         return self.keys[i][1]
@@ -464,6 +534,12 @@ class Clip:
         if isinstance(eas, dict):
             eas = eas.get(ch, eas.get("*", "io"))
         u = 0.0 if t1 <= t0 else (t - t0) / (t1 - t0)
+        if (self.chain and eas in ACCEL_EASES and ch in PROXIMAL and t1 in self.contacts and not self.loop):
+            # kinetic chain: the trunk does not arrive at full speed like the fist - it peaks earlier and brakes, and
+            # the braking is what whips the arm through (blend by the chain strength)
+            k = min(1.0, float(self.chain))
+            v = (1.0 - k) * ease(eas, u) + k * ease("brake", u)
+            return tuple(x + (y - x) * v for x, y in zip(a, b))
         if ch.startswith("foot_"):
             side = ch[-1]
             a = solver.repivot(side, a, b[6])
@@ -497,6 +573,21 @@ class Clip:
             if ch.startswith("hand_"):
                 out = out[0:3] + hand_orient_lerp(a[3:12], b[3:12], smoothstep(u))
             return out
+        if (self.flow and eas in FLOW_EASES and ch not in FLOW_SKIP and not ch.startswith("fing_")
+                and not (ch.startswith("hand_") and k1[3] == "arc")):
+            dims = 3 if ch.startswith("hand_") else len(a)
+            ma = self._flow_tangent(i, ch, dims)
+            mb = self._flow_tangent(i + 1, ch, dims)
+            dt = t1 - t0
+            h00 = 2 * u ** 3 - 3 * u ** 2 + 1
+            h10 = u ** 3 - 2 * u ** 2 + u
+            h01 = -2 * u ** 3 + 3 * u ** 2
+            h11 = u ** 3 - u ** 2
+            out = tuple(h00 * x + h10 * dt * p + h01 * y + h11 * dt * q
+                        for x, y, p, q in zip(a[:dims], b[:dims], ma, mb))
+            if ch.startswith("hand_"):
+                out = out + hand_orient_lerp(a[3:12], b[3:12], ease(eas, u))
+            return out
         e = ease("io" if eas == "sp" else eas, u)
         if ch.startswith("hand_"):
             if k1[3] == "arc":
@@ -513,6 +604,152 @@ class Clip:
                 p = tuple(x + (y - x) * e for x, y in zip(a[0:3], b[0:3]))
             return p + hand_orient_lerp(a[3:12], b[3:12], e)
         return tuple(x + (y - x) * e for x, y in zip(a, b))
+
+    @staticmethod
+    def _ease_of(e, ch):
+        if isinstance(e, dict):
+            return e.get(ch, e.get("*", "io"))
+        return e
+
+    def _flow_tangent(self, j, ch, dims):
+        """Tangent (units / frame) at key j for flow segments: a monotone cubic (Fritsch-Butland) through the keys -
+        zero where the channel turns round (extremes keep their hang time, nothing overshoots), the neighbours' slope
+        where it passes through, and the velocity of a neighbouring non-flow segment (a snap, an ease-in into a
+        contact, a hold) so the curve stays C1 where styles meet."""
+        cache = self.__dict__.setdefault("_tcache", {})
+        key = (j, ch, dims)
+        if key in cache:
+            return cache[key]
+        keys = self.keys
+        m = len(keys)
+        if self.loop and (j == 0 or j == m - 1):
+            tl, vl = keys[m - 2][0] - self.frames, keys[m - 2][1][ch]
+            tj, vj = 0.0, keys[0][1][ch]
+            tr, vr = keys[1][0], keys[1][1][ch]
+            eL, eR = self._ease_of(keys[m - 1][2], ch), self._ease_of(keys[1][2], ch)
+            if j == m - 1:
+                tl, tj, tr = tl + self.frames, float(self.frames), tr + self.frames
+        elif j == 0 or j == m - 1:
+            cache[key] = (0.0,) * dims
+            return cache[key]
+        else:
+            tl, vl = keys[j - 1][0], keys[j - 1][1][ch]
+            tj, vj = keys[j][0], keys[j][1][ch]
+            tr, vr = keys[j + 1][0], keys[j + 1][1][ch]
+            eL, eR = self._ease_of(keys[j][2], ch), self._ease_of(keys[j + 1][2], ch)
+        hL, hR = max(tj - tl, 1e-6), max(tr - tj, 1e-6)
+        fl, fr = eL in FLOW_EASES, eR in FLOW_EASES
+        out = []
+        for c in range(dims):
+            dL = (vj[c] - vl[c]) / hL
+            dR = (vr[c] - vj[c]) / hR
+            if eL == "sp" or eR == "sp":
+                mt = (vr[c] - vl[c]) / (hL + hR)
+            elif fl and fr:
+                if dL * dR <= 0.0:
+                    mt = 0.0
+                else:
+                    w1, w2 = 2 * hR + hL, hR + 2 * hL
+                    mt = (w1 + w2) / (w1 / dL + w2 / dR)
+            elif fl:
+                mt = ease_slope(eR, False) * dR
+                mt = 0.0 if mt * dL <= 0.0 else math.copysign(min(abs(mt), 3.0 * abs(dL)), mt)
+            elif fr:
+                mt = ease_slope(eL, True) * dL
+                mt = 0.0 if mt * dR <= 0.0 else math.copysign(min(abs(mt), 3.0 * abs(dR)), mt)
+            else:
+                mt = 0.0
+            out.append(mt)
+        cache[key] = tuple(out)
+        return cache[key]
+
+    def strike_parts(self):
+        """The limbs whose extreme defines the contact: the strike, else the bone named by the contact metric."""
+        parts = {"hands": ("hand_l", "hand_r")}.get(self.strike, (self.strike,) if self.strike else ())
+        m = self.metric or ""
+        for pre in ("low_", "high_", "fwd_"):
+            if m.startswith(pre):
+                b = m[len(pre):]
+                parts = parts + (("foot_" + b[-1]) if b.startswith(("ball_", "foot_")) else b,)
+        return tuple(p for p in parts if p)
+
+    def _chain_offsets(self):
+        """Authored channel offsets + the kinetic-chain profile (strike clips only): the hips lead, the chest follows,
+        the striking hand lags and then whips into the contact, the free hand and the head trail."""
+        offs = dict(self.offsets)
+        if self.loop or not self.contacts or not self.chain:
+            return offs
+        k = float(self.chain)
+        extra = {"pel": 1.5, "spine": 0.75, "clav_l": 0.25, "clav_r": 0.25, "neck": -0.5, "gaze": -0.5}
+        strike = self.strike_parts()
+        for s in rig.SIDES:
+            extra["hand_" + s] = -1.5 if "hand_" + s in strike else -0.5
+            extra["fing_" + s] = extra["hand_" + s]
+        for ch, v in extra.items():
+            offs[ch] = offs.get(ch, 0.0) + k * v
+        return offs
+
+    def _time_maps(self, offs):
+        """Per channel: the clip time each frame samples.  The offsets fade to 0 at the clip ends AND at every contact
+        frame, so every contact pose is exact while the parts around it lead or trail: a leading channel decelerates
+        into the contact (the hips brake), a lagging one accelerates into it (the hand whips) and hangs after it."""
+        n = self.frames
+        cs = [c for c in self.contacts if 0 < c < n] if not self.loop else []
+        maps = {}
+        for ch, off in offs.items():
+            if abs(off) < 1e-6:
+                continue
+            R = max(4.0, 1.5 * abs(off) + 1.0)
+            tau = []
+            for f in range(n + 1):
+                w = self._envelope(f)
+                if cs:
+                    w *= smoothstep(min(abs(f - c) for c in cs) / R)
+                tau.append(f + off * w)
+            for f in range(1, n + 1):          # never run backwards
+                tau[f] = max(tau[f], tau[f - 1])
+            if not self.loop:
+                tau = [min(max(t, 0.0), float(n)) for t in tau]
+            maps[ch] = tau
+        return maps
+
+    def _settle(self, sts):
+        """Follow-through after each contact: the velocity the body loses at the contact (incoming minus outgoing)
+        rings out as a damped spring on the trunk, head, shoulders and free hand(s) - an overshoot and a settle
+        instead of a freeze.  It fades before the next contact and at the clip end."""
+        n = self.frames
+        cs = sorted(c for c in self.contacts if 1 <= c < n - 1)
+        if self.loop or not cs or not self.settle:
+            return sts
+        gains = {"spine": (0.55, 0.55, 0.55), "neck": (0.5, 0.5, 0.5), "clav_l": (0.5, 0.5), "clav_r": (0.5, 0.5),
+                 "pel": (0.0, 0.0, 0.0, 0.35, 0.35, 0.35)}
+        strike = self.strike_parts()
+        for sd in rig.SIDES:
+            if "hand_" + sd not in strike:
+                gains["hand_" + sd] = (0.5, 0.5, 0.5)
+        k = float(self.settle)
+        w0 = 2.0 * math.pi * 3.2 / FPS
+        zeta = 0.42
+        wd = w0 * math.sqrt(1.0 - zeta * zeta)
+        out = [dict(s) for s in sts]
+        for ci, c in enumerate(cs):
+            nxt = cs[ci + 1] if ci + 1 < len(cs) else None
+            for ch, g in gains.items():
+                x0, x1, x2 = sts[c - 1][ch], sts[c][ch], sts[c + 1][ch]
+                dv = [((x1[i] - x0[i]) - (x2[i] - x1[i])) * g[i] * k for i in range(len(g))]
+                if max(abs(v) for v in dv) < 1e-7:
+                    continue
+                for f in range(c + 1, n + 1):
+                    t = f - c
+                    r = math.exp(-zeta * w0 * t) * math.sin(wd * t) / wd
+                    w = self._envelope(f) * (smoothstep((nxt - f) / 4.0) if nxt is not None else 1.0)
+                    if w <= 0.0:
+                        continue
+                    v = list(out[f][ch])
+                    for i in range(len(g)):
+                        v[i] += dv[i] * r * w
+                    out[f][ch] = tuple(v)
+        return out
 
     def _envelope(self, f):
         if self.loop:
@@ -537,15 +774,24 @@ class Clip:
                 _, info = solver.solve(kst, None)
                 kst["tw_l"] = (info["twist_raw_l"],)
                 kst["tw_r"] = (info["twist_raw_r"],)
+        self.__dict__.pop("_tcache", None)
+        offs = self._chain_offsets()
+        maps = self._time_maps({c: v for c, v in offs.items() if c in OFFSET_CHANNELS})
+        wave = None
+        if self.wave:
+            # the upper back samples the spine channel `wave` frames later than the lower back
+            wave = self._time_maps({"spine": offs.get("spine", 0.0) - float(self.wave)})["spine"]
         out = []
         for f in range(self.frames + 1):
-            env = self._envelope(f)
             st = {}
             for ch in keys[0][1].keys():
                 src = {"tw_l": "hand_l", "tw_r": "hand_r"}.get(ch, ch)
-                off = self.offsets.get(src, 0.0) if src in OFFSET_CHANNELS else 0.0
-                st[ch] = self._eval_channel(ch, f + off * env)
+                st[ch] = self._eval_channel(ch, maps[src][f] if src in maps else float(f))
+            if wave is not None:
+                up = self._eval_channel("spine", wave[f])
+                st["spine_d"] = tuple(b - a for a, b in zip(st["spine"], up))
             out.append(st)
+        out = self._settle(out)
         for lay in self.layers:
             out = self._apply_layer(lay, out)
         if not self.loop and self.max_hand_turn:
@@ -623,7 +869,31 @@ class Clip:
         raise ValueError(kind)
 
     # ---------------------------------------------------------------- build
-    def build(self):
+    # secondary-motion fallback ladder: (chain, settle, flow, wave) multipliers tried in order until the clip validates
+    POLISH_LADDER = ((1.0, 1.0, True, 1.0), (0.6, 0.6, True, 1.0), (0.3, 0.3, True, 0.5), (0.0, 0.0, True, 0.0),
+                     (0.6, 0.6, False, 1.0), (0.0, 0.0, False, 0.0))
+
+    def build(self, polish=True):
+        """Solve the clip.  With polish (default) the flow / kinetic-chain / settle / spine-wave layers are applied at
+        full strength and backed off step by step (POLISH_LADDER) only if they break a validation rule (a contact
+        that is no longer the extreme, a pop, a foot off its plant); res.polish records the level used."""
+        if not polish:
+            return self._build()
+        import ffa_validate as validate
+        cfg = (self.chain, self.settle, self.flow, self.wave)
+        for lvl, (kc, ks, fl, kw) in enumerate(self.POLISH_LADDER):
+            if fl and not cfg[2] and lvl < 4:
+                continue
+            self.chain, self.settle, self.flow, self.wave = cfg[0] * kc, cfg[1] * ks, fl and cfg[2], cfg[3] * kw
+            res = self._build()
+            res.polish = lvl
+            ok = validate.validate(res)["n_errors"] == 0
+            if ok:
+                break
+        self.chain, self.settle, self.flow, self.wave = cfg
+        return res          # the last rung (everything off) is the legacy behaviour
+
+    def _build(self):
         sts = self.states()
         if self.auto_hips:
             sts = _auto_hips(sts, self.loop)

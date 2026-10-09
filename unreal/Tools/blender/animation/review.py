@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "common")))
 import clips as catalog  # noqa: E402
 import ffa_render as render  # noqa: E402
 
-SCRATCH = "/tmp/claude-0/-home-user-ClaudeToken/37fdfe41-9b78-53ea-8620-b33d5491ff57/scratchpad/ue/animation/review"
+SCRATCH = os.environ.get("FFA_REVIEW_DIR") or os.path.join(__import__("tempfile").gettempdir(), "ffa_review")
 
 
 def main():
@@ -43,4 +43,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import numpy as np
+    with np.errstate(all="ignore"):   # numpy 2.0 + macOS Accelerate: spurious matmul FP warnings
+        main()

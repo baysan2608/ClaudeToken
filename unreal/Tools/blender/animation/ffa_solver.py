@@ -202,10 +202,9 @@ def solve(st, ctx=None):
     H["pelvis"] = rig.HEAD["pelvis"] + off
     pose.pelvis_loc = rig.REST["pelvis"].T @ off
     pose.q["pelvis"] = rig.REST["pelvis"].T @ W["pelvis"]
-    sp = st["spine"]
     prevD, prev = Dp, "pelvis"
     D = {"pelvis": Dp}
-    for name, c in zip(SPINE, SPINE_CUM):
+    for name, c, sp in zip(SPINE, SPINE_CUM, spine_values(st)):
         Dk = Dp @ body_rot(sp[0] * c, sp[1] * c, sp[2] * c)
         D[name] = Dk
         W[name] = Dk @ rig.REST[name]
@@ -380,15 +379,28 @@ def solve(st, ctx=None):
     return pose, info
 
 
+def spine_values(st):
+    """Per spine bone (pitch, side, yaw) of the whole-spine channel.  The optional 'spine_d' channel (set by the DSL's
+    spine wave) is the upper spine's lag behind the lower spine: bone k uses spine + SPINE_WAVE[k] * spine_d, so a
+    turn travels up the back (lumbar first, chest last) instead of the five bones moving as one block."""
+    sp = st["spine"]
+    d = st.get("spine_d")
+    if d is None:
+        return [sp] * len(SPINE)
+    return [tuple(a + w * b for a, b in zip(sp, d)) for w in SPINE_WAVE]
+
+
+SPINE_WAVE = [0.0, 0.2, 0.45, 0.8, 1.0]
+
+
 def chest_frame(st):
     """(Dc, origin_l, origin_r): the chest delta rotation and the chest-posed rest shoulder joints (the origins of the
     CHEST SPACE hand targets) for the body channels of a state."""
     px, py, pz, pp, ps, pyw = st["pel"]
     Dp = body_rot(pp, ps, pyw)
     Hp = rig.HEAD["pelvis"] + A(px, py, pz)
-    sp = st["spine"]
     prevD, prev, Hprev = Dp, "pelvis", Hp
-    for name, c in zip(SPINE, SPINE_CUM):
+    for name, c, sp in zip(SPINE, SPINE_CUM, spine_values(st)):
         Dk = Dp @ body_rot(sp[0] * c, sp[1] * c, sp[2] * c)
         Hk = Hprev + prevD @ (rig.HEAD[name] - rig.HEAD[prev])
         prevD, prev, Hprev = Dk, name, Hk

@@ -22,7 +22,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "common")))
 
-import ffa_render as render  # noqa: E402
 import ffa_validate as validate  # noqa: E402
 import clips as catalog  # noqa: E402
 import ffa_rig as rig  # noqa: E402
@@ -96,7 +95,9 @@ def main():
     ap.add_argument("--review", default="", help="directory for large review sheets (not committed)")
     ap.add_argument("--check-fbx", action="store_true")
     ap.add_argument("--no-json", action="store_true")
-    a = ap.parse_args()
+    # under Blender (`Blender -b --factory-startup --python build_animation.py -- <args>`) our args follow "--"
+    argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
+    a = ap.parse_args(argv)
     cat = catalog.load()
     names = select(list(cat.keys()), a.only, None)
     os.makedirs(ART, exist_ok=True)
@@ -115,6 +116,7 @@ def main():
         res = cat[n]().build()
         results[n] = res
         v = validate.validate(res)
+        v["stats"]["polish"] = getattr(res, "polish", 0)
         report[n] = v
         status = "OK" if not v["n_errors"] else f"FAIL ({v['n_errors']})"
         print(f"{n:22s} {res.frames:4d}f {status:10s} {v['stats']}", flush=True)
@@ -127,6 +129,8 @@ def main():
     print(f"solved + validated {len(names)} clips in {time.time() - t0:.1f}s; failed: {failed}")
     # ---------------------------------------------------------------- previews
     vids = set(x.strip() for x in a.videos.split(",") if x.strip())
+    if not a.no_sheets or a.review or vids:
+        import ffa_render as render     # PIL: system python only (Blender's python has no PIL -> pass --no-sheets)
     for n in names:
         res = results[n]
         if n.startswith("hand_"):
@@ -186,8 +190,11 @@ def main():
         print("wrote clips.json with", len(clips), "clips")
         import anim_map_gen
         anim_map_gen.main()
-    sys.exit(1 if failed else 0)
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    import numpy as np
+    with np.errstate(all="ignore"):   # numpy 2.0 + macOS Accelerate: spurious matmul FP warnings
+        main()
