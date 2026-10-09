@@ -73,6 +73,31 @@ FXT_TEST(niagara_requests_cover_cues_and_are_valid) {
 	FXT_CHECK(d.Update(f.in).systems.empty());
 }
 
+FXT_TEST(niagara_small_pops_are_fire_bursts_not_blasts) {
+	// hover pops (fx burst blast, shape small / radius < 0.8) play a short fire burst; a real blast keeps the explosion
+	// with stone dust from the floor (2026-10-09: every pop spawned an explosion + a dark dust cloud)
+	auto cuesOf = [](const char* shape, float radius) {
+		FxDirector d;
+		NFrame f;
+		f.events = {NEv("fx", {{"fx", "burst"}, {"mat", "blast"}, {"actor", 1}, {"shape", shape}, {"radius", radius},
+		                       {"power", 2.0f}, {"pos", Vec3(0, 0.9f, 0)}})};
+		std::set<int> cues;
+		for (const SystemReq& s : d.Update(f.in).systems) cues.insert(static_cast<int>(s.cue));
+		return cues;
+	};
+	const std::set<int> pop = cuesOf("small", 0.5f);
+	FXT_CHECK(pop.count(static_cast<int>(NCue::FireBurst)) == 1);
+	FXT_CHECK(pop.count(static_cast<int>(NCue::Blast)) == 0);
+	FXT_CHECK(pop.count(static_cast<int>(NCue::Dust)) == 0);
+	const std::set<int> big = cuesOf("", 2.0f);
+	FXT_CHECK(big.count(static_cast<int>(NCue::Blast)) == 1);
+	FXT_CHECK(big.count(static_cast<int>(NCue::Dust)) == 1);
+	// the every-hit feet dust (strength 0.6) stays procedural; tier-3 dust (1.3) still asks for the Niagara system
+	const FxConfig cfg;
+	FXT_CHECK(!cfg.Niagara(NCue::Dust).Wants(0.6f, 2));
+	FXT_CHECK(cfg.Niagara(NCue::Dust).Wants(1.3f, 2));
+}
+
 FXT_TEST(niagara_replace_skips_procedural_only_when_loaded) {
 	auto run = [](uint64_t loaded, int& oneShots, size_t& systems) {
 		FxDirector d;

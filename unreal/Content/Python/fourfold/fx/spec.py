@@ -97,8 +97,8 @@ OutRough = s.rough;
 OutSpec = s.spec;
 return s.albedo;"""
 
-LAVA_WPO = "return FFLavaStripOffset(UV0, UV2, NL, Melt, Crust, Boil);"
-LAVA_SURF = """FFSurf s = FFLavaStripSurface(Noise, NoiseSampler, UV0, UV2, N.z, Melt, Crust, Flow, Boil, Seed, GlowScale);
+LAVA_WPO = "return FFLavaStripOffset(UV0, UV2, NL, Melt, Crust, Boil, Fade);"
+LAVA_SURF = """FFSurf s = FFLavaStripSurface(Noise, NoiseSampler, UV0, UV2, N.z, Melt, Crust, Heat, Flow, Boil, Seed, GlowScale);
 OutEmissive = s.emissive;
 OutNormal = s.normal;
 OutRough = s.rough;
@@ -184,11 +184,12 @@ else
 float4 a = Flipbook.Sample(FlipbookSampler, ua);
 float4 b = Flipbook.Sample(FlipbookSampler, ub);
 float4 nz = Noise.Sample(NoiseSampler, UV0 * 0.75 + float2(UV2.y * 3.7 + Phase * 0.03, UV2.y * 5.1 - Phase * 0.02));
-float4 r = FFSmokeShade(a, b, bl, float4(VC, VCA), nz, Style, UV2.x, Opacity, Erosion, Color, dot(-Cam, FFKeyDir()));
+float4 r = FFSmokeShade(a, b, bl, float4(VC, VCA), nz, Style, UV2.x, Opacity, Erosion, Color, dot(-Cam, FFKeyDir()),
+	LightScale);
 OutOpacity = r.w;
 return FFRGB(r);"""
 
-SPLASH_SHADE = FLIPBOOK_PAIR + """float4 r = FFSplashShade(a, b, bl, float4(VC, VCA), Color, dot(-Cam, FFKeyDir()));
+SPLASH_SHADE = FLIPBOOK_PAIR + """float4 r = FFSplashShade(a, b, bl, float4(VC, VCA), Color, dot(-Cam, FFKeyDir()), LightScale);
 OutOpacity = r.w;
 return FFRGB(r);"""
 
@@ -297,15 +298,16 @@ MATERIALS = {
         "asset": "M_FX_LavaStrip", "blend": "opaque", "lit": True, "two_sided": False, "tangent_normal": True,
         "full_precision": True,
         "includes": ["/Fourfold/FX/FFRock.ush"],
-        "scalars": {"Melt": 1.0, "Crust": 0.0, "Flow": 0.0, "Boil": 0.0, "Seed": 0.0, "Fade": 1.0, "GlowScale": 1.0},
+        "scalars": {"Melt": 1.0, "Crust": 0.0, "Heat": 0.0, "Flow": 0.0, "Boil": 0.0, "Seed": 0.0, "Fade": 1.0,
+                    "GlowScale": 1.0},
         "vectors": {}, "textures": {"Noise": "T_FX_Noise"},
         "nodes": {
             "wpo": {"stage": "vs", "type": _F3, "code": LAVA_WPO,
-                    "inputs": _merge({"UV0": "uv0", "UV2": "uv2", "NL": "nrm_local"}, _p("Melt", "Crust", "Boil")),
+                    "inputs": _merge({"UV0": "uv0", "UV2": "uv2", "NL": "nrm_local"}, _p("Melt", "Crust", "Boil", "Fade")),
                     "outputs": {}},
             "surf": {"stage": "ps", "type": _F3, "code": LAVA_SURF,
                      "inputs": _merge({"Noise": "tex:Noise", "UV0": "uv0", "UV2": "uv2", "N": "nrm_ws"},
-                                      _p("Melt", "Crust", "Flow", "Boil", "Seed", "GlowScale")),
+                                      _p("Melt", "Crust", "Heat", "Flow", "Boil", "Seed", "GlowScale")),
                      "outputs": {"OutEmissive": _F3, "OutNormal": _F3, "OutRough": _F1, "OutSpec": _F1}},
         },
         "outputs": _merge(_LIT_OUT, {"WorldPositionOffset": ("wpo", "")}),
@@ -395,7 +397,7 @@ MATERIALS = {
         "asset": "M_FX_Flame", "blend": "alpha_composite", "lit": False, "two_sided": True,
         "includes": ["/Fourfold/FX/FFFlame.ush"],
         "scalars": {"Style": 0.0, "Shape": 0.0, "Age": 0.0, "Scroll": 0.0, "Core": 0.0, "Seed": 0.0, "Intensity": 1.0,
-                    "Cover": 0.8, "Height": 1.0, "Width": 0.2, "EmissiveScale": 1.2},
+                    "Cover": 0.8, "Height": 1.0, "Width": 0.2, "EmissiveScale": 1.7},
         "vectors": {"Color": (0.62, 0.07, 0.01, 1.0), "Color2": (1.0, 0.36, 0.05, 1.0), "Color3": (1.0, 0.78, 0.30, 1.0),
                     "Color4": (1.0, 0.95, 0.75, 1.0)},
         "textures": {"Noise": "T_FX_Noise"},
@@ -415,7 +417,7 @@ MATERIALS = {
     "fire_sprite": {
         "asset": "M_FX_FireSprite", "blend": "alpha_composite", "lit": False, "two_sided": True,
         "includes": ["/Fourfold/FX/FFFlame.ush"],
-        "scalars": {"Intensity": 1.0, "Age": 0.0, "EmissiveScale": 1.0},
+        "scalars": {"Intensity": 1.0, "Age": 0.0, "EmissiveScale": 1.35},
         "vectors": {"Tint": (1.0, 1.0, 1.0, 1.0), "Color": (0.62, 0.07, 0.01, 1.0), "Color2": (1.0, 0.36, 0.05, 1.0),
                     "Color3": (1.0, 0.78, 0.30, 1.0), "Color4": (1.0, 0.95, 0.75, 1.0)},
         "textures": {"Flipbook": "T_FX_FB_explosion"},
@@ -431,14 +433,15 @@ MATERIALS = {
     "smoke": {
         "asset": "M_FX_Smoke", "blend": "alpha_composite", "lit": False, "two_sided": True,
         "includes": ["/Fourfold/FX/FFSmoke.ush", "/Fourfold/Common/FFFlipbook.ush"],
-        "scalars": {"Style": 0.0, "Opacity": 1.0, "Erosion": 0.5, "Phase": 0.0},
+        # LightScale: the fake smoke light (balanced for a 3.14 lux sun) x the arena's 14 lux sun / sky (FFSmoke.ush)
+        "scalars": {"Style": 0.0, "Opacity": 1.0, "Erosion": 0.5, "Phase": 0.0, "LightScale": 2.2},
         "vectors": {"Color": (1.0, 1.0, 1.0, 1.0)},
         "textures": {"Flipbook": "T_FX_FB_smoke_puff", "Noise": "T_FX_Noise"},
         "nodes": {
             "shade": {"stage": "ps", "type": _F3, "code": SMOKE_SHADE,
                       "inputs": _merge({"Flipbook": "tex:Flipbook", "Noise": "tex:Noise", "UV0": "uv0", "UV1": "uv1",
                                         "UV2": "uv2", "VC": "vc", "VCA": "vca", "Cam": "cam"},
-                                       _p("Style", "Opacity", "Erosion", "Phase"), _v("Color")),
+                                       _p("Style", "Opacity", "Erosion", "Phase", "LightScale"), _v("Color")),
                       "outputs": {"OutOpacity": _F1}},
         },
         "outputs": dict(_UNLIT_OUT),
@@ -446,12 +449,12 @@ MATERIALS = {
     "splash": {
         "asset": "M_FX_Splash", "blend": "alpha_composite", "lit": False, "two_sided": True,
         "includes": ["/Fourfold/FX/FFSmoke.ush", "/Fourfold/Common/FFFlipbook.ush"],
-        "scalars": {}, "vectors": {"Color": (0.78, 0.9, 1.0, 1.0)},
+        "scalars": {"LightScale": 1.8}, "vectors": {"Color": (0.78, 0.9, 1.0, 1.0)},
         "textures": {"Flipbook": "T_FX_FB_water_splash"},
         "nodes": {
             "shade": {"stage": "ps", "type": _F3, "code": SPLASH_SHADE,
                       "inputs": _merge({"Flipbook": "tex:Flipbook", "UV0": "uv0", "UV1": "uv1", "VC": "vc",
-                                        "VCA": "vca", "Cam": "cam"}, _v("Color")),
+                                        "VCA": "vca", "Cam": "cam"}, _p("LightScale"), _v("Color")),
                       "outputs": {"OutOpacity": _F1}},
         },
         "outputs": dict(_UNLIT_OUT),
@@ -603,4 +606,4 @@ def driven_params():
 
 
 # Parameters that only tune a master's look in the editor (the C++ logic never sets them).
-TUNING_ONLY = {"GlowScale", "Duration"}
+TUNING_ONLY = {"GlowScale", "Duration", "LightScale"}

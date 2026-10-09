@@ -87,9 +87,12 @@ FFRockSample FFRockModel(float ed, float eid, float lowf, float grain, float up,
 	rock = lerp(rock, float3(0.30, 0.27, 0.22), dust * 0.3);
 	rock = rock * lerp(1.0, 0.55 + 0.45 * FFSmooth(0.0, 0.2, ed), act);
 
-	// cooled crust (basalt / glassy slag)
-	float3 basalt = lerp(float3(0.0055, 0.0050, 0.0050), float3(0.026, 0.021, 0.019), grain);
-	basalt = basalt * lerp(0.75, 1.25, lowf);
+	// cooled crust: dark grey-brown basalt (2026-10-09: was 0.005..0.026 linear, read as a black ribbon under the 14 lux
+	// sun), mottled, with darker vesicle pits; a fresh / molten skin stays darker and glassier
+	float3 basalt = lerp(float3(0.042, 0.039, 0.036), float3(0.104, 0.094, 0.084), FFSmooth(0.15, 0.85, grain));
+	basalt = basalt * lerp(0.78, 1.22, lowf);
+	basalt = basalt * (1.0 - 0.32 * FFSmooth(0.74, 0.92, grain * 0.8 + (1.0 - lowf) * 0.25));
+	basalt = basalt * lerp(1.0, 0.4, kMelt * (1.0 - crust));
 	const float dark = FFSmooth(0.06, 0.55, max(kMelt, crust));
 	const float3 base = lerp(rock * (1.0 - 0.38 * heat), basalt, dark);
 
@@ -112,7 +115,7 @@ FFRockSample FFRockModel(float ed, float eid, float lowf, float grain, float up,
 	e += FFBlackbody(T * 0.6) * (rim * 0.45 * FFSmooth(0.1, 0.5, tcore) * act);
 	o.emissive = e;
 
-	const float3 floorCol = lerp(float3(0.006, 0.004, 0.004), float3(0.03, 0.006, 0.002), tcore);
+	const float3 floorCol = lerp(float3(0.022, 0.019, 0.017), float3(0.03, 0.006, 0.002), FFSmooth(0.0, 0.3, tcore));
 	o.albedo = lerp(base, floorCol, fm);
 
 	// relief: plates stand proud of the fissures (slope of the plate profile w.r.t. ed)
@@ -122,7 +125,7 @@ FFRockSample FFRockModel(float ed, float eid, float lowf, float grain, float up,
 
 	// roughness: dusty rock -> glassy molten sheen -> rough crust
 	const float rRock = 0.80 + 0.18 * grain;
-	const float rHot = lerp(0.46, 0.86, FFSmooth(0.0, 0.8, crust));
+	const float rHot = lerp(0.46, 0.9, FFSmooth(0.0, 0.8, crust));
 	o.rough = lerp(lerp(rRock, rHot, dark), 0.55, fm);
 	o.dark = dark;
 	return o;
@@ -195,20 +198,23 @@ FFSurf FFRockSurface(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float3 pos, float3
 }
 
 // ------------------------------------------------------------------------------------------------ M_FX_LavaStrip
-// Vertex offset (local cm) of a lava wave / sheet: slow viscous undulation of the crest that stills as it crusts.
+// Vertex offset (local cm) of a lava wave / sheet: slow viscous undulation of the crest that stills as it crusts; Fade
+// < 1 sinks the strip straight down into the floor (cold ridges are retired this way; local Z = up, identity item).
 //   uv0 = (metres along, metres across)   uv2 = (metres to the front, height fraction 0 edge .. 1 crest)
-float3 FFLavaStripOffset(float2 uv0, float2 uv2, float3 nLocal, float melt, float crust, float boil)
+float3 FFLavaStripOffset(float2 uv0, float2 uv2, float3 nLocal, float melt, float crust, float boil, float fade)
 {
 	const float live = melt * (1.0 - crust);
 	const float h = sin(uv0.x * 4.2 - boil * 2.1) * 1.2 * uv2.y * live;   // cm
-	return nLocal * h;
+	const float sink = 1.0 - saturate(fade);
+	return nLocal * h - float3(0.0, 0.0, sink * (12.0 + 60.0 * uv2.y));
 }
 
 // Pixel surface of a lava strip / pool. Tangent-space normal output (along the flow = tangent X).
 //   uv0 = (metres along, metres across), uv2 = (metres to the front, height fraction), Flow = accumulated flow distance
 //   (m), Boil = slow evolution time.
+//   heat = temperature of solid rock 0..1 (the view's Heat: dull red cracks while a set ridge is still hot)
 FFSurf FFLavaStripSurface(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float2 uv0, float2 uv2, float upWS, float melt,
-	float crust, float flow, float boil, float seed, float glowScale)
+	float crust, float heat, float flow, float boil, float seed, float glowScale)
 {
 	FFSurf s = FFSurfDefault(float3(0.0, 0.0, 1.0));
 	const float u = sqrt(max(1.0 - uv2.y * uv2.y, 0.0));          // |across| 0 centre .. 1 edge
@@ -226,21 +232,23 @@ FFSurf FFLavaStripSurface(FF_TEX2D Noise, FF_SAMPLER NoiseSampler, float2 uv0, f
 	const float bank = FFSmooth(0.45, 0.98, u);
 	const float frontHot = (1.0 - FFSmooth(0.0, 0.9, uv2.x)) * FFSmooth(0.3, 0.8, melt);
 	const float crustEff = saturate(crust + bank * (1.0 - crust) * 0.55 * (1.0 - frontHot));
-	const float heatEff = saturate(melt * (1.0 - 0.35 * bank) + frontHot * 0.2);
+	const float heatEff = saturate(max(melt * (1.0 - 0.35 * bank) + frontHot * 0.2, heat * (1.0 - 0.45 * bank)));
 	const float meltEff = saturate(melt * (1.0 - 0.1 * bank));
 	const float flick = 0.94 + 0.06 * sin(boil * 3.0 + lowf * 12.0);
 	const FFRockSample r = FFRockModel(vr.y, vr.w, lowf, grain, upWS, flick, heatEff, meltEff, crustEff, 0.0,
 		lerp(0.26, 0.15, bank));
 
-	// residual glow of a fully cooled ridge: deep red hairlines
-	const float resid = crust * (1.0 - melt);
+	// residual glow of a set ridge: deep red hairlines while it is still hot, none once cold
+	const float resid = crust * (1.0 - melt) * FFSmooth(0.05, 0.5, heat);
 	float3 e = r.emissive + FFBlackbody(0.18 + 0.1 * lowf) * (0.9 * r.fissure * resid);
 	s.emissive = e * glowScale;
 
 	// relief in tangent space (plates proud of the fissures) + fine grain
 	const float2 gq = vgrad * (r.dh * 0.07);
-	const float gx = gq.x * 0.78 + (grain - 0.5) * 0.15;
-	const float gy = gq.y + (n2.z - 0.5) * 0.15;
+	// cold crust is rougher: stronger fine grain
+	const float rough = 0.15 + 0.2 * crust * (1.0 - melt);
+	const float gx = gq.x * 0.78 + (grain - 0.5) * rough;
+	const float gy = gq.y + (n2.z - 0.5) * rough;
 	s.normal = normalize(float3(-gx, -gy, 1.0));
 	s.albedo = r.albedo;
 	s.rough = r.rough;

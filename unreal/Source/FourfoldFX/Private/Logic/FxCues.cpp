@@ -469,9 +469,13 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 			case Fam::Blast:
 			case Fam::Flame:
 			case Fam::Blue:
-				if (mat == Fam::Blast || rad >= 1.2f) {
+				if (mat == Fam::Blast && (shape == "small" || radius < 0.8f)) {
+					// small pops (hover pops, chain sparks): a short fire burst, no explosion + dust cloud each time
+					fx_.FireBurst(c, pos, kUp, MaxF(radius, 0.4f) * 1.6f, 0.6f * k, false);
+				} else if (mat == Fam::Blast || rad >= 1.2f) {
 					fx_.Blast(c, pos, rad, Clamp(0.6f + power / 40.0f, 0.5f, 1.4f), mat == Fam::Blue, gy);
-					fx_.Dust(c, Vec3(pos.x, gy, pos.z), kUp, MinF(0.6f + rad * 0.3f, 2.0f), cfg_.DustColor(Fam::Blast));
+					// floor dust kicked up by the shock: stone dust, lighter than the blast itself
+					fx_.Dust(c, Vec3(pos.x, gy, pos.z), kUp, MinF(0.35f + rad * 0.2f, 1.2f), cfg_.DustColor(Fam::Stone));
 				} else {
 					fx_.FireBurst(c, pos, kUp, rad * 1.5f, k, mat == Fam::Blue);
 				}

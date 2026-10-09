@@ -182,7 +182,7 @@ struct OneShots::BurstFx final : OneShot {
 			sparks.Build(sparkMesh, c.in.cam.pos, c.in.cam.up, sparkLook);
 			sparkMesh.Commit();
 			DrawItem& it = c.out.Add(keySpark, MatSlot::Spark, &sparkMesh);
-			it.params.Set(P::EmissiveScale, 2.5f);
+			it.params.Set(P::EmissiveScale, 3.2f);   // 2.5 before the 14 lux sun (2026-10-09)
 			it.sortPriority = 3;
 		}
 	}
@@ -524,7 +524,7 @@ struct OneShots::PuffFx final : OneShot {
 			}
 			case Kind::Ember: {
 				DrawItem& it = c.out.Add(key, MatSlot::Spark, &mesh);
-				it.params.Set(P::EmissiveScale, 3.0f);
+				it.params.Set(P::EmissiveScale, 3.8f);   // 3.0 before the 14 lux sun (2026-10-09)
 				it.sortPriority = 3;
 				break;
 			}

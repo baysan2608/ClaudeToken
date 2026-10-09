@@ -18,19 +18,21 @@
 #endif
 
 // Light reaching a smoke texel: ambient sky + key light through the baked shade, plus forward scattering through thin
-// parts when the view faces the sun (vdotl = dot(-view, key dir)).
-float3 FFSmokeLight(float shade, float thickness, float vdotl)
+// parts when the view faces the sun (vdotl = dot(-view, key dir)). The terms are balanced for a diffuse white under a
+// 3.14 lux sun = 1.0; lightScale (material LightScale) brings them to the arena's real sun / sky (14 lux at manual
+// exposure 1.0: ~2.2 keeps lit smoke light grey ~0.8, its shadow side blue-grey ~0.3 at the default palette).
+float3 FFSmokeLight(float shade, float thickness, float vdotl, float lightScale)
 {
 	const float3 sky = float3(0.42, 0.50, 0.60);
 	const float3 sun = float3(1.0, 0.95, 0.86);
 	const float fwd = pow(saturate(vdotl), 6.0) * (1.0 - saturate(thickness)) * 0.8;
-	return sky * 0.55 + sun * (saturate(shade) * 0.85 + fwd);
+	return (sky * 0.55 + sun * (saturate(shade) * 0.85 + fwd)) * lightScale;
 }
 
 // Premultiplied colour (rgb) + opacity (a) (M_FX_Smoke / M_FX_Splash blend AlphaComposite like the other FX).
 //   a, b = the two flipbook samples, blend = frame blend; noise = noise sample for erosion; age = uv2.x
 float4 FFSmokeShade(float4 a, float4 b, float blend, float4 vc, float4 noise, float style, float age, float opacity,
-	float erosion, float3 col, float vdotl)
+	float erosion, float3 col, float vdotl, float lightScale)
 {
 	const float4 s = lerp(a, b, blend);
 	float cov = saturate(s.w);
@@ -45,17 +47,17 @@ float4 FFSmokeShade(float4 a, float4 b, float blend, float4 vc, float4 noise, fl
 		cov = saturate((cov - age * erosion * (0.35 + 0.65 * noise.x)) / max(1.0 - age * erosion * 0.5, 0.2));
 	}
 	const float k = cov * saturate(vc.w) * opacity;
-	const float3 c = col * FFRGB(vc) * FFSmokeLight(s.x, s.y, vdotl);
+	const float3 c = col * FFRGB(vc) * FFSmokeLight(s.x, s.y, vdotl, lightScale);
 	return float4(c * k, saturate(k));
 }
 
 // Splash: water droplets / sheets; foam (B) whitens, thin parts glint.
-float4 FFSplashShade(float4 a, float4 b, float blend, float4 vc, float3 col, float vdotl)
+float4 FFSplashShade(float4 a, float4 b, float blend, float4 vc, float3 col, float vdotl, float lightScale)
 {
 	const float4 s = lerp(a, b, blend);
 	const float k = saturate(s.w) * saturate(vc.w);
-	const float3 water = col * FFSmokeLight(s.x, s.y, vdotl) * 0.85;
-	const float3 foam = float3(0.92, 0.96, 1.0) * (0.6 + 0.5 * saturate(s.x));
+	const float3 water = col * FFSmokeLight(s.x, s.y, vdotl, lightScale) * 0.85;
+	const float3 foam = float3(0.92, 0.96, 1.0) * ((0.6 + 0.5 * saturate(s.x)) * lightScale * 0.8);
 	const float3 c = lerp(water, foam, saturate(s.z)) * FFRGB(vc);
 	const float spark = FFSmooth(0.85, 1.0, s.x) * 0.6;
 	return float4((c + FFV3(spark)) * k, saturate(k * (0.55 + 0.45 * saturate(s.z))));

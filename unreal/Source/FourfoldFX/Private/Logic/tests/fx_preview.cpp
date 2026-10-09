@@ -193,9 +193,11 @@ Vec3 ShadeLit(const fxs::MatOut& o, const Vec3& n, const Vec3& v, const Vec3& p,
 	const float rough = std::max(o.rough, 0.04f);
 	const float ndl = std::max(n.dot(l), 0.0f);
 	const float ndv = std::max(n.dot(v), 1e-3f);
-	const Vec3 sun(2.3f, 2.2f, 2.0f);
+	// the arena sun: 14 lux at manual exposure 1 (diffuse white facing it = 14 / pi), colour (255, 240, 222); sky fill
+	// from the captured atmosphere (2026-10-09; was 2.3 / 0.55 for the old 3.2 lux sun)
+	const Vec3 sun(4.46f, 4.2f, 3.88f);
 	const float3 skyC = fxs::FFSky(n.z);
-	const Vec3 sky = Vec3(skyC.x, skyC.y, skyC.z) * 0.55f;
+	const Vec3 sky = Vec3(skyC.x, skyC.y, skyC.z) * 0.9f;
 	const Vec3 diffC = albedo * (1.0f - metal);
 	const Vec3 f0 = Vec3(0.08f, 0.08f, 0.08f) * o.spec * (1.0f - metal) + albedo * metal;
 	const Vec3 h = ffx::Norm(l + v);
@@ -925,6 +927,7 @@ struct Shot {
 
 int main(int argc, char** argv) {
 	std::string noisePath, fbDir, outDir = ".", only;
+	std::vector<int> ticksOverride;   // --ticks 60,300,600: render these sim ticks of every shot (long-lived looks)
 	bool gallery = false;
 	int width = 640, height = 360;
 	for (int a = 1; a < argc; ++a) {
@@ -934,6 +937,16 @@ int main(int argc, char** argv) {
 		else if (s == "--out" && a + 1 < argc) outDir = argv[++a];
 		else if (s == "--only" && a + 1 < argc) only = argv[++a];
 		else if (s == "--gallery") gallery = true;
+		else if (s == "--ticks" && a + 1 < argc) {
+			for (const char* p = argv[++a]; *p;) {
+				char* end = nullptr;
+				const long t = std::strtol(p, &end, 10);
+				if (end == p) break;
+				if (t > 0) ticksOverride.push_back(static_cast<int>(t));
+				p = *end == ',' ? end + 1 : end;
+			}
+			std::sort(ticksOverride.begin(), ticksOverride.end());
+		}
 		else if (s == "--size" && a + 2 < argc) {
 			width = std::atoi(argv[++a]);
 			height = std::atoi(argv[++a]);
@@ -995,6 +1008,7 @@ int main(int argc, char** argv) {
 					s.tier = tier;
 					// T3 holds the charge 1.8 s (108 ticks) before the release
 					s.ticks = tier == 0 ? std::vector<int>{8, 18, 32, 55} : std::vector<int>{60, 116, 132, 160};
+					if (!ticksOverride.empty()) s.ticks = ticksOverride;
 					s.camDist = 5.0f;
 					shots.push_back(s);
 				}

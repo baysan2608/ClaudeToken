@@ -404,4 +404,79 @@ FXT_TEST(director_paused_and_quality) {
 	FXT_NEAR(ph1, ph2, 1e-6);
 }
 
+FXT_TEST(director_cooled_lava_ridge_glows_then_sinks) {
+	// a magma wave flows, settles, keeps the sim's heat as a glow that dies with a visual cooling clock, then sinks into
+	// the floor and stops drawing while the sim body lives on (FxViews.cpp StripView); a plain stone ridge stays
+	FxDirector d;
+	Frame f;
+	ff::BodyView w = Body(5, Mat::Stone, Form::Wave);
+	w.liquid = 1.0f;
+	w.temp = 1150.0f;
+	w.wave_dir = Vec3(0.0f, 0.0f, 1.0f);
+	w.wave_width = 1.2f;
+	w.wave_path = {Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f), Vec3(0.0f, 0.0f, 2.0f)};
+	w.pos = Vec3(0.0f, 0.0f, 2.0f);
+	ff::BodyView plain = Body(6, Mat::Stone, Form::Chunk);   // never molten, settled ridge shape
+	plain.wave_path = {Vec3(3.0f, 0.0f, 0.0f), Vec3(3.0f, 0.0f, 1.5f)};
+	plain.pos = Vec3(3.0f, 0.0f, 1.5f);
+	f.curr.bodies = {w, plain};
+	auto lava = [&](const DrawList& dl, const DrawItem** out) {
+		int n = 0;
+		*out = nullptr;
+		for (const DrawItem& it : dl.items)
+			if (it.mat == MatSlot::LavaStrip) {
+				++n;
+				if (it.params.Get(P::Melt) > 0.5f || it.params.Get(P::Heat) > 0.0f || !*out) *out = &it;
+			}
+		return n;
+	};
+	const DrawItem* it = nullptr;
+	for (int i = 0; i < 30; ++i) {
+		f.Tick();
+		d.Update(f.in);
+	}
+	f.Tick();
+	FXT_CHECK(lava(d.Update(f.in), &it) == 2);
+	FXT_CHECK(it && it->params.Get(P::Heat) > 0.9f && it->params.Get(P::Fade) > 0.99f);
+	// settles and sets: solid, still 900 C in the sim (slow cooling)
+	w.form = Form::Chunk;
+	w.liquid = 0.0f;
+	w.temp = 900.0f;
+	f.curr.bodies = {w, plain};
+	float heat1s = -1.0f, heat8s = -1.0f, fade9s = -1.0f;
+	int lavaAt12s = -1;
+	for (int i = 1; i <= 12 * 60; ++i) {
+		f.Tick();
+		const DrawList& dl = d.Update(f.in);
+		const int n = lava(dl, &it);
+		const DrawItem* ridge = nullptr;
+		for (const DrawItem& x : dl.items)
+			if (x.mat == MatSlot::LavaStrip && x.params.Get(P::Heat) > 0.0f) ridge = &x;
+		if (i == 60) heat1s = ridge ? ridge->params.Get(P::Heat) : 0.0f;
+		if (i == 8 * 60) heat8s = ridge ? ridge->params.Get(P::Heat) : 0.0f;
+		if (i == 9 * 60 + 30) {
+			// 3 s cold after the glow died at 6 s: sinking (the plain ridge keeps Fade 1)
+			float minFade = 1.0f;
+			for (const DrawItem& x : dl.items)
+				if (x.mat == MatSlot::LavaStrip) minFade = MinF(minFade, x.params.Get(P::Fade, 1.0f));
+			fade9s = minFade;
+		}
+		if (i == 12 * 60) lavaAt12s = n;
+	}
+	FXT_CHECK(heat1s > 0.5f);         // still glowing a second after it set
+	FXT_NEAR(heat8s, 0.0f, 1e-4);     // cold by the visual clock
+	FXT_CHECK(fade9s > 0.05f && fade9s < 0.95f);
+	FXT_CHECK(lavaAt12s == 1);        // the cooled ridge is gone, the plain stone ridge still draws
+	// re-melted: the ridge rises again
+	w.liquid = 0.6f;
+	w.temp = 1100.0f;
+	f.curr.bodies = {w, plain};
+	for (int i = 0; i < 60; ++i) {
+		f.Tick();
+		d.Update(f.in);
+	}
+	f.Tick();
+	FXT_CHECK(lava(d.Update(f.in), &it) == 2);
+}
+
 #endif

@@ -166,6 +166,7 @@ public:
 			}
 			melt_ = Sat(b.liquid > 0.0f ? b.liquid : Life01(b));
 			crust_ = Sat(1.0f - melt_ / 0.85f);
+			heat_ = MaxF(Heat01(b), melt_);
 			speed_ = 0.15f;
 			front_ = b.pos + Vec3(0.0f, 0.2f, 0.0f);
 		} else {
@@ -176,6 +177,7 @@ public:
 				sig = Vec3(static_cast<float>(b.wave_path.size()) + b.wave_width * 100.0f, b.wave_path.back().x, b.wave_path.back().z);
 			if (moving || sig != sig_) {
 				sig_ = sig;
+				settled_ = !moving;
 				std::vector<Vec3> pts = PathWithHead(b, f.p, moving);
 				if (pts.size() < 2) pts.insert(pts.begin(), f.p - Norm(b.wave_dir, Vec3(0, 0, 1)) * 0.4f);
 				std::vector<float> w(pts.size());
@@ -189,6 +191,23 @@ public:
 			melt_ = Sat(b.liquid);
 			crust_ = b.liquid <= 0.0f ? 1.0f : Sat(1.0f - b.liquid / 0.85f);
 			speed_ = b.vel.length();
+			if (style_ == StripStyle::Lava) {
+				// Solid rock keeps the sim's heat as a dull red glow in its cracks (thinner crust while hot). The glow
+				// is also dimmed by a visual cooling clock (gone 6 s after the rock set) so a slowly cooling body never
+				// lingers as a glowing ribbon; once cold for 3 s the ridge sinks into the floor over 1.5 s and stops
+				// drawing (the sim body lives on; re-heated or re-melted rock rises again).
+				const float simHeat = Heat01(b);
+				solidT_ = (b.liquid <= 0.0f && simHeat <= simHeat_ + 0.02f) ? solidT_ + c.dt : 0.0f;   // re-heat: glow again
+				simHeat_ = b.liquid <= 0.0f && simHeat > simHeat_ + 0.02f ? simHeat : MinF(simHeat_, simHeat);
+				heat_ = MaxF(simHeat * (1.0f - Smooth(2.0f, 6.0f, solidT_)), melt_);
+				if (b.liquid > 0.0f || heat_ > 0.3f) wasMolten_ = true;
+				if (b.liquid <= 0.0f) crust_ = 1.0f - 0.3f * heat_;
+				// only a settled ridge that once flowed as lava sinks (moving waves and plain stone ridges stay)
+				const bool cold = wasMolten_ && !moving && b.liquid <= 0.0f && heat_ < 0.08f;
+				coldT_ = cold ? coldT_ + c.dt : 0.0f;
+				const float sinkTarget = coldT_ > 3.0f ? 1.0f : 0.0f;
+				sink_ = sink_ < sinkTarget ? MinF(sink_ + c.dt / 1.5f, sinkTarget) : MaxF(sink_ - c.dt / 0.5f, sinkTarget);
+			}
 			if (style_ == StripStyle::Water) {
 				// a water wave freezes in place (rime): crust = frozen fraction
 				crust_ = b.phase == Phase::Frozen ? 1.0f : Sat(1.0f - b.liquid);
@@ -200,7 +219,7 @@ public:
 		boil_ += c.dt * (0.25f + 0.75f * live);
 	}
 	void Draw(Ctx& c, float fade) override {
-		if (mesh_.Empty()) return;
+		if (mesh_.Empty() || sink_ >= 1.0f) return;
 		MatSlot slot = MatSlot::LavaStrip;
 		if (style_ == StripStyle::Water) slot = MatSlot::Water;
 		else if (style_ != StripStyle::Lava) slot = MatSlot::GroundStrip;
@@ -210,7 +229,9 @@ public:
 		it.params.Set(P::Flow, phase_);
 		it.params.Set(P::Boil, boil_);
 		it.params.Set(P::Seed, static_cast<float>(seed_ % 53u) * 0.173f);
-		it.params.Set(P::Fade, fade);
+		// lava: Fade also sinks the strip into the floor (M_FX_LavaStrip WPO), eased in
+		it.params.Set(P::Fade, style_ == StripStyle::Lava ? fade * (1.0f - Smooth(0.0f, 1.0f, sink_)) : fade);
+		if (style_ == StripStyle::Lava) it.params.Set(P::Heat, heat_);
 		switch (style_) {
 			case StripStyle::Water:
 				it.params.Set(P::Shape, 2.0f);   // water material: strip with a foam lip
@@ -238,6 +259,12 @@ private:
 		sp.heightFront = sl.heightFront;
 		sp.heightTail = sl.heightTail;
 		sp.frontBulge = sl.bulge;
+		if (settled_ && sel.kind != ViewKind::LavaPool) {
+			// a settled ridge has no advancing nose: even height, no bulge (the rounded end cap stays)
+			sp.heightFront = sl.heightTail;
+			sp.frontBulge = 0.0f;
+			sp.widthBulge = 0.0f;
+		}
 		mesh_.Clear();
 		AppendPathStrip(mesh_, pts, w, sp);
 		mesh_.Commit();
@@ -247,6 +274,9 @@ private:
 	Vec3 sig_{1e9f, 1e9f, 1e9f};
 	Vec3 front_;
 	float melt_ = 1.0f, crust_ = 0.0f, speed_ = 0.0f, phase_ = 0.0f, boil_ = 0.0f;
+	float heat_ = 0.0f, solidT_ = 0.0f, coldT_ = 0.0f, sink_ = 0.0f;   // lava: shown heat, seconds solid / cold, sink 0..1
+	float simHeat_ = 1.0f;                                              // lowest sim heat since the rock set (re-heat check)
+	bool settled_ = false, wasMolten_ = false;
 	MeshData mesh_;
 };
 
@@ -946,7 +976,7 @@ public:
 		const bool loops = c.LoopOn(cue) && fade >= 1.0f && intensity_ > 0.05f;
 		if (loops) {
 			const std::array<Color, 4>& cols = blue_ ? c.cfg.blueFlame : c.cfg.flame;
-			const Color smoke = blue_ ? Color(0.40f, 0.42f, 0.48f) : Color(0.42f, 0.40f, 0.38f);
+			const Color smoke = blue_ ? Color(0.60f, 0.62f, 0.68f) : Color(0.62f, 0.60f, 0.58f);
 			std::array<Vec3, kSites> sites{};
 			const int n = Sites(sites);
 			for (int k = 0; k < n; ++k) {
@@ -1072,7 +1102,7 @@ public:
 			l.scale = Clamp(radius_ * 2.5f, 0.5f, 1.4f);
 			l.intensity = power_;
 			l.color = cols[1];
-			l.color2 = blue_ ? Color(0.55f, 0.58f, 0.66f) : Color(0.56f, 0.54f, 0.52f);
+			l.color2 = blue_ ? Color(0.62f, 0.65f, 0.72f) : Color(0.64f, 0.62f, 0.60f);
 		}
 	}
 	float FadeTime() const override { return 0.12f; }

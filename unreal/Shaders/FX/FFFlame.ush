@@ -129,7 +129,9 @@ float4 FFFireSpriteShade(float4 a, float4 b, float blend, float4 vc, float heatB
 	const float T = saturate(s.z * (0.85 + 0.3 * heatBias));
 	// fire: the flame ramp by temperature (white at the hottest cores), brighter as it gets hotter; smoke: lit grey by R
 	const float3 fire = FFFlameRamp(T, deep, mid, hot, white) * (0.9 + 1.8 * T * T) * tint;
-	const float3 smoke = lerp(float3(0.05, 0.045, 0.042), float3(0.32, 0.30, 0.28), saturate(s.x)) * FFRGB(vc);
+	// smoke grey under the 14 lux arena sun (2026-10-09: was 0.05..0.32, a black blob in daylight): blue-grey shadow
+	// side, warm light grey where the baked key light falls
+	const float3 smoke = lerp(float3(0.15, 0.16, 0.18), float3(0.78, 0.74, 0.68), saturate(s.x)) * FFRGB(vc);
 	const float fireK = FFSmooth(0.08, 0.35, T);
 	const float3 e = (fire * fireK * emissiveScale + smoke * (1.0 - fireK)) * cov * intensity;
 	// glowing fire covers less than smoke (additive-ish core, opaque-ish smoke)

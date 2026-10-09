@@ -287,3 +287,47 @@ Open items, in order:
 GPU budget agreed with the main session: FX <= 2 ms (a burning fire field + steam = +1.7 ms; cue bursts +0.5-1 ms).
 Coordination: ask the main session for a UE slot before any build / -game / commandlet; commit only FX paths with
 `git commit -o -- <paths>`.
+
+## 14 lux re-balance: cooled lava, smoke, ground marks, fire (2026-10-09)
+The world moved to a 14 lux sun at 22 deg (side / back light), manual exposure 1.0, bloom threshold 0.8 / intensity
+0.45 - about 3x brighter than the FX were balanced for (3.2 lux). What changed:
+- **Black ribbon (cooled magma rift: magma_surge, slag_wave, blue_furrow ...)**. `StripView` (FxViews.cpp) now sets
+  `Heat` on M_FX_LavaStrip: the sim's heat, dimmed by a visual cooling clock (full 2 s after the rock sets, gone at
+  6 s; a re-heat restarts it), solid crust thinner while hot (`Crust = 1 - 0.3 Heat`). `FFLavaStripSurface` takes
+  `heat` (dull red cracks + hairlines only while hot). A settled ridge that once flowed as lava sinks into the floor
+  once cold for 3 s (`Fade` eased over 1.5 s; `FFLavaStripOffset` takes `fade`: 12 cm at the edges .. 72 cm at the
+  crest) and then stops drawing; the sim body lives on (re-melt / re-heat raises it again). Moving waves and plain
+  stone ridges never sink. Settled ridges are rebuilt without the nose (`heightFront = heightTail`, no bulge).
+- **Basalt** (FFRockModel, shared by M_FX_Rock crusted stones / globs, lava strips): dark grey-brown 0.04-0.10 linear
+  with mottling and darker vesicle pits (was 0.005-0.026: ink black), fissure floors 0.02, molten skin x0.4, cold
+  crust roughness 0.9 and stronger fine grain on the strip. Melt pit decal crust likewise.
+- **Smoke**: `LightScale` tuning scalar on M_FX_Smoke (2.2) / M_FX_Splash (1.8) multiplies `FFSmokeLight` (sky fill +
+  baked key shade + forward scatter; foam too). Palette (fx_config): smoke / ember / ash puffs 0.56-0.62 display,
+  alpha 0.35, smoke 0.9 s, ash 1.0 s; dust bursts alpha 0.45; fire-family dust (magma 0.52, flame 0.62, blue 0.60,
+  lightning 0.60, blast 0.58); smoke cloud 0.64 / 0.42; steam cloud low 0.86. NS_Fire smoke (0.62, 0.60, 0.58) / blue
+  (0.60, 0.62, 0.68); rocket-trail smoke 0.64. Fire-sprite (procedural blast) smoke 0.15-0.78 linear (was 0.05-0.32).
+- **Niagara**: blast `Smoke Color` "0.5", `Dirt Color` "0.15" (fixed greys; was dust colour x 4 = near black); `dust`
+  min_intensity 1.0 (the every-hit feet dust at 0.6 stays procedural, tier-3 / big dust still spawns the system).
+- **Combustion bursts** (FxCues.cpp `burst`): small blast pops (`shape` "small" or radius < 0.8: Afterglow's hover pops
+  5 / s, chain sparks) play a short FireBurst instead of Blast + dust cloud; real blasts kick up stone dust at
+  0.35 + 0.2 r (<= 1.2) instead of dark blast dust at 0.6 + 0.3 r.
+- **Ground marks**: there is no scorch decal in FX; the ink-black floor marks were the wet mark (0.025 at 0.55-0.75
+  opacity), the melt pit crust (0.02) and cooled globs / ridges (basalt above). Wet mark now 0.08 at 0.36-0.50 with a
+  soft edge, melt pit crust 0.05-0.115 (soft edge once it cools), mud slightly lighter.
+- **Fire for bloom**: M_FX_Flame EmissiveScale 1.2 -> 1.7, M_FX_FireSprite 1.0 -> 1.35, burst sparks 2.5 -> 3.2,
+  embers 3.0 -> 3.8.
+- Tests: `director_cooled_lava_ridge_glows_then_sinks`, `niagara_small_pops_are_fire_bursts_not_blasts` (logic tests
+  39/39); core soak full + quick OK; lint + parameter check OK; py_mock_fx OK; ffx_preview builds the new HLSL through
+  the shim (sun now 14 lux; `--ticks` option for long-lived looks). DXC was not available on the Mac (not run).
+- **Main session, to apply**: rebuild the changed masters (spec defaults / inputs changed: lava_strip, smoke, splash,
+  flame, fire_sprite; the .ush edits also recompile rock and ground). In the editor Python console:
+  `import fourfold.fx as f, fourfold.fx.spec as s; r = {"created": [], "skipped": [], "failed": [], "notes": []}`
+  then `for k in ("lava_strip", "smoke", "splash", "flame", "fire_sprite", "rock", "ground"): f.build_material(k, s.MATERIALS[k], True, r)`
+  (rock: its instances keep their baked normals; check `r["failed"]`). fx_config.json is regenerated.
+- **Look checks**: `-scenario=lab -FFLabSpawn=lava_wave@2,magma_blob@4 -FFShot=<s> -FFShotDir=<dir>` with shots
+  at ~3, 6, 9, 12, 14 s (a lava wave: hot -> dull red cracks for ~2-5 s after it sets -> dark grey-brown rough rock ->
+  sinks ~9-10.5 s after it sets; the blob crusts to grey basalt, not black); a Lab magma surge (earth / magma sub,
+  ground slot) shows the same; `-scenario=spar -autoplay=duel` for smoke / dust / blasts in the duel camera
+  (smoke light grey in sun, blue-grey shade; no dark blobs at the feet on every hit); `ff.fx.ShowcaseFilter blast`
+  (explosion smoke grey, not black); Afterglow (fire / blast sub, evade hold) = small fire pops only. If smoke reads
+  too bright / dim, tune `LightScale` on M_FX_Smoke (no rebuild of the logic needed).

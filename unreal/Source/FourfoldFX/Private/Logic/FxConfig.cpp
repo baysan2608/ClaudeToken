@@ -282,11 +282,13 @@ FxConfig::FxConfig() {
 	                              C(0.42f, 0.82f, 0.30f), C(1.00f, 0.55f, 0.16f), C(0.45f, 0.72f, 1.00f),
 	                              C(0.74f, 0.78f, 1.00f), C(1.00f, 0.70f, 0.32f), C(0.90f, 0.95f, 1.00f),
 	                              C(0.80f, 0.92f, 0.98f), C(0.62f, 0.48f, 0.92f), C(1.00f, 0.90f, 0.66f)};
+	// fire-family dust / smoke (magma, flame, blue, lightning, blast) is light ash grey: the 14 lux arena sun made the
+	// old 0.24 - 0.40 values read as black blobs (2026-10-09)
 	const Color kDust[kNumFams] = {C(0.50f, 0.45f, 0.38f), C(0.55f, 0.55f, 0.58f), C(0.78f, 0.64f, 0.42f),
-	                               C(0.80f, 0.92f, 0.88f), C(0.24f, 0.20f, 0.18f), C(0.80f, 0.90f, 0.95f),
+	                               C(0.80f, 0.92f, 0.88f), C(0.52f, 0.48f, 0.45f), C(0.80f, 0.90f, 0.95f),
 	                               C(0.88f, 0.95f, 1.00f), C(0.82f, 0.86f, 0.90f), C(0.92f, 0.93f, 0.94f),
-	                               C(0.36f, 0.45f, 0.22f), C(0.30f, 0.28f, 0.27f), C(0.32f, 0.32f, 0.36f),
-	                               C(0.40f, 0.40f, 0.45f), C(0.26f, 0.25f, 0.24f), C(0.62f, 0.58f, 0.52f),
+	                               C(0.36f, 0.45f, 0.22f), C(0.62f, 0.60f, 0.58f), C(0.60f, 0.61f, 0.66f),
+	                               C(0.60f, 0.60f, 0.65f), C(0.58f, 0.56f, 0.54f), C(0.62f, 0.58f, 0.52f),
 	                               C(0.62f, 0.58f, 0.52f), C(0.50f, 0.47f, 0.52f), C(0.58f, 0.54f, 0.48f)};
 	for (int i = 0; i < kNumFams; ++i) {
 		mat[static_cast<size_t>(i)] = kMat[i];
@@ -301,7 +303,7 @@ FxConfig::FxConfig() {
 	{
 		BurstStyle& s = B(Burst::Dust);
 		s = BurstStyle();
-		s.puff = C(0.55f, 0.49f, 0.40f); s.speed = 1.8f; s.gravity = 0.25f; s.spread = 70.0f;
+		s.puff = C(0.55f, 0.49f, 0.40f); s.speed = 1.8f; s.gravity = 0.25f; s.spread = 70.0f; s.alpha = 0.45f;
 	}
 	{
 		BurstStyle& s = B(Burst::Sand);
@@ -319,13 +321,14 @@ FxConfig::FxConfig() {
 	}
 	{
 		BurstStyle& s = B(Burst::Smoke);
-		s.puff = C(0.32f, 0.31f, 0.30f); s.speed = 1.0f; s.gravity = 0.9f; s.spread = 35.0f; s.dur = 1.3f;
-		s.flipbook = Flipbook::SmokePuff;
+		s.puff = C(0.62f, 0.61f, 0.60f); s.speed = 1.0f; s.gravity = 0.9f; s.spread = 35.0f; s.dur = 0.9f;
+		s.alpha = 0.35f; s.flipbook = Flipbook::SmokePuff;
 	}
 	{
 		BurstStyle& s = B(Burst::Ash);
-		s.puff = C(0.26f, 0.25f, 0.24f); s.spark = C(1.0f, 0.45f, 0.1f); s.hasSpark = true; s.speed = 0.9f;
-		s.gravity = 0.8f; s.sparkGravity = 1.5f; s.spread = 40.0f; s.dur = 1.2f; s.flipbook = Flipbook::SmokePuff;
+		s.puff = C(0.56f, 0.55f, 0.54f); s.spark = C(1.0f, 0.45f, 0.1f); s.hasSpark = true; s.speed = 0.9f;
+		s.gravity = 0.8f; s.sparkGravity = 1.5f; s.spread = 40.0f; s.dur = 1.0f; s.alpha = 0.35f;
+		s.flipbook = Flipbook::SmokePuff;
 	}
 	{
 		BurstStyle& s = B(Burst::Mist);
@@ -374,8 +377,8 @@ FxConfig::FxConfig() {
 	}
 	{
 		BurstStyle& s = B(Burst::Ember);
-		s.puff = C(0.30f, 0.28f, 0.26f); s.spark = C(1.0f, 0.6f, 0.2f); s.hasSpark = true; s.speed = 0.8f;
-		s.gravity = 0.6f; s.sparkGravity = -3.0f; s.spread = 50.0f; s.flipbook = Flipbook::SmokePuff;
+		s.puff = C(0.60f, 0.58f, 0.56f); s.spark = C(1.0f, 0.6f, 0.2f); s.hasSpark = true; s.speed = 0.8f;
+		s.gravity = 0.6f; s.sparkGravity = -3.0f; s.spread = 50.0f; s.alpha = 0.35f; s.flipbook = Flipbook::SmokePuff;
 	}
 	{
 		BurstStyle& s = B(Burst::Inflow);
@@ -395,13 +398,13 @@ FxConfig::FxConfig() {
 	setCloud(CloudStyle::Sandstorm, 1.9f, 1.1f, 0, 0, 0, 0.6f, 0.35f, 0, 0.48f, 0.52f, C(0.64f, 0.48f, 0.28f), C(0.36f, 0.25f, 0.14f));
 	setCloud(CloudStyle::Fog, 1.8f, 0.06f, 0, 0, 0.85f, 0.6f, 0.15f, 0, 0.15f, 0.17f, C(0.80f, 0.84f, 0.88f), C(0.58f, 0.63f, 0.68f));
 	setCloud(CloudStyle::Mist, 1.5f, 0.1f, 0, 0, 0.7f, 0.6f, 0.15f, 0, 0.13f, 0.16f, C(0.82f, 0.87f, 0.91f), C(0.62f, 0.68f, 0.74f));
-	setCloud(CloudStyle::Steam, 1.1f, 0.2f, 0.45f, 0.3f, 0, 1.1f, 0.15f, 0, 0.3f, 0.36f, C(0.97f, 0.97f, 0.98f), C(0.80f, 0.82f, 0.85f));
+	setCloud(CloudStyle::Steam, 1.1f, 0.2f, 0.45f, 0.3f, 0, 1.1f, 0.15f, 0, 0.3f, 0.36f, C(0.98f, 0.98f, 0.99f), C(0.86f, 0.88f, 0.90f));
 	setCloud(CloudStyle::SteamScreen, 1.4f, 0.05f, 0.18f, 0, 0, 0.6f, 0.15f, 0, 0.3f, 0.34f, C(0.96f, 0.97f, 0.98f), C(0.78f, 0.80f, 0.83f));
 	setCloud(CloudStyle::Geyser, 0.9f, 0.5f, 1.1f, 1.0f, 0, 1.5f, 0.15f, 0, 0.42f, 0.55f, C(0.97f, 0.98f, 1.0f), C(0.62f, 0.78f, 0.86f));
 	setCloud(CloudStyle::DustLine, 0.9f, 0.2f, 0, 0, 0.35f, 0.6f, 0.15f, 0, 0.36f, 0.4f, C(0.74f, 0.67f, 0.56f), C(0.50f, 0.44f, 0.36f));
 	setCloud(CloudStyle::Slug, 0.42f, 2.5f, 0, 0, 0, 0.6f, 0.04f, 0.25f, 0.75f, 0.9f, C(0.70f, 0.53f, 0.31f), C(0.42f, 0.30f, 0.16f));
 	setCloud(CloudStyle::Veil, 1.0f, 0.4f, 0.12f, 0, 0, 0.6f, 0.15f, 0, 0.18f, 0.2f, C(0.88f, 0.92f, 0.95f), C(0.72f, 0.76f, 0.80f));
-	setCloud(CloudStyle::Smoke, 1.0f, 0.2f, 0.3f, 0.4f, 0, 1.4f, 0.15f, 0, 0.32f, 0.36f, C(0.42f, 0.41f, 0.40f), C(0.20f, 0.19f, 0.19f));
+	setCloud(CloudStyle::Smoke, 1.0f, 0.2f, 0.3f, 0.4f, 0, 1.4f, 0.15f, 0, 0.32f, 0.36f, C(0.64f, 0.63f, 0.62f), C(0.42f, 0.42f, 0.43f));
 
 	// ---- shells (ShellView.STYLES)
 	auto SH = [this](ShellStyle s) -> ShellLook& { return shells[static_cast<size_t>(s)]; };
@@ -478,14 +481,16 @@ FxConfig::FxConfig() {
 	const PL sparks = {{"Spark Color Gain", "color2*8"}};
 	// the periodic status puffs (drip / grit / mud / frost feet / steam / fog / embers: strength 0.15 - 0.3) stay
 	// procedural: bursts need strength >= 0.35
-	slot(NCue::Blast, "FX_Explosions/NS_Explosion_Medium", 0.7f, true, {{"Smoke Color", "color*4"}, {"Dirt Color", "color"}});
+	// fixed greys (linear): light smoke, dark dirt - the request's dust colour x 4 was near black under the 14 lux sun
+	slot(NCue::Blast, "FX_Explosions/NS_Explosion_Medium", 0.7f, true, {{"Smoke Color", "0.5"}, {"Dirt Color", "0.15"}});
 	slot(NCue::BurstDust, "FX_Explosions/NS_Dirt_Explosion_Small", 0.5f, true, dirt, 0.0f, 0.35f);
 	slot(NCue::BurstSand, "FX_Explosions/NS_Dirt_Explosion_Small", 0.5f, true, dirt, 0.0f, 0.35f);
 	slot(NCue::BurstGrit, "FX_Explosions/NS_Dirt_Explosion_Small", 0.4f, true, dirt, 0.0f, 0.35f);
 	slot(NCue::BurstMetal, "FX_Sparks/NS_Spark_Burst", 0.8f, false, sparks, 0.0f, 0.35f);
 	slot(NCue::BurstEmber, "FX_Sparks/NS_Spark_Burst", 0.6f, false, sparks, 0.0f, 0.35f);
 	slot(NCue::BurstSparks, "FX_Sparks/NS_Spark_Burst", 0.8f, false, sparks, 0.0f, 0.35f);
-	slot(NCue::Dust, "FX_Explosions/NS_Dirt_Explosion_Small", 0.35f, false, dirt, 0.0f, 0.6f);
+	// strong dust only (tier-3 hits, big blasts): the every-hit feet dust (0.6) stays procedural
+	slot(NCue::Dust, "FX_Explosions/NS_Dirt_Explosion_Small", 0.35f, false, dirt, 0.0f, 1.0f);
 	slot(NCue::Ember, "FX_Sparks/NS_Spark_Burst", 0.5f, false, sparks);
 	slot(NCue::Steam, "FX_Smoke/NS_Smoke_Plume", 0.3f, false, {{"Smoke Color", "color"}}, 0.5f);
 	slot(NCue::BoltArc, "FX_Ribbons/NS_TeslaCoil", 1.0f, false, {{"PositionTarget", "target"}}, 0.3f);

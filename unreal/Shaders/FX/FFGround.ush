@@ -78,6 +78,8 @@ FFSurf FFGroundDecalSurface(float2 uv, float4 n, float4 n2, float4 crackle, floa
 	const float ang = atan2(p.y, p.x);
 	const float ragged = (n.x - 0.5) * 0.3 + (n2.x - 0.5) * 0.08;
 	const float body = 1.0 - FFSmooth(0.72, 0.98, r + ragged);
+	// soft-edged variant for marks that only darken the floor (wet ground, cooled crust): no ink-splat rim
+	const float soft = 1.0 - FFSmooth(0.35, 1.0, r + ragged * 0.6);
 	float3 col = float3(0.5, 0.5, 0.5);
 	float a = body;
 	s.rough = 0.9;
@@ -108,23 +110,24 @@ FFSurf FFGroundDecalSurface(float2 uv, float4 n, float4 n2, float4 crackle, floa
 	{
 		// mud
 		const float wet = FFSmooth(0.4, 0.7, n.x);
-		col = lerp(float3(0.12, 0.09, 0.06), float3(0.06, 0.045, 0.03), wet);
+		col = lerp(float3(0.15, 0.115, 0.08), float3(0.08, 0.06, 0.042), wet);
 		s.rough = lerp(0.8, 0.1, wet);
 		s.spec = lerp(0.3, 0.85, wet);
 		a = body * 0.92;
 	}
 	else if (style < 3.5)
 	{
-		// melt pit: black glassy crust, glowing fissures, a hot rim
+		// melt pit: dark grey-brown basalt crust (2026-10-09: was 0.02, an ink-black disc), glowing fissures, a hot
+		// rim; soft outer edge
 		float2 g = float2(0.0, 0.0);
 		const float4 vr = FFVoronoi2(float2(uv.x * 5.0 + seed, uv.y * 5.0 + seed), g);
 		const float fis = 1.0 - FFSmooth(0.0, 0.06 + 0.1 * heat, vr.y);
 		const float rim = FFSmooth(0.55, 0.85, r) * (1.0 - FFSmooth(0.85, 1.0, r + ragged));
 		const float flick = 0.9 + 0.1 * sin(phase * 3.0 + n.x * 9.0);
-		col = float3(0.02, 0.017, 0.015);
-		s.rough = 0.5;
+		col = lerp(float3(0.05, 0.044, 0.039), float3(0.115, 0.10, 0.086), n2.x) * (1.0 - 0.5 * fis);
+		s.rough = lerp(0.85, 0.55, fis);
 		s.emissive = FFBlackbody(0.55 + 0.4 * heat * n2.x) * ((fis * (1.0 - r * 0.5) + rim * 0.8) * 2.0 * heat * flick);
-		a = body;
+		a = lerp(soft, body, saturate(heat * 1.5));
 	}
 	else if (style < 4.5)
 	{
@@ -156,11 +159,12 @@ FFSurf FFGroundDecalSurface(float2 uv, float4 n, float4 n2, float4 crackle, floa
 	}
 	else
 	{
-		// wet mark: darkened, glossy ground
-		col = float3(0.025, 0.028, 0.03);
-		s.rough = 0.08;
-		s.spec = 0.8;
-		a = body * (0.55 + 0.2 * n.y);
+		// wet mark: darkened, glossy ground (2026-10-09: was 0.025 at 0.55-0.75 opacity, a black ink splat in daylight;
+		// now darkens the floor by ~35 % with a soft edge)
+		col = float3(0.085, 0.08, 0.075);
+		s.rough = 0.15;
+		s.spec = 0.7;
+		a = soft * (0.36 + 0.14 * n.y);
 	}
 	s.albedo = col;
 	s.opacity = saturate(a * fade);
