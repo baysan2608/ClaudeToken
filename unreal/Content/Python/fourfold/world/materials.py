@@ -512,10 +512,10 @@ MASTERS = {
 # ----------------------------------------------------------------------------------------------------------------- instances
 # slot -> (master, texture set (T_Env_<Set>_*), scalars, vectors)
 SLOTS = {
-    "Floor": ("M_Env_Floor", "Flagstone", dict(Saturation=0.80, GrimeAmount=0.7, MacroStrength=0.14), dict(Tint=(1.0, 0.96, 0.90))),
+    "Floor": ("M_Env_Floor", "Flagstone", dict(Saturation=0.80, GrimeAmount=0.7, MacroStrength=0.32), dict(Tint=(1.0, 0.96, 0.90))),
     "StoneWall": ("M_Env_Surface", "Wall", dict(Saturation=0.80, GrimeAmount=0.85), dict(Tint=(1.0, 0.97, 0.92))),
     "StoneCap": ("M_Env_Surface", "LedgeCap", dict(Saturation=0.82, GrimeAmount=0.4), dict()),
-    "Plaster": ("M_Env_Surface", "Plaster", dict(Saturation=0.95, GrimeAmount=1.0, MacroStrength=0.10), dict(GrimeColor=(0.55, 0.52, 0.42))),
+    "Plaster": ("M_Env_Surface", "Plaster", dict(Saturation=0.95, GrimeAmount=1.0, MacroStrength=0.20), dict(GrimeColor=(0.55, 0.52, 0.42))),
     "Timber": ("M_Env_Surface", "Timber", dict(Saturation=0.9, GrimeAmount=0.5), dict(Tint=(0.92, 0.85, 0.78))),
     "RoofTile": ("M_Env_Surface", "RoofTile", dict(Saturation=0.85, GrimeAmount=0.5), dict()),
     "PoolTile": ("M_Env_Surface", "PoolTile", dict(Saturation=1.0, GrimeAmount=0.7, Porosity=0.3), dict()),
@@ -560,7 +560,7 @@ def _create_mpc(report, force):
 
 
 # the scanned paving / plaster are pale: under auto exposure they read near-white next to the fighters
-PHOTO_BRIGHTNESS = {"Floor": 0.72, "Plaster": 0.85, "StoneCap": 0.85}
+PHOTO_BRIGHTNESS = {"Floor": 0.58, "Plaster": 0.85, "StoneCap": 0.85}
 
 
 def _photo_manifest():
@@ -640,7 +640,7 @@ def build_all(force, texs, report):
                 # photo-scanned set: real-world repeat size, and the procedural grading (desaturate + painted grime) toned down
                 scalars["UVScale"] = photo["uv_scale"][slot]
                 scalars["Saturation"] = 1.0
-                scalars["GrimeAmount"] = scalars.get("GrimeAmount", 0.5) * 0.35
+                scalars["GrimeAmount"] = scalars.get("GrimeAmount", 0.5) * 0.8
                 if slot in PHOTO_BRIGHTNESS:
                     scalars["Brightness"] = PHOTO_BRIGHTNESS[slot]
             for k, v in scalars.items():

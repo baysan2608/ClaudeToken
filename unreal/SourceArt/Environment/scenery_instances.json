@@ -1,7 +1,7 @@
 {
  "schema": "fourfold.env.instances/1",
- "units": "cm, Unreal axes; height_m = target tree height",
- "source": "Tools/world/scenery_instances.py (positions = build_scenery.build_trees, rng 777)",
+ "units": "cm, Unreal axes; height_m = target height",
+ "source": "Tools/world/scenery_instances.py (tree positions = build_scenery.build_trees, rng 777)",
  "trees": [
   {
    "species": "Broadleaf",
@@ -1081,6 +1081,200 @@
     4960.2,
     -3972.7,
     -24.1
+   ]
+  }
+ ],
+ "mountains": [
+  {
+   "mesh": "SM_Rock_Cliff",
+   "height_m": 306.2,
+   "face_to_deg": 25.1,
+   "yaw_jitter_deg": 6.4,
+   "width_scale": 1.03,
+   "location_cm": [
+    -130576.3,
+    -61213.3,
+    -1056.9
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Strata",
+   "height_m": 386.9,
+   "face_to_deg": 31.8,
+   "yaw_jitter_deg": -7.1,
+   "width_scale": 1.41,
+   "location_cm": [
+    -142019.4,
+    -87996.2,
+    -2560.8
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Cliff",
+   "height_m": 265.2,
+   "face_to_deg": 53.0,
+   "yaw_jitter_deg": -14.3,
+   "width_scale": 1.2,
+   "location_cm": [
+    -167153.5,
+    -222219.6,
+    -854.7
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Strata",
+   "height_m": 334.8,
+   "face_to_deg": 61.1,
+   "yaw_jitter_deg": 14.3,
+   "width_scale": 1.36,
+   "location_cm": [
+    -64768.7,
+    -117372.5,
+    -1516.6
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Cliff",
+   "height_m": 370.5,
+   "face_to_deg": 77.5,
+   "yaw_jitter_deg": 2.8,
+   "width_scale": 1.1,
+   "location_cm": [
+    -55319.8,
+    -248945.6,
+    -2501.5
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Granite",
+   "height_m": 433.4,
+   "face_to_deg": 91.6,
+   "yaw_jitter_deg": 6.5,
+   "width_scale": 1.23,
+   "location_cm": [
+    7571.4,
+    -274898.0,
+    -2702.9
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Granite",
+   "height_m": 343.9,
+   "face_to_deg": 99.9,
+   "yaw_jitter_deg": 6.2,
+   "width_scale": 1.42,
+   "location_cm": [
+    38445.5,
+    -220758.0,
+    -1672.8
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Granite",
+   "height_m": 264.8,
+   "face_to_deg": 118.1,
+   "yaw_jitter_deg": -3.0,
+   "width_scale": 1.03,
+   "location_cm": [
+    84390.6,
+    -157854.8,
+    -592.0
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Cliff",
+   "height_m": 370.8,
+   "face_to_deg": 134.6,
+   "yaw_jitter_deg": -10.0,
+   "width_scale": 1.25,
+   "location_cm": [
+    103631.1,
+    -105050.1,
+    -1985.5
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Granite",
+   "height_m": 211.7,
+   "face_to_deg": 142.5,
+   "yaw_jitter_deg": -2.7,
+   "width_scale": 1.53,
+   "location_cm": [
+    206205.2,
+    -158325.2,
+    97.4
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Granite",
+   "height_m": 314.6,
+   "face_to_deg": 157.8,
+   "yaw_jitter_deg": 13.1,
+   "width_scale": 1.47,
+   "location_cm": [
+    242435.5,
+    -98851.5,
+    -2149.1
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Strata",
+   "height_m": 357.7,
+   "face_to_deg": -139.3,
+   "yaw_jitter_deg": -3.0,
+   "width_scale": 1.49,
+   "location_cm": [
+    247711.8,
+    212891.8,
+    -2227.9
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Strata",
+   "height_m": 326.8,
+   "face_to_deg": -114.9,
+   "yaw_jitter_deg": 17.3,
+   "width_scale": 1.16,
+   "location_cm": [
+    91347.0,
+    196432.3,
+    -960.8
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Strata",
+   "height_m": 351.0,
+   "face_to_deg": -91.3,
+   "yaw_jitter_deg": -8.6,
+   "width_scale": 1.16,
+   "location_cm": [
+    7738.1,
+    328607.8,
+    -1188.1
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Granite",
+   "height_m": 289.9,
+   "face_to_deg": -58.2,
+   "yaw_jitter_deg": 0.8,
+   "width_scale": 1.61,
+   "location_cm": [
+    -152734.1,
+    246414.5,
+    -2240.1
+   ]
+  },
+  {
+   "mesh": "SM_Rock_Cliff",
+   "height_m": 295.4,
+   "face_to_deg": -31.3,
+   "yaw_jitter_deg": 15.9,
+   "width_scale": 1.29,
+   "location_cm": [
+    -138459.3,
+    84251.2,
+    -815.9
    ]
   }
  ]

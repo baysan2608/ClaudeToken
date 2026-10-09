@@ -23,7 +23,7 @@ import env_spec as ES  # noqa: E402
 
 # texture set -> Poly Haven asset id (chosen from contact sheets for a mountain-temple courtyard)
 SETS = {
-    "Flagstone": "precast_stone_paving",
+    "Flagstone": "rock_tile_floor",            # was precast_stone_paving (modern sidewalk slabs)
     "Wall": "japanese_stone_wall",
     "LedgeCap": "castle_wall_slates",
     "Plaster": "clay_plaster",

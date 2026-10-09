@@ -201,7 +201,7 @@ class Builder:
         atm = self.spawn(unreal.SkyAtmosphere, (0, 0, 0), label="FF_SkyAtmosphere", folder="Fourfold/Lighting")
         ac = atm.get_component_by_class(unreal.SkyAtmosphereComponent)
         for k, v in (("mie_scattering_scale", 0.006), ("mie_anisotropy", 0.82), ("multi_scattering_factor", 1.0),
-                     ("aerial_pespective_view_distance_scale", 1.6), ("height_fog_contribution", 1.0)):
+                     ("aerial_pespective_view_distance_scale", 4.0), ("height_fog_contribution", 1.0)):
             C.set_prop(ac, k, v, rep, quiet=True)
         try:
             cl = self.spawn(unreal.VolumetricCloud, (0, 0, 0), label="FF_Clouds", folder="Fourfold/Lighting")
@@ -223,7 +223,7 @@ class Builder:
         # fog
         fog = self.spawn(unreal.ExponentialHeightFog, (0, 0, 400), label="FF_Fog", folder="Fourfold/Lighting")
         fc = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
-        for k, v in (("fog_density", 0.014), ("fog_height_falloff", 0.6), ("start_distance", 2500.0), ("fog_max_opacity", 0.85),
+        for k, v in (("fog_density", 0.012), ("fog_height_falloff", 0.3), ("start_distance", 2500.0), ("fog_max_opacity", 0.85),
                      ("fog_inscattering_luminance", unreal.LinearColor(0.09, 0.11, 0.14, 1.0)), ("enable_volumetric_fog", True),
                      ("volumetric_fog_scattering_distribution", 0.55), ("volumetric_fog_extinction_scale", 0.6),
                      ("volumetric_fog_distance", 5000.0),

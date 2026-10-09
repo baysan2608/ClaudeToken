@@ -44,7 +44,7 @@ CUSTOM_BODIES = {   # for Tools/world/check_hlsl.py-style checks: name -> (code,
 def _paths():
     p = C.project_paths()
     ph = os.path.join(p["art"], "PolyHaven")
-    return dict(ph=ph, trees_json=os.path.join(ph, "Trees", "trees.json"),
+    return dict(ph=ph, trees_json=os.path.join(ph, "Trees", "trees.json"), rocks_json=os.path.join(ph, "Rocks", "rocks.json"),
                 instances_json=os.path.join(p["art"], "scenery_instances.json"))
 
 
@@ -231,6 +231,8 @@ def build_instances(manifest, masters, texs, force, report):
             for k, rel in tdef.items():
                 if k in params and texs.get(rel) is not None:
                     MEL.set_material_instance_texture_parameter_value(mi, params[k], texs[rel])
+            if m.get("kind") == "rock":            # distant mountains: no wind
+                MEL.set_material_instance_scalar_parameter_value(mi, "SwayCm", 0.0)
             if m["species"] == "Broadleaf" and slot == "Leaf":
                 MEL.set_material_instance_scalar_parameter_value(mi, "FlutterCm", 3.5)
                 MEL.set_material_instance_scalar_parameter_value(mi, "SwayCm", 16.0)
@@ -344,7 +346,17 @@ def import_all(force, report):
     masters = build_masters(manifest, texs, force, report)
     mis = build_instances(manifest, masters, texs, force, report)
     meshes = import_meshes(manifest, mis, force, report)
-    return dict(meshes=meshes, layout=layout) if meshes else {}
+    rocks = {}
+    if os.path.exists(p["rocks_json"]):
+        rman = C.load_json(p["rocks_json"], report, "rocks.json") or {"meshes": {}}
+        for m in rman["meshes"].values():
+            m["species"] = "Rock"
+        rtex = import_textures(rman, force, report)
+        rmis = build_instances(rman, masters, rtex, force, report)
+        rocks = import_meshes(rman, rmis, force, report)
+        for name, r in rocks.items():
+            r["face_yaw_deg"] = float(rman["meshes"][name].get("face_yaw_deg", 90.0))
+    return dict(meshes=meshes, rocks=rocks, layout=layout) if meshes else {}
 
 
 # ------------------------------------------------------------------------------------------------------------------ placement
@@ -375,6 +387,28 @@ def place(builder, forest, report):
         except Exception:  # noqa: BLE001
             pass
         n += 1
+    rocks = forest.get("rocks") or {}
+    nm = 0
+    for i, mt in enumerate(forest["layout"].get("mountains", []) if rocks else []):
+        r = rocks.get(mt["mesh"])
+        if r is None:
+            continue
+        s = 100.0 * float(mt["height_m"]) / max(r["height_cm"], 1.0)
+        yaw = float(mt["face_to_deg"]) - r["face_yaw_deg"] + float(mt.get("yaw_jitter_deg", 0.0))
+        a = builder.mesh_actor(f"FFMountain_{i:02d}", r["path"], tuple(mt["location_cm"]), mobility="movable", cast_shadow=False,
+                               scale=(s * float(mt.get("width_scale", 1.0)), s, s), rot=(0.0, yaw, 0.0), folder="Fourfold/Scenery/Mountains")
+        if a is None:
+            continue
+        comp = a.static_mesh_component
+        C.set_prop(comp, "affect_distance_field_lighting", False, report, quiet=True)
+        C.set_prop(comp, "affect_dynamic_indirect_lighting", False, report, quiet=True)
+        try:
+            comp.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+        except Exception:  # noqa: BLE001
+            pass
+        nm += 1
+    if nm:
+        report["notes"].append(f"mountains: {nm} scanned rock faces placed")
     if n:
         old = builder.actors.pop("FFScenery_Trees", None)
         if old is not None:

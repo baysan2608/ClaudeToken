@@ -294,4 +294,5 @@ def main():
     print("[prep_trees] wrote", man_path)
 
 
-main()
+if __name__ == "__main__":
+    main()

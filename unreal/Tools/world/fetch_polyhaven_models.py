@@ -26,6 +26,8 @@ MODELS = {
     "conifer": ["fir_tree_01", "fir_sapling_medium"],
     "broadleaf": ["tree_small_02", "island_tree_02"],
     "shrub": ["shrub_01", "shrub_03", "shrub_04"],
+    # scanned rock faces scaled x20-90 as the distant mountain ring (Tools/blender/world/prep_rocks.py)
+    "mountain": ["mountainside", "namaqualand_cliff_02", "coastal_cliff_02"],
 }
 
 

@@ -51,6 +51,30 @@ def tree_positions():
     return trees
 
 
+# distant mountain ring: scanned rock faces (Tools/blender/world/prep_rocks.py) scaled up, faces turned to the arena.
+# Most of them stand where the duel camera looks (Unreal -Y = sim -z), a few behind and to the sides.
+MOUNTAIN_MESHES = ["SM_Rock_Cliff", "SM_Rock_Strata", "SM_Rock_Granite"]
+
+
+def mountains():
+    rng = np.random.default_rng(31)
+    out = []
+    arcs = [(-90.0, 75.0, 11, (1300.0, 3400.0)), (90.0, 70.0, 5, (1500.0, 3600.0))]     # (centre deg, half width, count, dist m)
+    for centre, half, count, (d0, d1) in arcs:
+        for k in range(count):
+            a = math.radians(centre - half + 2.0 * half * (k + rng.uniform(0.2, 0.8)) / count)     # Unreal yaw of the spot
+            d = float(rng.uniform(d0, d1))
+            ux, uy = d * math.cos(a), d * math.sin(a)                                             # Unreal metres
+            x, z = ux, uy                                                                         # sim x = UE X, sim z = UE Y
+            h = float(rng.uniform(230.0, 520.0)) * (0.7 + 0.3 * (d - d0) / (d1 - d0))
+            y = float(BS.ground_h(x, z))
+            out.append(dict(mesh=MOUNTAIN_MESHES[int(rng.integers(0, len(MOUNTAIN_MESHES)))], height_m=round(h, 1),
+                            face_to_deg=round(math.degrees(math.atan2(-uy, -ux)), 1), yaw_jitter_deg=round(float(rng.uniform(-18, 18)), 1),
+                            width_scale=round(float(rng.uniform(1.0, 1.7)), 2),
+                            location_cm=[round(100.0 * ux, 1), round(100.0 * uy, 1), round(100.0 * y - 0.12 * 100.0 * h, 1)]))
+    return out
+
+
 def main():
     rng = np.random.default_rng(778)
     out = []
@@ -64,8 +88,9 @@ def main():
                         yaw_deg=round(float(rng.uniform(0.0, 360.0)), 1),
                         lean_deg=round(float(rng.normal(0.0, 1.5)), 2),
                         location_cm=[round(100.0 * x, 1), round(100.0 * z, 1), round(100.0 * y - 15.0, 1)]))
-    data = dict(schema="fourfold.env.instances/1", units="cm, Unreal axes; height_m = target tree height",
-                source="Tools/world/scenery_instances.py (positions = build_scenery.build_trees, rng 777)", trees=out)
+    data = dict(schema="fourfold.env.instances/1", units="cm, Unreal axes; height_m = target height",
+                source="Tools/world/scenery_instances.py (tree positions = build_scenery.build_trees, rng 777)", trees=out,
+                mountains=mountains())
     with open(OUT, "w") as f:
         json.dump(data, f, indent=1)
     by = {}
