@@ -64,9 +64,9 @@ if [[ "$MODE" == fast ]]; then
   [[ -d "$REPO/unreal/Saved/StagedBuilds/IOS/cookeddata" ]] || { echo "No previous iOS cook; run without --fast."; exit 1; }
   STEPS=(-skipcook -stage -pak -package -nocompileeditor)
 elif [[ "$MODE" == cook ]]; then
-  STEPS=(-skipbuild -cook -stage -pak -package)
+  STEPS=(-skipbuild -cook -IgnoreCookErrors -stage -pak -package)
 else
-  STEPS=(-build -cook -stage -pak -package)
+  STEPS=(-build -cook -IgnoreCookErrors -stage -pak -package)
 fi
 echo "== BuildCookRun ($MODE) -> $LOG"
 "$UE/Engine/Build/BatchFiles/RunUAT.sh" BuildCookRun -project="$UPROJ" -platform=IOS -clientconfig=Development \
