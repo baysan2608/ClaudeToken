@@ -45,6 +45,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float NearRadius = 34000.0f;
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float TreeCullDistance = 60000.0f;
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float RockCullDistance = 30000.0f;
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float CliffCullDistance = 300000.0f;
 	/** Flip triangle winding if the terrain renders inside out on some platform. */
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bFlipWinding = false;
 	/** The player controller starts roaming on BeginPlay when the level has this actor. */

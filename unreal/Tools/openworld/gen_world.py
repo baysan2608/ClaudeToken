@@ -406,15 +406,15 @@ ROCKS = ["rock_granite", "rock_strata", "rock_cliff"]
 def scatter_props(h, splat, slope, sites, path_dist):
     rng = np.random.default_rng(SEED + 999)
     props = []
-    spacing = 9.0
+    spacing = 7.0
     g = np.arange(-HALF + 30, HALF - 30, spacing)
-    density = {"hub": 0.22, "water": 0.55, "earth": 0.07, "fire": 0.035, "air": 0.25}
+    density = {"hub": 0.35, "water": 0.8, "earth": 0.1, "fire": 0.04, "air": 0.45}
     centers = {k: v["center"] for k, v in REGIONS.items()}
     site_xz = np.array([[s["pos"][0], s["pos"][2]] for s in sites])
     for gz_ in g:
         for gx_ in g:
-            x = gx_ + rng.uniform(-3.8, 3.8)
-            z = gz_ + rng.uniform(-3.8, 3.8)
+            x = gx_ + rng.uniform(-3.0, 3.0)
+            z = gz_ + rng.uniform(-3.0, 3.0)
             i = int(round((x + HALF) / CELL))
             k = int(round((z + HALF) / CELL))
             hh = float(h[k, i])
@@ -436,8 +436,9 @@ def scatter_props(h, splat, slope, sites, path_dist):
                 kind = rng.choice(TREES["broad"] + TREES["fir"])
             props.append({"mesh": f"tree_{kind}", "pos": [round(x, 2), round(hh - 0.15, 2), round(z, 2)],
                           "yaw": round(rng.uniform(0, 360), 1), "scale": round(rng.uniform(0.8, 1.25), 3)})
-    # rocks: everywhere off-path, more in earth / fire / on slopes
-    rock_density = {"hub": 0.02, "water": 0.03, "earth": 0.12, "fire": 0.1, "air": 0.06}
+    # rocks: everywhere off-path, more in earth / fire / on slopes. Off until real boulder meshes exist: the scanned
+    # rock meshes are thin cliff shells that read as black spikes at boulder size.
+    rock_density = {"hub": 0.0, "water": 0.0, "earth": 0.0, "fire": 0.0, "air": 0.0}
     g2 = np.arange(-HALF + 20, HALF - 20, 14.0)
     for gz_ in g2:
         for gx_ in g2:
@@ -454,6 +455,31 @@ def scatter_props(h, splat, slope, sites, path_dist):
                 continue
             props.append({"mesh": rng.choice(ROCKS), "pos": [round(x, 2), round(float(h[k, i]) - 0.4, 2), round(z, 2)],
                           "yaw": round(rng.uniform(0, 360), 1), "scale": round(rng.uniform(0.35, 1.1), 3)})
+    # cliffs: big scanned rock faces on steep ground (mountain ring, mesa walls, volcano, peaks); "size" = metres across
+    g3 = np.arange(-HALF + 10, HALF - 10, 34.0)
+    for gz_ in g3:
+        for gx_ in g3:
+            x = gx_ + rng.uniform(-12, 12)
+            z = gz_ + rng.uniform(-12, 12)
+            i = int(round((x + HALF) / CELL))
+            k = int(round((z + HALF) / CELL))
+            if slope[k, i] < 0.8 or slope[k, i] > 2.2 or h[k, i] < 25.0 or path_dist[k, i] < 25.0:
+                continue
+            if np.min(np.hypot(site_xz[:, 0] - x, site_xz[:, 1] - z)) < 40.0:
+                continue
+            if rng.random() > 0.75:
+                continue
+            size = float(rng.uniform(24.0, 55.0))
+            # sink to the low side of the footprint so the downhill edge is buried, never floating
+            r = size * 0.35
+            lo = min(sample(h, x + ox, z + oz) for ox in (-r, 0.0, r) for oz in (-r, 0.0, r))
+            # face the rock downhill: yaw from the gradient
+            gx_d = sample(h, x + 2.0, z) - sample(h, x - 2.0, z)
+            gz_d = sample(h, x, z + 2.0) - sample(h, x, z - 2.0)
+            yaw = math.degrees(math.atan2(-gz_d, -gx_d)) + float(rng.uniform(-25, 25))
+            props.append({"mesh": rng.choice(["rock_cliff", "rock_strata", "rock_granite"]),
+                          "pos": [round(x, 2), round(lo - 1.5, 2), round(z, 2)],
+                          "yaw": round(yaw, 1), "scale": 1.0, "size": round(size, 1)})
     return props
 
 
@@ -482,6 +508,11 @@ def path_distance(polys):
 
 # ----------------------------------------------------------------------------- preview
 def write_preview(h, splat, sites, props, polys, path):
+    with np.errstate(all="ignore"):     # Accelerate's matmul raises spurious FP warnings on macOS
+        _write_preview(h, splat, sites, props, polys, path)
+
+
+def _write_preview(h, splat, sites, props, polys, path):
     from PIL import Image, ImageDraw
     gz, gx = np.gradient(h, CELL)
     light = np.array([-0.5, 0.7, -0.5])
@@ -554,8 +585,9 @@ def main():
         json.dump(world, f, separators=(",", ":"))
     write_preview(h, splat, sites, props, polys, os.path.join(OUT_PREVIEW, "map.png"))
     trees = sum(1 for p in props if p["mesh"].startswith("tree"))
+    cliffs = sum(1 for p in props if "size" in p)
     print(f"world {N}x{N} @ {CELL} m: h {h.min():.1f}..{h.max():.1f} m, {len(sites)} sites, {len(shrines)} shrines, "
-          f"{len(solids)} solids, {trees} trees, {len(props) - trees} rocks")
+          f"{len(solids)} solids, {trees} trees, {len(props) - trees - cliffs} rocks, {cliffs} cliffs")
     return 0
 
 

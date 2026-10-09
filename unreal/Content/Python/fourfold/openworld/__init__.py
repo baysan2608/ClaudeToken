@@ -135,12 +135,31 @@ def build_terrain_material(force, texs, manifest, rep):
                        ST.SAMPLERTYPE_NORMAL, X + 750, y + 220, uv)
         orm = g.texture(f"{layer}_ORM", unreal.load_asset(texs.get(f"T_OW_{layer}_ORM", "")) if texs.get(f"T_OW_{layer}_ORM") else None,
                         ST.SAMPLERTYPE_MASKS, X + 750, y + 440, uv)
+        if layer == "Grass":
+            gt = g.vector("GrassTint", (0.56, 0.74, 0.45), X + 1000, y - 120, "Grade")
+            bc = _mul(g, (bc, "RGB"), (gt, ""), X + 1100, y)[0]
+        if layer == "Rock":
+            # far rock: the same scan at 14x the tile, faded in with distance so cliffs keep strata at 1 km
+            big = g.scalar("Tile_RockFar", size_m * 100.0 * 14.0, X + 200, y + 600, "Tiling")
+            uvb = _node(g, "MaterialExpressionDivide", X + 450, y + 600)
+            g.link(xy, "", uvb, "A")
+            g.link(big, "", uvb, "B")
+            far = g.texture("Rock_BC_Far", unreal.load_asset(texs["T_OW_Rock_BC"]) if texs.get("T_OW_Rock_BC") else None,
+                            ST.SAMPLERTYPE_COLOR, X + 750, y + 600, uvb)
+            depth = _node(g, "MaterialExpressionPixelDepth", X + 750, y + 820)
+            fdist = g.scalar("RockFarStartCm", 6000.0, X + 750, y + 900, "Tiling")
+            fd = _node(g, "MaterialExpressionDivide", X + 950, y + 820)
+            g.link(depth, "", fd, "A")
+            g.link(fdist, "", fd, "B")
+            fs = _node(g, "MaterialExpressionSaturate", X + 1100, y + 820)
+            g.link(fd, "", fs, "")
+            bc = _lerp(g, (bc, "RGB"), (far, "RGB"), (fs, ""), X + 1250, y + 600)[0]
         samples[layer] = (bc, nm, orm)
         y += 700
     vc = _node(g, "MaterialExpressionVertexColor", X + 1100, 1800)
     weights = {"Grass": (vc, "R"), "Rock": (vc, "G"), "Sand": (vc, "B"), "Ash": (vc, "A")}
     # snow: above SnowStart (cm), faded over SnowFade, only where the slope is gentle
-    s_start = g.scalar("SnowStartCm", 20000.0, X + 1100, 2100, "Snow")
+    s_start = g.scalar("SnowStartCm", 17000.0, X + 1100, 2100, "Snow")
     s_fade = g.scalar("SnowFadeCm", 5000.0, X + 1100, 2220, "Snow")
     sub = _node(g, "MaterialExpressionSubtract", X + 1350, 2100)
     g.link(wz, "", sub, "A")
@@ -155,20 +174,27 @@ def build_terrain_material(force, texs, manifest, rep):
     g.link(nws, "", nz, "")
     flat = _node(g, "MaterialExpressionSubtract", X + 1750, 2350)
     g.link(nz, "", flat, "A")
-    g.link(g.const(0.6, X + 1550, 2500), "", flat, "B")
+    g.link(g.const(0.42, X + 1550, 2500), "", flat, "B")
     flat4 = _mul(g, (flat, ""), (g.const(4.0, X + 1750, 2500), ""), X + 1950, 2350)
     flat_s = _node(g, "MaterialExpressionSaturate", X + 2150, 2350)
     g.link(flat4[0], "", flat_s, "")
     snow_w = _mul(g, (sat, ""), (flat_s, ""), X + 2350, 2200)
 
+    graded = {"Grass": "", "Rock": ""}       # base colours replaced by math nodes (single unnamed output)
+
+    def src(layer, idx, out_name):
+        if idx == 0 and layer in graded:
+            return (samples[layer][0], "")
+        return (samples[layer][idx], out_name)
+
     def blend(idx, out_name, x):
         acc = None
         yy = -1200
         for layer in ("Grass", "Rock", "Sand", "Ash"):
-            term = _mul(g, (samples[layer][idx], out_name), weights[layer], x, yy)
+            term = _mul(g, src(layer, idx, out_name), weights[layer], x, yy)
             acc = term if acc is None else _add(g, acc, term, x + 220, yy)
             yy += 160
-        return _lerp(g, acc, (samples["Snow"][idx], out_name), snow_w, x + 450, yy)
+        return _lerp(g, acc, src("Snow", idx, out_name), snow_w, x + 450, yy)
 
     base = blend(0, "RGB", X + 2600)
     nrm = blend(1, "RGB", X + 3300)

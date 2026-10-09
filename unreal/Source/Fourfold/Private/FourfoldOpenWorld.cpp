@@ -437,11 +437,13 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 	for (const ff::Value& P : Props)
 	{
 		const ff::Dict D = P.as_dict();
-		const FName Key(UTF8_TO_TCHAR(D.get("mesh").as_string().c_str()));
+		const FName MeshKey(UTF8_TO_TCHAR(D.get("mesh").as_string().c_str()));
+		const bool bCliff = D.has("size");   // big rock faces: own component, seen across the valley
+		const FName Key = bCliff ? FName(*(MeshKey.ToString() + TEXT("_cliff"))) : MeshKey;
 		UHierarchicalInstancedStaticMeshComponent** Found = ByKey.Find(Key);
 		if (!Found)
 		{
-			const TSoftObjectPtr<UStaticMesh>* Soft = PropMeshes.Find(Key);
+			const TSoftObjectPtr<UStaticMesh>* Soft = PropMeshes.Find(MeshKey);
 			UStaticMesh* Mesh = Soft ? Soft->LoadSynchronous() : nullptr;
 			if (!Mesh)
 			{
@@ -453,8 +455,8 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 			H->SetupAttachment(RootComponent);
 			H->SetMobility(EComponentMobility::Static);
 			H->SetStaticMesh(Mesh);
-			const bool bRock = Key.ToString().StartsWith(TEXT("rock"));
-			const float Cull = bRock ? RockCullDistance : TreeCullDistance;
+			const bool bRock = MeshKey.ToString().StartsWith(TEXT("rock"));
+			const float Cull = bCliff ? CliffCullDistance : (bRock ? RockCullDistance : TreeCullDistance);
 			H->SetCullDistances(int32(Cull * 0.8f), int32(Cull));
 			H->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			H->RegisterComponent();
@@ -479,7 +481,13 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 			continue;
 		}
 		const ff::Array Pos = D.get("pos").as_array();
-		const double Sc = D.get("scale").as_float(1.0) * NormScale[Key];
+		double Sc = D.get("scale").as_float(1.0) * NormScale[Key];
+		if (D.has("size"))
+		{
+			// explicit size (metres across): cliffs and boulders placed by the generator
+			const FVector Ext = (*Found)->GetStaticMesh()->GetBoundingBox().GetSize();
+			Sc = D.get("size").as_float(3.0) * 100.0 / FMath::Max(1.0, FMath::Max(Ext.X, Ext.Y));
+		}
 		const FTransform Xf(FRotator(0.0, D.get("yaw").as_float(0.0), 0.0),
 		                    FF::WorldToUE(Pos.get(0).as_float(), Pos.get(1).as_float(), Pos.get(2).as_float()), FVector(Sc));
 		(*Found)->AddInstance(Xf, false);
