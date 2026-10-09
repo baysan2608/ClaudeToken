@@ -118,6 +118,8 @@ struct FFourfoldControllerImpl
 	FString PerfText;
 	// Title / watch scenario options.
 	ff::ScenarioOptions AttractOptions;
+	// Camera turn drained by a sim tick's FillFrame this frame; applied with the per-frame drain in OnSimFrame.
+	ff::Vec2 CamCarry;
 };
 
 AFourfoldPlayerController::AFourfoldPlayerController()
@@ -894,10 +896,16 @@ void AFourfoldPlayerController::PollSimInput(ff::InputFrame& Out, float& InOutCa
 		}
 	}
 #endif
+	// The camera turn is applied once per rendered frame in OnSimFrame (smooth at 120 Hz and through hit-stop, when no
+	// tick runs); FillFrame drained it into F, so carry it over. The stick basis: the view, or the lock axis while locked.
+	if (Impl.IsValid() && bGameplayInput)
+	{
+		Impl->CamCarry += F.cam_delta;
+	}
+	F.cam_delta = ff::Vec2();
 	if (CameraRig)
 	{
-		CameraRig->Logic.AddInput(F.cam_delta);
-		InOutCameraYawSim = CameraRig->Logic.ViewYaw();
+		InOutCameraYawSim = CameraRig->Logic.MoveYaw();
 	}
 	Out = F;
 }
@@ -1053,20 +1061,63 @@ void AFourfoldPlayerController::OnSimFrame(const FFourfoldFrame& Frame)
 	const UFourfoldSettingsSubsystem* SettingsSys = UFourfoldSettingsSubsystem::Get(this);
 	const FFourfoldSettings Settings = SettingsSys ? SettingsSys->GetSettings() : FFourfoldSettings();
 
-	// ---- camera: the interpolated player, the locked target and the nearest incoming threat
+	// ---- camera input: everything turned since the last rendered frame (desktop + touch + what a tick drained)
+	{
+		ff::Vec2 CamDelta = Impl->CamCarry;
+		Impl->CamCarry = ff::Vec2();
+		CamDelta += Impl->Desk.TakeCamDelta();
+		if (Impl->Ui.IsValid())
+		{
+			SFourfoldTouchOverlay& Touch = Impl->Ui->GetTouch().Get();
+			const ff::Vec2 TouchDelta = Touch.Controls().TakeCamDelta();
+			if (Touch.IsActive())
+			{
+				CamDelta += TouchDelta;
+			}
+		}
+		if (CameraRig && bGameplayInput)
+		{
+			CameraRig->Logic.AddInput(CamDelta);
+		}
+	}
+
+	// ---- camera: the interpolated player, the locked target (title / watch: the rival) and the nearest threat
 	const ff::ActorView* P = Cur.FindActor(Cur.player_id);
 	if (CameraRig && P)
 	{
+		// A round reset teleports both fighters: land on the new framing (Prev still holds the old positions).
+		bool bRoundReset = false;
+		if (Frame.Events)
+		{
+			for (const ff::Event& E : *Frame.Events)
+			{
+				bRoundReset = bRoundReset || E.type == "app_round_reset";
+			}
+		}
+		const float Alpha = bRoundReset ? 1.0f : Frame.Alpha;
 		const ff::ActorView* PP = Prev.FindActor(Cur.player_id);
-		const ff::Vec3 PlayerPos = PP ? LerpV(PP->pos, P->pos, Frame.Alpha) : P->pos;
+		const ff::Vec3 PlayerPos = PP ? LerpV(PP->pos, P->pos, Alpha) : P->pos;
 		ff::Vec3 TargetPos, ThreatPos;
 		const ff::Vec3* Target = nullptr;
 		const ff::Vec3* Threat = nullptr;
-		if (const ff::ActorView* T = Cur.FindActor(P->lock_target))
+		const bool bSpectator = Mode != EFourfoldMode::Play;
+		const ff::ActorView* T = Cur.FindActor(P->lock_target);
+		if (!T && bSpectator)
+		{
+			T = Cur.FindActor(Cur.rival_id);
+		}
+		if (T && T->id != P->id)
 		{
 			const ff::ActorView* TP = Prev.FindActor(T->id);
-			TargetPos = TP ? LerpV(TP->pos, T->pos, Frame.Alpha) : T->pos;
+			TargetPos = TP ? LerpV(TP->pos, T->pos, Alpha) : T->pos;
 			Target = &TargetPos;
+		}
+		CameraRig->Logic.spectator = bSpectator;
+		CameraRig->Logic.player_grounded = P->grounded;
+		CameraRig->Logic.player_vel = P->vel;
+		if (bRoundReset)
+		{
+			CameraRig->Logic.SnapTo(PlayerPos, Target ? TargetPos : PlayerPos + CameraRig->Logic.ForwardFlat() * 5.0f);
 		}
 		const ff::Vec3 Chest = P->pos + ff::Vec3(0.0f, 1.25f, 0.0f);
 		for (const ff::BodyView& B : Cur.bodies)

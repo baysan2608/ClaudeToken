@@ -8,6 +8,7 @@
 #include "ff/Events.h"
 #include "ff/Snapshot.h"
 
+#include <cmath>
 #include <cstdint>
 #include <deque>
 #include <initializer_list>
@@ -18,39 +19,93 @@
 namespace ffg {
 
 struct FeelSpec {
-	int hitstop = 0;           // 60 Hz frames
-	float shake = 0.0f;        // camera shake amount (x 0.06 m offset amplitude, real time)
-	float kick = 0.0f;         // metres along the hit
+	int hitstop = 0;           // 1/60 s units (run against real time, any frame rate)
+	float shake = 0.0f;        // camera trauma 0..1 (rotational shake x trauma^2, real time)
+	float kick = 0.0f;         // metres along the hit (spring peak)
 	float fov = 0.0f;          // degrees (negative = narrower)
 	const char* haptic = "light";
+	bool roll = false;         // the shake also rolls the view (T3 / knockdown)
 };
 FeelSpec FeelFor(std::string_view kind);   // t0 t1 t2 t3 block block_heavy perfect clash shatter transform boom
 
-// Hit-stop: global time scale 0.05 for N rendered frames; <= 12 frozen frames in any rolling second; reduced motion caps
-// one request at 3 frames. Slow-motion assist (perfect deflect) = 0.55 for 0.22 s of real time.
+// Linear trauma decay of table shakes (per second).
+inline constexpr float kShakeTraumaDecay = 2.2f;
+
+// Hit-stop: global time scale 0.05 for N/60 s of REAL time (frame-rate independent), then an ease back to full speed
+// over 50 ms; at most 20/60 s frozen in any rolling second; reduced motion caps one request at 3/60 s.
+// Slow-motion assist (perfect deflect, a setting) = 0.55 for 0.22 s of real time.
+// Cinematic slow motion (big counters, KO): after the hit-stop, 0.25 for the hold, then an ease back over 0.25 s.
 class HitStop {
 public:
 	static constexpr float kScale = 0.05f;
-	static constexpr int kCapPerSecond = 12;
+	static constexpr int kCapPerSecond = 20;
+	static constexpr int kReducedCap = 3;
+	static constexpr float kEaseOutS = 0.05f;
 	static constexpr float kSlowmoScale = 0.55f;
+	static constexpr float kCineScale = 0.25f;
+	static constexpr float kCineEaseS = 0.25f;
+	static constexpr float kCineHoldS = 0.4f;
+	static constexpr float kCineHoldKoS = 0.9f;
 
 	bool enabled = true;
 	void Request(int frames, double now_s, bool reduced_motion);
-	void RequestSlowmo(float real_seconds) { slowmo_ = std::max(slowmo_, real_seconds); }
+	// real_seconds > 0: the slow-motion assist; < 0: a cinematic hold of -real_seconds (EncodeCinematic). The sign keeps
+	// UFourfoldSimSubsystem::RequestSlowmo the single entry point.
+	void RequestSlowmo(float real_seconds) {
+		if (real_seconds < 0.0f)
+			RequestCinematic(-real_seconds);
+		else
+			slowmo_ = std::max(slowmo_, real_seconds);
+	}
+	static float EncodeCinematic(float hold_s) { return -std::fabs(hold_s); }
+	void RequestCinematic(float hold_s) {
+		cine_hold_ = std::max(cine_hold_, hold_s);
+		cine_out_t_ = -1.0f;
+	}
 	// Once per rendered frame AFTER the frame's events were handled: the time dilation the NEXT frame should run at.
+	// real_dt = the frame that just ran (at the dilation this returned last time).
 	float FrameTick(double now_s, float real_dt);
-	int Pending() const { return pending_; }
+	int Pending() const { return static_cast<int>(std::lround(pending_s_ * 60.0f)); }
+	float PendingSeconds() const { return pending_s_; }
+	bool CinematicActive() const { return cine_hold_ > 0.0f || cine_out_t_ >= 0.0f; }
 	void Reset() {
-		pending_ = 0;
+		pending_s_ = 0.0f;
 		slowmo_ = 0.0f;
+		cine_hold_ = 0.0f;
+		cine_out_t_ = -1.0f;
+		ease_t_ = -1.0f;
+		last_freeze_ = false;
 		hist_.clear();
 	}
 
 private:
+	struct Used {
+		double at;
+		float s;
+	};
 	void Trim(double now_s);
-	int pending_ = 0;
+	float UsedSeconds() const;
+	float pending_s_ = 0.0f;
 	float slowmo_ = 0.0f;
-	std::deque<double> hist_;
+	float cine_hold_ = 0.0f;
+	float cine_out_t_ = -1.0f;
+	float ease_t_ = -1.0f;
+	bool last_freeze_ = false;
+	std::deque<Used> hist_;
+};
+
+// Cinematic slow motion at most once every 3 s (a KO always gets it).
+class CinematicGate {
+public:
+	static constexpr double kCooldownS = 3.0;
+	bool Allow(double now_s, bool force) {
+		if (!force && now_s - last_ < kCooldownS) return false;
+		last_ = now_s;
+		return true;
+	}
+
+private:
+	double last_ = -1000.0;
 };
 
 // One pulse at most every 60 ms; nothing when disabled.
@@ -71,7 +126,9 @@ struct FeelShake {
 	float amount = 0.0f;
 	Vec3 pos;                 // sim space (metres, +Y up)
 	bool has_pos = false;     // false: no distance falloff
-	float decay_s = 0.2f;
+	float decay_s = 0.2f;     // trauma reaches 0 after this long
+	bool player = false;      // the local player gave / took it (falloff floor)
+	bool roll = false;
 };
 struct FeelKick {
 	Vec3 dir;                 // sim space
@@ -88,6 +145,9 @@ struct FeelOutput {
 	std::vector<std::string> haptics;     // semantic kinds for the local player
 	std::string flash;                    // "" | perfect | lightning | evade
 	float slowmo = 0.0f;                  // real seconds of slow-motion assist requested
+	float cinematic = 0.0f;               // real seconds of cinematic slow motion (big counter / KO), 0 = none
+	Vec3 cinematic_at;
+	bool cinematic_ko = false;            // ignores the cooldown
 	std::vector<std::string> toasts;
 	void Clear() { *this = FeelOutput(); }
 };

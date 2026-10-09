@@ -14,6 +14,7 @@
 #include "FourfoldSimSubsystem.h"
 #include "Logic/FFGAnimDirector.h"
 #include "Logic/FFGArena.h"
+#include "Logic/FFGFeel.h"
 
 #include "Animation/PoseSnapshot.h"
 #include "Camera/PlayerCameraManager.h"
@@ -41,6 +42,9 @@ struct FFourfoldFighterImpl
 	ff::Vec3 AccSmooth;
 	float YawRate = 0.0f;
 	float VisLift = 0.0f;      // metres (visual height smoothing)
+	// hit-stop victim shake: the struck body trembles along the hit while time is frozen (real time)
+	float HitShakeT = 0.0f, HitShakeLen = 0.0f, HitShakeAmp = 0.0f, HitShakePhase = 0.0f;
+	ff::Vec3 HitShakeDir;
 	float VisY = 0.0f;
 	bool bVisInit = false;
 	bool bResetAnim = true;
@@ -392,6 +396,48 @@ void AFourfoldFighter::OnSimFrame(const FFourfoldFrame& Frame)
 	}
 	AnimDt = FMath::Clamp(AnimDt, 0.0f, 0.1f);
 
+	// Hit-stop victim shake (real time; only while global time is frozen, off with reduced motion).
+	FVector HitShake = FVector::ZeroVector;
+	{
+		if (!Frame.bPaused && Frame.Events)
+		{
+			for (const ff::Event& E : *Frame.Events)
+			{
+				if (E.type != "hit" || int32(E.data["actor"].as_int(-1)) != SimActorId)
+				{
+					continue;
+				}
+				const int32 Tier = E.data["result"].as_string() == "knockdown" ? 3 : FMath::Clamp(int32(E.data["tier"].as_int(0)), 0, 3);
+				static const char* const kKinds[4] = {"t0", "t1", "t2", "t3"};
+				const float Amp = 0.012f + 0.006f * float(Tier);   // metres: T0 1.2 cm .. T3 3 cm
+				if (Amp >= Impl->HitShakeAmp * (Impl->HitShakeLen > 0.0f ? Impl->HitShakeT / Impl->HitShakeLen : 0.0f))
+				{
+					const ff::Value& Dir = E.data["dir"];
+					Impl->HitShakeDir = Dir.is_vec3() ? Dir.as_vec3() : ff::Vec3(0.0f, 0.0f, 1.0f);
+					Impl->HitShakeLen = float(ffg::FeelFor(kKinds[Tier]).hitstop) / 60.0f + 0.03f;
+					Impl->HitShakeT = Impl->HitShakeLen;
+					Impl->HitShakeAmp = Amp;
+					Impl->HitShakePhase = 0.0f;
+				}
+			}
+		}
+		const UFourfoldSettingsSubsystem* SettingsSys = UFourfoldSettingsSubsystem::Get(this);
+		const bool bReduced = SettingsSys && SettingsSys->GetSettings().bReducedMotion;
+		const float Rdt = FMath::Clamp(Frame.RealDeltaSeconds, 0.0f, 0.1f);
+		if (Impl->HitShakeT > 0.0f)
+		{
+			Impl->HitShakeT = FMath::Max(0.0f, Impl->HitShakeT - Rdt);
+			Impl->HitShakePhase += Rdt * 2.0f * PI * 26.0f;
+			const bool bFrozen = Sim && Sim->GetCurrentTimeDilation() < 0.5f;
+			if (bFrozen && !bReduced && Impl->HitShakeLen > 0.0f)
+			{
+				const float Env = Impl->HitShakeT / Impl->HitShakeLen;
+				const ff::Vec3 Off = Impl->HitShakeDir * (Impl->HitShakeAmp * Env * FMath::Sin(Impl->HitShakePhase));
+				HitShake = GetActorTransform().InverseTransformVectorNoScale(FF::ToUE(Off));
+			}
+		}
+	}
+
 	// Visual height smoothing: the sim snaps the feet onto a step in one tick; the body follows over ~0.1 s.
 	{
 		const float Y = Pos.y;
@@ -405,7 +451,7 @@ void AFourfoldFighter::OnSimFrame(const FFourfoldFrame& Frame)
 		Impl->VisLift = Impl->VisY - Y;
 		if (!bFallbackBody)
 		{
-			BodyMesh->SetRelativeLocation(FVector(0.0, 0.0, double(Impl->VisLift) * FF::SimToUE));
+			BodyMesh->SetRelativeLocation(FVector(0.0, 0.0, double(Impl->VisLift) * FF::SimToUE) + HitShake);
 		}
 	}
 

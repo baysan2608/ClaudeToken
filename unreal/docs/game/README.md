@@ -54,15 +54,16 @@ The contracts are in ARCHITECTURE §7 and §8.4. Related docs: [API_NOTES.md](AP
    - touch outputs: haptics, ring cues, pause requests.
 2. `UFourfoldSimSubsystem::Tick` (after TG_PostPhysics). It polls `PollInput` once per 60 Hz tick, which:
    - merges the touch frame with the device frame (`InputFrame::MergeFrom`), with edges latched until consumed;
-   - feeds `cam_delta` to the camera;
-   - returns `ViewYaw()`.
+   - carries the tick's `cam_delta` over to the next camera update (it never turns the camera itself);
+   - returns `MoveYaw()` (the view yaw, or the lock axis while locked).
 
    Then it calls `Session::Step` and broadcasts `OnFrame` once per frame.
 3. `OnFrame` consumers:
    - each `AFourfoldFighter` interpolates prev -> curr, runs `AnimDirector::Update` and hands the recipe to its anim
      instance;
-   - the controller updates the camera rig, the feel (the hit-stop it requests applies from the *next* frame), the
-     HUD and touch contexts from `BuildHud()`, and the debug draw;
+   - the controller drains the camera input of this rendered frame (`TakeCamDelta` on the desktop grammar and the
+     touch controls, plus what a tick carried), applies it, updates the camera rig, the feel (the hit-stop it
+     requests applies from the *next* frame), the HUD and touch contexts from `BuildHud()`, and the debug draw;
    - FourfoldFX / FourfoldAudio bind their own handlers.
 4. Skeletal meshes evaluate in TG_PostUpdateWork, then Slate paints.
 
@@ -176,18 +177,41 @@ the rate to end with the sim's recovery and fades back to locomotion.
 
 ## Camera and feel
 
-`ffg::CameraLogic` (a port of camera_rig.gd) handles:
-- orbiting behind the player;
-- lock-on framing, using the horizontal FOV from the viewport aspect;
-- swing / lift / see-through against the analytic arena boxes;
-- smoothing;
-- the feel layer in real time: shake with distance falloff, kick, FOV punch, 3 % zoom on transformations, and the
-  reduced-motion rules.
+`ffg::CameraLogic` (Logic/FFGCamera.h; every tunable is a named constant there) handles:
+- **free orbit** behind the player (4.4 m, pitch 0.22, vFOV 54); drags rotate it; an incoming threat turns it gently
+  when the player isn't steering; the pivot leads the player's velocity by 0.12 s (at most 0.6 m);
+- **lock-on two-shot**: the boom hangs off the player's chest (1.35 m) rotated `theta` off the player -> rival axis and
+  aims at `lerp(player, rival, w)` 1.2 m up. With `k = clamp((sep - 3) / 13, 0, 1)`: distance 3.6 + 1.6k m,
+  theta 24 - 10k deg, w 0.40 - 0.10k, pitch 0.08 + 0.10k rad, vFOV 50 + 4k deg. The side keeps hysteresis: it follows
+  the side the player turned the view to, and flips when a yard wall sits behind the boom. 1 s after the player last
+  steered, a spring (0.35 s, max 4 rad/s) brings the view back onto the two-shot. While locked, the stick basis handed
+  to the sim is the lock axis (forward = toward the rival), blended back to the view yaw when the player has turned
+  the view more than 40-70 deg away;
+- **spectator two-shot** (title / watch): side-on to the fighters' axis (70 deg), around their midpoint, staying on the
+  side of the line the camera is on, pulled back until both fit;
+- collision against the analytic arena: swing (or side flip), then lift, never closer than 3 m to a yard wall, pitch at
+  most 0.62 with a rival; see-through for interior solids; horizontal FOV capped at 90 deg (wide phones);
+- smoothing: critically damped springs (`SmoothDamp`): pivot 0.12 s horizontal / 0.28 s vertical with a 0.25 m dead
+  zone while grounded, framing (distance / FOV / aim) 0.4 s; the collision pull-in is the only fast exponential
+  (ExpK 18) and eases back out over 0.45 s. A scenario start or round reset snaps onto the framing;
+- the feel layer in real time: rotational trauma shake (pitch 1.2 / yaw 0.9 deg x trauma^2, 21 Hz noise, <= 1.5 cm of
+  translation, roll 1.2 deg on T3 / knockdown) with falloff from the duel midpoint (floor 0.75 for hits the player gives
+  or takes); a spring kick (5 Hz, zeta 0.6) along the hit; an FOV punch that eases in over 60 ms, holds through hit-stop
+  and eases out over 0.3 s; the cinematic dolly (7 % toward the event) + -6 deg punch; 3 % zoom on transformations.
+  Reduced motion: shake x 0.3, no roll, no kick / FOV punch / dolly / zoom.
 
-The feel table is `ffg::FeelFor` (MOVESET §10.2). It sets hit-stop frames, shake, kick, FOV and haptic per event
-class. Hit-stop runs global dilation 0.05 for N rendered frames, at most 12 frozen frames per rolling second; reduced
-motion caps it at 3. Haptics are at least 60 ms apart and off when the setting is off. Flashes are scaled by the
-Flashes setting.
+Camera input is drained and applied once per rendered frame (not per sim tick), so drags stay smooth at 120 Hz and
+through hit-stop.
+
+The feel table is `ffg::FeelFor` (MOVESET §10.2, retuned in docs/TUNING_LOG.md). It sets hit-stop, trauma, kick, FOV
+and haptic per event class: T0 4 / T1 6 / T2 9 / T3 12, perfect 8, clash 6 (in 1/60 s). Hit-stop runs global dilation
+0.05 for that long in **real** seconds (any frame rate), at most 20/60 s frozen per rolling second, then eases back to
+full speed over 50 ms; reduced motion caps one request at 3/60 s. Big counters the player is part of (every perfect;
+full-band tier >= 2 reflect / redirect / capture / transform / shatter / reclaim; the player's perfect deflect) and a
+KO add the cinematic beat: 0.25x for 0.4 s (KO 0.9 s) after the hit-stop, an ease back over 0.25 s, at most once every
+3 s (a KO always), never with reduced motion, in a Lab freeze or at a Lab time scale. The optional slow-motion assist
+(0.55x for 0.22 s on a perfect deflect) is a setting. While time is frozen the struck fighter trembles along the hit
+(1.2-3 cm). Haptics are at least 60 ms apart and off when the setting is off. Flashes are scaled by the Flashes setting.
 
 ## UI
 

@@ -753,31 +753,87 @@ FFT_TEST(settings_clamp_and_json) {
 // =================================================================================== feel
 
 FFT_TEST(feel_hitstop_budget) {
+	const float frozen_v = ffg::HitStop::kScale + 1e-4f;
 	ffg::HitStop h;
 	double now = 100.0;
-	h.Request(9, now, false);
-	int frozen = 0;
-	for (int i = 0; i < 30; ++i) {
-		if (h.FrameTick(now, 1.0f / 60.0f) < 0.5f) ++frozen;
-		now += 1.0 / 60.0;
-	}
-	FFT_CHECK(frozen == 9);
-	h.Request(9, now, false);   // only 3 left in this rolling second
-	frozen = 0;
-	for (int i = 0; i < 30; ++i) {
-		if (h.FrameTick(now, 1.0f / 60.0f) < 0.5f) ++frozen;
-		now += 1.0 / 60.0;
-	}
-	FFT_CHECK(frozen == 3);
+	auto run = [&](ffg::HitStop& hs, int n, float dt) {
+		int frozen = 0;
+		for (int i = 0; i < n; ++i) {
+			if (hs.FrameTick(now, dt) <= frozen_v) ++frozen;
+			now += static_cast<double>(dt);
+		}
+		return frozen;
+	};
+	h.Request(12, now, false);
+	FFT_CHECK(run(h, 30, 1.0f / 60.0f) == 12);
+	h.Request(12, now, false);   // only 8/60 s left in this rolling second
+	FFT_CHECK(run(h, 30, 1.0f / 60.0f) == 8);
 	now += 1.2;
 	h.Request(9, now, true);   // reduced motion: at most 3
 	FFT_CHECK(h.Pending() == 3);
+	// Real time, not rendered frames: 12/60 s is 24 frames at 120 Hz and 6 at 30 Hz.
+	ffg::HitStop h120;
+	h120.Request(12, now, false);
+	FFT_CHECK(run(h120, 60, 1.0f / 120.0f) == 24);
+	ffg::HitStop h30;
+	now += 2.0;
+	h30.Request(12, now, false);
+	FFT_CHECK(run(h30, 20, 1.0f / 30.0f) == 6);
+	// The freeze eases back to full speed over 50 ms (no snap from 0.05 to 1).
+	ffg::HitStop e;
+	e.Request(4, 0.0, false);
+	std::vector<float> v;
+	for (int i = 0; i < 30; ++i) v.push_back(e.FrameTick(static_cast<double>(i) / 120.0, 1.0f / 120.0f));
+	int fr = 0, mid = 0;
+	for (float x : v) {
+		if (x <= frozen_v) ++fr;
+		else if (x < 1.0f - 1e-4f) ++mid;
+	}
+	FFT_CHECK(fr == 8);
+	FFT_CHECK(mid >= 3 && mid <= 7);
+	for (size_t i = 9; i < v.size(); ++i) FFT_CHECK(v[i] >= v[i - 1] - 1e-6f);
+	FFT_NEAR(v.back(), 1.0, 1e-6);
+	// Slow-motion assist.
 	ffg::HitStop s;
 	s.RequestSlowmo(0.22f);
 	FFT_NEAR(s.FrameTick(0.0, 0.1f), ffg::HitStop::kSlowmoScale, 1e-6);
 	FFT_NEAR(s.FrameTick(0.1, 0.1f), ffg::HitStop::kSlowmoScale, 1e-6);
 	FFT_NEAR(s.FrameTick(0.2, 0.1f), ffg::HitStop::kSlowmoScale, 1e-6);   // 0.02 s were still left
 	FFT_NEAR(s.FrameTick(0.3, 0.1f), 1.0, 1e-6);
+	// Cinematic: freeze first, then 0.25 for the hold, then an ease back to 1; never above 1, never backwards.
+	ffg::HitStop c;
+	c.Request(8, 0.0, false);
+	c.RequestSlowmo(ffg::HitStop::EncodeCinematic(ffg::HitStop::kCineHoldS));
+	FFT_CHECK(c.CinematicActive());
+	std::vector<float> cv;
+	for (int i = 0; i < 90; ++i) cv.push_back(c.FrameTick(static_cast<double>(i) / 60.0, 1.0f / 60.0f));
+	int cfr = 0, hold = 0, back = 0;
+	bool after_hold = false;
+	for (size_t i = 0; i < cv.size(); ++i) {
+		const float x = cv[i];
+		FFT_CHECK(x <= 1.0f + 1e-6f);
+		if (i < 8) {
+			if (x <= frozen_v) ++cfr;
+			continue;
+		}
+		FFT_CHECK(x >= cv[i - 1] - 1e-6f);
+		if (std::fabs(x - ffg::HitStop::kCineScale) < 1e-4f) ++hold;
+		if (x > ffg::HitStop::kCineScale + 1e-4f && x < 1.0f - 1e-4f) {
+			after_hold = true;
+			++back;
+		}
+	}
+	FFT_CHECK(cfr == 8);
+	FFT_CHECK(hold >= 19 && hold <= 25);   // 0.4 s at 60 Hz
+	FFT_CHECK(after_hold && back >= 10 && back <= 18);   // 0.25 s ease back
+	FFT_NEAR(cv.back(), 1.0, 1e-6);
+	FFT_CHECK(!c.CinematicActive());
+	ffg::CinematicGate cg;
+	FFT_CHECK(cg.Allow(10.0, false));
+	FFT_CHECK(!cg.Allow(11.0, false));
+	FFT_CHECK(cg.Allow(11.5, true));   // a KO ignores the cooldown
+	FFT_CHECK(!cg.Allow(13.0, false));
+	FFT_CHECK(cg.Allow(14.6, false));
 	ffg::HapticGate g;
 	FFT_CHECK(g.Allow(1.0, true));
 	FFT_CHECK(!g.Allow(1.03, true));
@@ -802,7 +858,10 @@ FFT_TEST(feel_event_mapping) {
 	ff::ActorView rv;
 	rv.id = 2;
 	rv.pos = Vec3(0, 0, -5);
-	snap.actors = {p, rv};
+	ff::ActorView dm;
+	dm.id = 3;
+	dm.pos = Vec3(6, 0, 0);
+	snap.actors = {p, rv, dm};
 	ffg::FeelOptions opt;
 	opt.player_id = 1;
 	opt.slowmo_assist = true;
@@ -811,18 +870,36 @@ FFT_TEST(feel_event_mapping) {
 	};
 	ffg::FeelOutput out;
 	ffg::HandleFeelEvents(evs, snap, opt, out);
-	FFT_CHECK(out.hitstop == 7);
+	FFT_CHECK(out.hitstop == 9);
+	FFT_NEAR(out.fov_punch, -2.5, 1e-6);
 	FFT_CHECK(out.haptics.size() == 1 && out.haptics[0] == "light");   // the victim's haptic (player), T2 visuals
-	FFT_CHECK(!out.shakes.empty() && !out.kicks.empty());
+	FFT_CHECK(!out.shakes.empty() && out.shakes[0].player && !out.shakes[0].roll);
+	FFT_CHECK(out.kicks.size() == 1);
+	FFT_NEAR(out.kicks[0].amount, 0.09, 1e-6);
+	FFT_CHECK(out.kicks[0].dir.z > 0.9f);   // along the hit: the player takes it, the camera gives way
+	FFT_NEAR(out.shakes[0].decay_s, out.shakes[0].amount / ffg::kShakeTraumaDecay, 1e-6);
+	FFT_CHECK(out.cinematic == 0.0f);
 	out.Clear();
-	evs = {MakeEvent("hit", {{"actor", 2}, {"attacker", 1}, {"result", "knockdown"}})};
+	evs = {MakeEvent("hit", {{"actor", 2}, {"attacker", 1}, {"result", "knockdown"}, {"dir", Vec3(0, 0, -1)}})};
 	ffg::HandleFeelEvents(evs, snap, opt, out);
-	FFT_CHECK(out.hitstop == 9 && out.fov_punch < 0.0f);
+	FFT_CHECK(out.hitstop == 12);
+	FFT_NEAR(out.fov_punch, -5.0, 1e-6);
+	FFT_CHECK(!out.shakes.empty() && out.shakes[0].roll && out.shakes[0].player);
+	FFT_CHECK(out.kicks.size() == 1 && out.kicks[0].dir.z < -0.9f);   // toward the impact
+	FFT_NEAR(out.kicks[0].amount, 0.15, 1e-6);
 	FFT_CHECK(out.haptics.size() == 1 && out.haptics[0] == "light");   // attacker's light pulse
+	out.Clear();
+	// Fighters the player has nothing to do with: shake (with falloff), no kick.
+	evs = {MakeEvent("hit", {{"actor", 3}, {"attacker", 2}, {"tier", 1}, {"dir", Vec3(1, 0, 0)}})};
+	ffg::HandleFeelEvents(evs, snap, opt, out);
+	FFT_CHECK(out.hitstop == 6 && out.kicks.empty() && !out.shakes.empty() && !out.shakes[0].player);
 	out.Clear();
 	evs = {MakeEvent("perfect_deflect", {{"actor", 1}})};
 	ffg::HandleFeelEvents(evs, snap, opt, out);
-	FFT_CHECK(out.flash == "perfect" && out.slowmo > 0.2f && out.hitstop == 6);
+	FFT_CHECK(out.flash == "perfect" && out.slowmo > 0.2f && out.hitstop == 8);
+	FFT_NEAR(out.fov_punch, -7.0, 1e-6);
+	FFT_NEAR(out.cinematic, ffg::HitStop::kCineHoldS, 1e-6);
+	FFT_CHECK(!out.cinematic_ko);
 	out.Clear();
 	opt.flashes = 0.0f;
 	ffg::HandleFeelEvents(evs, snap, opt, out);
@@ -831,7 +908,25 @@ FFT_TEST(feel_event_mapping) {
 	evs = {MakeEvent("interaction", {{"outcome", "transform"}, {"counter_actor", 1}, {"pos", Vec3(1, 0, 1)}}),
 	       MakeEvent("app_toast", {{"text", "Mastered"}}), MakeEvent("clash", {{"pos", Vec3()}})};
 	ffg::HandleFeelEvents(evs, snap, opt, out);
-	FFT_CHECK(out.zoom && out.toasts.size() == 1 && out.hitstop == 4);
+	FFT_CHECK(out.zoom && out.toasts.size() == 1 && out.hitstop == 6);
+	FFT_CHECK(out.cinematic == 0.0f);   // partial / low-tier transforms stay small
+	// Big counters with the player in them get the cinematic beat; others don't.
+	auto cine = [&](std::initializer_list<std::pair<const char*, ff::Value>> fields) {
+		ffg::FeelOutput o;
+		ffg::HandleFeelEvents({MakeEvent("interaction", fields)}, snap, opt, o);
+		return o.cinematic;
+	};
+	FFT_CHECK(cine({{"outcome", "deflect"}, {"perfect", true}, {"counter_actor", 1}, {"threat_actor", 2}}) > 0.3f);
+	FFT_CHECK(cine({{"outcome", "deflect"}, {"perfect", true}, {"counter_actor", 2}, {"threat_actor", 3}}) == 0.0f);
+	FFT_CHECK(cine({{"outcome", "reflect"}, {"band", "full"}, {"tier", 2}, {"counter_actor", 1}, {"threat_actor", 2}}) > 0.3f);
+	FFT_CHECK(cine({{"outcome", "reflect"}, {"band", "full"}, {"tier", 2}, {"counter_actor", 2}, {"threat_actor", 1}}) > 0.3f);
+	FFT_CHECK(cine({{"outcome", "reflect"}, {"band", "full"}, {"tier", 1}, {"counter_actor", 1}}) == 0.0f);
+	FFT_CHECK(cine({{"outcome", "reflect"}, {"band", "partial"}, {"tier", 3}, {"counter_actor", 1}}) == 0.0f);
+	FFT_CHECK(cine({{"outcome", "block"}, {"band", "full"}, {"tier", 3}, {"counter_actor", 1}}) == 0.0f);
+	out.Clear();
+	ffg::HandleFeelEvents({MakeEvent("app_ko", {{"actor", 2}})}, snap, opt, out);
+	FFT_NEAR(out.cinematic, ffg::HitStop::kCineHoldKoS, 1e-6);
+	FFT_CHECK(out.cinematic_ko);
 	FFT_CHECK(std::string(ffg::HapticTypeFor("perfect")) == "FeedbackSuccess");
 	FFT_CHECK(std::string(ffg::HapticTypeFor("heavy")) == "ImpactHeavy");
 }
@@ -875,19 +970,58 @@ FFT_TEST(arena_ground_and_slab) {
 	FFT_CHECK(ffg::ArenaGround::Slab(Vec3(0, 3, 0), Vec3(10, 0, 0), Vec3(5, 0, -1), Vec3(6, 2, 1)) < 0.0f);
 }
 
+// Projects a sim-space point through a camera output (same basis as CameraLogic: right = fwd x up).
+struct CamNdc {
+	float x = 0.0f, y = 0.0f;
+	bool front = false;
+	bool In(float m = 0.95f) const { return front && std::fabs(x) <= m && std::fabs(y) <= m; }
+};
+static CamNdc CamProject(const ffg::CameraOutput& o, float aspect, Vec3 q) {
+	const Vec3 fwd = (o.look - o.pos).normalized();
+	const Vec3 right = fwd.cross(Vec3(0, 1, 0)).normalized();
+	const Vec3 up = right.cross(fwd).normalized();
+	const Vec3 d = q - o.pos;
+	const float z = d.dot(fwd);
+	CamNdc r;
+	r.front = z > 0.05f;
+	if (!r.front) return r;
+	const float tv = std::tan(o.fov * ffg::kPi / 360.0f);
+	r.x = d.dot(right) / (z * tv * aspect);
+	r.y = d.dot(up) / (z * tv);
+	return r;
+}
+static float CamHFov(const ffg::CameraOutput& o, float aspect) {
+	return 2.0f * std::atan(std::tan(o.fov * ffg::kPi / 360.0f) * aspect) * 180.0f / ffg::kPi;
+}
+
 FFT_TEST(camera_free_follow_and_input) {
 	ffg::CameraLogic cam;
 	cam.SnapTo(Vec3(0, 0, 7), Vec3(0, 0, -7));
 	FFT_NEAR(cam.yaw, ffg::kPi, 1e-5);   // looking along -Z toward the rival
 	ffg::CameraOutput o;
 	for (int i = 0; i < 120; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(0, 0, 7), nullptr, nullptr);
-	FFT_NEAR(cam.CurDist(), 5.6, 1e-2);
+	FFT_NEAR(cam.CurDist(), cam.distance, 1e-2);
 	FFT_CHECK(o.pos.z > 7.0f);   // behind the player (who looks toward -Z)
-	FFT_NEAR(o.fov, 62.0, 1e-4);
+	FFT_NEAR(o.fov, ffg::CameraLogic::kFreeFov, 1e-3);
+	FFT_NEAR(o.roll, 0.0, 1e-9);
+	FFT_NEAR(o.move_yaw, o.view_yaw, 1e-6);   // free: the stick follows the view
 	cam.AddInput(Vec2(0.5f, 0.0f));
 	FFT_NEAR(cam.yaw, ffg::kPi - 0.5f, 1e-5);
 	cam.AddInput(Vec2(0.0f, 5.0f));
 	FFT_NEAR(cam.pitch, -0.12, 1e-5);   // clamped
+	// The player is a real part of the frame (not a speck): head to feet spans > 30 % of the height.
+	ffg::CameraLogic f;
+	f.SnapTo(Vec3(), Vec3(0, 0, -5));
+	for (int i = 0; i < 60; ++i) o = f.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	const CamNdc head = CamProject(o, f.aspect, Vec3(0, 1.75f, 0)), feet = CamProject(o, f.aspect, Vec3(0, 0.05f, 0));
+	FFT_CHECK(head.In() && feet.In());
+	FFT_CHECK((head.y - feet.y) * 0.5f > 0.3f);
+	// Wide phones: the horizontal FOV is capped at 90 deg.
+	ffg::CameraLogic w;
+	w.aspect = 2.17f;
+	w.SnapTo(Vec3(), Vec3(0, 0, -5));
+	for (int i = 0; i < 60; ++i) o = w.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_CHECK(CamHFov(o, w.aspect) <= ffg::CameraLogic::kMaxHFov + 1e-3f);
 }
 
 FFT_TEST(camera_collision_never_inside_walls) {
@@ -904,22 +1038,169 @@ FFT_TEST(camera_collision_never_inside_walls) {
 	FFT_CHECK(o.pos.z < 16.0f);                      // inside the yard
 	FFT_CHECK(cam.CurDist() >= ffg::CameraLogic::kMinPull - 1e-3f);
 	FFT_CHECK(std::fabs(cam.Orbit()) > 0.05f || cam.Lift() > 0.05f);   // it swung or lifted
+	FFT_CHECK(CamProject(o, cam.aspect, rival + Vec3(0, 1.25f, 0)).In(1.0f));   // the rival stays in the frame
 	// a pillar-free open yard keeps the full distance
 	ffg::CameraLogic open;
 	open.arena = &g;
 	open.SnapTo(Vec3(0, 0, 3), Vec3(0, 0, -3));
 	for (int i = 0; i < 240; ++i) open.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(0, 0, 3), nullptr, nullptr);
-	FFT_NEAR(open.CurDist(), 5.6, 0.05);
+	FFT_NEAR(open.CurDist(), open.distance, 0.05);
+	// locked in a yard corner: the boom never ends up inside a wall at any separation
+	for (float sep : {3.0f, 8.0f, 14.0f}) {
+		ffg::CameraLogic k;
+		k.arena = &g;
+		const Vec3 pc(-15.2f, 0, 15.2f), rc(-15.2f + sep * 0.7f, 0, 15.2f - sep * 0.7f);
+		k.SnapTo(pc, rc);
+		for (int i = 0; i < 240; ++i) o = k.Update(1.0f / 60.0f, 1.0f / 60.0f, pc, &rc, nullptr);
+		FFT_CHECK(o.pos.x > -16.0f && o.pos.z < 16.0f);
+		FFT_CHECK(k.pitch + k.Lift() <= 1.1f + 1e-3f);
+	}
 }
 
-FFT_TEST(camera_assist_turns_toward_target_when_idle) {
+FFT_TEST(camera_lock_two_shot_frames_both) {
+	for (float aspect : {16.0f / 9.0f, 2.17f, 4.0f / 3.0f}) {
+		for (float sep : {1.5f, 3.0f, 6.0f, 10.0f, 16.0f, 24.0f}) {
+			ffg::CameraLogic cam;
+			cam.aspect = aspect;
+			const Vec3 pl(0, 0, 0), rv(0, 0, -sep);
+			cam.SnapTo(pl, rv);
+			ffg::CameraOutput o;
+			for (int i = 0; i < 240; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, pl, &rv, nullptr);
+			FFT_CHECK(cam.Locked());
+			const CamNdc ph = CamProject(o, aspect, pl + Vec3(0, 1.75f, 0)), pc = CamProject(o, aspect, pl + Vec3(0, 1.25f, 0));
+			const CamNdc pf = CamProject(o, aspect, pl + Vec3(0, 0.1f, 0));
+			const CamNdc rh = CamProject(o, aspect, rv + Vec3(0, 1.75f, 0)), rc = CamProject(o, aspect, rv + Vec3(0, 1.25f, 0));
+			FFT_CHECK(ph.In() && pc.In() && pf.In());
+			FFT_CHECK(rh.In() && rc.In());
+			if (sep >= 3.0f) FFT_CHECK(std::fabs(pc.x - rc.x) > 0.08f);   // the player's head never hides the rival
+			FFT_CHECK(o.pos.distance_to(pl + Vec3(0, ffg::CameraLogic::kLockPivotH, 0)) >= ffg::CameraLogic::kMinDist);
+			FFT_CHECK(CamHFov(o, aspect) <= ffg::CameraLogic::kMaxHFov + 1e-3f);
+			FFT_CHECK(cam.pitch <= ffg::CameraLogic::kMaxPitchTarget);
+			// stick forward = toward the rival
+			FFT_NEAR(ffg::WrapAngle(o.move_yaw - std::atan2(0.0f, -1.0f)), 0.0, 1e-3);
+			// the two-shot sits off the axis by the side angle
+			const float k = ffg::Saturate((sep - 3.0f) / 13.0f);
+			const float theta = (24.0f - 10.0f * k) * ffg::kPi / 180.0f;
+			FFT_NEAR(std::fabs(ffg::WrapAngle(o.view_yaw - ffg::kPi)), theta, 0.02);
+		}
+	}
+}
+
+FFT_TEST(camera_lock_assist_waits_then_springs_back) {
 	ffg::CameraLogic cam;
-	cam.SnapTo(Vec3(0, 0, 0), Vec3(0, 0, -5));
-	const Vec3 tgt(8, 0, 0);   // off to the side
-	const float yaw0 = cam.yaw;
-	for (int i = 0; i < 180; ++i) cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), &tgt, nullptr);
-	const float want = std::atan2(8.0f, 0.0f);
-	FFT_CHECK(std::fabs(ffg::WrapAngle(cam.yaw - want)) < std::fabs(ffg::WrapAngle(yaw0 - want)) - 0.5f);
+	cam.SnapTo(Vec3(), Vec3(0, 0, -5));
+	const Vec3 tgt(8, 0, 0);   // off to the side: the snap already frames it
+	cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), &tgt, nullptr);
+	const float axis = std::atan2(8.0f, 0.0f);
+	const float theta = (24.0f - 10.0f * (5.0f / 13.0f)) * ffg::kPi / 180.0f;
+	FFT_NEAR(std::fabs(ffg::WrapAngle(cam.yaw - axis)), theta, 1e-3);
+	// The player turns the view across the axis: nothing pulls for 1 s, then a spring brings it onto the two-shot on
+	// the side they turned to.
+	cam.AddInput(Vec2(0.9f, 0.0f));
+	const float steered = cam.yaw;
+	for (int i = 0; i < 50; ++i) cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), &tgt, nullptr);
+	FFT_NEAR(cam.yaw, steered, 1e-4);
+	float prev = cam.yaw, prev_rate = 0.0f, max_jerk = 0.0f;
+	for (int i = 0; i < 150; ++i) {
+		cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), &tgt, nullptr);
+		const float rate = (cam.yaw - prev) * 60.0f;
+		FFT_CHECK(std::fabs(rate) <= ffg::CameraLogic::kAssistMaxRate + 1e-3f);
+		max_jerk = std::max(max_jerk, std::fabs(rate - prev_rate));
+		prev = cam.yaw;
+		prev_rate = rate;
+	}
+	FFT_NEAR(ffg::WrapAngle(cam.yaw - (axis + cam.LockSide() * theta)), 0.0, 0.02);
+	FFT_CHECK(max_jerk < 0.6f);   // rad/s per frame: eases in, no snap
+	// An incoming threat (no lock) still turns the free view toward it.
+	ffg::CameraLogic f;
+	f.SnapTo(Vec3(), Vec3(0, 0, -5));
+	const float yaw0 = f.yaw;
+	for (int i = 0; i < 180; ++i) f.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, &tgt);
+	FFT_CHECK(std::fabs(ffg::WrapAngle(f.yaw - axis)) < std::fabs(ffg::WrapAngle(yaw0 - axis)) - 0.5f);
+}
+
+FFT_TEST(camera_spectator_side_on_two_shot) {
+	ffg::CameraLogic cam;
+	cam.spectator = true;
+	Vec3 a(-3, 0, 0), b(3, 0, 0);
+	cam.SnapTo(a, b);
+	ffg::CameraOutput o;
+	for (int i = 0; i < 180; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, a, &b, nullptr);
+	FFT_CHECK(!cam.Locked());
+	for (Vec3 q : {a, b}) {
+		FFT_CHECK(CamProject(o, cam.aspect, q + Vec3(0, 1.75f, 0)).In());
+		FFT_CHECK(CamProject(o, cam.aspect, q + Vec3(0, 0.1f, 0)).In());
+	}
+	const Vec3 view = Vec3(o.look.x - o.pos.x, 0, o.look.z - o.pos.z).normalized();
+	const float ang = std::acos(std::fabs(view.dot(Vec3(1, 0, 0)))) * 180.0f / ffg::kPi;
+	FFT_NEAR(ang, ffg::CameraLogic::kSpecAngle, 3.0);
+	// The fighters circle each other a half turn: the camera follows smoothly and stays on its side of the line.
+	Vec3 prev = o.pos;
+	float worst = 0.0f;
+	for (int i = 0; i < 360; ++i) {
+		const float t = static_cast<float>(i) / 360.0f * ffg::kPi;
+		a = Vec3(-3.0f * std::cos(t), 0, -3.0f * std::sin(t));
+		b = Vec3(3.0f * std::cos(t), 0, 3.0f * std::sin(t));
+		o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, a, &b, nullptr);
+		worst = std::max(worst, o.pos.distance_to(prev));
+		prev = o.pos;
+	}
+	FFT_CHECK(worst < 0.25f);   // metres per frame
+	for (Vec3 q : {a, b}) FFT_CHECK(CamProject(o, cam.aspect, q + Vec3(0, 1.25f, 0)).In());
+}
+
+FFT_TEST(camera_frame_rate_independent) {
+	// The same 3 s (player circling a fixed rival, locked) at 30, 60, 144 Hz and an uneven 90 / 144 / 60 mix.
+	auto run = [](std::initializer_list<float> pattern) {
+		ffg::CameraLogic cam;
+		const Vec3 rv(0, 0, -6);
+		cam.SnapTo(Vec3(0, 0, 0), rv);
+		std::vector<float> dts(pattern);
+		float t = 0.0f;
+		size_t k = 0;
+		ffg::CameraOutput o;
+		while (t < 3.0f - 1e-5f) {
+			const float dt = std::min(dts[k++ % dts.size()], 3.0f - t);
+			t += dt;
+			const Vec3 pl(6.0f * std::sin(t * 0.8f), 0, -6.0f + 6.0f * std::cos(t * 0.8f));
+			cam.player_vel = Vec3(4.8f * std::cos(t * 0.8f), 0, -4.8f * std::sin(t * 0.8f));
+			o = cam.Update(dt, dt, pl, &rv, nullptr);
+		}
+		return o;
+	};
+	// Springs see the target once per frame, so runs may differ by about one frame of the player's motion
+	// (4.8 m/s x the frame-time difference), never more.
+	const ffg::CameraOutput a = run({1.0f / 60.0f});
+	struct R {
+		ffg::CameraOutput o;
+		float dt_diff;
+	};
+	for (const R& b : {R{run({1.0f / 30.0f}), 1.0f / 60.0f}, R{run({1.0f / 144.0f}), 1.0f / 60.0f - 1.0f / 144.0f},
+	                   R{run({1.0f / 90.0f, 1.0f / 144.0f, 1.0f / 60.0f}), 1.0f / 60.0f - 1.0f / 144.0f}}) {
+		const float tol = 0.03f + 4.8f * b.dt_diff;
+		FFT_CHECK(a.pos.distance_to(b.o.pos) < tol);
+		FFT_CHECK(a.look.distance_to(b.o.look) < tol);
+		FFT_NEAR(a.fov, b.o.fov, 0.05);
+	}
+}
+
+FFT_TEST(camera_pivot_ignores_bob_follows_steps) {
+	ffg::CameraLogic cam;
+	cam.SnapTo(Vec3(), Vec3(0, 0, -5));
+	ffg::CameraOutput o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	float lo = 1e9f, hi = -1e9f;
+	for (int i = 0; i < 240; ++i) {   // a grounded 5 cm stride bob
+		const float y = 0.05f * std::sin(static_cast<float>(i) / 60.0f * ffg::kTau * 2.0f);
+		o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(0, y, 0), nullptr, nullptr);
+		if (i > 60) {
+			lo = std::min(lo, o.pos.y);
+			hi = std::max(hi, o.pos.y);
+		}
+	}
+	FFT_CHECK(hi - lo < 0.01f);
+	for (int i = 0; i < 90; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(0, 0.6f, 0), nullptr, nullptr);   // up a step
+	const float base_y = 0.6f + cam.height + std::sin(cam.pitch) * cam.CurDist();
+	FFT_NEAR(o.pos.y, base_y, 0.05);
 }
 
 FFT_TEST(camera_feel_real_time_and_reduced_motion) {
@@ -929,21 +1210,133 @@ FFT_TEST(camera_feel_real_time_and_reduced_motion) {
 	FFT_NEAR(cam.ShakeAmount(), 1.0, 1e-5);
 	cam.Update(0.0f, 0.1f, Vec3(), nullptr, nullptr);   // hit-stop: game dt 0, real dt runs
 	FFT_NEAR(cam.ShakeAmount(), 0.5, 1e-4);
-	cam.ShakeAt(1.0f, Vec3(16.0f, 0, 0), 0.2f);         // far events shake less: 1 / (1 + 16/8)
-	cam.FovPunch(-3.0f, 0.25f);
-	ffg::CameraOutput o = cam.Update(0.0f, 0.0f, Vec3(), nullptr, nullptr);
-	FFT_NEAR(o.fov, 59.0, 1e-3);
-	for (int i = 0; i < 20; ++i) o = cam.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
-	FFT_NEAR(o.fov, 62.0, 1e-3);
-	ffg::CameraLogic rm;
-	rm.SnapTo(Vec3(), Vec3(0, 0, -5));
+	ffg::CameraLogic far;
+	far.SnapTo(Vec3(), Vec3(0, 0, -5));
+	far.ShakeAt(1.0f, Vec3(16.0f, 0, 0), 0.2f);   // far events shake less: 1 / (1 + 16/8)
+	FFT_NEAR(far.ShakeAmount(), 1.0 / 3.0, 1e-4);
+	far.ShakeAt(1.0f, Vec3(16.0f, 0, 0), 0.2f, true);   // ... unless the player is in it
+	FFT_NEAR(far.ShakeAmount(), ffg::CameraLogic::kShakeFloorPlayer, 1e-4);
+
+	// Rotational trauma shake against an unshaken twin: angles within the limits, <= 1.5 cm of translation,
+	// roll only when asked for.
+	auto twin = []() {
+		ffg::CameraLogic c;
+		c.SnapTo(Vec3(), Vec3(0, 0, -5));
+		c.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		return c;
+	};
+	ffg::CameraLogic base = twin(), sh = twin(), shr = twin();
+	sh.ShakeAt(1.0f, Vec3(), 1.0f, true, false);
+	shr.ShakeAt(1.0f, Vec3(), 1.0f, true, true);
+	float max_ang = 0.0f, max_pos = 0.0f, max_roll = 0.0f, max_roll_plain = 0.0f;
+	for (int i = 0; i < 30; ++i) {
+		const ffg::CameraOutput b = base.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		const ffg::CameraOutput s1 = sh.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		const ffg::CameraOutput s2 = shr.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		const Vec3 fb = (b.look - b.pos).normalized(), fs = (s1.look - s1.pos).normalized();
+		max_ang = std::max(max_ang, std::acos(ffg::Clampf(fb.dot(fs), -1.0f, 1.0f)) * 180.0f / ffg::kPi);
+		max_pos = std::max(max_pos, s1.pos.distance_to(b.pos));
+		max_roll = std::max(max_roll, std::fabs(s2.roll));
+		max_roll_plain = std::max(max_roll_plain, std::fabs(s1.roll));
+	}
+	FFT_CHECK(max_ang > 0.2f && max_ang <= 1.6f);
+	FFT_CHECK(max_pos <= ffg::CameraLogic::kShakePosM * 1.4143f + 1e-5f);
+	FFT_CHECK(max_roll > 0.1f && max_roll <= ffg::CameraLogic::kShakeRollDeg + 1e-4f);
+	FFT_NEAR(max_roll_plain, 0.0, 1e-9);
+
+	// FOV punch: eases in over 60 ms, holds while time is frozen, eases out over 0.3 s once it runs.
+	ffg::CameraLogic fp = twin();
+	const float f0 = fp.FramedFov();
+	fp.FovPunch(-5.0f);
+	ffg::CameraOutput o = fp.Update(0.0f, 0.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.fov, f0, 1e-4);
+	o = fp.Update(0.0f, 0.03f, Vec3(), nullptr, nullptr);
+	FFT_CHECK(o.fov < f0 - 1.0f && o.fov > f0 - 5.0f);
+	o = fp.Update(0.0f, 0.04f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.fov, f0 - 5.0f, 1e-3);
+	o = fp.Update(0.0f, 0.5f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.fov, f0 - 5.0f, 1e-3);   // still frozen: held
+	float last = o.fov;
+	for (int i = 0; i < 24; ++i) {
+		o = fp.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		FFT_CHECK(o.fov >= last - 1e-4f);
+		last = o.fov;
+	}
+	FFT_NEAR(o.fov, f0, 1e-3);
+
+	// A perfect (-7) and the cinematic (-6) in the same frame: the bigger punch wins.
+	ffg::CameraLogic pc = twin();
+	pc.FovPunch(-7.0f);
+	pc.Cinematic(Vec3(0, 1, -4));
+	for (int i = 0; i < 10; ++i) o = pc.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.fov, f0 - 7.0f, 1e-3);
+
+	// Kick: a spring impulse; peaks at about the asked amount, then rings out.
+	ffg::CameraLogic kc = twin();
+	kc.Kick(Vec3(0, 0, -1), 0.15f);
+	float peak = 0.0f;
+	for (int i = 0; i < 180; ++i) {
+		kc.Update(1.0f / 120.0f, 1.0f / 120.0f, Vec3(), nullptr, nullptr);
+		peak = std::max(peak, kc.KickOffset().length());
+	}
+	FFT_NEAR(peak, 0.15, 0.02);
+	FFT_CHECK(kc.KickOffset().length() < 0.005f);
+
+	// Cinematic: FOV narrows by 6 deg and the camera dollies ~7 % toward the event while time is slowed.
+	ffg::CameraLogic cc = twin(), cb = twin();
+	const Vec3 at(0, 1.2f, -4.0f);
+	cc.Cinematic(at);
+	for (int i = 0; i < 12; ++i) {
+		cb.Update(0.25f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		o = cc.Update(0.25f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	}
+	const ffg::CameraOutput ob = cb.Update(0.0f, 0.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.fov, ob.fov + ffg::CameraLogic::kCineFov, 1e-3);
+	FFT_NEAR(o.pos.distance_to(at) / ob.pos.distance_to(at), 1.0 - ffg::CameraLogic::kCineDolly, 0.01);
+
+	// Reduced motion: shake x 0.3 and no roll, no FOV punch / zoom / kick / cinematic.
+	ffg::CameraLogic rm = twin();
+	ffg::CameraLogic rb = twin();
 	rm.reduced_motion = true;
-	rm.ShakeAt(1.0f, Vec3(), 0.2f);
+	rm.ShakeAt(1.0f, Vec3(), 0.2f, false, true);
 	FFT_NEAR(rm.ShakeAmount(), 0.3, 1e-5);
 	rm.FovPunch();
 	rm.ZoomTo(Vec3(1, 1, 1));
+	rm.Kick(Vec3(1, 0, 0), 0.2f);
+	rm.Cinematic(Vec3(0, 1, -3));
 	const ffg::CameraOutput r = rm.Update(0.0f, 0.01f, Vec3(), nullptr, nullptr);
-	FFT_NEAR(r.fov, 62.0, 1e-4);
+	const ffg::CameraOutput rbo = rb.Update(0.0f, 0.01f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(r.fov, rbo.fov, 1e-4);
+	FFT_NEAR(r.roll, 0.0, 1e-9);
+	FFT_CHECK(r.pos.distance_to(rbo.pos) <= ffg::CameraLogic::kShakePosM);
+}
+
+FFT_TEST(camera_input_drains_per_rendered_frame) {
+	// Desktop: the right stick turns per rendered frame; TakeCamDelta hands it over and the tick sees none of it again.
+	DeskRig r;
+	r.s.cam_stick = Vec2(1, 0);
+	r.s.dt = 1.0f / 120.0f;
+	r.d.Sample(r.s);
+	FFT_NEAR(r.d.TakeCamDelta().x, 2.6 / 120.0, 1e-5);
+	FFT_NEAR(r.d.TakeCamDelta().length(), 0.0, 1e-9);
+	r.d.Sample(r.s);
+	ff::InputFrame f;
+	r.d.TakeCamDelta();
+	r.d.FillFrame(f);
+	FFT_NEAR(f.cam_delta.length(), 0.0, 1e-9);
+	// Touch: a camera drag is handed over the same way.
+	TouchRig t;
+	const Vec2 start(t.C(ffg::TouchId::Attack).x - 220.0f, 120.0f);
+	t.t.TouchDown(3, start);
+	t.t.TouchMove(3, start + Vec2(t.t.layout.ppm * 10.0f, 0));
+	FFT_NEAR(t.t.TakeCamDelta().x, 0.55, 1e-3);
+	FFT_NEAR(t.Tick().cam_delta.length(), 0.0, 1e-9);
+	// The camera applies each delta as it arrives.
+	ffg::CameraLogic cam;
+	cam.SnapTo(Vec3(), Vec3(0, 0, -5));
+	const float y0 = cam.yaw;
+	for (int i = 0; i < 4; ++i) cam.AddInput(Vec2(0.01f, 0.0f));
+	FFT_NEAR(cam.yaw, y0 - 0.04f, 1e-5);
 }
 
 // =================================================================================== anim timing
@@ -1581,6 +1974,39 @@ FFT_TEST(springs_chain_lags_and_settles) {
 	std::vector<Vec3> same = {Vec3(), Vec3(), Vec3()};
 	z.Step(1.0f / 60.0f, same, {}, dirs);
 	for (const Vec3& v : dirs) FFT_CHECK(std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z));
+}
+
+FFT_TEST(springs_chain_even_at_uneven_frame_times) {
+	// The root sways; a 60 Hz run and an uneven 90 / 144 / 50 Hz run land on the same tails, and the uneven run moves
+	// without per-frame jitter (no direction reversal while the root keeps moving one way).
+	auto pose = [](float t) {
+		const float x = 0.2f * std::sin(t * 2.0f);
+		return std::vector<Vec3>{Vec3(x, 0, 1.0f), Vec3(x, 0, 0.8f), Vec3(x, 0, 0.6f)};
+	};
+	auto run = [&](std::initializer_list<float> pattern, float until, std::vector<float>* xs) {
+		ffg::SpringChain c;
+		std::vector<Vec3> dirs;
+		std::vector<float> dts(pattern);
+		float t = 0.0f;
+		size_t k = 0;
+		while (t < until - 1e-6f) {
+			const float dt = std::min(dts[k++ % dts.size()], until - t);
+			t += dt;
+			c.Step(dt, pose(t), {}, dirs);
+			if (xs) xs->push_back(dirs[1].x);
+		}
+		return dirs;
+	};
+	const std::vector<Vec3> a = run({1.0f / 60.0f}, 1.5f, nullptr);
+	std::vector<float> xs;
+	const std::vector<Vec3> b = run({1.0f / 90.0f, 1.0f / 144.0f, 1.0f / 50.0f}, 1.5f, &xs);
+	FFT_CHECK((a[0] - b[0]).length() < 0.03f && (a[1] - b[1]).length() < 0.03f);
+	int reversals = 0;
+	for (size_t i = 2; i < xs.size(); ++i) {
+		const float d0 = xs[i - 1] - xs[i - 2], d1 = xs[i] - xs[i - 1];
+		if (d0 * d1 < -1e-8f && std::fabs(d1) > 1e-4f && std::fabs(d0) > 1e-4f) ++reversals;
+	}
+	FFT_CHECK(reversals <= 4);   // only the sway's own turnarounds
 }
 
 static Vec3 FK(Vec3 a, Vec3 b, Vec3 c, const ffg::Quat& qa0, const ffg::Quat& qb0, const ffg::TwoBoneResult& r, Vec3& knee) {

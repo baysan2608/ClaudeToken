@@ -98,6 +98,13 @@ public:
 	void Update(float dt);
 	// Once per 60 Hz sim tick: writes every touch-owned field of `f` and clears the latched edges.
 	void FillFrame(ff::InputFrame& f);
+	// Per rendered frame (before the camera updates): the camera drag accumulated since the last call, then cleared
+	// (FillFrame drains it too; see DesktopInput::TakeCamDelta).
+	Vec2 TakeCamDelta() {
+		const Vec2 d = cam_accum_;
+		cam_accum_ = Vec2();
+		return d;
+	}
 
 	// ---- queries (drawing, tests)
 	static float AttackChargeSec(int element);

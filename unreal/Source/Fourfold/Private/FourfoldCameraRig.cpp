@@ -52,7 +52,9 @@ void AFourfoldCameraRig::UpdateRig(float GameDt, float RealDt, const ff::Vec3& P
 	{
 		Dir = FVector(1.0, 0.0, 0.0);
 	}
-	SetActorLocationAndRotation(Pos, Dir.Rotation());
+	FRotator Rot = Dir.Rotation();
+	Rot.Roll = double(Out.roll);   // trauma shake roll (degrees; 0 unless a T3 / knockdown is ringing out)
+	SetActorLocationAndRotation(Pos, Rot);
 	// The logic's FOV is vertical (as the Godot camera); Unreal's camera FOV is horizontal.
 	const double VFov = FMath::DegreesToRadians(double(Out.fov));
 	const double HFov = 2.0 * FMath::Atan(FMath::Tan(VFov * 0.5) * Aspect);

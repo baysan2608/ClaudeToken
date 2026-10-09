@@ -1,8 +1,10 @@
 // Fourfold - UFourfoldSimSubsystem: owns the engine-free ff::Session and steps it at a fixed 60 Hz.
 // Each rendered frame: acc += dilated delta x Lab time scale; up to 4 ticks (Lab freeze: only requested steps); the
 // local input is polled once per tick (PollInput); then OnFrame is broadcast ONCE with both snapshots, the alpha and
-// every event of the ticks stepped. Hit-stop (requested by the feel director / FX) dilates global time for N real
-// frames (<= 12 per rolling second). Fighters (one AFourfoldFighter per sim actor) are spawned / destroyed here.
+// every event of the ticks stepped. Hit-stop (requested by the feel director / FX) dilates global time to 0.05 for N/60 s
+// of real time (<= 20/60 s per rolling second) and eases back over 50 ms; the cinematic slow motion of big counters
+// (RequestSlowmo with a negative hold, ffg::HitStop::EncodeCinematic) runs 0.25 after it and eases back over 0.25 s.
+// Fighters (one AFourfoldFighter per sim actor) are spawned / destroyed here.
 #include "FourfoldSimSubsystem.h"
 
 #include "FourfoldCoords.h"
@@ -283,6 +285,7 @@ void UFourfoldSimSubsystem::RequestHitStop(int32 Frames)
 
 void UFourfoldSimSubsystem::RequestSlowmo(float RealSeconds)
 {
+	// > 0: the slow-motion assist (0.55x); < 0: a cinematic hold of -RealSeconds (0.25x after the hit-stop).
 	if (Impl.IsValid())
 	{
 		Impl->HitStop.RequestSlowmo(RealSeconds);
@@ -405,7 +408,8 @@ void UFourfoldSimSubsystem::Tick(float DeltaTime)
 		}
 	}
 
-	// Hit-stop / slow-motion for the NEXT frame (requests arrived during OnFrame).
+	// Hit-stop / slow-motion for the NEXT frame (requests arrived during OnFrame). RealDt is the frame that just ran at
+	// the dilation set last time, so the freeze is measured in real seconds at any frame rate.
 	const float Wanted = Impl->bPaused ? 1.0f : Impl->HitStop.FrameTick(FPlatformTime::Seconds(), RealDt);
 	ApplyTimeDilation(Wanted);
 	++Impl->FrameIndex;

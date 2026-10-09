@@ -1,7 +1,8 @@
-// Fourfold - third-person camera rig (port of game/presentation/camera_rig.gd through the logic island's
-// ffg::CameraLogic): orbit behind the player, lock-on framing, collision against the analytic arena (swing / lift /
-// see-through), smoothing, and the feel layer in real time (shake with distance falloff, kick, FOV punch, 3 % zoom on
-// transformations; reduced-motion rules). Updated from the player controller's OnFrame handler.
+// Fourfold - third-person camera rig (the logic island's ffg::CameraLogic): free orbit behind the player, the lock-on
+// two-shot, the spectator two-shot (title / watch), collision against the analytic arena (swing / side flip / lift /
+// see-through), spring smoothing, and the feel layer in real time (rotational trauma shake with roll, spring kick, FOV
+// punch held through hit-stop, cinematic dolly, 3 % zoom on transformations; reduced-motion rules). Updated every
+// rendered frame from the player controller's OnFrame handler (camera input is applied there too, before the update).
 #pragma once
 
 #include "CoreMinimal.h"

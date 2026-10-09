@@ -82,17 +82,29 @@ int32 FFourfoldFeel::Apply(const FFourfoldFrame& Frame, const FFourfoldSettings&
 	{
 		Sim.RequestSlowmo(Out.slowmo);
 	}
+	// Cinematic slow motion on big counters / a KO: never with reduced motion, in a Lab freeze or at a Lab time scale
+	// (the Lab is for reading frames), at most once every 3 s (a KO always).
+	bool bCinematic = false;
+	if (Out.cinematic > 0.0f && !Settings.bReducedMotion && Sim.HasScenario())
+	{
+		const ff::LabState& Lab = Sim.GetSession().Lab();
+		if (!Lab.frozen && FMath::IsNearlyEqual(Lab.time_scale, 1.0f, 0.01f) && CineGate.Allow(FPlatformTime::Seconds(), Out.cinematic_ko))
+		{
+			Sim.RequestSlowmo(ffg::HitStop::EncodeCinematic(Out.cinematic));
+			bCinematic = true;
+		}
+	}
 	if (Rig)
 	{
 		for (const ffg::FeelShake& S : Out.shakes)
 		{
 			if (S.has_pos)
 			{
-				Rig->Logic.ShakeAt(S.amount, S.pos, S.decay_s);
+				Rig->Logic.ShakeAt(S.amount, S.pos, S.decay_s, S.player, S.roll);
 			}
 			else
 			{
-				Rig->Logic.Shake(S.amount);
+				Rig->Logic.Shake(S.amount, S.decay_s);
 			}
 		}
 		for (const ffg::FeelKick& K : Out.kicks)
@@ -106,6 +118,10 @@ int32 FFourfoldFeel::Apply(const FFourfoldFrame& Frame, const FFourfoldSettings&
 		if (Out.zoom)
 		{
 			Rig->Logic.ZoomTo(Out.zoom_at);
+		}
+		if (bCinematic)
+		{
+			Rig->Logic.Cinematic(Out.cinematic_at);
 		}
 	}
 	for (const std::string& K : Out.haptics)

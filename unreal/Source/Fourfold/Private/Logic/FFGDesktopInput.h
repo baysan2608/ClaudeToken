@@ -56,6 +56,14 @@ public:
 	void Sample(const DeviceSample& s);
 	// Per sim tick.
 	void FillFrame(ff::InputFrame& f);
+	// Per rendered frame (before the camera updates): the camera turn accumulated since the last call, then cleared.
+	// FillFrame also drains it, so a host that only polls per tick still works; the per-frame drain is what keeps the
+	// view smooth at 120 Hz and during hit-stop (no sim tick then).
+	Vec2 TakeCamDelta() {
+		const Vec2 d = cam_accum_;
+		cam_accum_ = Vec2();
+		return d;
+	}
 	// Focus loss / pause: everything held is let go; a held technique is cancelled, never committed.
 	void CancelAll();
 	// After un-pausing: edge-only actions physically down now (the Esc that closed the menu) must not fire again.

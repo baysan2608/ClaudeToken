@@ -119,17 +119,29 @@ void SpringChain::Step(float dt, const std::vector<Vec3>& animated, const std::v
 		len_.assign(n, 0.0f);
 		for (size_t i = 0; i < n; ++i) len_[i] = std::max((animated[i + 1] - animated[i]).length(), 1e-3f);
 		initialized_ = true;
+		acc_ = 0.0f;
 	}
-	float left = Clampf(dt, 0.0f, 0.1f);
+	// Fixed steps (Verlet assumes equal steps: a variable last sub-step jittered the tails at uneven frame times). Each
+	// step sees the animated pose at its own time (lerp from the last frame's pose), not this frame's pose held.
+	const float fdt = Clampf(dt, 0.0f, 0.1f);
+	const float since = acc_;   // time since the last step, at the start of this frame
+	acc_ = std::min(acc_ + fdt, 0.1f);
+	const float h = kStep;
 	const float g = 9.81f * params.gravity;
-	while (left > 1e-6f) {
-		const float h = std::min(left, 1.0f / 120.0f);
-		left -= h;
-		const float keep = std::pow(Clampf(1.0f - params.drag, 0.0f, 1.0f), h * 60.0f);
-		const float pull = 1.0f - std::exp(-params.stiffness * 8.0f * h);
+	const float keep = std::pow(Clampf(1.0f - params.drag, 0.0f, 1.0f), h * 60.0f);
+	const float pull = 1.0f - std::exp(-params.stiffness * 8.0f * h);
+	if (reset || anim_prev_.size() != animated.size()) anim_prev_ = animated;
+	pose_.resize(animated.size());
+	int step = 0;
+	while (acc_ >= h - 1e-6f) {
+		acc_ = std::max(0.0f, acc_ - h);
+		const float at = h - since + static_cast<float>(step) * h;
+		++step;
+		const float f = fdt > 1e-6f ? Saturate(at / fdt) : 1.0f;
+		for (size_t k = 0; k < animated.size(); ++k) pose_[k] = anim_prev_[k].lerp(animated[k], f);
 		for (size_t i = 0; i < n; ++i) {
-			const Vec3 head = i == 0 ? animated[0] : cur_[i - 1];
-			const Vec3 rest_dir = (animated[i + 1] - animated[i]).normalized();
+			const Vec3 head = i == 0 ? pose_[0] : cur_[i - 1];
+			const Vec3 rest_dir = (pose_[i + 1] - pose_[i]).normalized();
 			const Vec3 target = head + rest_dir * len_[i];
 			Vec3 next = cur_[i] + (cur_[i] - prev_[i]) * keep;
 			next += (target - next) * pull;
@@ -165,11 +177,17 @@ void SpringChain::Step(float dt, const std::vector<Vec3>& animated, const std::v
 			cur_[i] = next;
 		}
 	}
+	anim_prev_ = animated;
+	// Render between the last two steps (alpha = the unsimulated remainder), so the tails move evenly at any frame rate.
+	const float alpha = Clampf(acc_ / h, 0.0f, 1.0f);
+	Vec3 prev_tail;
 	for (size_t i = 0; i < n; ++i) {
-		const Vec3 head = i == 0 ? animated[0] : cur_[i - 1];
-		Vec3 d = (cur_[i] - head).normalized();
+		const Vec3 tail = prev_[i].lerp(cur_[i], alpha);
+		const Vec3 head = i == 0 ? animated[0] : prev_tail;
+		Vec3 d = (tail - head).normalized();
 		if (d.length_squared() < 0.5f) d = (animated[i + 1] - animated[i]).normalized();
 		out_dirs[i] = d;
+		prev_tail = tail;
 	}
 }
 

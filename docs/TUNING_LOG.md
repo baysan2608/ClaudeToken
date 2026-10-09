@@ -32,3 +32,35 @@
   hover heights (kit tests), so the softer starts belong in the presentation layer instead.
 - The slower turning surfaced a latent bug: WaterRules.o_feed's early returns left the raw kit outcome "water_feed" in
   the interaction event (not in FxEvents.OUTCOMES); they now report block (volume stopped) / pass.
+
+## 2026-10-09 - Unreal camera and combat feel (owner: "AAA cinematic, smooth, more deliberate and fluid")
+All in the logic island (`unreal/Source/Fourfold/Private/Logic/FFGCamera.h`, `FFGFeel.cpp`), unit-tested.
+- Camera judder: camera drags / stick were drained once per 60 Hz sim tick (steps at 120 Hz, stalls in hit-stop); now
+  drained and applied every rendered frame (`DesktopInput` / `TouchControls::TakeCamDelta`, controller `OnSimFrame`).
+- Framing: lock-on two-shot replaces "orbit behind + turn to the rival". Boom on the player's chest (1.35 m), rotated
+  theta off the player->rival axis; aim at lerp(player, rival, w) at 1.2 m. k = clamp((sep - 3) / 13, 0, 1):
+  distance 3.6 + 1.6k m, theta 24 - 10k deg, w 0.40 - 0.10k, pitch 0.08 + 0.10k rad, vFOV 50 + 4k deg (was 5.6 m,
+  pitch 0.32, vFOV 62 for everything; the player filled 21-27 % of the frame height, the rival hid behind their head).
+  Side hysteresis, flips when a yard wall sits behind the boom; horizontal FOV capped at 90 deg on wide phones.
+  Free orbit 4.4 m / pitch 0.22 / vFOV 54. Title / watch: side-on spectator two-shot (70 deg off the axis, never
+  crossing the line). While locked the stick basis is the lock axis (forward = toward the rival).
+- Smoothing: critically damped springs instead of ExpK(14) everywhere: pivot 0.12 s horizontal / 0.28 s vertical with a
+  0.25 m dead zone while grounded (no stride bob), framing 0.4 s, assist yaw / pitch 0.35 s (max 4 rad/s) re-engaging
+  1 s after the player steered (was a constant 1.4 / 2.6 rad/s turn with an 18 deg dead zone), look-ahead 0.12 s of
+  velocity (<= 0.6 m) in free orbit; the collision pull-in keeps ExpK(18) and eases back out over 0.45 s. Rival-in-frame
+  safety blend is frame-rate independent (was Lerpf 0.25 per frame, snapped to 0). Round reset snaps.
+- Hit-stop runs in real seconds (was rendered frames): T0 4, T1 6, T2 9, T3 12, perfect 8, clash 6 (/60 s; were 3 / 5 /
+  7 / 9 / 6 / 4); budget 20/60 s per rolling second (was 12 frames); eases 0.05 -> 1 over 50 ms.
+- Shake: rotational trauma model (pitch 1.2 / yaw 0.9 deg x trauma^2, 21 Hz noise, <= 1.5 cm translation, roll 1.2 deg
+  on T3 / knockdown), trauma decay 2.2/s, falloff from the duel midpoint with a 0.75 floor for hits the player gives or
+  takes (was two sines of 6 cm translation). Plain shakes honour their decay.
+- Kick: spring impulse (5 Hz, zeta 0.6, exact solution) peaking at T1 6 / T2 9 / T3 15 cm along the hit (toward the
+  impact when the player lands it, away when they take it); only for hits the player is in.
+- FOV punch: T2 -2.5, T3 / knockdown -5, perfect -7 deg; eases in 60 ms, holds through hit-stop, eases out 0.3 s.
+- New cinematic beat: perfect counters, full-band tier >= 2 reflect / redirect / capture / transform / shatter /
+  reclaim and the player's perfect deflect -> 0.25x for 0.4 s after the hit-stop (KO 0.9 s), ease back 0.25 s, -6 deg
+  FOV + 7 % dolly toward the event; 3 s cooldown (KO exempt); never with reduced motion, a Lab freeze or a Lab time
+  scale. The 0.55x slow-motion assist setting is unchanged.
+- Hit-stop victim shake: the struck fighter trembles along the hit (1.2-3 cm, 26 Hz) while time is frozen.
+- Hair / sash SpringChain: fixed 1/120 s steps with interpolated output and per-step animated poses (the variable last
+  sub-step jittered the tails at uneven frame times).

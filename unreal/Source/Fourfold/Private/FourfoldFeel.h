@@ -1,7 +1,8 @@
 // Fourfold - feel director (ARCHITECTURE §7.5, MOVESET §10.2; port of the feel half of fx_director.gd). Each frame it
 // maps the frame's sim / session events through the logic island (ffg::HandleFeelEvents) and applies the result:
-// hit-stop and the slow-motion assist through the sim subsystem (global time dilation 0.05, <= 12 frozen frames per
-// second, reduced motion caps one request at 3 frames), camera shake / kick / FOV punch / 3 % zoom on the rig,
+// hit-stop, the slow-motion assist and the cinematic slow motion of big counters / KOs through the sim subsystem
+// (global time dilation 0.05 for N/60 s of real time, <= 20/60 s frozen per second, reduced motion caps one request at
+// 3/60 s; cinematic 0.25 with a 3 s cooldown), camera trauma shake / kick / FOV punch / cinematic dolly / 3 % zoom on the rig,
 // iOS haptics (FPlatformMisc mobile haptics, >= 60 ms apart, off in settings = never), HUD flashes (scaled by the
 // Flashes setting) and toasts.
 #pragma once
@@ -30,5 +31,6 @@ public:
 private:
 	ffg::FeelOutput Out;
 	ffg::HapticGate Gate;
+	ffg::CinematicGate CineGate;
 	bool bHapticsPrepared = false;
 };

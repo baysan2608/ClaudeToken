@@ -81,6 +81,8 @@ public:
 	// world-ish frame: gravity direction (unit) in the chain's frame
 	Vec3 gravity_dir{0.0f, 0.0f, -1.0f};
 
+	static constexpr float kStep = 1.0f / 120.0f;   // fixed Verlet step; the output interpolates between steps
+
 	void Reset() { initialized_ = false; }
 	// animated: n+1 points (head of bone 0 ... head of bone n-1, then the animated tail of the last bone).
 	// out_dirs: n unit directions each bone should point along (simulated tail - simulated head). The caller walks the
@@ -90,7 +92,9 @@ public:
 
 private:
 	bool initialized_ = false;
+	float acc_ = 0.0f;
 	std::vector<Vec3> cur_, prev_;
+	std::vector<Vec3> anim_prev_, pose_;
 	std::vector<float> len_;
 };
 
