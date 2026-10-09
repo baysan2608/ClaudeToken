@@ -547,10 +547,15 @@ def _create_mpc(report, force):
             report["notes"].append("MaterialParameterCollection classes not available: arena wetness parameter skipped")
             return None
         mpc = unreal.load_asset(path) if C.asset_exists(path) else _mat_tools().create_asset("MPC_Arena", C.MAT_DIR, cls, factory())
-        params = []
+        # keep existing parameters as they are: their ids are what the CollectionParameter nodes of every material bind to
+        # (re-creating them broke M_Env_Surface / M_Env_Floor / the tree masters until rebuilt); only add missing ones
+        params = list(mpc.get_editor_property("scalar_parameters") or [])
+        have = {str(p.get_editor_property("parameter_name")) for p in params}
         # Wetness 0..1 (all arena surfaces); WindGust 0..1 + WindDirX / WindDirY (unit, Unreal XY): air moves push the
         # trees / banners harder for a moment (FX drives them at runtime, defaults = calm)
         for nm, dv in (("Wetness", 0.0), ("WindGust", 0.0), ("WindDirX", 0.8), ("WindDirY", 0.6)):
+            if nm in have:
+                continue
             p = unreal.CollectionScalarParameter()
             p.set_editor_property("parameter_name", nm)
             p.set_editor_property("default_value", dv)
