@@ -83,6 +83,37 @@ LAYOUT (unreal/)
 - Tools/blender, Tools/vfx, Tools/world, Tools/audio: generators (regenerate assets, never hand-edit outputs).
 - docs/<stream>/: README, API_NOTES, REQUESTS, PROGRESS per stream.
 
+LATEST (2026-10-09, "AAA pass" session) - read this first, it supersedes older lines below where they conflict
+- iPad: Paddycaken (iPad Pro 13 M5, iOS 27.0) runs the current build. Deploy: compile with
+  "<UE>/Engine/Build/BatchFiles/Mac/Build.sh" Fourfold IOS Development -project=... (binary builds; the final Xcode step
+  'Touch UBT generated tiles' fails inside UBT/UAT, ignore it), then `bash unreal/Tools/mac/ios.sh --cook` (cook, package,
+  SDK-26 mark + re-sign for the iOS 27 UIScene launch check, install, launch). Not yet measured on device: get
+  `stat unit` / a CSV from the iPad next (owner reports feel; nothing profiled there yet).
+- World (Content/Python/fourfold/world, Tools/world, Tools/blender/world): scanned Poly Haven trees (90, 8 meshes x 3 LODs,
+  two-sided foliage, wind + MPC_Arena WindGust/WindDirX/WindDirY gusts), 16 scanned rock faces as a hazed mountain ring
+  1.3-3.6 km out, granite paver floor (rock_tile_floor), low side/back sun (pitch -22 yaw 20, 14 lux), MANUAL exposure
+  bias 0 on every platform (r.EyeAdaptationQuality=2), cool haze + warm sun inscatter, local exposure, grain.
+  Tree/rock LODs need the full editor (-ExecutePythonScript), not the -run=pythonscript commandlet.
+  Never re-create MPC_Arena parameters (ids bind the materials; materials.py now only adds missing ones).
+- Camera / feel (Logic/FFGCamera, FFGFeel, CameraRig, Feel): lock-on side two-shot, spectator side-on two-shot in
+  Watch/Title, critically damped springs, per-frame camera input (judder fix), hit-stop in seconds, rotational trauma shake,
+  spring kick, FOV punch, cinematic slow-mo on big counters / KO (3 s cooldown), victim shake. Logic tests 68.
+  Needs an in-game feel check of the lock-on camera, shake and slow-mo (only spectator captures seen).
+- FX: cooled lava glows then greys and sinks; smoke light grey; subtle ground marks; world reactions (FxWorld: footfall
+  dust, impact craters / scorch / lightning burns that fade, pool splashes + ripples + steam, wind dust + tree gusts).
+  Look-check commands: unreal/docs/fx/PROGRESS.md latest entries. -FFLabSpawn threats did not show in the last Lab capture
+  (timing?) - verify the world reactions visually next.
+- Animation: 131 hand-authored clips reworked (flowing keys, hip-led kinetic chain, follow-through springs, spine wave,
+  sim-fitted timings for 42 strikes) and re-imported (animation + metahuman parts). Before/after MP4s:
+  unreal/SourceArt/Animation/previews/before_after/. Next: e_lift / e_wall weight shift, hit_heavy twist, per-element
+  settle. Real mocap (paid pack) remains the biggest upgrade; CMU data is free for commercial use but has no martial arts found.
+- Movement: TURN_RATE 9, RUN_SPEED 5.0, RUN_MIN 3.6, WALK_MAX 1.6 (Godot + sim.json). ACCEL/DECEL unchanged (lowering
+  them changed air-move hover heights in kit tests).
+- Owner wants: AAA everything; Maridalen Ruins (free Fab pack) may be imported once the owner adds it via the Launcher.
+- Next priorities: 1. iPad profile + smoothness on device; 2. verify world reactions + feel in game; 3. walls / pool
+  water / props detail (plaster still flat, pool flat), arena dressing (rocks, moss, rubble from Poly Haven); 4. cloth
+  sim on sash / pants; 5. animation round 2 + element stances; 6. Maridalen arena if added.
+
 CURRENT STATE (end of 2026-10-07, second Mac session) - details: unreal/docs/QUALITY_PLAN.md
 - Builds green (UE 5.8.3 + Xcode 27 beta); CoreTests 535/535; logic tests 62/62; setup_report clean.
 - Perf (Mac, duel, 1600x900): the old "75 % TSR" never applied (rendered at 100 %, ~18 ms). Now manual 75 % default +
