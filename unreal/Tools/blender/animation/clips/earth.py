@@ -58,27 +58,39 @@ def e_lift():
 
 @clip("e_strike")
 def e_strike():
-    # iron-bridge drive: coil, the lead foot slides forward into a bow stance, hips square at contact, the rear
-    # forearm / vertical fist drives straight at chest height while the lead claw pulls back to the chest
-    c = Clip("e_strike", 24, "e_stance", contact=8, priority="P0", technique="iron-bridge drive (tit kiu)",
-             hands=("tiger", "fist"), strike="hand_r", offsets={"pel": 2.0, "spine": 1.0, "hand_l": -1.5}, antic=3)
-    c.k(3, ease="io", pel=dict(dz=-0.02, dy=-0.015, dyaw=-10.0), spine=dict(dyaw=-6.0),
-        foot_l=F(pv=0.0, lift=0.025),
-        hand_l=_hw((0.12, 0.44, 1.14), dict(f=(-0.1, 0.35, 1.0), m=(-0.1, 1.0, -0.2))),
-        hand_r=_hw((-0.21, 0.02, 0.96), dict(f=(0.0, 1.0, 0.0), m=(0.0, 0.0, 1.0)), e=(-0.3, -1.0, -0.3)),
+    # iron-bridge drive (tit kiu), short power from the root: sink and coil (hips turn right, the chest winds a little
+    # further, the right fist chambers palm-up at the hip, the lead claw reaches out as the guide), the lead foot slides
+    # forward and PLANTS before the strike, then the hips drive square-left and the weight surges onto the front leg
+    # while the right forearm drives a vertical fist at chest height (elbow not locked) and the lead claw pulls back to
+    # the chest (counter-pull).  After the contact the stance sinks a last centimetre on the exhale (rooting), then the
+    # front foot gathers back into the horse in two unhurried stages.
+    c = Clip("e_strike", 34, "e_stance", contact=11, priority="P0", technique="iron-bridge drive (tit kiu)",
+             hands=("tiger", "fist"), strike="hand_r", offsets={"pel": 2.0, "spine": 1.0, "hand_l": -1.5}, antic=5,
+             follow=17)
+    c.k(5, ease="io", pel=dict(dz=-0.025, dy=-0.02, dyaw=-12.0, dside=2.0), spine=dict(dyaw=-8.0, dpitch=2.0),
+        clav_r=dict(prot=-4.0),
+        hand_l=_hw((0.14, 0.47, 1.18), dict(f=(-0.1, 0.4, 1.0), m=(-0.1, 1.0, -0.2)), e=(0.45, -0.1, -1.0)),
+        hand_r=_hw((-0.22, -0.02, 0.97), dict(f=(0.0, 1.0, 0.0), m=(0.0, 0.0, 1.0)), e=(-0.3, -1.0, -0.3)),
         fing_r="fist")
-    c.k(6, ease="out", foot_l=F(at=(0.37, 0.17), yaw=2.0, pv=1.0), pel=dict(dy=0.06, dyaw=6.0))
-    c.k(8, ease="in3", pel=dict(x=0.04, y=0.085, z=-0.235, yaw=6.0, pitch=6.0), spine=dict(pitch=4.0, yaw=4.0),
-        clav_r=dict(prot=8.0), foot_r=F(yaw=-38.0),
+    c.k(7, ease="out", foot_l=F(pv=0.0, lift=0.02, move=(0.0, 0.07)), pel=dict(dy=0.03, dyaw=6.0))
+    c.k(9, ease="in", foot_l=F(at=(0.36, 0.19), yaw=2.0, pv=1.0), pel=dict(dy=0.03, dz=-0.005, dyaw=10.0),
+        spine=dict(dyaw=4.0))
+    c.k(11, ease="in3", pel=dict(x=0.05, y=0.10, z=-0.255, yaw=16.0, pitch=6.0, side=-2.0),
+        spine=dict(pitch=4.0, yaw=6.0, side=-1.0), clav_r=dict(prot=10.0, lift=-2.0), clav_l=dict(prot=-3.0),
+        foot_r=F(yaw=-30.0),
         hand_l=_hw((0.15, 0.22, 1.12), dict(f=(-0.2, 0.3, 1.0), m=(-0.2, 1.0, -0.1))),
-        hand_r=_hw((-0.02, 0.66, 1.17), FIST_V_R, e=(-0.4, -0.2, -1.0)))
-    c.hold(10)
-    c.k(15, ease="out", pel=dict(dy=-0.05, dz=-0.02, yaw=0.0), spine=dict(yaw=0.0), clav_r=dict(prot=0.0),
-        foot_l=F(pv=0.0, lift=0.02),
-        hand_r=_hw((-0.12, 0.40, 1.10), FIST_V_R, e=(-0.4, -0.5, -1.0)))
-    c.k(19, ease="io", foot_l=F(**E_FOOT_L), foot_r=F(**E_FOOT_R), pel=dict(x=0.0, y=-0.07, z=-0.295, pitch=4.0),
-        spine=dict(pitch=-0.5))
-    c.k(24, ease="io", base=True)
+        hand_r=HS((0.06, 1.0, 0.0), ext=0.93, f=(0.0, 1.0, 0.0), m=(1.0, 0.0, 0.0), e=(-0.4, -0.2, -1.0)))
+    c.hold(13)
+    c.k(17, ease="out", pel=dict(dz=-0.012, dy=-0.012, dpitch=1.0), spine=dict(dpitch=1.0), clav_r=dict(prot=5.0),
+        hand_r=_hw((-0.06, 0.55, 1.12), FIST_V_R, e=(-0.4, -0.3, -1.0)))
+    c.k(23, ease="io", foot_l=F(pv=0.0, lift=0.02, move=(0.0, -0.09)),
+        pel=dict(x=0.02, y=-0.03, z=-0.28, yaw=5.0, pitch=4.0, side=0.0), spine=dict(pitch=0.0, yaw=2.0, side=0.0),
+        clav_r=dict(prot=0.0, lift=0.0), clav_l=dict(prot=0.0),
+        hand_r=_hw((-0.16, 0.28, 1.03), FIST_V_R, e=(-0.4, -0.6, -1.0)),
+        hand_l=_hw((0.11, 0.34, 1.15), dict(f=(-0.1, 0.3, 1.0), m=(-0.1, 1.0, -0.2))))
+    c.k(27, ease="in", foot_l=F(**E_FOOT_L), foot_r=F(**E_FOOT_R), pel=dict(x=0.0, y=-0.07, z=-0.297, yaw=0.0, pitch=4.0),
+        spine=dict(pitch=-0.5, yaw=0.0))
+    c.k(34, ease="io", base=True)
     return c
 
 
@@ -166,25 +178,33 @@ def e_seize_loop():
 
 @clip("e_throw")
 def e_throw():
-    # from the hold: draw the mass in, then both palms drive it away with a short slide into a bow stance
-    c = Clip("e_throw", 24, "e_seize", base_end="e_stance", contact=8, priority="P0",
+    # from the hold: draw the mass in toward the belly (sit, the lead foot unweights), then a short slide into a bow and
+    # both palms drive it away - butterfly palms, the lead (left) palm high, the rear palm low - as the hips turn in
+    # behind the rear palm; the stance roots with a sinking exhale, then gathers back to the horse
+    c = Clip("e_throw", 30, "e_seize", base_end="e_stance", contact=8, priority="P0",
              technique="double palm push / release of the held mass", hands=("palm", "palm"), metric="fwd_hand_l",
-             offsets={"pel": 1.5, "spine": 0.75}, antic=4)
-    c.k(4, ease="io", pel=dict(dz=-0.02, dy=-0.035, pitch=2.0), spine=dict(pitch=1.0), foot_l=F(pv=0.0, lift=0.02),
-        hand_l=_hw((0.15, 0.26, 1.13), dict(f=(-0.3, 0.4, 0.9), m=(-0.5, 0.8, 0.0)), e=(0.7, -0.1, -0.7)),
-        hand_r=_hw((-0.15, 0.26, 1.13), dict(f=(0.3, 0.4, 0.9), m=(0.5, 0.8, 0.0)), e=(-0.7, -0.1, -0.7)),
+             offsets={"pel": 1.5, "spine": 0.75}, antic=4, follow=14)
+    c.k(4, ease="io", pel=dict(dz=-0.025, dy=-0.04, pitch=2.0, dyaw=-6.0), spine=dict(pitch=1.0, dyaw=-4.0),
+        foot_l=F(pv=0.0, lift=0.02),
+        hand_l=_hw((0.15, 0.25, 1.14), dict(f=(-0.3, 0.4, 0.9), m=(-0.5, 0.8, 0.0)), e=(0.7, -0.1, -0.7)),
+        hand_r=_hw((-0.15, 0.24, 1.08), dict(f=(0.3, 0.4, 0.9), m=(0.5, 0.8, 0.0)), e=(-0.7, -0.1, -0.7)),
         fing="palm")
-    c.k(8, ease="in3", pel=dict(x=0.03, y=0.06, z=-0.25, pitch=7.0, yaw=0.0), spine=dict(pitch=5.0),
-        clav=dict(lift=2.0, prot=9.0), foot_l=F(at=(0.37, 0.13), yaw=4.0, pv=1.0), foot_r=F(yaw=-26.0),
-        hand_l=_hw((0.13, 0.76, 1.12), PALM_FWD, e=(0.45, -0.2, -1.0)),
-        hand_r=_hw((-0.13, 0.76, 1.12), PALM_FWD, e=(-0.45, -0.2, -1.0)))
+    c.k(8, ease="in3", pel=dict(x=0.035, y=0.065, z=-0.255, pitch=7.0, yaw=8.0, side=-2.0),
+        spine=dict(pitch=5.0, yaw=3.0), clav=dict(lift=2.0, prot=9.0), foot_l=F(at=(0.37, 0.13), yaw=4.0, pv=1.0),
+        foot_r=F(yaw=-26.0),
+        hand_l=_hw((0.12, 0.77, 1.20), PALM_FWD, e=(0.45, -0.2, -1.0)),
+        hand_r=_hw((-0.10, 0.73, 1.00), dict(f=(0.0, 0.3, 1.0), m=(0.0, 1.0, -0.3)), e=(-0.45, -0.2, -1.0)))
     c.hold(10)
-    c.k(16, ease="out", pel=dict(dy=-0.06, dz=-0.02), clav=dict(prot=2.0), foot_l=F(pv=0.0, lift=0.02),
-        hand_l=_hw((0.13, 0.48, 1.12), dict(f=(-0.1, 0.3, 1.0), m=(-0.1, 1.0, -0.2))),
-        hand_r=_hw((-0.17, 0.30, 1.04), dict(f=(0.05, 0.45, 1.0), m=(0.1, 1.0, -0.3))))
-    c.k(20, ease="io", foot_l=F(**E_FOOT_L), foot_r=F(**E_FOOT_R), pel=dict(x=0.0, y=-0.075, z=-0.30, pitch=4.0),
-        spine=dict(pitch=-1.0), fing="tiger")
-    c.k(24, ease="io", base=True)
+    c.k(14, ease="out", pel=dict(dy=-0.02, dz=-0.012), spine=dict(dpitch=1.0), clav=dict(prot=5.0),
+        hand_l=_hw((0.13, 0.66, 1.17), PALM_FWD, e=(0.45, -0.2, -1.0)),
+        hand_r=_hw((-0.12, 0.60, 1.00), dict(f=(0.0, 0.3, 1.0), m=(0.0, 1.0, -0.3)), e=(-0.45, -0.2, -1.0)))
+    c.k(20, ease="io", pel=dict(dy=-0.05, dz=-0.008, yaw=2.0, side=0.0), clav=dict(prot=2.0, lift=0.0),
+        foot_l=F(pv=0.0, lift=0.02),
+        hand_l=_hw((0.13, 0.46, 1.13), dict(f=(-0.1, 0.3, 1.0), m=(-0.1, 1.0, -0.2))),
+        hand_r=_hw((-0.17, 0.28, 1.02), dict(f=(0.05, 0.45, 1.0), m=(0.1, 1.0, -0.3))))
+    c.k(24, ease="in", foot_l=F(**E_FOOT_L), foot_r=F(**E_FOOT_R), pel=dict(x=0.0, y=-0.075, z=-0.30, pitch=4.0, yaw=0.0),
+        spine=dict(pitch=-1.0, yaw=0.0), fing="tiger")
+    c.k(30, ease="io", base=True)
     return c
 
 

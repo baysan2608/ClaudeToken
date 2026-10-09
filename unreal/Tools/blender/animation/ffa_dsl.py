@@ -374,7 +374,7 @@ class Clip:
                  style="", hands=("relaxed", "relaxed"), strike=None, speed=0.0, notes="", start=None,
                  offsets=None, mirror=False, base_end=None, plants=None, auto_hips=False, treadmill=None,
                  metric=None, end_pose=None, start_pose_free=False, no_balance=False, antic=None, follow=None,
-                 base_check=True, flow=True, chain=1.0, settle=1.0, wave=1.0):
+                 base_check=True, flow=True, chain=1.0, settle=1.0, wave=1.0, hang=1.0):
         self.name = name
         self.frames = int(frames)
         self.base = base                      # name of the base stance clip (None for free clips)
@@ -407,6 +407,8 @@ class Clip:
         self.chain = chain                    # kinetic-chain timing scale (hips lead, hands whip in; 0 = off)
         self.settle = settle                  # follow-through spring after each contact (0 = off)
         self.wave = wave                      # spine wave: the upper back lags the lower back by this many frames
+        self.hang = hang                      # how long the striking hand hangs at full reach after the contact
+                                              # (x its whip-in lag; Shaolin snaps back: ~0.3)
         self.antic = antic                    # anticipation-peak frame for the contact sheet
         self.follow = follow                  # follow-through frame for the contact sheet
         start_state = start if start is not None else (BASES[base] if base else neutral_state())
@@ -686,7 +688,12 @@ class Clip:
             extra["hand_" + s] = -1.5 if "hand_" + s in strike else -0.5
             extra["fing_" + s] = extra["hand_" + s]
         for ch, v in extra.items():
-            offs[ch] = offs.get(ch, 0.0) + k * v
+            base = offs.get(ch, 0.0)
+            if ch[-1] in "lr" and ch[:-2] in ("hand", "fing") and "hand_" + ch[-1] in strike:
+                # (before the contact, after it): the whip-in lag and the shorter / longer hang
+                offs[ch] = (base + k * v, base + k * v * float(self.hang))
+            else:
+                offs[ch] = base + k * v
         return offs
 
     def _time_maps(self, offs):
@@ -697,15 +704,19 @@ class Clip:
         cs = [c for c in self.contacts if 0 < c < n] if not self.loop else []
         maps = {}
         for ch, off in offs.items():
-            if abs(off) < 1e-6:
+            pre, post = off if isinstance(off, tuple) else (off, off)
+            if abs(pre) < 1e-6 and abs(post) < 1e-6:
                 continue
-            R = max(4.0, 1.5 * abs(off) + 1.0)
+            R = max(4.0, 1.5 * max(abs(pre), abs(post)) + 1.0)
             tau = []
             for f in range(n + 1):
                 w = self._envelope(f)
+                o = pre
                 if cs:
-                    w *= smoothstep(min(abs(f - c) for c in cs) / R)
-                tau.append(f + off * w)
+                    near = min(cs, key=lambda c: abs(f - c))
+                    w *= smoothstep(abs(f - near) / R)
+                    o = pre if f <= near else post
+                tau.append(f + o * w)
             for f in range(1, n + 1):          # never run backwards
                 tau[f] = max(tau[f], tau[f - 1])
             if not self.loop:

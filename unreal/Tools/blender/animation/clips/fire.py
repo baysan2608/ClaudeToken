@@ -77,7 +77,7 @@ def f_stance():
 def f_jab():
     # chong quan, lead hand: a tiny coil, the hips snap and the rear foot drives, the lead fist shoots straight out at
     # shoulder height turning palm-down, full extension at contact, snaps back to the guard as fast as it left
-    c = Clip("f_jab", 18, "f_stance", contact=6, priority="P0", technique="chong quan lead straight punch",
+    c = Clip("f_jab", 18, "f_stance", contact=6, priority="P0", hang=0.3, technique="chong quan lead straight punch",
              hands=("fist", "fist"), strike="hand_l", offsets=off(hand_l=0.0, hand_r=-1.5), antic=2, follow=10)
     c.k(2, ease="io", pel=dict(dy=-0.012, dz=-0.012, dyaw=5.0), spine=dict(dyaw=3.0),
         hand_l=H(dp=(0.0, -0.035, -0.01)))
@@ -98,7 +98,7 @@ def f_cross():
     # rear straight punch in a bow stance: sink and coil, the rear heel turns out and the rear leg straightens, the
     # hips rotate square, the rear fist drives through to full extension palm-down while the lead fist pulls back to
     # the chest (counter-pull); snap back
-    c = Clip("f_cross", 24, "f_stance", contact=8, priority="P0", technique="rear straight punch, bow stance",
+    c = Clip("f_cross", 24, "f_stance", contact=8, priority="P0", hang=0.3, technique="rear straight punch, bow stance",
              hands=("fist", "fist"), strike="hand_r", offsets=off(hand_r=0.0, hand_l=-1.5), antic=3, follow=13)
     c.k(3, ease="io", pel=dict(dy=-0.03, dz=-0.03, dyaw=-8.0), spine=dict(dyaw=-6.0),
         hand_r=_hw((-0.12, 0.10, 1.12), (0.0, 1.0, 0.1), (0.0, 0.0, 1.0), (-0.3, -1.0, -0.2)))
@@ -133,7 +133,7 @@ def f_charge():
 def f_palm_burst():
     # double palms out of the sitting stance: the hips snap square and the weight surges forward into a bow, both
     # palms thrust from the hips to chest height (fingers up, palm heels first) with a sharp exhale; snap back
-    c = Clip("f_palm_burst", 24, "f_charge", base_end="f_stance", contact=6, priority="P0",
+    c = Clip("f_palm_burst", 24, "f_charge", base_end="f_stance", contact=6, priority="P0", hang=0.3,
              technique="double palms out of the horse (fa jin burst)", hands=("palm", "palm"), strike="hands",
              offsets=off(hand_l=0.0, hand_r=0.0, pel=1.0, spine=0.5), antic=2, follow=12)
     c.k(2, ease="io", pel=dict(dz=-0.012, dyaw=-4.0), hand_l=H(dp=(0.0, -0.02, 0.01)), hand_r=H(dp=(0.0, -0.02, 0.01)),
@@ -303,7 +303,7 @@ def l_charge():
 def l_release():
     # two-finger release: step into a bow, the lead arm extends straight with the sword fingers pointing at the
     # target, the rear hand pulls back to the hip; 2-frame hold, fast snap back to the ready stance
-    c = Clip("l_release", 20, "l_charge", base_end="f_stance", contact=6, priority="P0",
+    c = Clip("l_release", 20, "l_charge", base_end="f_stance", contact=6, priority="P0", hang=0.3,
              technique="sword-finger extension (two-finger release)", hands=("sword", "sword"), strike="hand_l",
              offsets=off(hand_l=0.0, hand_r=-1.0, pel=1.0, spine=0.5), antic=2, follow=11)
     c.k(2, ease="io", pel=dict(dy=-0.02, dz=-0.01, dyaw=6.0), foot_l=F(pv="heel", lift=0.02, pitch=8.0),

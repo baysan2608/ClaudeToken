@@ -47,24 +47,29 @@ def a_stance():
 
 @clip("a_palm")
 def a_palm():
-    # single pushing palm (tui zhang): the waist winds a little further away while the rear palm drops to the hip
-    # palm-up, then the waist unwinds and the weight glides forward; the rear palm drives out at chest height turning
-    # over (supinated -> palm forward) while the lead palm withdraws to the chest
-    c = Clip("a_palm", 22, "a_stance", contact=8, priority="P0", technique="single pushing palm (tui zhang)",
-             hands=("oxtongue", "oxtongue"), strike="hand_r", offsets=off(hand_r=0.0, hand_l=-1.5), antic=3, follow=12)
-    c.k(3, ease="io", pel=dict(dyaw=-8.0, dz=-0.015, dy=-0.02), spine=dict(dyaw=4.0),
-        hand_r=_hw((-0.16, 0.10, 1.02), (0.1, 1.0, 0.0), (0.0, 0.0, 1.0), (-0.4, -1.0, -0.2)),
-        hand_l=_hw((0.04, 0.48, 1.46), (-0.1, 0.4, 1.0), (-0.4, 1.0, 0.0), (0.2, -0.2, -1.0)))
-    c.k(8, ease="in3", pel=dict(x=0.0, y=0.06, z=-0.14, pitch=4.0, yaw=-16.0), spine=dict(yaw=8.0, pitch=2.0),
-        clav_r=dict(prot=12.0, lift=-2.0), foot_r=F(pitch=-8.0),
-        hand_r=HS((0.05, 1.0, 0.06), ext=0.96, f=(0.0, 0.25, 1.0), m=(0.0, 1.0, -0.2), e=(-0.5, 0.0, -1.0)),
-        hand_l=_hw((0.04, 0.26, 1.26), (-0.3, 0.4, 0.9), (-0.8, 0.4, 0.0), (0.4, -0.3, -1.0)))
+    # single pushing palm (tui zhang): the waist winds FURTHER away from the target (the chest stays on the centre, so
+    # the body coils like a towel) while the rear palm drops to the hip palm-up and the weight sits back; the waist
+    # unwinds ~30 deg in four frames, the rear heel lifts and the weight glides forward; the rear palm spirals out
+    # under the lead arm, turning over (palm-up -> palm forward) to full reach at chest height, while the lead palm
+    # withdraws to cover under the elbow.  It keeps turning a little after the contact (no stop at the target), then
+    # the palms change back over each other into the dragon posture.
+    c = Clip("a_palm", 26, "a_stance", contact=8, priority="P0", technique="single pushing palm (tui zhang)",
+             hands=("oxtongue", "oxtongue"), strike="hand_r", offsets=off(hand_r=0.0, hand_l=-1.5), antic=4, follow=13)
+    c.k(4, ease="io", pel=dict(dyaw=-14.0, dz=-0.025, dy=-0.03), spine=dict(dyaw=8.0),
+        hand_r=_hw((-0.16, 0.06, 1.00), (0.1, 1.0, 0.0), (0.0, 0.0, 1.0), (-0.4, -1.0, -0.2)),
+        hand_l=_hw((0.05, 0.56, 1.50), (-0.1, 0.4, 1.0), (-0.4, 1.0, 0.0), (0.2, -0.2, -1.0)))
+    c.k(8, ease="in3", pel=dict(x=0.0, y=0.08, z=-0.15, pitch=5.0, yaw=-8.0, side=-2.0), spine=dict(yaw=5.0, pitch=3.0),
+        clav_r=dict(prot=14.0, lift=-2.0), foot_r=F(pitch=-13.0),
+        hand_r=HS((0.10, 1.0, 0.04), ext=0.98, f=(0.0, 0.25, 1.0), m=(0.0, 1.0, -0.2), e=(-0.5, 0.0, -1.0)),
+        hand_l=_hw((0.05, 0.25, 1.24), (-0.3, 0.4, 0.9), (-0.8, 0.4, 0.0), (0.4, -0.3, -1.0)))
     c.hold(10)
-    c.k(15, ease="out", pel=dict(y=-0.01, z=-0.125, pitch=2.0, yaw=-30.0), spine=dict(yaw=16.0, pitch=3.0),
+    c.k(13, ease="out", pel=dict(dyaw=-6.0, dz=0.008, dy=-0.02), spine=dict(dyaw=4.0), clav_r=dict(prot=10.0),
+        foot_r=F(pitch=-6.0))
+    c.k(18, ease="io", pel=dict(y=-0.02, z=-0.125, pitch=2.0, yaw=-32.0, side=0.0), spine=dict(yaw=18.0, pitch=3.0),
         clav_r=dict(prot=3.0, lift=0.0), foot_r=F(pitch=0.0),
-        hand_r=_hw((0.02, 0.33, 1.24), (0.2, 0.4, 1.0), (-0.1, 1.0, 0.2), (-0.4, -0.3, -1.0)),
-        hand_l=_hw((0.06, 0.46, 1.46), (-0.1, 0.35, 1.0), (-0.35, 1.0, 0.0), (0.2, -0.2, -1.0)))
-    c.k(22, ease="io", base=True)
+        hand_r=_hw((0.03, 0.36, 1.26), (0.2, 0.4, 1.0), (-0.1, 1.0, 0.2), (-0.4, -0.3, -1.0)),
+        hand_l=_hw((0.04, 0.42, 1.40), (-0.1, 0.35, 1.0), (-0.35, 1.0, 0.0), (0.2, -0.2, -1.0)))
+    c.k(26, ease="io", base=True)
     return c
 
 

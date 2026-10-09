@@ -192,15 +192,22 @@ def glide():
 # ================================================================================================ hit reactions
 @clip("hit_light_front")
 def hit_light_front():
-    # a light hit to the front: head and chest snap back ~8 deg at contact, arms jerk up, damped recovery
+    # a light hit to the front-left: the chest and head snap back AND twist away from the blow (the left shoulder is
+    # driven back, the head turns with it), the struck-side arm flies up more than the other, the weight rocks back
+    # onto the heels, then a rebound past centre and a damped settle (the settle spring adds the last ring)
     c = Clip("hit_light_front", 22, "idle", contact=3, priority="P0", technique="light hit from the front",
              hands=("relaxed", "relaxed"), offsets={"neck": -1.0, "hand_l": -1.0, "hand_r": -2.0}, antic=1, follow=8)
-    c.k(3, ease="out3", pel=dict(dy=-0.025, dz=-0.012, dpitch=-3.0), spine=dict(pitch=-8.0), neck=dict(pitch=-12.0),
-        clav=dict(lift=5.0), hand_l=H(dp=(0.03, 0.05, 0.10)), hand_r=H(dp=(-0.02, 0.07, 0.08)), fing="spread")
-    c.k(8, ease="io", pel=dict(dy=0.015, dz=0.004, dpitch=4.0), spine=dict(pitch=2.5), neck=dict(pitch=1.0),
-        clav=dict(lift=-1.0), hand_l=H(dp=(-0.035, -0.04, -0.09)), hand_r=H(dp=(0.03, -0.05, -0.075)), fing="relaxed")
-    c.k(14, ease="io", pel=dict(dy=-0.006, dpitch=-1.5), spine=dict(pitch=-0.5), neck=dict(pitch=-2.0),
-        clav=dict(lift=0.0), hand_l=H(dp=(0.004, -0.008, -0.006)), hand_r=H(dp=(-0.006, -0.012, -0.004)))
+    c.k(3, ease="out3", pel=dict(dy=-0.025, dz=-0.012, dpitch=-3.0, dyaw=-5.0, dside=1.5),
+        spine=dict(pitch=-8.0, yaw=-7.0, side=2.5), neck=dict(pitch=-12.0, yaw=-8.0, side=4.0),
+        clav_l=dict(lift=7.0, prot=-4.0), clav_r=dict(lift=3.0),
+        hand_l=H(dp=(0.05, 0.07, 0.12)), hand_r=H(dp=(-0.015, 0.04, 0.05)), fing="spread")
+    c.k(8, ease="io", pel=dict(dy=0.015, dz=0.004, dpitch=4.0, dyaw=7.0, dside=-2.0),
+        spine=dict(pitch=2.5, yaw=2.5, side=-1.0), neck=dict(pitch=1.0, yaw=3.0, side=-1.0),
+        clav_l=dict(lift=-1.0, prot=0.0), clav_r=dict(lift=-0.5),
+        hand_l=H(dp=(-0.055, -0.08, -0.13)), hand_r=H(dp=(0.02, -0.05, -0.06)), fing="relaxed")
+    c.k(14, ease="io", pel=dict(dy=-0.006, dpitch=-1.5, dyaw=-2.0, dside=0.5), spine=dict(pitch=-0.5, yaw=-0.5, side=0.0),
+        neck=dict(pitch=-2.0, yaw=-1.0, side=0.0), clav_l=dict(lift=0.0), clav_r=dict(lift=0.0),
+        hand_l=H(dp=(0.004, -0.008, -0.006)), hand_r=H(dp=(-0.006, -0.012, -0.004)))
     c.k(22, ease="io", base=True)
     return c
 
@@ -269,19 +276,27 @@ def block_impact():
 
 @clip("deflect")
 def deflect():
-    # perfect parry: the lead forearm sweeps across the centre line (outside -> inside) as the hips turn, the rear
-    # hand checks low, a 2-frame hold at contact, then back to the guard
+    # perfect parry: the lead hand opens outward while the weight eases back (the hips open a little), then the waist
+    # turns hard right and the lead forearm sweeps across the centre line outside -> inside on a circle while the
+    # stance sits back into the rear leg (absorbing, not blocking); the rear fist checks low.  The lead hand then
+    # rolls on round the circle (down and out) and rises back to the guard as the weight returns forward.
     c = Clip("deflect", 22, "guard", contact=5, priority="P0", technique="cross-body sweep parry with a hip turn",
              hands=("palm", "fist"), strike="hand_l", metric="fwd_hand_l", offsets={"pel": 1.0, "spine": 0.5, "hand_r": -1.0},
              antic=2, follow=11)
-    c.k(2, ease="io", pel=dict(dyaw=6.0, dz=-0.01), spine=dict(dyaw=4.0),
-        hand_l=HW(p=(0.30, 0.30, 1.38), f=(0.1, 0.4, 1.0), m=(0.4, 1.0, 0.0), e=(0.5, -0.3, -1.0)), fing_l="palm")
-    c.k(5, ease="in3", pel=dict(dyaw=-18.0, dz=-0.02, dy=0.01), spine=dict(dyaw=-12.0, dpitch=2.0),
-        hand_l=HW(p=(-0.06, 0.44, 1.34), f=(-0.35, 0.3, 1.0), m=(-0.2, 1.0, 0.1), e=(0.6, -0.1, -1.0)),
-        hand_r=HW(p=(-0.12, 0.25, 1.12), f=(0.4, 0.5, 0.6), m=(0.8, 0.0, 0.3), e=(-0.4, -0.3, -1.0)))
+    c.k(2, ease="io", pel=dict(dyaw=8.0, dz=-0.012, dy=-0.012), spine=dict(dyaw=6.0),
+        hand_l=HW(p=(0.32, 0.32, 1.40), f=(0.1, 0.4, 1.0), m=(0.5, 1.0, 0.0), e=(0.5, -0.3, -1.0)),
+        hand_r=HW(p=(-0.05, 0.20, 1.29), f=(0.25, 0.45, 0.85), m=(0.85, 0.0, 0.25), e=(-0.3, -0.3, -1.0)), fing_l="palm")
+    c.k(5, ease="in3", pel=dict(dyaw=-24.0, dz=-0.016, dy=-0.022, dside=2.0), spine=dict(dyaw=-13.0, dpitch=2.0),
+        neck=dict(dyaw=4.0),
+        hand_l=HW(p=(-0.08, 0.43, 1.33), f=(-0.35, 0.3, 1.0), m=(-0.25, 1.0, 0.1), e=(0.6, -0.1, -1.0)),
+        hand_r=HW(p=(-0.12, 0.25, 1.11), f=(0.4, 0.5, 0.6), m=(0.8, 0.0, 0.3), e=(-0.4, -0.3, -1.0)))
     c.hold(7)
-    c.k(13, ease="out", pel=dict(dyaw=8.0, dz=0.01), spine=dict(dyaw=6.0),
-        hand_l=HW(p=(0.05, 0.36, 1.32), f=(-0.2, 0.5, 0.9), m=(-0.6, 0.6, 0.1), e=(0.4, -0.2, -1.0)))
+    c.k(11, ease="out", pel=dict(dyaw=10.0, dz=0.012, dy=0.016, dside=-1.5), spine=dict(dyaw=7.0, dpitch=-1.0),
+        neck=dict(dyaw=-3.0),
+        hand_l=HW(p=(0.04, 0.38, 1.24), f=(-0.3, 0.7, 0.6), m=(-0.6, 0.5, -0.4), e=(0.5, -0.2, -1.0)))
+    c.k(16, ease="io", pel=dict(dyaw=4.0, dz=0.004, dy=0.008, dside=-0.5), spine=dict(dyaw=3.0),
+        hand_l=HW(p=(0.13, 0.38, 1.34), f=(-0.2, 0.55, 0.8), m=(-0.85, 0.1, 0.25), e=(0.35, -0.2, -1.0)),
+        hand_r=HW(p=(-0.035, 0.21, 1.31), f=(0.25, 0.45, 0.85), m=(0.85, 0.0, 0.25), e=(-0.3, -0.3, -1.0)))
     c.k(22, ease="io", base=True)
     return c
 
