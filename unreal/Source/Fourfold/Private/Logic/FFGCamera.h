@@ -122,6 +122,8 @@ public:
 	const ArenaGround* arena = nullptr;
 
 	void SnapTo(Vec3 player_pos, Vec3 look_at_pos);
+	// Open world: the sim bubble moved by d; keep every sim-space state where it is in the world.
+	void Shift(Vec3 d);
 	// InputFrame.cam_delta: radians, x = look right +, y = look up + (sensitivity / invert already applied).
 	// Call every rendered frame (not per sim tick) so drags are smooth at any frame rate and during hit-stop.
 	void AddInput(Vec2 delta);

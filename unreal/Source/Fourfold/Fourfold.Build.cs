@@ -17,6 +17,7 @@ public class Fourfold : ModuleRules
 		// Input is read from APlayerController key state (Engine + InputCore); no Enhanced Input assets are needed.
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"Slate", "SlateCore", "ApplicationCore",
+			"ProceduralMeshComponent",   // open-world terrain chunks (FourfoldOpenWorld)
 			"HairStrandsCore"   // MetaHuman grooms (GroomComponent)
 		});
 

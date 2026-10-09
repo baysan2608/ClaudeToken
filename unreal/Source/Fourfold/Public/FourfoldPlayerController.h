@@ -41,6 +41,8 @@ public:
 	void ShowTitle();
 	bool StartScenario(const FString& ScenarioId, const ff::ScenarioOptions& Options);
 	void StartWatch();
+	/** Open world: roam the generated valley (needs Content/Fourfold/Data/openworld; the level's AFourfoldOpenWorld draws it). */
+	bool StartRoam();
 	void PauseGame();
 	void ResumeGame();
 	void QuitToTitle();
@@ -85,6 +87,8 @@ protected:
 
 	FDelegateHandle FrameHandle;
 	FDelegateHandle ScenarioHandle;
+	FDelegateHandle RecenterHandle;
+	bool bLevelHasOpenWorld = false;
 	FDelegateHandle SettingsHandle;
 	FDelegateHandle DeactivateHandle;
 	FDelegateHandle BackgroundHandle;

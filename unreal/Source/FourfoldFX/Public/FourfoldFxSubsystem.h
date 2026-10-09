@@ -55,6 +55,7 @@ private:
 	TWeakObjectPtr<UFourfoldSimSubsystem> SimWeak;
 	FDelegateHandle FrameHandle;
 	FDelegateHandle ScenarioHandle;
+	FDelegateHandle RecenterHandle;   // open world: debris colliders follow the sim bubble
 	bool bEnabled = true;
 	bool bDebrisArenaDirty = true;   // rebuild the physics debris' arena collision on the next frame with a scenario
 	int32 SetupQuality = -1;

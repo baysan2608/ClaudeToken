@@ -29,42 +29,6 @@ bool fail(std::string* error, const std::string& msg) {
 }
 }  // namespace
 
-double WorldDef::HeightAt(double x, double z) const {
-	if (nx < 2 || nz < 2 || heights.size() < static_cast<size_t>(nx) * static_cast<size_t>(nz)) return 0.0;
-	double fx = (x - x0) / cell;
-	double fz = (z - z0) / cell;
-	fx = fx < 0.0 ? 0.0 : (fx > nx - 1 ? nx - 1 : fx);
-	fz = fz < 0.0 ? 0.0 : (fz > nz - 1 ? nz - 1 : fz);
-	int i = static_cast<int>(fx);
-	int k = static_cast<int>(fz);
-	if (i > nx - 2) i = nx - 2;
-	if (k > nz - 2) k = nz - 2;
-	const double tx = fx - i;
-	const double tz = fz - k;
-	const size_t row = static_cast<size_t>(nx);
-	const size_t b = static_cast<size_t>(k) * row + static_cast<size_t>(i);
-	const double h00 = heights[b];
-	const double h10 = heights[b + 1];
-	const double h01 = heights[b + row];
-	const double h11 = heights[b + row + 1];
-	return (h00 * (1.0 - tx) + h10 * tx) * (1.0 - tz) + (h01 * (1.0 - tx) + h11 * tx) * tz;
-}
-
-double WorldDef::FloorAt(double x, double z) const {
-	const double h = HeightAt(x, z);
-	if (h < water_level) {
-		const double wade = water_level - wade_depth;
-		return h > wade ? h : wade;
-	}
-	return h;
-}
-
-bool WorldDef::OnMetal(double x, double z) const {
-	for (const WorldRect& r : metal)
-		if (x > r.min.x && x < r.max.x && z > r.min.y && z < r.max.y) return true;
-	return false;
-}
-
 bool WorldDef::Parse(std::string_view json, const void* heights_blob, size_t bytes, WorldDef& out, std::string* error) {
 	Value root;
 	JsonError je;

@@ -18,9 +18,9 @@ import traceback
 
 import unreal
 
-PARTS = ["fx", "character", "animation", "mocap", "metahuman", "world", "audio"]
+PARTS = ["fx", "character", "animation", "mocap", "metahuman", "world", "openworld", "audio"]
 TITLES = {"fx": "VFX textures / meshes / materials", "character": "fighter mesh + materials", "animation": "animation sequences", "mocap": "retargeted motion capture (GASP)", "metahuman": "clips on the MetaHuman skeleton",
-          "world": "arena level, environment, lighting", "audio": "sounds"}
+          "world": "arena level, environment, lighting", "openworld": "open-world valley: terrain material, L_World", "audio": "sounds"}
 
 
 def _log(msg):

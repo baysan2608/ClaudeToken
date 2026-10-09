@@ -31,7 +31,7 @@ namespace FourfoldAnimRt
 		explicit FArenaGroundSampler(const ffg::ArenaGround& InArena) : Arena(InArena) {}
 		virtual float GroundUp(ffg::Vec3 WorldPoint, float FromUp) const override
 		{
-			return Arena.GroundHeight(WorldPoint.x, WorldPoint.y, FromUp, ffg::ArenaGround::kStepHeight);
+			return Arena.GroundHeightUEMetres(WorldPoint.x, WorldPoint.y, FromUp, ffg::ArenaGround::kStepHeight);
 		}
 
 	private:

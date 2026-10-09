@@ -15,9 +15,14 @@ namespace FF
 {
 	inline constexpr double SimToUE = 100.0;   // metres -> centimetres
 
+	// (additive, open world) Unreal position of sim (0,0,0): zero in the arenas; in the open world the sim runs in a
+	// bubble that moves through the valley and UFourfoldSimSubsystem keeps this at the bubble origin. ToUE / ToSim
+	// are POSITION conversions and include it; offsets and directions go through DirToUE / DirToSim.
+	extern FOURFOLD_API FVector GSimOriginUE;
+
 	FORCEINLINE FVector ToUE(const ff::Vec3& P)
 	{
-		return FVector(double(P.x) * SimToUE, double(P.z) * SimToUE, double(P.y) * SimToUE);
+		return GSimOriginUE + FVector(double(P.x) * SimToUE, double(P.z) * SimToUE, double(P.y) * SimToUE);
 	}
 
 	FORCEINLINE FVector DirToUE(const ff::Vec3& D)   // directions / velocities in m/s -> unit-less swap (scale yourself)
@@ -27,7 +32,14 @@ namespace FF
 
 	FORCEINLINE ff::Vec3 ToSim(const FVector& P)
 	{
-		return ff::Vec3(float(P.X / SimToUE), float(P.Z / SimToUE), float(P.Y / SimToUE));
+		const FVector L = P - GSimOriginUE;
+		return ff::Vec3(float(L.X / SimToUE), float(L.Z / SimToUE), float(L.Y / SimToUE));
+	}
+
+	// World (open-world) metres -> Unreal, without the bubble origin (terrain, props, encounter sites).
+	FORCEINLINE FVector WorldToUE(double X, double Y, double Z)
+	{
+		return FVector(X * SimToUE, Z * SimToUE, Y * SimToUE);
 	}
 
 	FORCEINLINE ff::Vec3 DirToSim(const FVector& D)

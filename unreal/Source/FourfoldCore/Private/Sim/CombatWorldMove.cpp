@@ -112,6 +112,7 @@ void CombatWorld::_move_actor(ActorState& a, const ActorIntent& it) {
 	Vec3 np = a.pos + a.vel * dt;
 	np = arena.push_out(np, Sim::ACTOR_RADIUS);
 	np = _push_out_walls(np, Sim::ACTOR_RADIUS);
+	if (a.grounded) np = arena.limit_terrain(a.pos, np);
 	const double g = _ground_under(np, a.pos.y);
 	if (np.y <= g + 0.001 && a.vel.y <= 0.0f) {
 		if (!a.grounded) {

@@ -134,7 +134,11 @@ void FFourfoldFxDebris::BuildArena(AActor* Owner, USceneComponent* Root, const f
 	const float H = A.half_size + 2.0f;
 	const float Depth = 2.0f;
 	const bool bPool = A.pool_max.x > A.pool_min.x && A.pool_max.y > A.pool_min.y;   // Vec2 (x, z)
-	if (!bPool)
+	if (A.world)
+	{
+		// open world: the terrain chunks near the camera carry collision (AFourfoldOpenWorld)
+	}
+	else if (!bPool)
 	{
 		AddBox(ffx::Vec3(-H, -Depth, -H), ffx::Vec3(H, 0.0f, H));
 	}

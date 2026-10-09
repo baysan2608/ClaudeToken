@@ -147,6 +147,33 @@ Vec3 ArenaMap::push_out(Vec3 p, double r, double h, double step) const {
 	return out;
 }
 
+Vec3 ArenaMap::limit_terrain(Vec3 from, Vec3 to) const {
+	if (!world) return to;
+	const WorldDef& wd = *world;
+	auto blocked = [&](double x, double z) {
+		const double wx = x + ox;
+		const double wz = z + oz;
+		if (wx < wd.x0 + kWorldEdgeMargin || wx > wd.x0 + wd.SizeX() - kWorldEdgeMargin || wz < wd.z0 + kWorldEdgeMargin ||
+		    wz > wd.z0 + wd.SizeZ() - kWorldEdgeMargin)
+			return true;
+		const double run = Vec2(f32(x - from.x), f32(z - from.z)).length();
+		if (run < 1e-6) return false;
+		const double rise = wd.FloorAt(wx, wz) - wd.FloorAt(from.x + ox, from.z + oz);
+		return rise > 0.05 && rise > run * kMaxSlope;
+	};
+	Vec3 out = to;
+	if (blocked(out.x, out.z)) {
+		// Slide: keep whichever axis is still allowed.
+		if (!blocked(to.x, from.z)) out.z = from.z;
+		else if (!blocked(from.x, to.z)) out.x = from.x;
+		else {
+			out.x = from.x;
+			out.z = from.z;
+		}
+	}
+	return out;
+}
+
 double ArenaMap::segment_hit(Vec3 a, Vec3 b, double radius) const {
 	double best = -1.0;
 	const Vec3 d = b - a;

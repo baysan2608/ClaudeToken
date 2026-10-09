@@ -136,7 +136,9 @@ struct SessionCore {
 	}
 
 	void refresh_arena_view() {
+		const int64_t rev = arena.revision + 1;
 		arena = SnapshotBuilder::arena(*world);
+		arena.revision = rev;
 		arena.world = roam;
 		arena.origin_x = origin_x;
 		arena.origin_y = origin_y;

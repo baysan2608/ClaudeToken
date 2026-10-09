@@ -433,7 +433,7 @@ void AFourfoldFighter::OnSimFrame(const FFourfoldFrame& Frame)
 			{
 				const float Env = Impl->HitShakeT / Impl->HitShakeLen;
 				const ff::Vec3 Off = Impl->HitShakeDir * (Impl->HitShakeAmp * Env * FMath::Sin(Impl->HitShakePhase));
-				HitShake = GetActorTransform().InverseTransformVectorNoScale(FF::ToUE(Off));
+				HitShake = GetActorTransform().InverseTransformVectorNoScale(FF::DirToUE(Off) * FF::SimToUE);
 			}
 		}
 	}
@@ -689,7 +689,7 @@ void AFourfoldFighter::DriveAnimation(const FFourfoldFrame& Frame, const ff::Act
 	if (Sim && Sim->HasScenario())
 	{
 		const ff::ArenaView& AV = Sim->GetArena();
-		if (S.ArenaSource != &AV || !S.Arena.IsValid())
+		if (S.ArenaSource != &AV || !S.Arena.IsValid() || S.Arena->revision != AV.revision)
 		{
 			TSharedPtr<ffg::ArenaGround, ESPMode::ThreadSafe> G = MakeShared<ffg::ArenaGround, ESPMode::ThreadSafe>();
 			G->Set(AV);

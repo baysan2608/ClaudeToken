@@ -26,7 +26,9 @@ std::shared_ptr<WorldDef> make_world(bool with_sites = true) {
 		for (int i = 0; i < n; ++i) {
 			const double x = -400.0 + i * 2.0;
 			const double z = -400.0 + k * 2.0;
-			h[static_cast<size_t>(k) * n + i] = z > 120.0 ? -2.0f : static_cast<float>(50.0 + 0.1 * x);
+			float v = z > 120.0 ? -2.0f : static_cast<float>(50.0 + 0.1 * x);
+			if (z < -150.0 && z > -250.0 && x > -60.0 && x < 60.0) v += static_cast<float>(1.5 * (-150.0 - z));   // a 56-degree cliff face
+			h[static_cast<size_t>(k) * n + i] = v;
 		}
 	}
 	std::string sites = with_sites ? R"([
@@ -206,4 +208,22 @@ FF_TEST_F(test_open_world, RoamFx, test_roam_is_deterministic) {
 	const std::string a = run(1);
 	const std::string b = run(1);
 	check(a == b, "two runs match: " + a + " vs " + b);
+}
+
+FF_TEST_F(test_open_world, RoamFx, test_steep_cliff_blocks_and_slides) {
+	Session s;
+	RoamOptions o;
+	o.kit = "all";
+	o.encounters = false;
+	s.LoadRoam(make_world(false), o);
+	yaw = 3.14159265f;   // camera along -z, into the cliff that starts at z -150
+	in.move = Vec2(0.0f, 1.0f);
+	step(s, 60 * 40);
+	check(world_z(s) > -152.0, S("cliff stops the climb (z ", world_z(s), ")"));
+	near(world_y(s), 50.0 + 0.1 * world_x(s), 1.0, "still at the foot");
+	// Diagonal into the cliff: slides sideways along it.
+	const double x0 = world_x(s);
+	in.move = Vec2(0.7f, 0.7f);
+	step(s, 60 * 2);
+	check(std::fabs(world_x(s) - x0) > 3.0, S("slid along the face (dx ", world_x(s) - x0, ")"));
 }

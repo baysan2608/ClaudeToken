@@ -9,12 +9,17 @@ void ArenaGround::Set(const ff::ArenaView& a) {
 	half_size = a.half_size;
 	solids.clear();
 	const float h = a.half_size - 0.01f;
+	world = a.world;
+	ox = a.origin_x;
+	oy = a.origin_y;
+	oz = a.origin_z;
+	revision = a.revision;
 	for (const ff::ArenaBox& b : a.solids) {
 		ArenaSolid s;
 		s.mn = b.min;
 		s.mx = b.max;
 		s.name = b.name;
-		s.boundary = b.max.x <= -h || b.min.x >= h || b.max.z <= -h || b.min.z >= h;
+		s.boundary = !world && (b.max.x <= -h || b.min.x >= h || b.max.z <= -h || b.min.z >= h);
 		solids.push_back(s);
 	}
 	pool_min = a.pool_min;
@@ -28,6 +33,7 @@ void ArenaGround::Set(const ff::ArenaView& a) {
 }
 
 float ArenaGround::BaseFloor(float x, float z) const {
+	if (world) return OnMetal(x, z) ? Terrain(x, z) + metal_top : Terrain(x, z);
 	if (InPool(x, z)) return pool_floor;
 	if (OnMetal(x, z)) return metal_top;
 	return 0.0f;

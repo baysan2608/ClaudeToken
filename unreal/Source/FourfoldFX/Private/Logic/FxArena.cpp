@@ -11,7 +11,9 @@ float GroundHeight(const ff::ArenaView* arena, float x, float z, float fromY) {
 	if (!arena) return 0.0f;
 	const ff::ArenaView& a = *arena;
 	float g = 0.0f;
-	if (x > a.pool_min.x && x < a.pool_max.x && z > a.pool_min.y && z < a.pool_max.y)
+	if (a.world)
+		g = a.TerrainAt(x, z);   // open world: lake floor / ore plates follow the terrain too
+	else if (x > a.pool_min.x && x < a.pool_max.x && z > a.pool_min.y && z < a.pool_max.y)
 		g = a.pool_floor;
 	else if (x > a.metal_min.x && x < a.metal_max.x && z > a.metal_min.y && z < a.metal_max.y)
 		g = a.metal_top;

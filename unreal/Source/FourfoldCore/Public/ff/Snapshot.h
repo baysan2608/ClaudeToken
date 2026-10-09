@@ -164,6 +164,7 @@ struct ArenaView {
 	// position of local (0,0,0). TerrainAt = local standing floor from the terrain alone (no solids / metal).
 	std::shared_ptr<const WorldDef> world;
 	double origin_x = 0.0, origin_y = 0.0, origin_z = 0.0;
+	int64_t revision = 0;          // bumps whenever the session rebuilds this view (scenario load, open-world re-centre)
 	float TerrainAt(float x, float z) const {
 		return world ? static_cast<float>(world->FloorAt(x + origin_x, z + origin_z) - origin_y) : 0.0f;
 	}

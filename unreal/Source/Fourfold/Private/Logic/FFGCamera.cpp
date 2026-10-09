@@ -199,6 +199,14 @@ Vec3 CameraLogic::DirOf(float y, float p) const {
 	return (-f * std::cos(p) + Vec3(0.0f, 1.0f, 0.0f) * std::sin(p)).normalized();
 }
 
+void CameraLogic::Shift(Vec3 d) {
+	pivot_ = pivot_ - d;
+	tgt_ = tgt_ - d;
+	dolly_at_ = dolly_at_ - d;
+	zoom_at_ = zoom_at_ - d;
+	focus_ = focus_ - d;
+}
+
 float CameraLogic::ClearDist(float y, float p, float want, bool boundary_only) const {
 	if (!arena || !arena->valid) return want;
 	const Vec3 d = DirOf(y, p) * want;
@@ -208,6 +216,19 @@ float CameraLogic::ClearDist(float y, float p, float want, bool boundary_only) c
 		if (boundary_only && !s.boundary) continue;
 		const float t = ArenaGround::Slab(pivot_, d, s.mn - r, s.mx + r);
 		if (t >= 0.0f && (best < 0.0f || t < best)) best = t;
+	}
+	if (arena->world && want > 0.0f) {
+		// Open world: hills behind the boom count like the yard walls.
+		constexpr float kStep = 0.5f;
+		const Vec3 dir = DirOf(y, p);
+		for (float t = kStep; t <= want + 1e-3f; t += kStep) {
+			const Vec3 q = pivot_ + dir * t;
+			if (q.y < arena->Terrain(q.x, q.z) + 0.3f) {
+				const float tt = std::max(0.0f, t - kStep) / want;
+				if (best < 0.0f || tt < best) best = tt;
+				break;
+			}
+		}
 	}
 	return best < 0.0f ? want : std::max(0.0f, want * best - 0.15f);
 }

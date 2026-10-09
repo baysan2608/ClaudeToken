@@ -47,6 +47,11 @@ public:
 	double ground_height(double x, double z, double from_y = 1.0e30, double step = Sim::STEP_HEIGHT) const;
 	std::string surface_at(double x, double z, double y) const;
 	Vec3 push_out(Vec3 p, double r, double h = Sim::ACTOR_HEIGHT, double step = Sim::STEP_HEIGHT) const;
+	// Open world: a grounded fighter cannot climb terrain steeper than kMaxSlope or leave the world's edge; the
+	// horizontal move is cancelled per axis (so it slides along a cliff). No-op in the arenas.
+	static constexpr double kMaxSlope = 1.0;        // rise / run (45 degrees)
+	static constexpr double kWorldEdgeMargin = 24.0;
+	Vec3 limit_terrain(Vec3 from, Vec3 to) const;
 	// First hit of segment a->b against solids (inflated by radius): t in 0..1, or -1.
 	double segment_hit(Vec3 a, Vec3 b, double radius = 0.0) const;
 	static double slab(Vec3 o, Vec3 d, Vec3 mn, Vec3 mx);

@@ -40,6 +40,9 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnFourfoldScenarioLoaded, const FString& /*
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnFourfoldUiCue, FName /*CueName*/);
 /** (additive, game) Fills the local player's input for ONE 60 Hz tick and the camera yaw in sim radians (the camera
  *  looks along (sin yaw, 0, cos yaw)). Bound by AFourfoldPlayerController; unbound = idle input. */
+/** (additive, open world) The sim bubble moved by Delta (sim metres): sim-space state kept across frames must shift by
+ *  -Delta (FF::GSimOriginUE already moved by +Delta, so world positions stay put). Fired inside the step, before OnFrame. */
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnFourfoldSimRecenter, const ff::Vec3& /*Delta*/);
 DECLARE_DELEGATE_TwoParams(FFourfoldPollInput, ff::InputFrame& /*OutInput*/, float& /*InOutCameraYawSim*/);
 
 UCLASS()
@@ -96,6 +99,13 @@ public:
 	void SaveProgress();
 	bool SaveLabTuning();
 	bool LoadLabTuning();
+
+	// ---------------------------------------------------------------- open world (additive)
+	/** Starts roaming `World` (ScenarioId "roam"): the sim bubble follows the player, encounters engage near sites. */
+	bool LoadRoam(std::shared_ptr<const ff::WorldDef> World, const ff::RoamOptions& Options = ff::RoamOptions());
+	bool IsRoaming() const;
+	std::shared_ptr<const ff::WorldDef> GetWorldDef() const;
+	FOnFourfoldSimRecenter OnSimRecenter;
 
 	// USubsystem / FTickableGameObject
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;

@@ -26,6 +26,13 @@ public:
 
 	/** New scenario: arena copy + snap behind the player looking at `LookAt` (sim space). */
 	void ResetForScenario(const ff::ArenaView& InArena, const ff::Vec3& PlayerPos, const ff::Vec3& LookAt);
+	/** Open world: the sim bubble moved by Delta (new arena copy, springs keep their place in the world). */
+	void OnSimRecenter(const ff::ArenaView& InArena, const ff::Vec3& Delta)
+	{
+		Arena.Set(InArena);
+		Logic.arena = &Arena;
+		Logic.Shift(Delta);
+	}
 	/** Per frame. Positions in sim space; Target / Threat may be null. */
 	void UpdateRig(float GameDt, float RealDt, const ff::Vec3& PlayerPos, const ff::Vec3* Target, const ff::Vec3* Threat);
 	/** Solids the camera currently sits behind (drawn see-through by the arena owner). */

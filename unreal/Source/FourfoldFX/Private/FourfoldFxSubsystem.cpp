@@ -263,6 +263,7 @@ void UFourfoldFxSubsystem::Deinitialize()
 	{
 		Sim->OnFrame.Remove(FrameHandle);
 		Sim->OnScenarioLoaded.Remove(ScenarioHandle);
+		Sim->OnSimRecenter.Remove(RecenterHandle);
 	}
 	FrameHandle.Reset();
 	ScenarioHandle.Reset();
@@ -288,6 +289,7 @@ void UFourfoldFxSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	SimWeak = Sim;
 	FrameHandle = Sim->OnFrame.AddUObject(this, &UFourfoldFxSubsystem::OnSimFrame);
 	ScenarioHandle = Sim->OnScenarioLoaded.AddUObject(this, &UFourfoldFxSubsystem::OnScenarioLoaded);
+	RecenterHandle = Sim->OnSimRecenter.AddWeakLambda(this, [this](const ff::Vec3&) { bDebrisArenaDirty = true; });
 	EnsureActor();
 }
 

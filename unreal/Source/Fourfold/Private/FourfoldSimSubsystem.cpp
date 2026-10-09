@@ -25,8 +25,12 @@
 
 #include <string>
 
+FVector FF::GSimOriginUE = FVector::ZeroVector;
+
 struct FFourfoldSimImpl
 {
+	std::shared_ptr<const ff::WorldDef> WorldDef;   // open world: set by LoadRoam
+	ff::RoamOptions RoamOptions;
 	TUniquePtr<ff::Session> Session;
 	ff::Snapshot Prev;
 	ff::Snapshot Curr;
@@ -53,6 +57,30 @@ struct FFourfoldSimImpl
 
 namespace FourfoldSim
 {
+	static void ShiftSnapshot(ff::Snapshot& S, const ff::Vec3& D)
+	{
+		for (ff::ActorView& A : S.actors)
+		{
+			A.pos = A.pos - D;
+		}
+		for (ff::BodyView& B : S.bodies)
+		{
+			B.pos = B.pos - D;
+			for (ff::Vec3& P : B.wave_path)
+			{
+				P = P - D;
+			}
+		}
+		S.origin_x += D.x;
+		S.origin_y += D.y;
+		S.origin_z += D.z;
+	}
+
+	static void ApplyOrigin(const ff::Snapshot& S)
+	{
+		FF::GSimOriginUE = FF::WorldToUE(S.origin_x, S.origin_y, S.origin_z);
+	}
+
 	static const ff::Snapshot& EmptySnapshot()
 	{
 		static const ff::Snapshot S;
@@ -113,6 +141,7 @@ void UFourfoldSimSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UFourfoldSimSubsystem::Deinitialize()
 {
+	FF::GSimOriginUE = FVector::ZeroVector;
 	if (Impl.IsValid())
 	{
 		if (Impl->bHasScenario)
@@ -210,8 +239,10 @@ bool UFourfoldSimSubsystem::LoadScenario(const FString& ScenarioId, const ff::Sc
 	}
 	Impl->ScenarioId = FourfoldSim::ToF(Impl->Session->ScenarioId());
 	Impl->Options = Options;
+	Impl->WorldDef.reset();
 	Impl->bHasScenario = true;
 	Impl->Curr = Impl->Session->GetSnapshot();
+	FourfoldSim::ApplyOrigin(Impl->Curr);
 	Impl->Prev = Impl->Curr;
 	Impl->Acc = 0.0;
 	Impl->Alpha = 1.0f;
@@ -226,11 +257,55 @@ bool UFourfoldSimSubsystem::LoadScenario(const FString& ScenarioId, const ff::Sc
 	return true;
 }
 
+bool UFourfoldSimSubsystem::LoadRoam(std::shared_ptr<const ff::WorldDef> World, const ff::RoamOptions& Options)
+{
+	if (!Impl.IsValid() || !Impl->Session.IsValid() || !World)
+	{
+		return false;
+	}
+	if (!Impl->Session->LoadRoam(World, Options))
+	{
+		UE_LOG(LogFourfold, Warning, TEXT("LoadRoam failed (terrain %dx%d)"), World->nx, World->nz);
+		return false;
+	}
+	Impl->WorldDef = World;
+	Impl->RoamOptions = Options;
+	Impl->ScenarioId = FourfoldSim::ToF(Impl->Session->ScenarioId());
+	Impl->Options = ff::ScenarioOptions();
+	Impl->Options.autoplay = Options.autoplay;
+	Impl->bHasScenario = true;
+	Impl->Curr = Impl->Session->GetSnapshot();
+	Impl->Prev = Impl->Curr;
+	FourfoldSim::ApplyOrigin(Impl->Curr);
+	Impl->Acc = 0.0;
+	Impl->Alpha = 1.0f;
+	Impl->HitStop.Reset();
+	SyncFighters(true);
+	UE_LOG(LogFourfold, Log, TEXT("Open world loaded: %.0f x %.0f m, %d sites, origin %s"), World->SizeX(), World->SizeZ(),
+	       int32(World->sites.size()), *FF::GSimOriginUE.ToString());
+	OnScenarioLoaded.Broadcast(Impl->ScenarioId);
+	return true;
+}
+
+bool UFourfoldSimSubsystem::IsRoaming() const
+{
+	return Impl.IsValid() && Impl->bHasScenario && Impl->WorldDef != nullptr;
+}
+
+std::shared_ptr<const ff::WorldDef> UFourfoldSimSubsystem::GetWorldDef() const
+{
+	return Impl.IsValid() ? Impl->WorldDef : nullptr;
+}
+
 bool UFourfoldSimSubsystem::RestartScenario()
 {
 	if (!HasScenario())
 	{
 		return false;
+	}
+	if (IsRoaming())
+	{
+		return LoadRoam(Impl->WorldDef, Impl->RoamOptions);
 	}
 	const FString Id = Impl->ScenarioId;
 	const ff::ScenarioOptions Opts = Impl->Options;
@@ -308,8 +383,22 @@ void UFourfoldSimSubsystem::StepOnce()
 	Impl->CameraYawSim = Yaw;
 	Impl->Prev = Impl->Curr;
 	Impl->Session->Step(Input, Yaw);
+	const size_t First = Impl->Events.size();
 	Impl->Session->TakeEvents(Impl->Events);
 	Impl->Curr = Impl->Session->GetSnapshot();
+	for (size_t i = First; i < Impl->Events.size(); ++i)
+	{
+		const ff::Event& E = Impl->Events[i];
+		if (E.type != "app_recenter")
+		{
+			continue;
+		}
+		// Open world: the bubble moved. Keep the previous tick in the new frame so interpolation does not jump.
+		const ff::Vec3 D(E.data["dx"].as_f32(), E.data["dy"].as_f32(), E.data["dz"].as_f32());
+		FourfoldSim::ShiftSnapshot(Impl->Prev, D);
+		FourfoldSim::ApplyOrigin(Impl->Curr);
+		OnSimRecenter.Broadcast(D);
+	}
 }
 
 void UFourfoldSimSubsystem::Tick(float DeltaTime)

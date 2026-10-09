@@ -1,5 +1,6 @@
 // Fourfold - player controller (see FourfoldPlayerController.h).
 #include "FourfoldPlayerController.h"
+#include "FourfoldOpenWorld.h"
 
 #include "FourfoldCameraRig.h"
 #include "FourfoldCoords.h"
@@ -176,7 +177,10 @@ void AFourfoldPlayerController::BeginPlay()
 		if (It->ActorHasTag(FName(TEXT("FourfoldArena"))))
 		{
 			bLevelHasArena = true;
-			break;
+		}
+		if (const AFourfoldOpenWorld* OW = Cast<AFourfoldOpenWorld>(*It); OW && OW->bAutoStartRoam)
+		{
+			bLevelHasOpenWorld = true;
 		}
 	}
 
@@ -187,6 +191,12 @@ void AFourfoldPlayerController::BeginPlay()
 		Sim->PollInput.BindUObject(this, &AFourfoldPlayerController::PollSimInput);
 		FrameHandle = Sim->OnFrame.AddUObject(this, &AFourfoldPlayerController::OnSimFrame);
 		ScenarioHandle = Sim->OnScenarioLoaded.AddUObject(this, &AFourfoldPlayerController::OnScenarioLoaded);
+		RecenterHandle = Sim->OnSimRecenter.AddWeakLambda(this, [this](const ff::Vec3& Delta) {
+			if (UFourfoldSimSubsystem* S = GetSim(); S && CameraRig)
+			{
+				CameraRig->OnSimRecenter(S->GetArena(), Delta);
+			}
+		});
 	}
 	if (UFourfoldSettingsSubsystem* Settings = UFourfoldSettingsSubsystem::Get(this))
 	{
@@ -219,10 +229,14 @@ void AFourfoldPlayerController::BeginPlay()
 				return;
 			}
 		}
-		else if (StartScenario(StartId, Opts))
+		else if (StartId == TEXT("roam") ? StartRoam() : StartScenario(StartId, Opts))
 		{
 			return;
 		}
+	}
+	if (bLevelHasOpenWorld && StartRoam())
+	{
+		return;
 	}
 	ShowTitle();
 }
@@ -234,6 +248,7 @@ void AFourfoldPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason
 		Sim->PollInput.Unbind();
 		Sim->OnFrame.Remove(FrameHandle);
 		Sim->OnScenarioLoaded.Remove(ScenarioHandle);
+		Sim->OnSimRecenter.Remove(RecenterHandle);
 	}
 	if (UFourfoldSettingsSubsystem* Settings = UFourfoldSettingsSubsystem::Get(this))
 	{
@@ -447,6 +462,39 @@ bool AFourfoldPlayerController::StartScenario(const FString& ScenarioId, const f
 	if (Impl->Ui.IsValid())
 	{
 		Impl->Ui->FadeIn(0.35f);
+		Impl->Ui->GetMenus()->Close();
+	}
+	ReleaseAllInput();
+	UiCue(FName(TEXT("ui_select")));
+	return true;
+}
+
+bool AFourfoldPlayerController::StartRoam()
+{
+	UFourfoldSimSubsystem* Sim = GetSim();
+	if (!Sim || !Impl.IsValid())
+	{
+		return false;
+	}
+	FString Err;
+	std::shared_ptr<const ff::WorldDef> World = AFourfoldOpenWorld::LoadWorldDef(&Err);
+	if (!World)
+	{
+		UE_LOG(LogFourfold, Error, TEXT("StartRoam: %s"), *Err);
+		return false;
+	}
+	ff::RoamOptions Opts;
+	Opts.kit = "all";   // every technique while the open world has no progression of its own yet
+	if (!Sim->LoadRoam(World, Opts))
+	{
+		return false;
+	}
+	Mode = EFourfoldMode::Play;
+	bPaused = false;
+	Sim->SetPaused(false);
+	if (Impl->Ui.IsValid())
+	{
+		Impl->Ui->FadeIn(0.6f);
 		Impl->Ui->GetMenus()->Close();
 	}
 	ReleaseAllInput();
