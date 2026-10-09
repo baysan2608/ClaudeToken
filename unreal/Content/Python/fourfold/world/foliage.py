@@ -30,13 +30,17 @@ float ph = dot(OP.xy, float2(0.0031, 0.0047));
 float g = sin(T * 0.85 + ph) * 0.65 + sin(T * 1.9 + ph * 1.7) * 0.25 + sin(T * 0.37 + ph * 0.5) * 0.45;
 float2 d = normalize(Dir.xy + float2(1e-4, 0.0));
 float3 sway = float3(d * g, 0.0) * (Amp * h * h);
-float fl = sin(T * 5.3 + dot(WP, float3(0.031, 0.047, 0.023))) * Flutter * h;
+// gust from air moves (MPC_Arena WindGust 0..1 along WindDirX/Y): a lean away from the gust + faster shiver
+float gs = saturate(Gust);
+float2 gd = normalize(float2(GDX, GDY) + float2(1e-4, 0.0));
+sway += float3(gd * (0.8 + 0.35 * sin(T * 3.1 + ph)), 0.0) * (Amp * 2.2 * gs * h * h);
+float fl = sin(T * (5.3 + 6.0 * gs) + dot(WP, float3(0.031, 0.047, 0.023))) * Flutter * (1.0 + 2.5 * gs) * h;
 return sway + float3(fl * 0.55, fl * 0.45, fl * 0.35);"""
 TINT_CODE = """float r = frac(sin(dot(OP.xy * 0.01, float2(12.9898, 78.233))) * 43758.5453);
 float3 hue = lerp(float3(1.03, 0.98, 0.86), float3(0.90, 1.0, 1.05), r);
 return Base * hue * lerp(1.0 - Var, 1.0 + Var * 0.6, r);"""
 CUSTOM_BODIES = {   # for Tools/world/check_hlsl.py-style checks: name -> (code, inputs, return type)
-    "tree_wind": (WIND_CODE, ["WP", "OP", "B", "T", "Amp", "Flutter", "Dir"], "float3"),
+    "tree_wind": (WIND_CODE, ["WP", "OP", "B", "T", "Amp", "Flutter", "Dir", "Gust", "GDX", "GDY"], "float3"),
     "tree_tint": (TINT_CODE, ["Base", "OP", "Var"], "float3"),
 }
 
@@ -125,6 +129,21 @@ def import_textures(manifest, force, report):
 
 
 # ------------------------------------------------------------------------------------------------------------------ masters
+def _mpc_scalar(g, name, x, y):
+    """CollectionParameter node for MPC_Arena.<name>, or None when the collection is missing."""
+    path = f"{C.MAT_DIR}/MPC_Arena"
+    if not C.asset_exists(path):
+        return None
+    try:
+        n = g.expr(unreal.MaterialExpressionCollectionParameter, x, y)
+        C.set_prop(n, "collection", unreal.load_asset(path), {"notes": g.notes})
+        C.set_prop(n, "parameter_name", name, {"notes": g.notes})
+        return n
+    except Exception as e:  # noqa: BLE001
+        g.notes.append(f"MPC_Arena.{name} unavailable: {e}")
+        return None
+
+
 def _wind(g, x, y, flutter):
     wp = g.expr(unreal.MaterialExpressionWorldPosition, x - 400, y)
     op = g.expr(unreal.MaterialExpressionObjectPositionWS, x - 400, y + 100)
@@ -133,8 +152,11 @@ def _wind(g, x, y, flutter):
     amp = g.scalar("SwayCm", 28.0, x - 400, y + 400, "Wind")
     fl = g.scalar("FlutterCm", flutter, x - 400, y + 500, "Wind")
     d = g.vector("WindDir", (0.8, 0.6, 0.0), x - 400, y + 600, "Wind")
-    w = g.custom(WIND_CODE, F3, ["WP", "OP", "B", "T", "Amp", "Flutter", "Dir"], [], x, y, "tree wind")
+    gust, gdx, gdy = (_mpc_scalar(g, nm, x - 400, y + 700 + 100 * i) for i, nm in enumerate(("WindGust", "WindDirX", "WindDirY")))
+    w = g.custom(WIND_CODE, F3, ["WP", "OP", "B", "T", "Amp", "Flutter", "Dir", "Gust", "GDX", "GDY"], [], x, y, "tree wind")
     g.wire(w, {"WP": (wp, ""), "OP": (op, ""), "B": (bounds, ""), "T": (t, ""), "Amp": (amp, ""), "Flutter": (fl, ""), "Dir": (d, "")})
+    for k, n in (("Gust", gust), ("GDX", gdx), ("GDY", gdy)):
+        g.link(n, "", w, k) if n is not None else g.link(g.const(0.0 if k == "Gust" else (0.8 if k == "GDX" else 0.6), x - 600, y), "", w, k)
     return w, op
 
 

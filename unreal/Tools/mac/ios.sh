@@ -3,6 +3,8 @@
 # Signing: team + bundle id from Config/DefaultEngine.ini (automatic signing; Xcode registers the device).
 #   bash unreal/Tools/mac/ios.sh           build + cook + install + launch
 #   bash unreal/Tools/mac/ios.sh --fast    reinstall the last build and cook (no compile, no cook) + launch
+#   bash unreal/Tools/mac/ios.sh --cook    cook + install the last compiled binary (no compile; UAT's -build step can fail in
+#                                          Xcode's 'Touch UBT generated tiles' pre-action while a direct xcodebuild works)
 #   bash unreal/Tools/mac/ios.sh --check   only check the device and exit
 #   add --no-launch to install without starting the app
 # Device: the first paired physical iOS device, or IOS_DEVICE=<name or UDID>. Log: logs/ios_deploy.log
@@ -16,7 +18,7 @@ LOGDIR="$REPO/logs"; mkdir -p "$LOGDIR"; LOG="$LOGDIR/ios_deploy.log"
 MODE=full; LAUNCH=1
 for a in "$@"; do
   case "$a" in
-    --fast) MODE=fast ;; --check) MODE=check ;; --no-launch) LAUNCH=0 ;;
+    --fast) MODE=fast ;; --cook) MODE=cook ;; --check) MODE=check ;; --no-launch) LAUNCH=0 ;;
     *) echo "unknown option $a"; exit 2 ;;
   esac
 done
@@ -61,6 +63,8 @@ fi
 if [[ "$MODE" == fast ]]; then
   [[ -d "$REPO/unreal/Saved/StagedBuilds/IOS/cookeddata" ]] || { echo "No previous iOS cook; run without --fast."; exit 1; }
   STEPS=(-skipcook -stage -pak -package -nocompileeditor)
+elif [[ "$MODE" == cook ]]; then
+  STEPS=(-skipbuild -cook -stage -pak -package)
 else
   STEPS=(-build -cook -stage -pak -package)
 fi

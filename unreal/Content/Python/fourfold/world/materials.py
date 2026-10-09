@@ -535,7 +535,7 @@ SLOTS = {
 
 
 def _create_mpc(report, force):
-    """MPC_Arena with scalar 'Wetness'.  Returns the asset or None."""
+    """MPC_Arena with scalars Wetness, WindGust, WindDirX, WindDirY.  Returns the asset or None."""
     path = f"{C.MAT_DIR}/MPC_Arena"
     try:
         if C.asset_exists(path) and not force:
@@ -547,10 +547,15 @@ def _create_mpc(report, force):
             report["notes"].append("MaterialParameterCollection classes not available: arena wetness parameter skipped")
             return None
         mpc = unreal.load_asset(path) if C.asset_exists(path) else _mat_tools().create_asset("MPC_Arena", C.MAT_DIR, cls, factory())
-        p = unreal.CollectionScalarParameter()
-        p.set_editor_property("parameter_name", "Wetness")
-        p.set_editor_property("default_value", 0.0)
-        mpc.set_editor_property("scalar_parameters", [p])
+        params = []
+        # Wetness 0..1 (all arena surfaces); WindGust 0..1 + WindDirX / WindDirY (unit, Unreal XY): air moves push the
+        # trees / banners harder for a moment (FX drives them at runtime, defaults = calm)
+        for nm, dv in (("Wetness", 0.0), ("WindGust", 0.0), ("WindDirX", 0.8), ("WindDirY", 0.6)):
+            p = unreal.CollectionScalarParameter()
+            p.set_editor_property("parameter_name", nm)
+            p.set_editor_property("default_value", dv)
+            params.append(p)
+        mpc.set_editor_property("scalar_parameters", params)
         C.save_asset(mpc)
         report["created"].append(path)
         return mpc
