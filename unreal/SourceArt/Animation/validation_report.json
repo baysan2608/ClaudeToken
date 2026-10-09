@@ -6,6 +6,7 @@
    "max_slide_mm": 0.55,
    "max_step_deg": 10.0,
    "max_wrist_deg": 28.8,
+   "polish": 0,
    "seam_ratio": 0.51,
    "seam_vel_deg": 2.83
   },
@@ -18,26 +19,41 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 35.4,
+   "max_wrist_deg": 59.5,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_r short of its target by 8.1 cm at frame 7",
+   "arm_r short of its target by 20.1 cm at frame 8",
+   "arm_l short of its target by 7.6 cm at frame 9",
+   "arm_r short of its target by 26.4 cm at frame 9",
+   "arm_l short of its target by 8.5 cm at frame 10",
+   "arm_r short of its target by 27.5 cm at frame 10",
+   "arm_l short of its target by 6.4 cm at frame 11",
+   "arm_r short of its target by 24.4 cm at frame 11",
+   "arm_r short of its target by 18.4 cm at frame 12",
+   "arm_r short of its target by 10.8 cm at frame 13"
+  ]
  },
  "a_dash": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.517,
+   "contact_metric": 0.515,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_r short of its target by 14.2 cm at frame 9",
-   "arm_r short of its target by 14.2 cm at frame 10",
-   "arm_r short of its target by 14.2 cm at frame 11"
+   "arm_r short of its target by 14.2 cm at frame 8",
+   "arm_r short of its target by 30.3 cm at frame 9",
+   "arm_r short of its target by 41.0 cm at frame 10",
+   "arm_r short of its target by 46.5 cm at frame 11",
+   "arm_r short of its target by 28.3 cm at frame 12"
   ]
  },
  "a_double_palm": {
@@ -48,7 +64,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 52.3,
+   "max_wrist_deg": 54.5,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -61,10 +78,17 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 53.6,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_l short of its target by 10.6 cm at frame 7",
+   "arm_l short of its target by 25.3 cm at frame 8",
+   "arm_l short of its target by 28.0 cm at frame 9",
+   "arm_l short of its target by 22.4 cm at frame 10",
+   "arm_l short of its target by 13.1 cm at frame 11"
+  ]
  },
  "a_gather": {
   "errors": [],
@@ -73,7 +97,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 75.6,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -82,13 +107,14 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "end_base_deg": 0.0,
+   "end_base_deg": 0.176,
    "max_slide_mm": 0.0,
    "max_step_deg": 2.5,
    "max_wrist_deg": 37.6,
+   "polish": 0,
    "seam_ratio": 0.85,
    "seam_vel_deg": 0.31,
-   "start_base_deg": 0.0
+   "start_base_deg": 0.176
   },
   "warnings": []
  },
@@ -99,8 +125,9 @@
    "contact_metric": 0.581,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 34.8,
+   "max_step_deg": 36.2,
    "max_wrist_deg": 76.0,
+   "polish": 1,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -114,34 +141,36 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_l short of its target by 3.3 cm at frame 5",
-   "arm_l short of its target by 11.0 cm at frame 6",
-   "arm_l short of its target by 14.3 cm at frame 7",
-   "arm_l short of its target by 14.4 cm at frame 8",
-   "arm_l short of its target by 15.1 cm at frame 9",
-   "arm_l short of its target by 16.5 cm at frame 10",
-   "arm_l short of its target by 19.2 cm at frame 11",
-   "arm_l short of its target by 23.6 cm at frame 12",
-   "arm_l short of its target by 30.3 cm at frame 13",
-   "arm_l short of its target by 39.6 cm at frame 14"
+   "arm_l short of its target by 7.5 cm at frame 7",
+   "arm_l short of its target by 13.4 cm at frame 8",
+   "arm_l short of its target by 14.3 cm at frame 9",
+   "arm_l short of its target by 14.7 cm at frame 10",
+   "arm_l short of its target by 16.1 cm at frame 11",
+   "arm_l short of its target by 20.1 cm at frame 12",
+   "arm_l short of its target by 28.5 cm at frame 13",
+   "arm_l short of its target by 39.6 cm at frame 14",
+   "arm_l short of its target by 39.6 cm at frame 15",
+   "arm_l short of its target by 39.6 cm at frame 16"
   ]
  },
  "a_palm": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.623,
+   "contact_metric": 0.639,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 41.5,
+   "max_wrist_deg": 56.8,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 7 frames"
+   "centre of mass outside the support box on 11 frames"
   ]
  },
  "a_pierce": {
@@ -152,11 +181,12 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 42.6,
+   "max_wrist_deg": 66.5,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 7 frames"
+   "centre of mass outside the support box on 6 frames"
   ]
  },
  "a_pluck": {
@@ -166,7 +196,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 41.9,
+   "max_wrist_deg": 48.4,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -179,10 +210,17 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 52.4,
+   "max_wrist_deg": 51.3,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_r short of its target by 4.5 cm at frame 11",
+   "arm_r short of its target by 8.9 cm at frame 12",
+   "arm_r short of its target by 11.0 cm at frame 13",
+   "arm_r short of its target by 10.0 cm at frame 14",
+   "arm_r short of its target by 6.3 cm at frame 15"
+  ]
  },
  "a_roar": {
   "errors": [],
@@ -191,10 +229,22 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 74.0,
+   "max_wrist_deg": 73.1,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_l short of its target by 10.0 cm at frame 15",
+   "arm_r short of its target by 5.8 cm at frame 15",
+   "arm_l short of its target by 18.6 cm at frame 16",
+   "arm_r short of its target by 12.8 cm at frame 16",
+   "arm_l short of its target by 22.8 cm at frame 17",
+   "arm_r short of its target by 16.4 cm at frame 17",
+   "arm_l short of its target by 23.6 cm at frame 18",
+   "arm_r short of its target by 17.2 cm at frame 18",
+   "arm_l short of its target by 21.6 cm at frame 19",
+   "arm_r short of its target by 15.7 cm at frame 19"
+  ]
  },
  "a_spin": {
   "errors": [],
@@ -202,8 +252,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 34.0,
-   "max_wrist_deg": 61.4,
+   "max_step_deg": 36.7,
+   "max_wrist_deg": 73.3,
+   "polish": 2,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -212,13 +263,14 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "end_base_deg": 0.0,
+   "end_base_deg": 0.037,
    "max_slide_mm": 0.17,
    "max_step_deg": 1.1,
    "max_wrist_deg": 29.4,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
-   "start_base_deg": 0.0
+   "start_base_deg": 0.037
   },
   "warnings": []
  },
@@ -226,11 +278,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.639,
+   "contact_metric": 0.638,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 49.7,
+   "max_wrist_deg": 49.8,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -244,7 +297,8 @@
    "contact_metric": 1.86,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 76.0,
+   "max_wrist_deg": 72.8,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -257,7 +311,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.47,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 42.7,
+   "max_wrist_deg": 42.9,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -270,8 +325,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 5.7,
+   "max_step_deg": 5.8,
    "max_wrist_deg": 17.3,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -283,7 +339,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 53.4,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -296,6 +353,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.2,
    "max_wrist_deg": 22.3,
+   "polish": 0,
    "seam_ratio": 0.63,
    "seam_vel_deg": 0.77,
    "start_base_deg": 0.228
@@ -308,8 +366,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 31.0,
-   "max_wrist_deg": 52.3,
+   "max_step_deg": 31.1,
+   "max_wrist_deg": 56.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -322,7 +381,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 39.1,
+   "max_wrist_deg": 56.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -331,11 +391,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.44,
+   "contact_metric": 0.43,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 33.5,
-   "max_wrist_deg": 26.1,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 57.0,
+   "polish": 1,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -344,11 +405,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.627,
+   "contact_metric": 0.626,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 76.6,
+   "max_wrist_deg": 76.1,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -357,16 +419,17 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.429,
+   "contact_metric": 0.454,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_r short of its target by 3.4 cm at frame 10",
-   "arm_r short of its target by 3.2 cm at frame 11"
+   "arm_r short of its target by 3.3 cm at frame 11",
+   "arm_r short of its target by 3.6 cm at frame 12"
   ]
  },
  "e_disc_flick": {
@@ -378,6 +441,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -390,7 +454,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 54.1,
+   "max_wrist_deg": 54.4,
+   "polish": 2,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -404,6 +469,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 3,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -416,6 +482,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 0.6,
    "max_wrist_deg": 2.1,
+   "polish": 0,
    "seam_ratio": 0.8,
    "seam_vel_deg": 0.34,
    "start_base_deg": 0.079
@@ -431,10 +498,11 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 48.4,
+   "polish": 3,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 13 frames"
+   "centre of mass outside the support box on 15 frames"
   ]
  },
  "e_lift": {
@@ -445,7 +513,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 51.0,
+   "max_wrist_deg": 53.1,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -456,11 +525,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.434,
+   "contact_metric": 0.441,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 48.5,
+   "max_wrist_deg": 66.7,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -473,6 +543,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.3,
    "max_wrist_deg": 11.5,
+   "polish": 0,
    "seam_ratio": 0.43,
    "seam_vel_deg": 0.72,
    "start_base_deg": 0.15
@@ -487,7 +558,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 75.4,
+   "max_wrist_deg": 75.2,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -500,18 +572,20 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 66.9,
+   "max_wrist_deg": 72.4,
+   "polish": 3,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_r short of its target by 3.1 cm at frame 15",
+   "arm_l short of its target by 6.0 cm at frame 13",
+   "arm_r short of its target by 6.3 cm at frame 13",
+   "arm_l short of its target by 6.0 cm at frame 14",
+   "arm_r short of its target by 6.3 cm at frame 14",
+   "arm_l short of its target by 6.0 cm at frame 15",
+   "arm_r short of its target by 6.3 cm at frame 15",
    "arm_l short of its target by 6.0 cm at frame 16",
    "arm_r short of its target by 6.3 cm at frame 16",
-   "arm_l short of its target by 6.0 cm at frame 17",
-   "arm_r short of its target by 6.3 cm at frame 17",
-   "arm_l short of its target by 6.0 cm at frame 18",
-   "arm_r short of its target by 6.3 cm at frame 18",
-   "centre of mass outside the support box on 11 frames"
+   "centre of mass outside the support box on 13 frames"
   ]
  },
  "e_push": {
@@ -523,6 +597,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 41.5,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -537,6 +612,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.5,
    "max_wrist_deg": 28.7,
+   "polish": 0,
    "seam_ratio": 0.46,
    "seam_vel_deg": 0.85,
    "start_base_deg": 0.209
@@ -552,6 +628,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 41.2,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -564,20 +641,27 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 67.3,
+   "max_wrist_deg": 74.5,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_l short of its target by 3.3 cm at frame 9",
+   "arm_l short of its target by 7.6 cm at frame 10",
+   "arm_l short of its target by 7.2 cm at frame 11",
+   "arm_l short of its target by 3.9 cm at frame 12"
+  ]
  },
  "e_spatter": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.372,
+   "contact_metric": 0.414,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 54.9,
+   "max_wrist_deg": 54.8,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -590,6 +674,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 0.1,
    "max_wrist_deg": 43.8,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
    "start_base_deg": 0.0
@@ -604,6 +689,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.1,
    "max_wrist_deg": 11.9,
+   "polish": 0,
    "seam_ratio": 0.52,
    "seam_vel_deg": 0.58,
    "start_base_deg": 0.118
@@ -614,45 +700,57 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.61,
+   "contact_metric": 0.681,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 52.3,
-   "start_base_deg": 0.0
-  },
-  "warnings": [
-   "centre of mass outside the support box on 13 frames"
-  ]
- },
- "e_sweep": {
-  "errors": [],
-  "n_errors": 0,
-  "stats": {
-   "contact_metric": 0.615,
-   "end_base_deg": 0.0,
-   "max_slide_mm": 0.33,
-   "max_step_deg": 34.0,
-   "max_wrist_deg": 76.0,
+   "max_wrist_deg": 61.3,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
    "centre of mass outside the support box on 12 frames"
   ]
  },
+ "e_sweep": {
+  "errors": [],
+  "n_errors": 0,
+  "stats": {
+   "contact_metric": 0.62,
+   "end_base_deg": 0.0,
+   "max_slide_mm": 0.32,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
+   "start_base_deg": 0.0
+  },
+  "warnings": [
+   "centre of mass outside the support box on 14 frames"
+  ]
+ },
  "e_throw": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.732,
+   "contact_metric": 0.711,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 9 frames"
+   "arm_l short of its target by 5.9 cm at frame 8",
+   "arm_l short of its target by 5.9 cm at frame 9",
+   "arm_r short of its target by 4.8 cm at frame 9",
+   "arm_l short of its target by 5.9 cm at frame 10",
+   "arm_r short of its target by 9.0 cm at frame 10",
+   "arm_l short of its target by 6.3 cm at frame 11",
+   "arm_r short of its target by 8.6 cm at frame 11",
+   "arm_l short of its target by 4.4 cm at frame 12",
+   "arm_r short of its target by 5.6 cm at frame 12",
+   "centre of mass outside the support box on 8 frames"
   ]
  },
  "e_thrust": {
@@ -664,10 +762,11 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 41.2,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 8 frames"
+   "centre of mass outside the support box on 9 frames"
   ]
  },
  "e_wall": {
@@ -677,8 +776,9 @@
    "contact_metric": 1.37,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 31.6,
-   "max_wrist_deg": 41.2,
+   "max_step_deg": 32.6,
+   "max_wrist_deg": 41.6,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -689,11 +789,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.953,
+   "contact_metric": 0.959,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 34.0,
-   "max_wrist_deg": 40.9,
+   "max_step_deg": 28.4,
+   "max_wrist_deg": 45.3,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -702,11 +803,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.953,
+   "contact_metric": 0.959,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 34.0,
-   "max_wrist_deg": 39.8,
+   "max_step_deg": 25.0,
+   "max_wrist_deg": 41.8,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -715,11 +817,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.953,
+   "contact_metric": 0.959,
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.33,
-   "max_step_deg": 33.2,
-   "max_wrist_deg": 53.1,
+   "max_slide_mm": 0.17,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 54.4,
+   "polish": 1,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -728,11 +831,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.953,
+   "contact_metric": 0.959,
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.33,
-   "max_step_deg": 28.5,
-   "max_wrist_deg": 40.3,
+   "max_slide_mm": 0.17,
+   "max_step_deg": 34.0,
+   "max_wrist_deg": 42.2,
+   "polish": 1,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -745,6 +849,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.2,
    "max_wrist_deg": 46.0,
+   "polish": 0,
    "seam_ratio": 0.84,
    "seam_vel_deg": 0.63,
    "start_base_deg": 0.108
@@ -759,13 +864,15 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 46.0,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
    "arm_r short of its target by 4.9 cm at frame 12",
-   "arm_r short of its target by 4.9 cm at frame 13",
-   "arm_r short of its target by 4.9 cm at frame 14",
+   "arm_r short of its target by 4.8 cm at frame 13",
+   "arm_r short of its target by 4.8 cm at frame 14",
+   "arm_r short of its target by 5.6 cm at frame 15",
    "centre of mass outside the support box on 9 frames"
   ]
  },
@@ -775,8 +882,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 34.0,
-   "max_wrist_deg": 66.7,
+   "max_step_deg": 38.7,
+   "max_wrist_deg": 66.3,
+   "polish": 1,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -790,10 +898,16 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 72.4,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_l short of its target by 5.2 cm at frame 15"
+   "arm_l short of its target by 5.2 cm at frame 12",
+   "arm_l short of its target by 14.1 cm at frame 13",
+   "arm_l short of its target by 19.2 cm at frame 14",
+   "arm_l short of its target by 20.6 cm at frame 15",
+   "arm_l short of its target by 16.8 cm at frame 16",
+   "arm_l short of its target by 7.5 cm at frame 17"
   ]
  },
  "f_cross": {
@@ -804,7 +918,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 67.4,
+   "max_wrist_deg": 65.6,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -819,10 +934,17 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.48,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 76.5,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_r short of its target by 17.5 cm at frame 9",
+   "arm_r short of its target by 29.9 cm at frame 10",
+   "arm_r short of its target by 36.2 cm at frame 11",
+   "arm_r short of its target by 37.4 cm at frame 12",
+   "arm_r short of its target by 22.0 cm at frame 13"
+  ]
  },
  "f_heat_draw": {
   "errors": [],
@@ -832,6 +954,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 21.1,
    "max_wrist_deg": 38.4,
+   "polish": 0,
    "seam_ratio": 1.05,
    "seam_vel_deg": 1.07,
    "start_base_deg": 0.061
@@ -845,19 +968,20 @@
    "contact_metric": -0.889,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 69.5,
+   "max_wrist_deg": 74.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
    "arm_l short of its target by 10.9 cm at frame 8",
    "arm_r short of its target by 11.1 cm at frame 8",
-   "arm_l short of its target by 10.9 cm at frame 9",
+   "arm_l short of its target by 40.0 cm at frame 9",
    "arm_r short of its target by 11.1 cm at frame 9",
-   "arm_l short of its target by 10.9 cm at frame 10",
+   "arm_l short of its target by 59.3 cm at frame 10",
    "arm_r short of its target by 11.1 cm at frame 10",
-   "arm_l short of its target by 10.9 cm at frame 11",
+   "arm_l short of its target by 69.2 cm at frame 11",
    "arm_r short of its target by 11.1 cm at frame 11",
-   "arm_l short of its target by 10.9 cm at frame 12",
+   "arm_l short of its target by 70.9 cm at frame 12",
    "arm_r short of its target by 11.1 cm at frame 12"
   ]
  },
@@ -869,7 +993,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.39,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 75.7,
+   "max_wrist_deg": 76.6,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -884,31 +1009,33 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 45.1,
+   "max_wrist_deg": 46.5,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 6 frames"
+   "centre of mass outside the support box on 5 frames"
   ]
  },
  "f_low_sweep": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 1.012,
+   "contact_metric": 1.004,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 1,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_l short of its target by 11.0 cm at frame 5",
-   "arm_l short of its target by 18.3 cm at frame 6",
-   "arm_l short of its target by 19.6 cm at frame 7",
-   "arm_l short of its target by 22.8 cm at frame 8",
-   "arm_l short of its target by 26.0 cm at frame 9",
-   "arm_l short of its target by 27.5 cm at frame 10",
+   "arm_l short of its target by 4.1 cm at frame 5",
+   "arm_l short of its target by 16.5 cm at frame 6",
+   "arm_l short of its target by 20.9 cm at frame 7",
+   "arm_l short of its target by 24.1 cm at frame 8",
+   "arm_l short of its target by 26.3 cm at frame 9",
+   "arm_l short of its target by 27.4 cm at frame 10",
    "arm_l short of its target by 27.5 cm at frame 11",
    "arm_l short of its target by 27.5 cm at frame 12",
    "arm_l short of its target by 27.5 cm at frame 13",
@@ -923,11 +1050,12 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 54.7,
+   "max_wrist_deg": 55.8,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 6 frames"
+   "centre of mass outside the support box on 5 frames"
   ]
  },
  "f_palm_burst": {
@@ -936,9 +1064,10 @@
   "stats": {
    "contact_metric": 0.67,
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.0,
+   "max_slide_mm": 0.59,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 75.7,
+   "max_wrist_deg": 75.4,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -953,20 +1082,21 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 67.3,
+   "max_wrist_deg": 67.4,
+   "polish": 3,
    "start_base_deg": 0.0
   },
   "warnings": [
    "arm_r short of its target by 3.1 cm at frame 14",
+   "arm_l short of its target by 3.3 cm at frame 15",
    "arm_r short of its target by 10.5 cm at frame 15",
-   "arm_l short of its target by 11.0 cm at frame 16",
+   "arm_l short of its target by 19.9 cm at frame 16",
    "arm_r short of its target by 22.9 cm at frame 16",
    "arm_l short of its target by 19.9 cm at frame 17",
    "arm_r short of its target by 22.9 cm at frame 17",
    "arm_l short of its target by 19.9 cm at frame 18",
    "arm_r short of its target by 22.9 cm at frame 18",
-   "arm_l short of its target by 11.5 cm at frame 19",
-   "centre of mass outside the support box on 14 frames"
+   "arm_l short of its target by 10.2 cm at frame 19"
   ]
  },
  "f_snap_kick": {
@@ -978,9 +1108,13 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_r short of its target by 3.1 cm at frame 13",
+   "arm_r short of its target by 3.7 cm at frame 14"
+  ]
  },
  "f_stance": {
   "errors": [],
@@ -990,6 +1124,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 0.7,
    "max_wrist_deg": 25.4,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
    "start_base_deg": 0.0
@@ -1003,7 +1138,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 61.6,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1016,6 +1152,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 2.3,
    "max_wrist_deg": 12.9,
+   "polish": 0,
    "seam_ratio": 0.67,
    "seam_vel_deg": 1.58,
    "start_base_deg": 0.441
@@ -1030,11 +1167,11 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 60.2,
+   "max_wrist_deg": 60.9,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_r short of its target by 3.9 cm at frame 15",
    "arm_r short of its target by 3.9 cm at frame 16",
    "arm_r short of its target by 3.9 cm at frame 17",
    "arm_r short of its target by 3.9 cm at frame 18",
@@ -1043,7 +1180,8 @@
    "arm_r short of its target by 3.9 cm at frame 21",
    "arm_r short of its target by 3.9 cm at frame 22",
    "arm_r short of its target by 3.9 cm at frame 23",
-   "arm_r short of its target by 3.9 cm at frame 24"
+   "arm_r short of its target by 3.9 cm at frame 24",
+   "arm_r short of its target by 3.9 cm at frame 25"
   ]
  },
  "fall": {
@@ -1053,6 +1191,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 2.3,
    "max_wrist_deg": 71.7,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0
   },
@@ -1066,6 +1205,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.8,
    "max_wrist_deg": 49.0,
+   "polish": 0,
    "seam_ratio": 1.0,
    "seam_vel_deg": 0.48,
    "start_base_deg": 0.0
@@ -1079,7 +1219,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 76.0
+   "max_wrist_deg": 76.0,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1090,6 +1231,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.0,
    "max_wrist_deg": 27.5,
+   "polish": 0,
    "seam_ratio": 0.41,
    "seam_vel_deg": 0.41
   },
@@ -1103,6 +1245,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 0.4,
    "max_wrist_deg": 13.7,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
    "start_base_deg": 0.0
@@ -1116,12 +1259,16 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 68.8,
+   "max_wrist_deg": 60.9,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_r short of its target by 3.9 cm at frame 7",
-   "arm_r short of its target by 4.2 cm at frame 8"
+   "arm_r short of its target by 4.6 cm at frame 6",
+   "arm_r short of its target by 6.4 cm at frame 7",
+   "arm_r short of its target by 7.2 cm at frame 8",
+   "arm_r short of its target by 7.0 cm at frame 9",
+   "arm_r short of its target by 4.5 cm at frame 10"
   ]
  },
  "hand_crane": {
@@ -1130,7 +1277,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1140,7 +1288,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1150,7 +1299,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1160,7 +1310,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1170,7 +1321,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1180,7 +1332,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1190,7 +1343,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1200,7 +1354,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1210,7 +1365,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1220,7 +1376,8 @@
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 0.0,
-   "max_wrist_deg": 5.5
+   "max_wrist_deg": 5.5,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1229,9 +1386,10 @@
   "n_errors": 0,
   "stats": {
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.0,
-   "max_step_deg": 23.0,
-   "max_wrist_deg": 61.4,
+   "max_slide_mm": 1.3,
+   "max_step_deg": 21.8,
+   "max_wrist_deg": 62.4,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1242,8 +1400,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 11.8,
-   "max_wrist_deg": 19.2,
+   "max_step_deg": 12.0,
+   "max_wrist_deg": 19.3,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1254,8 +1413,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 18.9,
-   "max_wrist_deg": 37.8,
+   "max_step_deg": 19.8,
+   "max_wrist_deg": 41.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1268,6 +1428,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.4,
    "max_wrist_deg": 37.5,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
    "start_base_deg": 0.0
@@ -1278,13 +1439,14 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "end_base_deg": 0.002,
+   "end_base_deg": 0.006,
    "max_slide_mm": 0.0,
    "max_step_deg": 0.1,
    "max_wrist_deg": 17.2,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
-   "start_base_deg": 0.002
+   "start_base_deg": 0.006
   },
   "warnings": []
  },
@@ -1295,6 +1457,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1306,29 +1469,29 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_l short of its target by 4.7 cm at frame 22",
-   "arm_r short of its target by 4.7 cm at frame 22",
-   "arm_l short of its target by 4.4 cm at frame 23",
-   "arm_r short of its target by 4.5 cm at frame 23",
-   "arm_l short of its target by 3.6 cm at frame 24",
-   "arm_r short of its target by 4.0 cm at frame 24",
-   "arm_r short of its target by 3.2 cm at frame 25"
+   "arm_l short of its target by 4.6 cm at frame 23",
+   "arm_r short of its target by 4.6 cm at frame 23",
+   "arm_l short of its target by 4.0 cm at frame 24",
+   "arm_r short of its target by 4.3 cm at frame 24",
+   "arm_r short of its target by 3.6 cm at frame 25"
   ]
  },
  "l_charge": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "end_base_deg": 0.056,
+   "end_base_deg": 0.222,
    "max_slide_mm": 0.0,
    "max_step_deg": 4.0,
    "max_wrist_deg": 42.0,
+   "polish": 0,
    "seam_ratio": 0.78,
    "seam_vel_deg": 0.57,
-   "start_base_deg": 0.056
+   "start_base_deg": 0.222
   },
   "warnings": []
  },
@@ -1336,11 +1499,12 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "contact_metric": 0.619,
+   "contact_metric": 0.639,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 31.5,
-   "max_wrist_deg": 48.4,
+   "max_step_deg": 27.7,
+   "max_wrist_deg": 48.2,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1354,12 +1518,15 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 3,
    "start_base_deg": 0.0
   },
   "warnings": [
    "arm_r short of its target by 12.1 cm at frame 14",
    "arm_r short of its target by 12.1 cm at frame 15",
-   "arm_r short of its target by 12.1 cm at frame 16"
+   "arm_r short of its target by 12.1 cm at frame 16",
+   "arm_r short of its target by 12.1 cm at frame 17",
+   "arm_r short of its target by 4.4 cm at frame 18"
   ]
  },
  "l_redirect": {
@@ -1369,7 +1536,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 48.5,
+   "max_wrist_deg": 64.7,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1382,11 +1550,16 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 57.6,
+   "max_wrist_deg": 76.7,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 7 frames"
+   "arm_r short of its target by 8.3 cm at frame 10",
+   "arm_r short of its target by 13.6 cm at frame 11",
+   "arm_r short of its target by 14.6 cm at frame 12",
+   "arm_r short of its target by 3.6 cm at frame 13",
+   "centre of mass outside the support box on 9 frames"
   ]
  },
  "l_skybreak": {
@@ -1397,7 +1570,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 53.6,
+   "max_wrist_deg": 51.8,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1409,28 +1583,19 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 64.9
+   "max_wrist_deg": 64.9,
+   "polish": 0
   },
   "warnings": []
  },
  "run": {
   "errors": [],
-  "fbx": "SourceArt/Animation/A_run.fbx",
-  "fbx_bytes": 878396,
-  "fbx_check": {
-   "bones": 103,
-   "bones_match": true,
-   "first_frame": 0,
-   "keys": 37,
-   "ok": true,
-   "worst_deg": 0.0664,
-   "worst_mm": 0.001
-  },
   "n_errors": 0,
   "stats": {
    "max_slide_mm": 0.0,
    "max_step_deg": 34.7,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "seam_ratio": 1.0,
    "seam_vel_deg": 8.7
   },
@@ -1444,6 +1609,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 11.7,
    "max_wrist_deg": 42.4,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1455,6 +1621,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 23.1,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "seam_ratio": 1.31,
    "seam_vel_deg": 2.94
   },
@@ -1473,8 +1640,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 30.5,
-   "max_wrist_deg": 61.1,
+   "max_step_deg": 29.2,
+   "max_wrist_deg": 62.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1486,6 +1654,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 8.1,
    "max_wrist_deg": 15.7,
+   "polish": 0,
    "seam_ratio": 1.0,
    "seam_vel_deg": 3.93
   },
@@ -1498,6 +1667,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 8.0,
    "max_wrist_deg": 15.7,
+   "polish": 0,
    "seam_ratio": 0.78,
    "seam_vel_deg": 2.88
   },
@@ -1510,6 +1680,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 1.6,
    "max_wrist_deg": 69.8,
+   "polish": 0,
    "seam_ratio": 1.18,
    "seam_vel_deg": 0.45
   },
@@ -1521,8 +1692,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 28.0,
-   "max_wrist_deg": 17.2
+   "max_step_deg": 27.9,
+   "max_wrist_deg": 17.2,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1532,8 +1704,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 28.0,
-   "max_wrist_deg": 17.2
+   "max_step_deg": 27.9,
+   "max_wrist_deg": 17.2,
+   "polish": 0
   },
   "warnings": []
  },
@@ -1543,8 +1716,9 @@
   "stats": {
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 19.6,
+   "max_step_deg": 18.5,
    "max_wrist_deg": 40.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1556,15 +1730,21 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 67.2,
+   "max_wrist_deg": 65.2,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
    "arm_r short of its target by 4.2 cm at frame 15",
-   "arm_r short of its target by 4.2 cm at frame 16",
-   "arm_r short of its target by 4.2 cm at frame 17",
-   "arm_r short of its target by 4.2 cm at frame 18",
-   "centre of mass outside the support box on 16 frames"
+   "arm_l short of its target by 3.1 cm at frame 16",
+   "arm_r short of its target by 6.8 cm at frame 16",
+   "arm_l short of its target by 5.4 cm at frame 17",
+   "arm_r short of its target by 9.2 cm at frame 17",
+   "arm_l short of its target by 6.6 cm at frame 18",
+   "arm_r short of its target by 10.5 cm at frame 18",
+   "arm_l short of its target by 6.8 cm at frame 19",
+   "arm_r short of its target by 10.8 cm at frame 19",
+   "arm_l short of its target by 6.3 cm at frame 20"
   ]
  },
  "w_draw": {
@@ -1573,13 +1753,14 @@
   "stats": {
    "contact_metric": 1.27,
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.44,
+   "max_slide_mm": 0.21,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 63.9,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 13 frames"
+   "centre of mass outside the support box on 22 frames"
   ]
  },
  "w_freeze": {
@@ -1589,21 +1770,22 @@
    "contact_metric": 0.71,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 34.0,
-   "max_wrist_deg": 50.3,
+   "max_step_deg": 33.0,
+   "max_wrist_deg": 50.1,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_r short of its target by 5.0 cm at frame 8",
-   "arm_l short of its target by 7.5 cm at frame 9",
-   "arm_r short of its target by 9.1 cm at frame 9",
+   "arm_r short of its target by 4.8 cm at frame 8",
+   "arm_l short of its target by 7.1 cm at frame 9",
+   "arm_r short of its target by 9.0 cm at frame 9",
    "arm_l short of its target by 9.6 cm at frame 10",
-   "arm_r short of its target by 10.9 cm at frame 10",
-   "arm_l short of its target by 9.6 cm at frame 11",
-   "arm_r short of its target by 10.9 cm at frame 11",
-   "arm_l short of its target by 9.3 cm at frame 12",
-   "arm_r short of its target by 10.6 cm at frame 12",
-   "arm_l short of its target by 8.1 cm at frame 13"
+   "arm_r short of its target by 10.8 cm at frame 10",
+   "arm_l short of its target by 9.0 cm at frame 11",
+   "arm_r short of its target by 10.2 cm at frame 11",
+   "arm_l short of its target by 5.0 cm at frame 12",
+   "arm_r short of its target by 7.0 cm at frame 12",
+   "arm_l short of its target by 5.0 cm at frame 13"
   ]
  },
  "w_ground": {
@@ -1612,21 +1794,23 @@
   "stats": {
    "contact_metric": -0.456,
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.0,
+   "max_slide_mm": 0.32,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 76.3,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_r short of its target by 10.2 cm at frame 17",
+   "arm_r short of its target by 6.8 cm at frame 17",
    "arm_r short of its target by 29.4 cm at frame 18",
    "arm_r short of its target by 29.4 cm at frame 19",
    "arm_r short of its target by 29.4 cm at frame 20",
-   "arm_r short of its target by 21.1 cm at frame 21",
-   "arm_r short of its target by 14.1 cm at frame 22",
-   "arm_r short of its target by 8.4 cm at frame 23",
-   "arm_r short of its target by 4.0 cm at frame 24",
-   "centre of mass outside the support box on 16 frames"
+   "arm_r short of its target by 29.4 cm at frame 21",
+   "arm_r short of its target by 29.4 cm at frame 22",
+   "arm_r short of its target by 26.3 cm at frame 23",
+   "arm_r short of its target by 20.7 cm at frame 24",
+   "arm_r short of its target by 15.7 cm at frame 25",
+   "arm_r short of its target by 11.3 cm at frame 26"
   ]
  },
  "w_heel_kick": {
@@ -1638,21 +1822,32 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 74.9,
+   "polish": 0,
    "start_base_deg": 0.0
   },
-  "warnings": []
+  "warnings": [
+   "arm_r short of its target by 14.5 cm at frame 15",
+   "arm_l short of its target by 7.9 cm at frame 16",
+   "arm_r short of its target by 24.1 cm at frame 16",
+   "arm_l short of its target by 12.4 cm at frame 17",
+   "arm_r short of its target by 29.0 cm at frame 17",
+   "arm_l short of its target by 5.7 cm at frame 18",
+   "arm_r short of its target by 21.7 cm at frame 18",
+   "arm_r short of its target by 8.0 cm at frame 19"
+  ]
  },
  "w_hold": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "end_base_deg": 0.0,
+   "end_base_deg": 0.111,
    "max_slide_mm": 0.0,
    "max_step_deg": 2.5,
    "max_wrist_deg": 39.0,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
-   "start_base_deg": 0.0
+   "start_base_deg": 0.111
   },
   "warnings": []
  },
@@ -1664,11 +1859,18 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 64.0,
+   "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 12 frames"
+   "arm_r short of its target by 11.4 cm at frame 14",
+   "arm_r short of its target by 16.9 cm at frame 15",
+   "arm_r short of its target by 17.9 cm at frame 16",
+   "arm_r short of its target by 15.4 cm at frame 17",
+   "arm_r short of its target by 10.5 cm at frame 18",
+   "arm_r short of its target by 4.5 cm at frame 19",
+   "centre of mass outside the support box on 18 frames"
   ]
  },
  "w_maelstrom": {
@@ -1678,8 +1880,9 @@
    "contact_metric": 0.535,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.0,
-   "max_step_deg": 35.4,
+   "max_step_deg": 36.6,
    "max_wrist_deg": 76.0,
+   "polish": 1,
    "start_base_deg": 0.0
   },
   "warnings": []
@@ -1691,12 +1894,13 @@
    "contact_metric": 0.66,
    "end_base_deg": 0.0,
    "max_slide_mm": 0.54,
-   "max_step_deg": 17.8,
-   "max_wrist_deg": 43.2,
+   "max_step_deg": 21.0,
+   "max_wrist_deg": 43.3,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 8 frames"
+   "centre of mass outside the support box on 14 frames"
   ]
  },
  "w_push": {
@@ -1705,13 +1909,14 @@
   "stats": {
    "contact_metric": 0.627,
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.44,
-   "max_step_deg": 31.3,
-   "max_wrist_deg": 75.4,
+   "max_slide_mm": 0.29,
+   "max_step_deg": 31.4,
+   "max_wrist_deg": 74.7,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "centre of mass outside the support box on 10 frames"
+   "centre of mass outside the support box on 14 frames"
   ]
  },
  "w_release": {
@@ -1720,9 +1925,10 @@
   "stats": {
    "contact_metric": 0.637,
    "end_base_deg": 0.0,
-   "max_slide_mm": 0.0,
+   "max_slide_mm": 0.23,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 58.3,
+   "max_wrist_deg": 58.6,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -1738,12 +1944,14 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 71.7,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
    "arm_r short of its target by 7.2 cm at frame 12",
-   "arm_r short of its target by 7.2 cm at frame 13",
-   "arm_r short of its target by 7.2 cm at frame 14",
+   "arm_r short of its target by 6.8 cm at frame 13",
+   "arm_r short of its target by 6.7 cm at frame 14",
+   "arm_r short of its target by 7.2 cm at frame 15",
    "centre of mass outside the support box on 9 frames"
   ]
  },
@@ -1751,13 +1959,14 @@
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "end_base_deg": 0.0,
+   "end_base_deg": 0.333,
    "max_slide_mm": 0.0,
    "max_step_deg": 14.5,
    "max_wrist_deg": 40.9,
+   "polish": 0,
    "seam_ratio": 0.64,
    "seam_vel_deg": 1.22,
-   "start_base_deg": 0.0
+   "start_base_deg": 0.333
   },
   "warnings": []
  },
@@ -1769,7 +1978,8 @@
    "end_base_deg": 0.0,
    "max_slide_mm": 0.43,
    "max_step_deg": 34.0,
-   "max_wrist_deg": 53.8,
+   "max_wrist_deg": 60.1,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
@@ -1785,12 +1995,19 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.0,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
+   "arm_l short of its target by 6.5 cm at frame 12",
+   "arm_l short of its target by 6.5 cm at frame 13",
    "arm_l short of its target by 6.5 cm at frame 14",
+   "arm_r short of its target by 4.4 cm at frame 14",
    "arm_l short of its target by 6.5 cm at frame 15",
-   "arm_l short of its target by 6.5 cm at frame 16"
+   "arm_r short of its target by 8.6 cm at frame 15",
+   "arm_l short of its target by 6.7 cm at frame 16",
+   "arm_r short of its target by 9.4 cm at frame 16",
+   "arm_l short of its target by 4.7 cm at frame 17"
   ]
  },
  "w_snake": {
@@ -1802,28 +2019,31 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 34.0,
    "max_wrist_deg": 76.4,
+   "polish": 0,
    "start_base_deg": 0.0
   },
   "warnings": [
-   "arm_l short of its target by 8.9 cm at frame 7",
+   "arm_l short of its target by 5.4 cm at frame 7",
    "arm_l short of its target by 26.7 cm at frame 8",
    "arm_l short of its target by 26.7 cm at frame 9",
    "arm_l short of its target by 26.7 cm at frame 10",
-   "arm_l short of its target by 15.5 cm at frame 11",
-   "arm_l short of its target by 6.0 cm at frame 12"
+   "arm_l short of its target by 26.7 cm at frame 11",
+   "arm_l short of its target by 20.9 cm at frame 12",
+   "arm_l short of its target by 10.5 cm at frame 13"
   ]
  },
  "w_stance": {
   "errors": [],
   "n_errors": 0,
   "stats": {
-   "end_base_deg": 0.0,
+   "end_base_deg": 0.011,
    "max_slide_mm": 0.0,
    "max_step_deg": 0.4,
    "max_wrist_deg": 41.8,
+   "polish": 0,
    "seam_ratio": 0.0,
    "seam_vel_deg": 0.0,
-   "start_base_deg": 0.0
+   "start_base_deg": 0.011
   },
   "warnings": []
  },
@@ -1834,6 +2054,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 20.4,
    "max_wrist_deg": 40.3,
+   "polish": 0,
    "seam_ratio": 0.76,
    "seam_vel_deg": 3.73
   },
@@ -1846,6 +2067,7 @@
    "max_slide_mm": 0.0,
    "max_step_deg": 12.6,
    "max_wrist_deg": 15.7,
+   "polish": 0,
    "seam_ratio": 1.0,
    "seam_vel_deg": 5.37
   },

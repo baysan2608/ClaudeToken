@@ -66,3 +66,26 @@ C: P1 clips. DONE+exported: earth P1 (13 clips, clips/earth.py). water P1 (7 cli
   shrink FBX size (frozen exporter writes ~0.9 MB/clip), use turn_l90/r90 + e_shadowless_kick in the map.
 - Shared P1 clips (hit_light_back guard_break salute flight hover skate surf) are authored in clips/reactions.py but
   NOT exported yet (skate needs its arm fix verified).
+
+## Resume #3 (2026-10-09, Mac) - motion quality rework ("animations are bad", AAA, slower / more deliberate)
+Toolkit now runs on the Mac (README "Regenerate / test here"): python3 for solve / validate / previews, Blender 5.0.1
+for the FBX export.  The FBX conventions (frozen ff_fbx_export.py) are unchanged.
+
+Audit of the P0 combat clips (ffa_audit.py, film strips) - what made them read robotic:
+* pose-to-pose timing: every `io` key was a full stop (221 io keys), so limbs stopped and restarted at each key;
+* everything arrived together: trunk, arm and hand all eased IN to the contact (in3) - peak speeds at the same frame,
+  peak speeds within 1-2 frames of each other, and the arm leading the hips on 6 of 16 strike clips
+  (e_strike, w_push, f_palm_burst, f_snap_kick, l_release, deflect);
+* frozen after contact: hold, then a straight ease home; recoveries were ~10 frames against 14-22-frame sim recoveries,
+  so the runtime played them at the 0.6x floor and then held the last frame (the "stops dead" look);
+* squeezed anticipations on water (contact 14 vs startup 8-10 -> rate 1.4-1.75) and below-clamp ones (e_strike 0.56);
+* arms-only strikes: e_strike hips 16 deg, a_palm barely extended, hits / Hung Gar lifts perfectly symmetric (hip yaw 0);
+* the spine turned as one block (5 bones in lockstep).
+Done: flow / kinetic chain / brake / settle / spine wave / hang layers + polish ladder (ffa_dsl), sim-fitted timing
+(clips/timing.py, Clip.retime), re-authored e_strike, e_throw, a_palm, deflect, hit_light_front, Shaolin snap-back;
+ffa_audit.py + ffa_compare.py; full re-export (131 FBX, all re-import checks ok), clips.json / anim_map.json / CLIPS.md,
+sheets + P0 MP4s, before / after MP4s + strips in SourceArt/Animation/previews/before_after/.
+Validation: 131 / 131 (polish rung 0 on most; spins and ground slams back off to rungs 1-3); test_anim_data OK (1 timing
+warning left: f_stomp, its moves span startups 4-14 f - no single contact fits), test_unreal_import OK, mock dry run OK.
+Next ideas: re-author e_lift / e_wall with a stepping weight shift; a hit_heavy twist; per-element settle tuning
+(Tai Chi softer / longer, Shaolin crisper); review in Unreal on SK_Fighter (springs add cloth / secondary motion).

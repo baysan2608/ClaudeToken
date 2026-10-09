@@ -22,21 +22,56 @@ Related: [CLIPS.md](CLIPS.md) (every clip: frames, contacts, technique, which mo
 | `build_animation.py` | solve -> validate -> previews -> FBX -> merge `clips.json` -> `anim_map.json` + CLIPS.md / COVERAGE.md |
 | `anim_table.py`, `anim_map_gen.py` | move -> clip table for all 160 moves + 5 chained actions (MARTIAL_ARTS §4, §4.17) and its resolver (falls back through `CLIP_FALLBACK` only if a clip is missing) |
 | `test_anim_data.py`, `test_unreal_import.py`, `review.py` | data self-test; Unreal import against a scripted fake editor; film-strip renderer for iterating |
-| `SourceArt/Animation/` | `A_<clip>.fbx` (60 fps, first key frame 0), `previews/<clip>.jpg` (gameplay camera + side view at start / anticipation / contact / follow-through / end), `previews/<clip>.mp4` (P0, 640x360), `validation_report.json` |
+| `ffa_audit.py`, `ffa_compare.py` | motion-quality audit (+ sim-fitted timing suggestions); solved-pose snapshots and before / after MP4s + strips |
+| `SourceArt/Animation/` | `A_<clip>.fbx` (60 fps, first key frame 0), `previews/<clip>.jpg` (gameplay camera + side view at start / anticipation / contact / follow-through / end), `previews/<clip>.mp4` (P0, 640x360), `previews/before_after/<clip>_before_after.{mp4,jpg}` (2026-10-09 rework), `validation_report.json` |
 | `Content/Fourfold/Data/clips.json`, `anim_map.json` | runtime data, schemas exactly ARCHITECTURE §8.3 |
 | `Content/Python/fourfold/animation/__init__.py` | Unreal import: `build_all(force=False)` |
 
-## Regenerate / test here
+## Regenerate / test here (macOS, since 2026-10-09)
+Solve / validate / previews run on the system python (numpy 2.0 + PIL, `~/Library/Python/3.9`); the FBX export needs
+`bpy`, so it runs inside Blender 5.0.1 (args after `--`, `--no-sheets` because Blender's python has no PIL). MP4s use
+`ffmpeg` from PATH or the `imageio-ffmpeg` wheel.
 ```
-B=/home/user/tools/bpyenv/bin/python; cd unreal
-$B Tools/blender/animation/build_animation.py --check-fbx      # everything: ~4 min (solve 25 s, FBX + sheets)
-$B Tools/blender/animation/build_animation.py --only "w_*"      # some clips (merges into clips.json, rewrites the map)
-$B Tools/blender/animation/build_animation.py --videos P0 --no-export --no-json --no-sheets   # MP4s (~15 min)
-$B Tools/blender/animation/review.py w_lash --every 2 --views side,game   # film strip into the scratch dir
+cd unreal; BL=/Applications/Blender.app/Contents/MacOS/Blender
+python3 Tools/blender/animation/build_animation.py --no-export --no-sheets --no-json      # solve + validate all (~18 s)
+python3 Tools/blender/animation/build_animation.py --only "w_*" --no-export --review /tmp/rv   # iterate on some clips
+$BL -b --factory-startup --python Tools/blender/animation/build_animation.py -- --no-sheets --check-fbx
+                                     # export every FBX + re-import check, merge clips.json, anim_map.json, CLIPS.md (~45 s)
+python3 Tools/blender/animation/build_animation.py --no-export --no-json --videos P0        # sheets + P0 MP4s (~15 min)
+python3 Tools/blender/animation/review.py w_lash --every 2 --views side,game              # film strip (FFA_REVIEW_DIR)
+python3 Tools/blender/animation/ffa_audit.py --only "f_*"      # motion-quality numbers (see ffa_audit.py docstring)
+python3 Tools/blender/animation/ffa_audit.py --timing          # sim-fitted (contact, frames) suggestions
+python3 Tools/blender/animation/ffa_compare.py dump --toolkit <old toolkit copy> --only "f_jab" --out /tmp/before.pkl
+python3 Tools/blender/animation/ffa_compare.py video --before /tmp/before.pkl --out <dir>   # before | after MP4s
 python3 Tools/blender/animation/test_anim_data.py
 python3 Tools/blender/animation/test_unreal_import.py
 python3 Tools/py_mock/run_with_mock_unreal.py Content/Python/fourfold/animation/__init__.py --call fourfold.animation:build_all
 ```
+The FBX conventions are untouched (`Tools/blender/common/ff_fbx_export.py` stays frozen: centimetre copy, 60 fps, one
+action, first key 0); `ffa_export.py` only creates the action through the layered-action API when `Action.fcurves`
+is gone (Blender 5) and compares re-imported heads in world space.
+
+## Motion layers (ffa_dsl, applied to every clip)
+The clip keys are poses; how the body travels between them is decided by these layers (each can be scaled per clip:
+`Clip(..., flow=, chain=, settle=, wave=, hang=)`):
+* **flow** - `io` segments are a monotone cubic through the keys (auto-clamped tangents): zero velocity only where a
+  channel turns round, the neighbours' slope where it passes through, C1 with neighbouring snap / ease-in / hold
+  segments.  Before, every key was a dead stop (pose-to-pose robot timing).
+* **kinetic chain** (clips with a contact) - channel offsets now fade to 0 at every contact frame, so contact poses are
+  exact while the hips lead (+1.5 f on top of the authored offsets), the chest follows, the shoulders trail, the
+  striking hand lags (-1.5 f) and therefore accelerates into the contact (whip) and hangs after it (`hang`: x that
+  lag; the Shaolin strikes use 0.3 = snap straight back); trunk channels arriving at a contact on an ease-in use the
+  `brake` ease (peak speed at 2/3, stopped at the contact) - the hips stop and the arm goes through.
+* **settle** - the velocity the body loses at each contact rings out as a damped spring (3.2 Hz, zeta 0.42) on the
+  trunk, neck, shoulders and the free hand: an overshoot and a settle instead of a freeze.
+* **spine wave** - the upper back samples the spine channel 1 frame after the lumbar (`spine_d`, solver
+  `SPINE_WAVE`), so turns travel up the back.
+* **polish ladder** - if a layer breaks a validation rule for a clip (contact no longer the extreme, a pop in a fast
+  spin, a planted leg out of reach) it is backed off step by step for that clip only; `validation_report.json`
+  `stats.polish` records the rung (0 = full).
+* **timing** - `clips/timing.py` re-times 42 strike clips with `Clip.retime(contact, frames)` so they play at ~1x in
+  the sim (contact ~ startup, length ~ contact + active + recovery); see its docstring.
+
 **Validator** (per clip, MARTIAL_ARTS §5): frame count / NaN; planted feet: the anchor (least-moving floor point:
 heel, ball or toe) moves <= 3 mm (ball / heel pivots allowed, translation caught; gaits in the treadmill frame), planted
 feet on the floor, nothing below the floor, legs reach planted feet; joint limits (no knee / elbow hyperextension,

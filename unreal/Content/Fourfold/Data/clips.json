@@ -56,8 +56,8 @@
   },
   "a_clap": {
    "asset": "A_a_clap",
-   "frames": 18,
-   "duration": 0.3,
+   "frames": 24,
+   "duration": 0.4,
    "loop": false,
    "contact": 6,
    "contacts": [
@@ -73,13 +73,13 @@
     "l": [
      [
       0,
-      18
+      24
      ]
     ],
     "r": [
      [
       0,
-      18
+      24
      ]
     ]
    },
@@ -135,9 +135,9 @@
    "frames": 30,
    "duration": 0.5,
    "loop": false,
-   "contact": 12,
+   "contact": 10,
    "contacts": [
-    12
+    10
    ],
    "base": "a_stance",
    "speed": 0.0,
@@ -164,12 +164,12 @@
   },
   "a_downdraft": {
    "asset": "A_a_downdraft",
-   "frames": 22,
-   "duration": 0.366667,
+   "frames": 24,
+   "duration": 0.4,
    "loop": false,
-   "contact": 7,
+   "contact": 6,
    "contacts": [
-    7
+    6
    ],
    "base": "a_stance",
    "speed": 0.0,
@@ -181,13 +181,13 @@
     "l": [
      [
       0,
-      22
+      24
      ]
     ],
     "r": [
      [
       0,
-      22
+      24
      ]
     ]
    },
@@ -310,8 +310,8 @@
   },
   "a_low_palm": {
    "asset": "A_a_low_palm",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 38,
+   "duration": 0.633333,
    "loop": false,
    "contact": 14,
    "contacts": [
@@ -327,17 +327,17 @@
     "l": [
      [
       0,
-      30
+      38
      ]
     ],
     "r": [
      [
       8,
-      19
+      22
      ],
      [
-      25,
-      30
+      30,
+      38
      ]
     ]
    },
@@ -346,8 +346,8 @@
   },
   "a_palm": {
    "asset": "A_a_palm",
-   "frames": 22,
-   "duration": 0.366667,
+   "frames": 26,
+   "duration": 0.433333,
    "loop": false,
    "contact": 8,
    "contacts": [
@@ -363,21 +363,25 @@
     "l": [
      [
       0,
-      22
+      26
      ]
     ],
     "r": [
      [
       0,
-      6
+      5
      ],
      [
       9,
       10
      ],
      [
-      14,
-      22
+      13,
+      14
+     ],
+     [
+      18,
+      26
      ]
     ]
    },
@@ -386,8 +390,8 @@
   },
   "a_pierce": {
    "asset": "A_a_pierce",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 30,
+   "duration": 0.5,
    "loop": false,
    "contact": 10,
    "contacts": [
@@ -403,7 +407,7 @@
     "l": [
      [
       0,
-      24
+      30
      ]
     ],
     "r": [
@@ -413,11 +417,11 @@
      ],
      [
       11,
-      12
+      13
      ],
      [
       16,
-      24
+      30
      ]
     ]
    },
@@ -643,9 +647,9 @@
    "frames": 26,
    "duration": 0.433333,
    "loop": false,
-   "contact": 10,
+   "contact": 9,
    "contacts": [
-    10
+    9
    ],
    "base": "a_stance",
    "speed": 0.0,
@@ -657,7 +661,7 @@
     "l": [
      [
       0,
-      6
+      5
      ]
     ],
     "r": [
@@ -824,8 +828,8 @@
   },
   "c_point": {
    "asset": "A_c_point",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
    "contact": 10,
    "contacts": [
@@ -841,13 +845,13 @@
     "l": [
      [
       0,
-      24
+      28
      ]
     ],
     "r": [
      [
       0,
-      24
+      28
      ]
     ]
    },
@@ -856,8 +860,8 @@
   },
   "c_toss": {
    "asset": "A_c_toss",
-   "frames": 20,
-   "duration": 0.333333,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
    "contact": 8,
    "contacts": [
@@ -873,13 +877,13 @@
     "l": [
      [
       0,
-      20
+      28
      ]
     ],
     "r": [
      [
       0,
-      20
+      28
      ]
     ]
    },
@@ -968,8 +972,8 @@
   },
   "e_chain_whirl": {
    "asset": "A_e_chain_whirl",
-   "frames": 36,
-   "duration": 0.6,
+   "frames": 40,
+   "duration": 0.666667,
    "loop": false,
    "contact": 14,
    "contacts": [
@@ -985,13 +989,13 @@
     "l": [
      [
       0,
-      36
+      40
      ]
     ],
     "r": [
      [
       0,
-      36
+      40
      ]
     ]
    },
@@ -1000,8 +1004,8 @@
   },
   "e_disc_flick": {
    "asset": "A_e_disc_flick",
-   "frames": 20,
-   "duration": 0.333333,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
    "contact": 8,
    "contacts": [
@@ -1017,13 +1021,13 @@
     "l": [
      [
       0,
-      20
+      28
      ]
     ],
     "r": [
      [
       0,
-      20
+      28
      ]
     ]
    },
@@ -1032,8 +1036,8 @@
   },
   "e_ground_rise": {
    "asset": "A_e_ground_rise",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 40,
+   "duration": 0.666667,
    "loop": false,
    "contact": 15,
    "contacts": [
@@ -1049,13 +1053,13 @@
     "l": [
      [
       0,
-      30
+      40
      ]
     ],
     "r": [
      [
       0,
-      30
+      40
      ]
     ]
    },
@@ -1064,8 +1068,8 @@
   },
   "e_ground_slap": {
    "asset": "A_e_ground_slap",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 40,
+   "duration": 0.666667,
    "loop": false,
    "contact": 14,
    "contacts": [
@@ -1081,13 +1085,13 @@
     "l": [
      [
       0,
-      30
+      40
      ]
     ],
     "r": [
      [
       0,
-      30
+      40
      ]
     ]
    },
@@ -1126,8 +1130,8 @@
   },
   "e_heave": {
    "asset": "A_e_heave",
-   "frames": 36,
-   "duration": 0.6,
+   "frames": 40,
+   "duration": 0.666667,
    "loop": false,
    "contact": 18,
    "contacts": [
@@ -1150,8 +1154,8 @@
       20
      ],
      [
-      32,
-      36
+      35,
+      40
      ]
     ],
     "r": [
@@ -1161,11 +1165,11 @@
      ],
      [
       19,
-      27
+      29
      ],
      [
-      32,
-      36
+      35,
+      40
      ]
     ]
    },
@@ -1174,12 +1178,12 @@
   },
   "e_lift": {
    "asset": "A_e_lift",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 33,
+   "duration": 0.55,
    "loop": false,
-   "contact": 12,
+   "contact": 11,
    "contacts": [
-    12
+    11
    ],
    "base": "e_stance",
    "speed": 0.0,
@@ -1191,13 +1195,13 @@
     "l": [
      [
       0,
-      24
+      33
      ]
     ],
     "r": [
      [
       6,
-      24
+      33
      ]
     ]
    },
@@ -1206,8 +1210,8 @@
   },
   "e_lob": {
    "asset": "A_e_lob",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 32,
+   "duration": 0.533333,
    "loop": false,
    "contact": 12,
    "contacts": [
@@ -1223,13 +1227,13 @@
     "l": [
      [
       0,
-      24
+      32
      ]
     ],
     "r": [
      [
       0,
-      24
+      32
      ]
     ]
    },
@@ -1308,12 +1312,12 @@
   },
   "e_pour": {
    "asset": "A_e_pour",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 36,
+   "duration": 0.6,
    "loop": false,
-   "contact": 16,
+   "contact": 13,
    "contacts": [
-    16
+    13
    ],
    "base": "e_stance",
    "speed": 0.0,
@@ -1325,29 +1329,29 @@
     "l": [
      [
       0,
-      7
+      5
      ],
      [
-      17,
-      18
+      14,
+      17
      ],
      [
-      28,
-      30
+      32,
+      36
      ]
     ],
     "r": [
      [
       0,
-      10
+      8
      ],
      [
-      17,
-      24
+      14,
+      26
      ],
      [
-      28,
-      30
+      32,
+      36
      ]
     ]
    },
@@ -1466,8 +1470,8 @@
   },
   "e_sink": {
    "asset": "A_e_sink",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
    "contact": 8,
    "contacts": [
@@ -1483,13 +1487,13 @@
     "l": [
      [
       0,
-      24
+      28
      ]
     ],
     "r": [
      [
       0,
-      24
+      28
      ]
     ]
    },
@@ -1498,8 +1502,8 @@
   },
   "e_spatter": {
    "asset": "A_e_spatter",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 34,
+   "duration": 0.566667,
    "loop": false,
    "contact": 12,
    "contacts": [
@@ -1515,13 +1519,13 @@
     "l": [
      [
       0,
-      30
+      34
      ]
     ],
     "r": [
      [
       0,
-      30
+      34
      ]
     ]
    },
@@ -1590,12 +1594,12 @@
   },
   "e_strike": {
    "asset": "A_e_strike",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 34,
+   "duration": 0.566667,
    "loop": false,
-   "contact": 8,
+   "contact": 11,
    "contacts": [
-    8
+    11
    ],
    "base": "e_stance",
    "speed": 0.0,
@@ -1606,26 +1610,30 @@
    "foot_plants": {
     "l": [
      [
-      7,
-      10
+      0,
+      5
      ],
      [
-      20,
-      24
+      10,
+      17
+     ],
+     [
+      28,
+      34
      ]
     ],
     "r": [
      [
       0,
-      6
+      9
      ],
      [
-      9,
-      15
+      12,
+      23
      ],
      [
-      20,
-      24
+      28,
+      34
      ]
     ]
    },
@@ -1634,8 +1642,8 @@
   },
   "e_sweep": {
    "asset": "A_e_sweep",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 40,
+   "duration": 0.666667,
    "loop": false,
    "contact": 13,
    "contacts": [
@@ -1651,7 +1659,7 @@
     "l": [
      [
       0,
-      30
+      40
      ]
     ],
     "r": [
@@ -1661,11 +1669,15 @@
      ],
      [
       13,
-      18
+      20
      ],
      [
       24,
-      30
+      26
+     ],
+     [
+      30,
+      40
      ]
     ]
    },
@@ -1674,8 +1686,8 @@
   },
   "e_throw": {
    "asset": "A_e_throw",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 30,
+   "duration": 0.5,
    "loop": false,
    "contact": 8,
    "contacts": [
@@ -1695,11 +1707,11 @@
      ],
      [
       9,
-      10
+      15
      ],
      [
-      21,
-      24
+      25,
+      30
      ]
     ],
     "r": [
@@ -1709,11 +1721,11 @@
      ],
      [
       9,
-      16
+      20
      ],
      [
-      21,
-      24
+      25,
+      30
      ]
     ]
    },
@@ -1722,8 +1734,8 @@
   },
   "e_thrust": {
    "asset": "A_e_thrust",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 36,
+   "duration": 0.6,
    "loop": false,
    "contact": 12,
    "contacts": [
@@ -1743,11 +1755,11 @@
      ],
      [
       10,
-      18
+      24
      ],
      [
-      22,
-      24
+      31,
+      36
      ]
     ],
     "r": [
@@ -1757,11 +1769,11 @@
      ],
      [
       13,
-      19
+      26
      ],
      [
-      22,
-      24
+      31,
+      36
      ]
     ]
    },
@@ -2072,12 +2084,12 @@
   },
   "f_crescent_kick": {
    "asset": "A_f_crescent_kick",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 34,
+   "duration": 0.566667,
    "loop": false,
-   "contact": 14,
+   "contact": 12,
    "contacts": [
-    14
+    12
    ],
    "base": "f_stance",
    "speed": 0.0,
@@ -2089,21 +2101,21 @@
     "l": [
      [
       0,
-      5
+      4
      ],
      [
-      11,
+      10,
       18
      ],
      [
-      24,
-      30
+      25,
+      34
      ]
     ],
     "r": [
      [
-      24,
-      30
+      25,
+      34
      ]
     ]
    },
@@ -2289,12 +2301,12 @@
   },
   "f_jab": {
    "asset": "A_f_jab",
-   "frames": 18,
-   "duration": 0.3,
+   "frames": 24,
+   "duration": 0.4,
    "loop": false,
-   "contact": 6,
+   "contact": 7,
    "contacts": [
-    6
+    7
    ],
    "base": "f_stance",
    "speed": 0.0,
@@ -2306,21 +2318,21 @@
     "l": [
      [
       0,
-      18
+      24
      ]
     ],
     "r": [
      [
       0,
-      4
+      5
      ],
      [
-      7,
-      8
+      8,
+      10
      ],
      [
-      11,
-      18
+      12,
+      24
      ]
     ]
    },
@@ -2329,8 +2341,8 @@
   },
   "f_low_sweep": {
    "asset": "A_f_low_sweep",
-   "frames": 36,
-   "duration": 0.6,
+   "frames": 44,
+   "duration": 0.733333,
    "loop": false,
    "contact": 17,
    "contacts": [
@@ -2349,12 +2361,12 @@
       9
      ],
      [
-      22,
-      23
+      24,
+      26
      ],
      [
-      27,
-      36
+      31,
+      44
      ]
     ],
     "r": [
@@ -2363,8 +2375,8 @@
       5
      ],
      [
-      32,
-      36
+      38,
+      44
      ]
     ]
    },
@@ -2373,8 +2385,8 @@
   },
   "f_needle": {
    "asset": "A_f_needle",
-   "frames": 20,
-   "duration": 0.333333,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
    "contact": 8,
    "contacts": [
@@ -2390,7 +2402,7 @@
     "l": [
      [
       0,
-      20
+      28
      ]
     ],
     "r": [
@@ -2400,11 +2412,11 @@
      ],
      [
       9,
-      12
+      15
      ],
      [
-      15,
-      20
+      17,
+      28
      ]
     ]
    },
@@ -2413,12 +2425,12 @@
   },
   "f_palm_burst": {
    "asset": "A_f_palm_burst",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
-   "contact": 6,
+   "contact": 7,
    "contacts": [
-    6
+    7
    ],
    "base": "f_charge",
    "speed": 0.0,
@@ -2430,7 +2442,7 @@
     "l": [
      [
       0,
-      24
+      28
      ]
     ],
     "r": [
@@ -2439,12 +2451,16 @@
       2
      ],
      [
-      7,
-      8
+      8,
+      9
      ],
      [
-      15,
-      24
+      13,
+      14
+     ],
+     [
+      16,
+      28
      ]
     ]
    },
@@ -2493,8 +2509,8 @@
   },
   "f_snap_kick": {
    "asset": "A_f_snap_kick",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 32,
+   "duration": 0.533333,
    "loop": false,
    "contact": 10,
    "contacts": [
@@ -2514,21 +2530,17 @@
      ],
      [
       11,
-      15
+      18
      ],
      [
-      20,
-      24
+      25,
+      32
      ]
     ],
     "r": [
      [
-      20,
-      21
-     ],
-     [
-      23,
-      24
+      25,
+      32
      ]
     ]
    },
@@ -2567,8 +2579,8 @@
   },
   "f_stomp": {
    "asset": "A_f_stomp",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
    "contact": 9,
    "contacts": [
@@ -2584,17 +2596,17 @@
     "l": [
      [
       0,
-      24
+      28
      ]
     ],
     "r": [
      [
       10,
-      16
+      18
      ],
      [
-      22,
-      24
+      25,
+      28
      ]
     ]
    },
@@ -3385,8 +3397,8 @@
   },
   "l_fan": {
    "asset": "A_l_fan",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 34,
+   "duration": 0.566667,
    "loop": false,
    "contact": 12,
    "contacts": [
@@ -3402,13 +3414,13 @@
     "l": [
      [
       0,
-      30
+      34
      ]
     ],
     "r": [
      [
       0,
-      30
+      34
      ]
     ]
    },
@@ -3417,8 +3429,8 @@
   },
   "l_ground": {
    "asset": "A_l_ground",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 38,
+   "duration": 0.633333,
    "loop": false,
    "contact": 14,
    "contacts": [
@@ -3434,7 +3446,7 @@
     "l": [
      [
       0,
-      30
+      38
      ]
     ],
     "r": [
@@ -3444,11 +3456,11 @@
      ],
      [
       15,
-      16
+      17
      ],
      [
       21,
-      30
+      38
      ]
     ]
    },
@@ -3490,12 +3502,12 @@
   },
   "l_release": {
    "asset": "A_l_release",
-   "frames": 20,
-   "duration": 0.333333,
+   "frames": 28,
+   "duration": 0.466667,
    "loop": false,
-   "contact": 6,
+   "contact": 8,
    "contacts": [
-    6
+    8
    ],
    "base": "l_charge",
    "speed": 0.0,
@@ -3506,22 +3518,22 @@
    "foot_plants": {
     "l": [
      [
-      5,
-      12
+      6,
+      17
      ],
      [
-      17,
-      20
+      23,
+      28
      ]
     ],
     "r": [
      [
       0,
-      14
+      20
      ],
      [
-      17,
-      20
+      23,
+      28
      ]
     ]
    },
@@ -3956,8 +3968,8 @@
   },
   "w_crane": {
    "asset": "A_w_crane",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 40,
+   "duration": 0.666667,
    "loop": false,
    "contact": 15,
    "contacts": [
@@ -3977,17 +3989,17 @@
      ],
      [
       16,
-      18
+      20
      ],
      [
-      25,
-      30
+      31,
+      40
      ]
     ],
     "r": [
      [
       0,
-      30
+      40
      ]
     ]
    },
@@ -3996,12 +4008,12 @@
   },
   "w_draw": {
    "asset": "A_w_draw",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 34,
+   "duration": 0.566667,
    "loop": false,
-   "contact": 14,
+   "contact": 12,
    "contacts": [
-    14
+    12
    ],
    "base": "w_stance",
    "speed": 0.0,
@@ -4013,13 +4025,17 @@
     "l": [
      [
       0,
-      11
+      9
+     ],
+     [
+      31,
+      34
      ]
     ],
     "r": [
      [
       0,
-      24
+      34
      ]
     ]
    },
@@ -4028,12 +4044,12 @@
   },
   "w_freeze": {
    "asset": "A_w_freeze",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 32,
+   "duration": 0.533333,
    "loop": false,
-   "contact": 14,
+   "contact": 12,
    "contacts": [
-    14
+    12
    ],
    "base": "w_stance",
    "speed": 0.0,
@@ -4045,13 +4061,13 @@
     "l": [
      [
       0,
-      17
+      18
      ]
     ],
     "r": [
      [
       0,
-      24
+      32
      ]
     ]
    },
@@ -4060,8 +4076,8 @@
   },
   "w_ground": {
    "asset": "A_w_ground",
-   "frames": 36,
-   "duration": 0.6,
+   "frames": 44,
+   "duration": 0.733333,
    "loop": false,
    "contact": 18,
    "contacts": [
@@ -4081,17 +4097,33 @@
      ],
      [
       6,
-      20
+      21
      ],
      [
       25,
-      36
+      44
      ]
     ],
     "r": [
      [
       0,
-      20
+      22
+     ],
+     [
+      26,
+      27
+     ],
+     [
+      31,
+      33
+     ],
+     [
+      37,
+      39
+     ],
+     [
+      43,
+      44
      ]
     ]
    },
@@ -4170,12 +4202,12 @@
   },
   "w_lash": {
    "asset": "A_w_lash",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 38,
+   "duration": 0.633333,
    "loop": false,
-   "contact": 14,
+   "contact": 12,
    "contacts": [
-    14
+    12
    ],
    "base": "w_stance",
    "speed": 0.0,
@@ -4187,25 +4219,25 @@
     "l": [
      [
       0,
-      6
+      5
      ],
      [
-      26,
-      30
+      31,
+      38
      ]
     ],
     "r": [
      [
       0,
-      10
+      9
      ],
      [
-      15,
-      23
+      13,
+      27
      ],
      [
-      26,
-      30
+      31,
+      38
      ]
     ]
    },
@@ -4266,8 +4298,8 @@
   },
   "w_press": {
    "asset": "A_w_press",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 30,
+   "duration": 0.5,
    "loop": false,
    "contact": 10,
    "contacts": [
@@ -4284,6 +4316,10 @@
      [
       0,
       7
+     ],
+     [
+      29,
+      30
      ]
     ],
     "r": [
@@ -4293,11 +4329,15 @@
      ],
      [
       11,
-      12
+      14
      ],
      [
-      19,
-      24
+      17,
+      18
+     ],
+     [
+      21,
+      30
      ]
     ]
    },
@@ -4306,12 +4346,12 @@
   },
   "w_push": {
    "asset": "A_w_push",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 32,
+   "duration": 0.533333,
    "loop": false,
-   "contact": 12,
+   "contact": 10,
    "contacts": [
-    12
+    10
    ],
    "base": "w_stance",
    "speed": 0.0,
@@ -4323,25 +4363,29 @@
     "l": [
      [
       0,
-      9
+      7
      ],
      [
-      29,
-      30
+      31,
+      32
      ]
     ],
     "r": [
      [
       0,
-      8
+      7
      ],
      [
-      13,
-      14
+      11,
+      13
      ],
      [
-      21,
-      30
+      16,
+      17
+     ],
+     [
+      20,
+      32
      ]
     ]
    },
@@ -4350,8 +4394,8 @@
   },
   "w_release": {
    "asset": "A_w_release",
-   "frames": 24,
-   "duration": 0.4,
+   "frames": 30,
+   "duration": 0.5,
    "loop": false,
    "contact": 8,
    "contacts": [
@@ -4367,7 +4411,7 @@
     "l": [
      [
       0,
-      24
+      30
      ]
     ],
     "r": [
@@ -4377,11 +4421,11 @@
      ],
      [
       9,
-      10
+      12
      ],
      [
-      18,
-      24
+      20,
+      30
      ]
     ]
    },
@@ -4496,12 +4540,12 @@
   },
   "w_single_whip": {
    "asset": "A_w_single_whip",
-   "frames": 30,
-   "duration": 0.5,
+   "frames": 38,
+   "duration": 0.633333,
    "loop": false,
-   "contact": 14,
+   "contact": 12,
    "contacts": [
-    14
+    12
    ],
    "base": "w_stance",
    "speed": 0.0,
@@ -4513,13 +4557,13 @@
     "l": [
      [
       0,
-      30
+      38
      ]
     ],
     "r": [
      [
       0,
-      30
+      38
      ]
     ]
    },

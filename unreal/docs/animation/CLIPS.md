@@ -43,28 +43,28 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | clip | P | frames | c | loop | base | hands L/R | technique | used by |
 |---|---|---|---|---|---|---|---|---|
 | `e_burrow` | P1 | 28 | 14 |  | e_stance | relaxed/relaxed | sink and shoot (burrow dive) | `sand_surf`, `stone_skin` |
-| `e_chain_whirl` | P1 | 36 | 14 |  | e_stance | tiger/fist | hanging back-fist arc (gwa choi) | `chain_arc`, `lava_lash` |
-| `e_disc_flick` | P1 | 20 | 8 |  | e_stance | tiger/crane | crane-beak backhand flick | `plate_rush`, `razor_disc` |
-| `e_ground_rise` | P1 | 30 | 15 |  | e_stance | palm/palm | lifting the bridge (tok kiu) | `rising_fangs` |
-| `e_ground_slap` | P1 | 30 | 14 |  | e_stance | tiger/palm | hammer palm to the ground | `lodestone_line`, `sand_surge` |
+| `e_chain_whirl` | P1 | 40 | 14 |  | e_stance | tiger/fist | hanging back-fist arc (gwa choi) | `chain_arc`, `lava_lash` |
+| `e_disc_flick` | P1 | 28 | 8 |  | e_stance | tiger/crane | crane-beak backhand flick | `plate_rush`, `razor_disc` |
+| `e_ground_rise` | P1 | 40 | 15 |  | e_stance | palm/palm | lifting the bridge (tok kiu) | `rising_fangs` |
+| `e_ground_slap` | P1 | 40 | 14 |  | e_stance | tiger/palm | hammer palm to the ground | `lodestone_line`, `sand_surge` |
 | `e_guard` | P0 | 96 | - | yes | e_guard | palm/palm | bridge-arm guard, iron-wire tension | `aegis_plate`, `dune_wall`, `guard@0`, `magma_curtain` |
-| `e_heave` | P0 | 36 | 18 |  | e_stance | tiger/tiger | heave overhead, drive down into bow | `earth_attack` |
-| `e_lift` | P0 | 24 | 12 |  | e_stance | tiger/tiger | stomp + rising scoop (lifting the bridge) | `earth_attack`, `earth_tech`, `grit_shot`, `sandform` |
-| `e_lob` | P1 | 24 | 12 |  | e_stance | tiger/cup | underhand scoop toss | `ember_clot` |
+| `e_heave` | P0 | 40 | 18 |  | e_stance | tiger/tiger | heave overhead, drive down into bow | `earth_attack` |
+| `e_lift` | P0 | 33 | 11 |  | e_stance | tiger/tiger | stomp + rising scoop (lifting the bridge) | `earth_attack`, `earth_tech`, `grit_shot`, `sandform` |
+| `e_lob` | P1 | 32 | 12 |  | e_stance | tiger/cup | underhand scoop toss | `ember_clot` |
 | `e_magma_hold` | P1 | 72 | - | yes | e_magma_hold | cup/cup | magma hold (cupped hands, heat tremble) | `magma_hold` |
 | `e_overhead_slam` | P1 | 30 | 12 |  | e_stance | fist/fist | double hammer fists down | `rod_plant` |
-| `e_pour` | P0 | 30 | 16 |  | e_stance | palm/palm | raise, press down and sweep forward | `magma_hold`, `magma_surge`, `slag_wave` |
+| `e_pour` | P0 | 36 | 13 |  | e_stance | palm/palm | raise, press down and sweep forward | `magma_hold`, `magma_surge`, `slag_wave` |
 | `e_push` | P1 | 30 | 10 |  | e_stance | tiger/tiger | double tiger palms push | `dune_push`, `ram_wall` |
 | `e_seize_loop` | P0 | 72 | - | yes | e_seize_loop | spread/spread | embrace the mountain (holding a mass) | `earth_tech`, `lodestone_grip`, `sandform` |
 | `e_shadowless_kick` | P2 | 30 | 12 |  | e_stance | tiger/tiger | shadowless low snap kick | - |
-| `e_sink` | P1 | 24 | 8 |  | e_stance | palm/palm | pressing the earth (palms down) | `melt_pit`, `quicksand`, `swallow` |
-| `e_spatter` | P2 | 30 | 12 |  | e_stance | tiger/spread | low crescent arm spray | `spatter_arc` |
+| `e_sink` | P1 | 28 | 8 |  | e_stance | palm/palm | pressing the earth (palms down) | `melt_pit`, `quicksand`, `swallow` |
+| `e_spatter` | P2 | 34 | 12 |  | e_stance | tiger/spread | low crescent arm spray | `spatter_arc` |
 | `e_stance` | P0 | 120 | - | yes | e_stance | tiger/tiger | sei ping ma, double tiger claws | `locomotion.stance` |
 | `e_stone_skin` | P1 | 96 | - | yes | e_stone_skin | fist/fist | iron-wire tension (tit sin) | `iron_stance`, `stone_skin`, `vacuum_anchor` |
-| `e_strike` | P0 | 24 | 8 |  | e_stance | tiger/fist | iron-bridge drive (tit kiu) | `earth_attack`, `grit_shot` |
-| `e_sweep` | P1 | 30 | 13 |  | e_stance | tiger/crane | crane wing sweep (hok yik) | `rubble_fan`, `veil_of_grit` |
-| `e_throw` | P0 | 24 | 8 |  | e_seize_loop | palm/palm | double palm push / release of the held mass | `earth_tech`, `lodestone_grip`, `sandform` |
-| `e_thrust` | P1 | 24 | 12 |  | e_stance | tiger/tiger | tiger claw thrust (fu jow) | `iron_lance`, `sandblast`, `spear_stone` |
+| `e_strike` | P0 | 34 | 11 |  | e_stance | tiger/fist | iron-bridge drive (tit kiu) | `earth_attack`, `grit_shot` |
+| `e_sweep` | P1 | 40 | 13 |  | e_stance | tiger/crane | crane wing sweep (hok yik) | `rubble_fan`, `veil_of_grit` |
+| `e_throw` | P0 | 30 | 8 |  | e_seize_loop | palm/palm | double palm push / release of the held mass | `earth_tech`, `lodestone_grip`, `sandform` |
+| `e_thrust` | P1 | 36 | 12 |  | e_stance | tiger/tiger | tiger claw thrust (fu jow) | `iron_lance`, `sandblast`, `spear_stone` |
 | `e_wall` | P0 | 24 | 10 |  | e_stance | palm/palm | stomp + double palms up (raise the wall) | `dune_wall`, `guard@0`, `magma_curtain` |
 
 ## Water - Tai Chi
@@ -72,21 +72,21 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | clip | P | frames | c | loop | base | hands L/R | technique | used by |
 |---|---|---|---|---|---|---|---|---|
 | `w_clench` | P1 | 18 | 10 |  | w_hold | fist/fist | sharp double clench (freeze the shape) | - |
-| `w_crane` | P2 | 30 | 15 |  | w_stance | willow/willow | White Crane Spreads Its Wings | `creeping_fog` |
-| `w_draw` | P0 | 24 | 14 |  | w_stance | cup/cup | Roll Back (lu) -> gather | `freeze_draw`, `vapor_draw`, `vinegrip`, `water_tech` |
-| `w_freeze` | P0 | 24 | 14 |  | w_stance | fist/fist | Hands Play the Pipa -> clench (Ice) | `frost_shard`, `ice_wall`, `water_attack` |
-| `w_ground` | P1 | 36 | 18 |  | w_stance | willow/palm | Needle at Sea Bottom -> rising push | `rime_path`, `root_snare`, `tidal_rush` |
+| `w_crane` | P2 | 40 | 15 |  | w_stance | willow/willow | White Crane Spreads Its Wings | `creeping_fog` |
+| `w_draw` | P0 | 34 | 12 |  | w_stance | cup/cup | Roll Back (lu) -> gather | `freeze_draw`, `vapor_draw`, `vinegrip`, `water_tech` |
+| `w_freeze` | P0 | 32 | 12 |  | w_stance | fist/fist | Hands Play the Pipa -> clench (Ice) | `frost_shard`, `ice_wall`, `water_attack` |
+| `w_ground` | P1 | 44 | 18 |  | w_stance | willow/palm | Needle at Sea Bottom -> rising push | `rime_path`, `root_snare`, `tidal_rush` |
 | `w_heel_kick` | P1 | 30 | 14 |  | w_stance | palm/palm | Separate Foot heel kick (deng jiao) | `glacier_shove` |
 | `w_hold` | P0 | 96 | - | yes | w_hold | cup/cup | Hold the Ball (bao qiu), rolling the sphere | `freeze_draw`, `vapor_draw`, `vinegrip`, `water_tech` |
-| `w_lash` | P0 | 30 | 14 |  | w_stance | willow/willow | Part the Wild Horse's Mane | `bramble_lash`, `water_attack` |
+| `w_lash` | P0 | 38 | 12 |  | w_stance | willow/willow | Part the Wild Horse's Mane | `bramble_lash`, `water_attack` |
 | `w_maelstrom` | P2 | 48 | 26 |  | w_stance | willow/willow | turning whip (full turn) | `bramble_lash`, `water_attack` |
-| `w_press` | P1 | 24 | 10 |  | w_stance | willow/palm | Press (ji) | `burr_shot`, `fog_lance`, `icicle_volley`, `water_bullet` |
-| `w_push` | P0 | 30 | 12 |  | w_stance | palm/palm | Push (an) | `scald_puff`, `steam_blast`, `surge_orb`, `water_attack` |
-| `w_release` | P0 | 24 | 8 |  | w_hold | palm/palm | push release of the gathered water | `freeze_draw`, `vapor_draw`, `vinegrip`, `water_tech` |
+| `w_press` | P1 | 30 | 10 |  | w_stance | willow/palm | Press (ji) | `burr_shot`, `fog_lance`, `icicle_volley`, `water_bullet` |
+| `w_push` | P0 | 32 | 10 |  | w_stance | palm/palm | Push (an) | `scald_puff`, `steam_blast`, `surge_orb`, `water_attack` |
+| `w_release` | P0 | 30 | 8 |  | w_hold | palm/palm | push release of the gathered water | `freeze_draw`, `vapor_draw`, `vinegrip`, `water_tech` |
 | `w_repulse` | P1 | 28 | 12 |  | w_stance | palm/willow | Repulse the Monkey (dao juan gong) | `mist_step`, `riptide_step` |
 | `w_shield` | P0 | 96 | - | yes | w_shield | willow/willow | Cloud Hands (yun shou) guard | `guard@1`, `ice_wall`, `living_lattice`, `steam_screen` |
 | `w_shuttle` | P2 | 30 | 14 |  | w_stance | willow/palm | Fair Lady Works the Shuttles | `lattice_roll` |
-| `w_single_whip` | P1 | 30 | 14 |  | w_stance | willow/crane | Single Whip (dan bian) | `hoarfrost_fan`, `spray_fan`, `thicket_fan`, `veil` |
+| `w_single_whip` | P1 | 38 | 12 |  | w_stance | willow/crane | Single Whip (dan bian) | `hoarfrost_fan`, `spray_fan`, `thicket_fan`, `veil` |
 | `w_snake` | P1 | 26 | 8 |  | w_stance | willow/crane | Snake Creeps Down (xia shi) | `deep_roots`, `dew_fall`, `frost_floor`, `slick` |
 | `w_stance` | P0 | 144 | - | yes | w_stance | willow/willow | ward-off (peng) ready, weight shifting | `locomotion.stance` |
 
@@ -97,20 +97,20 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | `f_charge` | P0 | 48 | - | yes | f_charge | fist/fist | sitting stance, fists at the hips, gathering | `blue_needle`, `fire_attack` |
 | `f_column` | P1 | 30 | 12 |  | f_stance | fist/palm | rising palm (uppercut palm) | `fire_attack` |
 | `f_corona` | P2 | 36 | 14 |  | f_stance | sword/sword | arms-extended spin (corona ring) | `corona` |
-| `f_crescent_kick` | P1 | 30 | 14 |  | f_stance | palm/palm | outside crescent kick (bai lian) | `fire_fan` |
+| `f_crescent_kick` | P1 | 34 | 12 |  | f_stance | palm/palm | outside crescent kick (bai lian) | `fire_fan` |
 | `f_cross` | P0 | 24 | 8 |  | f_stance | fist/fist | rear straight punch, bow stance | - |
 | `f_dash` | P1 | 24 | 8 |  | f_stance | fist/fist | long lunge dash | `arc_step`, `shimmer_step` |
 | `f_heat_draw` | P0 | 96 | - | yes | f_heat_draw | spread/spread | rooted heat draw (pull in, push out) | `fire_tech`, `kiln`, `smelter` |
 | `f_hop` | P1 | 30 | 8 |  | f_stance | palm/palm | blast jump, palms thrust down | `blast_jump`, `rocket_hop`, `smother_blast` |
 | `f_inferno` | P1 | 48 | 26 |  | f_stance | palm/palm | great circle -> double palms (Inferno) | `fire_attack` |
-| `f_jab` | P0 | 18 | 6 |  | f_stance | fist/fist | chong quan lead straight punch | `fire_attack`, `pop`, `spark` |
-| `f_low_sweep` | P1 | 36 | 17 |  | f_stance | fist/fist | low spinning sweep (sao tang tui) | `blue_furrow`, `fire_line` |
-| `f_needle` | P1 | 20 | 8 |  | f_stance | sword/sword | sword-finger thrust | `blue_needle` |
-| `f_palm_burst` | P0 | 24 | 6 |  | f_charge | palm/palm | double palms out of the horse (fa jin burst) | `backdraft`, `fire_attack`, `fire_tech`, `flash_over`, `shockwave`, `static_burst`, `vent` |
+| `f_jab` | P0 | 24 | 7 |  | f_stance | fist/fist | chong quan lead straight punch | `fire_attack`, `pop`, `spark` |
+| `f_low_sweep` | P1 | 44 | 17 |  | f_stance | fist/fist | low spinning sweep (sao tang tui) | `blue_furrow`, `fire_line` |
+| `f_needle` | P1 | 28 | 8 |  | f_stance | sword/sword | sword-finger thrust | `blue_needle` |
+| `f_palm_burst` | P0 | 28 | 7 |  | f_charge | palm/palm | double palms out of the horse (fa jin burst) | `backdraft`, `fire_attack`, `fire_tech`, `flash_over`, `shockwave`, `static_burst`, `vent` |
 | `f_pour` | P0 | 30 | 16 |  | f_stance | palm/palm | raise, press down, sweep along the ground | `fire_tech`, `pour` |
-| `f_snap_kick` | P0 | 24 | 10 |  | f_stance | fist/fist | tan tui snap kick | `comet_flame`, `fireball` |
+| `f_snap_kick` | P0 | 32 | 10 |  | f_stance | fist/fist | tan tui snap kick | `comet_flame`, `fireball` |
 | `f_stance` | P0 | 72 | - | yes | f_stance | fist/fist | long-fist ready stance, springy | `locomotion.stance` |
-| `f_stomp` | P1 | 24 | 9 |  | f_stance | palm/palm | stomp with palms pressing down | `ground_heat`, `grounding`, `sound_ping`, `sound_tremor` |
+| `f_stomp` | P1 | 28 | 9 |  | f_stance | palm/palm | stomp with palms pressing down | `ground_heat`, `grounding`, `sound_ping`, `sound_tremor` |
 | `f_thermal_hold` | P0 | 72 | - | yes | f_thermal_hold | cup/cup | magma grip (cupped hands, heat tremble) | `fire_tech` |
 | `f_tornado_kick` | P2 | 48 | 28 |  | f_stance | palm/palm | tornado kick (xuan feng jiao) | `fire_fan` |
 
@@ -120,13 +120,13 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 |---|---|---|---|---|---|---|---|---|
 | `c_chain_stomp` | P2 | 60 | 12, 24, 36 |  | f_stance | palm/palm | stepping stomps (three) | `chain_blasts` |
 | `c_fuse_loop` | P2 | 72 | - | yes | c_fuse_loop | sword/sword | focus with sword fingers (fuse) | `fuse` |
-| `c_point` | P1 | 24 | 10 |  | f_stance | fist/fist | point, then fist snap (detonate) | `fuse`, `pop` |
-| `c_toss` | P2 | 20 | 8 |  | f_stance | fist/spread | ember flick (underhand) | `scatter_charges`, `spark_mine` |
+| `c_point` | P1 | 28 | 10 |  | f_stance | fist/fist | point, then fist snap (detonate) | `fuse`, `pop` |
+| `c_toss` | P2 | 28 | 8 |  | f_stance | fist/spread | ember flick (underhand) | `scatter_charges`, `spark_mine` |
 | `l_charge` | P0 | 96 | - | yes | l_charge | sword/sword | circular gathering with sword fingers (Tai Chi sword energy) | `conductors_hand`, `spark` |
-| `l_fan` | P2 | 30 | 12 |  | f_stance | spread/sword | fingers-spread arc (lightning fan) | `arc_fan` |
-| `l_ground` | P1 | 30 | 14 |  | f_stance | fist/palm | palm strike to the ground | `ground_current` |
+| `l_fan` | P2 | 34 | 12 |  | f_stance | spread/sword | fingers-spread arc (lightning fan) | `arc_fan` |
+| `l_ground` | P1 | 38 | 14 |  | f_stance | fist/palm | palm strike to the ground | `ground_current` |
 | `l_redirect` | P1 | 36 | 10, 26 |  | guard | sword/sword | redirect through the lower belly (catch, release) | `static_ward` |
-| `l_release` | P0 | 20 | 6 |  | l_charge | sword/sword | sword-finger extension (two-finger release) | `conductors_hand`, `lightning`, `rail_arc`, `spark` |
+| `l_release` | P0 | 28 | 8 |  | l_charge | sword/sword | sword-finger extension (two-finger release) | `conductors_hand`, `lightning`, `rail_arc`, `spark` |
 | `l_skybreak` | P1 | 36 | 24 |  | l_charge | sword/sword | sky strike (arm to the sky, slash down) | `lightning`, `spark` |
 
 ## Air - Baguazhang
@@ -134,23 +134,23 @@ Frames at 60 fps; `c` = contact frame(s); base = the stance the clip starts / en
 | clip | P | frames | c | loop | base | hands L/R | technique | used by |
 |---|---|---|---|---|---|---|---|---|
 | `a_circle_walk` | P1 | 96 | - | yes | a_stance | oxtongue/oxtongue | circle walking, mud-wading step (2.0 m/s) | - |
-| `a_clap` | P1 | 18 | 6 |  | a_stance | palm/palm | sharp clap | `sound_clap` |
+| `a_clap` | P1 | 24 | 6 |  | a_stance | palm/palm | sharp clap | `sound_clap` |
 | `a_dash` | P0 | 18 | 8 |  | a_stance | oxtongue/oxtongue | streamlined gliding dash | `air_dash`, `magnet_glide`, `sound_boom_step`, `sound_thunder_step` |
-| `a_double_palm` | P0 | 30 | 12 |  | a_stance | oxtongue/oxtongue | Double Palm Change (shuang huan zhang) | `air_attack`, `vacuum_palm` |
-| `a_downdraft` | P1 | 22 | 7 |  | a_stance | palm/palm | palms press down from above | `gust_downdraft`, `vacuum_anchor`, `vortex_funnel_down` |
+| `a_double_palm` | P0 | 30 | 10 |  | a_stance | oxtongue/oxtongue | Double Palm Change (shuang huan zhang) | `air_attack`, `vacuum_palm` |
+| `a_downdraft` | P1 | 24 | 6 |  | a_stance | palm/palm | palms press down from above | `gust_downdraft`, `vacuum_anchor`, `vortex_funnel_down` |
 | `a_gather` | P1 | 40 | 16 |  | a_stance | oxtongue/oxtongue | wide gathering circle overhead | `vacuum_well`, `vortex_eye` |
 | `a_guard` | P0 | 96 | - | yes | a_guard | oxtongue/oxtongue | circling palms guard | `air_tech`, `guard@3`, `gust_grip`, `sound_barrier`, `vacuum_bubble`, `vortex_wall` |
 | `a_hurricane` | P1 | 48 | 28 |  | a_stance | oxtongue/oxtongue | turning-body double palm drive | `air_attack`, `vacuum_palm` |
-| `a_low_palm` | P1 | 30 | 14 |  | a_stance | oxtongue/oxtongue | swallow skims the water (low palm) | `gust_dust_line`, `vacuum_mine`, `vortex_funnel` |
-| `a_palm` | P0 | 22 | 8 |  | a_stance | oxtongue/oxtongue | single pushing palm (tui zhang) | `air_attack`, `air_tech`, `gust_grip`, `vacuum_palm` |
-| `a_pierce` | P1 | 24 | 10 |  | a_stance | oxtongue/oxtongue | piercing palm (chuan zhang) | `gust_crescent`, `sound_lance`, `vortex_spiral` |
+| `a_low_palm` | P1 | 38 | 14 |  | a_stance | oxtongue/oxtongue | swallow skims the water (low palm) | `gust_dust_line`, `vacuum_mine`, `vortex_funnel` |
+| `a_palm` | P0 | 26 | 8 |  | a_stance | oxtongue/oxtongue | single pushing palm (tui zhang) | `air_attack`, `air_tech`, `gust_grip`, `vacuum_palm` |
+| `a_pierce` | P1 | 30 | 10 |  | a_stance | oxtongue/oxtongue | piercing palm (chuan zhang) | `gust_crescent`, `sound_lance`, `vortex_spiral` |
 | `a_pluck` | P1 | 24 | 10 |  | a_stance | spread/spread | pluck (cai), pulling to the body | `air_tech`, `gust_grip`, `vacuum_suction` |
 | `a_rising_guard` | P2 | 24 | 10 |  | a_stance | oxtongue/oxtongue | rising crossed forearms | `vortex_wall` |
 | `a_roar` | P1 | 36 | 14 |  | a_stance | spread/spread | chest-expanding shout | `sound_clap` |
 | `a_spin` | P1 | 36 | 12 |  | a_stance | oxtongue/oxtongue | spin on one foot (360 deg) | `sound_echo_ring`, `vortex_eddy`, `vortex_spin_step`, `vortex_twister` |
 | `a_stance` | P0 | 144 | - | yes | a_stance | oxtongue/oxtongue | Bagua dragon posture, coiling | `locomotion.stance` |
 | `a_turn_palm` | P1 | 36 | 12 |  | a_stance | oxtongue/oxtongue | turning-body palm (kou bu / bai bu) | `gust_crosswind`, `vacuum_arc` |
-| `a_updraft` | P0 | 26 | 10 |  | a_stance | oxtongue/oxtongue | spring jump with rising palms | `air_tech`, `sound_flight`, `vacuum_hop` |
+| `a_updraft` | P0 | 26 | 9 |  | a_stance | oxtongue/oxtongue | spring jump with rising palms | `air_tech`, `sound_flight`, `vacuum_hop` |
 | `a_wall_push` | P1 | 30 | 10 |  | a_stance | palm/palm | big double-palm push with a step | `gust_wall`, `vacuum_wave`, `vortex_unleash` |
 
 ## Hand shapes
