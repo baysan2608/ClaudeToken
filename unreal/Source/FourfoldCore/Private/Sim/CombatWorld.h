@@ -97,6 +97,10 @@ public:
 	// ---------------------------------------------------------------- registry
 	ActorState* add_actor(const std::string& nm, Vec3 p, int team, const Dict& kit = Dict(), int element = 0);
 	ActorState* get_actor(int id) const;
+	// Open world: removes a fighter (encounter over). Bodies it held fall free; locks on it clear. Ids stay unique.
+	void remove_actor(int id);
+	// Open world: shifts everything in local space by -d (the bubble origin moved by +d). Call between ticks.
+	void translate(Vec3 d);
 	MatBody* get_body(int id) const;
 	BodyRef body_ref(int id) const;
 	MatBody* spawn_body(Mat mat, Form form, double mass, Vec3 p, const std::string& origin, double temp = Sim::AMBIENT_C);
@@ -261,6 +265,7 @@ public:
 
 private:
 	uint64_t _uid = 0;
+	int _next_actor_id = 0;
 	int _next_body = 1;
 	int _next_attack = 1;
 	std::vector<GripRequest> _grips;

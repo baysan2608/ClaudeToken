@@ -102,6 +102,10 @@ bool Session::LoadScenario(const std::string& id, const ScenarioOptions& opts) {
 
 void Session::ResetScenario() {
 	if (impl_->scenario_id.empty()) return;
+	if (impl_->roam) {
+		impl_->load_roam(impl_->roam, impl_->roam_opts);
+		return;
+	}
 	impl_->load_scenario(impl_->scenario_id);
 }
 
@@ -363,5 +367,21 @@ void Session::SetSparOptions(const std::string& difficulty, const std::string& k
 	if (Scenarios::is_spar_difficulty(difficulty)) m.progress.spar_difficulty = difficulty;
 	if (Scenarios::is_spar_kit(kit) || kit.find('/') != std::string::npos) m.progress.spar_kit = kit;
 }
+
+bool Session::LoadRoam(std::shared_ptr<const WorldDef> world, const RoamOptions& opts) {
+	if (!world || world->nx < 2 || world->nz < 2) return false;
+	Impl& m = *impl_;
+	m.opts = ScenarioOptions();
+	m.opts.autoplay = opts.autoplay;
+	m.autoplay = opts.autoplay;
+	m.auto_progress = Progression();
+	m.auto_t = 0.0;
+	m.soak_next = 0.0;
+	m.auto_f = InputFrame();
+	m.load_roam(std::move(world), opts);
+	return true;
+}
+
+RoamView Session::Roam() const { return impl_->roam_view(); }
 
 }  // namespace ff

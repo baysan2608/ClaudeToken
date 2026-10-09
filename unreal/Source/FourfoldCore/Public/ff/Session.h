@@ -23,6 +23,7 @@
 #include "ff/Config.h"
 #include "ff/Events.h"
 #include "ff/Input.h"
+#include "ff/OpenWorld.h"
 #include "ff/Snapshot.h"
 #include "ff/Types.h"
 #include "ff/ViewModels.h"
@@ -129,6 +130,11 @@ public:
 	std::string MoveFramesText(const std::string& id) const;
 	// Spar rival choice persisted in the progression (Free Spar page / practice option rows).
 	void SetSparOptions(const std::string& difficulty, const std::string& kit);
+	// Open world (ff/OpenWorld.h): roam `world` (ScenarioId() == "roam"); the sim runs in a bubble that follows the
+	// player. Events: app_recenter {dx, dy, dz} (shift your previous snapshot by -d), app_encounter {id, name, state:
+	// engaged | won | fled | lost, element, actor?}, app_respawn {actor}. ResetScenario reloads the same world.
+	bool LoadRoam(std::shared_ptr<const WorldDef> world, const RoamOptions& opts = RoamOptions());
+	RoamView Roam() const;
 
 private:
 	struct Impl;

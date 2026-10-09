@@ -4,6 +4,7 @@
 // included by Session.cpp and by CoreTests (test_regressions_game drives it like Godot's GameProbe drives Game).
 #pragma once
 
+#include "ff/OpenWorld.h"
 #include "ff/Session.h"
 
 #include "AI/AiBrain.h"
@@ -34,6 +35,11 @@ namespace ff {
 namespace SessionDetail {
 inline constexpr double kDummyReviveS = 2.0;   // a downed practice target stays down this long, then stands at full health
 inline constexpr double kKoResetS = 2.5;       // a downed player or rival: the knockdown plays, then the round resets
+// Open world: the bubble follows a calm player once they are this far from its centre, and always near its edge.
+inline constexpr double kRoamRecentreR = 6.0;
+inline constexpr double kRoamForceMargin = 3.0;
+inline constexpr double kRoamFleeMargin = 1.5;  // reaching the window edge mid-fight breaks the encounter off
+inline constexpr double kRoamRearm = 4.0;       // a fled site re-arms once the player is this far past its aggro ring
 
 inline std::string ss_mastery_toast(const Dict& ch) {
 	std::string unlock = dstr(ch, "unlock");
@@ -85,6 +91,13 @@ struct SessionCore {
 	std::vector<Event> events;
 	std::string challenge_text;
 	uint64_t seed = 1;
+	// open world (roam): see ff/OpenWorld.h
+	std::shared_ptr<const WorldDef> roam;
+	RoamOptions roam_opts;
+	double origin_x = 0.0, origin_y = 0.0, origin_z = 0.0;
+	std::vector<uint8_t> site_state;   // 0 waiting, 1 engaged, 2 defeated
+	std::vector<uint8_t> site_armed;   // 0 after a fled / lost fight until the player walks away
+	int engaged = -1;
 
 	Progression& prog() { return autoplay.empty() ? progress : auto_progress; }
 
@@ -117,6 +130,17 @@ struct SessionCore {
 		r.player_ai = autoplay == "duel";
 		r.rival_ai = ai != nullptr && lab.ai_enabled && rival_script == nullptr;
 		SnapshotBuilder::build(*world, r, snap);
+		snap.origin_x = origin_x;
+		snap.origin_y = origin_y;
+		snap.origin_z = origin_z;
+	}
+
+	void refresh_arena_view() {
+		arena = SnapshotBuilder::arena(*world);
+		arena.world = roam;
+		arena.origin_x = origin_x;
+		arena.origin_y = origin_y;
+		arena.origin_z = origin_z;
 	}
 
 	// ------------------------------------------------------------------ scenario
@@ -155,6 +179,9 @@ struct SessionCore {
 	}
 
 	void load_scenario(const std::string& id) {
+		roam.reset();
+		engaged = -1;
+		origin_x = origin_y = origin_z = 0.0;
 		Scenarios::Built r = Scenarios::build(id, prog(), seed);
 		scenario_id = dstr(r.def, "id");
 		scen_def = r.def;
@@ -184,9 +211,224 @@ struct SessionCore {
 		bind_autoplay();
 		update_challenge_text();
 		if (autoplay.empty()) progress.last_scenario = scenario_id;
-		arena = SnapshotBuilder::arena(*world);
+		refresh_arena_view();
 		push_app("app_scenario_loaded", D({{"id", scenario_id}, {"title", dstr(scen_def, "title")}}));
 		rebuild_snapshot();
+	}
+
+	// ------------------------------------------------------------------ open world (roam)
+	void load_roam(std::shared_ptr<const WorldDef> def, const RoamOptions& o) {
+		roam_opts = o;
+		scenario_id = "roam";
+		scen_def = D({{"id", "roam"}, {"title", "Open World"}});
+		ai.reset();
+		duel_ai.reset();
+		opponent = nullptr;
+		player_script.reset();
+		rival_script.reset();
+		world = std::make_unique<CombatWorld>(seed);
+		roam = std::move(def);
+		const WorldDef& wd = *roam;
+		origin_x = wd.player_spawn.x;
+		origin_y = wd.FloorAt(wd.player_spawn.x, wd.player_spawn.z);
+		origin_z = wd.player_spawn.z;
+		world->arena = ArenaMap::make_window(roam, origin_x, origin_y, origin_z);
+		place_pool();
+		const Dict kit = o.kit == "all" ? Progression::lab_kit() : prog().kit();
+		player = world->add_actor("You", V3(0, 0, 0), 0, kit, o.player_element >= 0 && o.player_element < 4 ? o.player_element : 0);
+		player->facing = wd.spawn_facing;
+		site_state.assign(wd.sites.size(), 0);
+		site_armed.assign(wd.sites.size(), 1);
+		engaged = -1;
+		reset_lab_for_scenario(scen_def);
+		launcher = Dict();
+		challenge_n = 0;
+		down.clear();
+		intents.clear();
+		player_intent.clear();
+		bind_autoplay();
+		update_challenge_text();
+		refresh_arena_view();
+		push_app("app_scenario_loaded", D({{"id", scenario_id}, {"title", dstr(scen_def, "title")}}));
+		rebuild_snapshot();
+	}
+
+	// The lake inside the window is the sim's pool body (parked far below when the window has no water).
+	void place_pool() {
+		MatBody* p = world->pool;
+		if (p == nullptr) return;
+		const ArenaMap& m = world->arena;
+		if (m.pool_max.x > m.pool_min.x && m.pool_min.x < 1.0e5f) {
+			p->pos = V3((m.pool_min.x + m.pool_max.x) * 0.5, m.pool_level, (m.pool_min.y + m.pool_max.y) * 0.5);
+			p->mass = maxf(p->mass, 2000.0);
+		} else {
+			p->pos = V3(0.0, -1000.0, 0.0);
+		}
+	}
+
+	// Moves the bubble so world (wx, wz) is its new centre; local state shifts by -d, bodies left outside decay.
+	void recentre(double wx, double wz) {
+		const double ny = roam->FloorAt(wx, wz);
+		const Vec3 d(f32(wx - origin_x), f32(ny - origin_y), f32(wz - origin_z));
+		if (d.x == 0.0f && d.y == 0.0f && d.z == 0.0f) return;
+		world->translate(d);
+		origin_x += d.x;
+		origin_y += d.y;
+		origin_z += d.z;
+		world->arena = ArenaMap::make_window(roam, origin_x, origin_y, origin_z);
+		const double lim = world->arena.half_size + 1.0;
+		for (MatBody* b : world->body_list())
+			if (b->alive && b != world->pool && (std::fabs(b->pos.x) > lim || std::fabs(b->pos.z) > lim)) world->decay_body(*b, "out_of_bubble");
+		place_pool();
+		refresh_arena_view();
+		push_app("app_recenter", D({{"dx", d.x}, {"dy", d.y}, {"dz", d.z}}));
+	}
+
+	double site_dist(const EncounterSite& s, double wx, double wz) const {
+		return Vec2(f32(s.pos.x - wx), f32(s.pos.z - wz)).length();
+	}
+
+	void engage(int i) {
+		const EncounterSite& s = roam->sites[static_cast<size_t>(i)];
+		recentre((player->pos.x + origin_x + s.pos.x) * 0.5, (player->pos.z + origin_z + s.pos.z) * 0.5);
+		const Vec3 local(f32(s.pos.x - origin_x), f32(s.pos.y - origin_y), f32(s.pos.z - origin_z));
+		Dict okit;
+		for (const std::string& t : Progression::ALL()) okit.set(t, true);
+		opponent = world->add_actor(s.name, local, 1, okit, s.element);
+		opponent->elements = {false, false, false, false};
+		opponent->elements[static_cast<size_t>(s.element)] = true;
+		if (s.sub >= 0 && s.sub < 4) opponent->subs[static_cast<size_t>(s.element)] = s.sub;
+		opponent->facing = std::atan2(static_cast<double>(player->pos.x - opponent->pos.x), static_cast<double>(player->pos.z - opponent->pos.z));
+		Dict ai_def = D({{"preset", s.preset}, {"elements", A({s.element})}});
+		if (s.sub >= 0) {
+			Dict subs;
+			subs.set(itos(s.element), A({s.sub}));
+			ai_def.set("subs", subs);
+		}
+		ai = std::make_unique<AiBrain>(*world, *opponent, ai_def, seed + 7 + static_cast<uint64_t>(i));
+		ai->configure(ai_def);
+		lab.ai_enabled = true;
+		site_state[static_cast<size_t>(i)] = 1;
+		engaged = i;
+		push_app("app_encounter", D({{"id", s.id}, {"name", s.name}, {"state", "engaged"}, {"element", s.element}, {"actor", opponent->id}}));
+		toast(s.name + " challenges you", "warning");
+	}
+
+	// result: won | fled | lost
+	void end_encounter(const std::string& result) {
+		if (engaged < 0) return;
+		const size_t i = static_cast<size_t>(engaged);
+		const EncounterSite& s = roam->sites[i];
+		if (opponent != nullptr) {
+			const int id = opponent->id;
+			ai.reset();
+			rival_script.reset();
+			intents.erase(id);
+			down.erase(id);
+			world->remove_actor(id);
+			opponent = nullptr;
+		}
+		site_state[i] = result == "won" ? 2 : 0;
+		if (result != "won") site_armed[i] = 0;
+		engaged = -1;
+		push_app("app_encounter", D({{"id", s.id}, {"name", s.name}, {"state", result}, {"element", s.element}}));
+		if (result == "won") toast(s.name + " defeated", "mastery");
+		else if (result == "fled") toast("You slipped away from " + s.name);
+	}
+
+	void roam_ko(ActorState& a) {
+		if (&a == opponent) {
+			end_encounter("won");
+			return;
+		}
+		end_encounter("lost");
+		// Back to the nearest shrine (the spawn when the world has none), on your feet.
+		const double wx = player->pos.x + origin_x;
+		const double wz = player->pos.z + origin_z;
+		Vec3 to = roam->player_spawn;
+		double best = 1.0e30;
+		for (const Shrine& sh : roam->shrines) {
+			const double dd = Vec2(f32(sh.pos.x - wx), f32(sh.pos.z - wz)).length();
+			if (dd < best) {
+				best = dd;
+				to = sh.pos;
+			}
+		}
+		recentre(to.x, to.z);
+		player->pos = V3(to.x - origin_x, roam->FloorAt(to.x, to.z) - origin_y, to.z - origin_z);
+		player->vel = Vec3();
+		player->ground_y = player->pos.y;
+		player->grounded = true;
+		player->action.reset();
+		player->stun = 0.0;
+		player->stun_kind.clear();
+		player->health = Sim::HEALTH_MAX;
+		player->balance = Sim::BALANCE_MAX;
+		player->status = Dict();
+		down.erase(player->id);
+		push_app("app_respawn", D({{"actor", player->id}}));
+		toast("You recover at the shrine", "info");
+	}
+
+	void roam_tick() {
+		if (!roam || player == nullptr) return;
+		const double px = player->pos.x;
+		const double pz = player->pos.z;
+		const double lim = world->arena.half_size;
+		if (engaged >= 0) {
+			if (std::fabs(px) > lim - SessionDetail::kRoamFleeMargin || std::fabs(pz) > lim - SessionDetail::kRoamFleeMargin) end_encounter("fled");
+			return;   // while fighting, the window is the arena
+		}
+		const double wx = px + origin_x;
+		const double wy = player->pos.y + origin_y;
+		const double wz = pz + origin_z;
+		for (size_t i = 0; i < roam->sites.size(); ++i) {
+			const EncounterSite& s = roam->sites[i];
+			if (!site_armed[i] && site_dist(s, wx, wz) > s.aggro_radius + SessionDetail::kRoamRearm) site_armed[i] = 1;
+		}
+		if (roam_opts.encounters && player->health > 0.0) {
+			for (size_t i = 0; i < roam->sites.size(); ++i) {
+				const EncounterSite& s = roam->sites[i];
+				if (site_state[i] == 0 && site_armed[i] && site_dist(s, wx, wz) < s.aggro_radius && std::fabs(wy - s.pos.y) < 6.0) {
+					engage(static_cast<int>(i));
+					return;
+				}
+			}
+		}
+		const bool calm = player->action == nullptr && player->grounded && player->held_body < 0;
+		const double r = Vec2(f32(px), f32(pz)).length();
+		const double force = lim - SessionDetail::kRoamForceMargin;
+		if ((calm && r > SessionDetail::kRoamRecentreR) || std::fabs(px) > force || std::fabs(pz) > force) recentre(wx, wz);
+	}
+
+	RoamView roam_view() const {
+		RoamView v;
+		if (!roam) return v;
+		v.active = true;
+		v.origin_x = origin_x;
+		v.origin_y = origin_y;
+		v.origin_z = origin_z;
+		v.engaged = engaged;
+		const double wx = player ? player->pos.x + origin_x : 0.0;
+		const double wz = player ? player->pos.z + origin_z : 0.0;
+		double best = 1.0e30;
+		for (size_t i = 0; i < roam->sites.size(); ++i) {
+			const EncounterSite& s = roam->sites[i];
+			EncounterView e;
+			e.id = s.id;
+			e.name = s.name;
+			e.region = s.region;
+			e.pos = s.pos;
+			e.element = s.element;
+			e.state = site_state[i] == 2 ? "defeated" : (site_state[i] == 1 ? "engaged" : "waiting");
+			v.sites.push_back(e);
+			const double dd = site_dist(s, wx, wz);
+			if (dd < best) {
+				best = dd;
+				v.region = s.region;
+			}
+		}
+		return v;
 	}
 
 	// ------------------------------------------------------------------ autoplay
@@ -349,6 +591,11 @@ struct SessionCore {
 			if (a.is_dummy && t >= SessionDetail::kDummyReviveS) {
 				a.health = Sim::HEALTH_MAX;
 				down.erase(a.id);
+			} else if (!a.is_dummy && t >= SessionDetail::kKoResetS && roam) {
+				push_sim(world->take_events());
+				roam_ko(a);
+				rebuild_snapshot();
+				return true;
 			} else if (!a.is_dummy && t >= SessionDetail::kKoResetS) {
 				push_sim(world->take_events());
 				const int n = challenge_n;
@@ -423,6 +670,7 @@ struct SessionCore {
 		world->step(intents);
 		lab.post_step(player);
 		if (ko_tick()) return;   // round reset: the fresh scenario runs from the next tick
+		roam_tick();
 		const std::vector<Dict> evs = world->take_events();
 		challenges(evs);
 		if (tracker.is_running()) {

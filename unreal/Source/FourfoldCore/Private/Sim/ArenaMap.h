@@ -3,8 +3,10 @@
 #pragma once
 
 #include "ff/Math.h"
+#include "ff/OpenWorld.h"
 #include "Sim/Sim.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -28,8 +30,15 @@ public:
 	double metal_top = 0.02;
 	Vec3 player_spawn{0.0f, 0.0f, 7.0f};
 	Vec3 opponent_spawn{0.0f, 0.0f, -7.0f};
+	// Open world: the terrain under this window (null in the Lab arenas) and the world position of local (0,0,0).
+	// With a world, the floor is the terrain heightfield, the pool is the lake (water mask inside pool_min..pool_max)
+	// and metal is the world's ore plates; pool_* / metal_* hold this window's bounding rects in local space.
+	std::shared_ptr<const WorldDef> world;
+	double ox = 0.0, oy = 0.0, oz = 0.0;
 
 	static ArenaMap make_lab();
+	// Open-world window of half size `half` centred on world (x, z), local y 0 at world y.
+	static ArenaMap make_window(std::shared_ptr<const WorldDef> w, double x, double y, double z, double half = kRoamHalfSize);
 	void add_box(Vec3 mn, Vec3 mx, const std::string& kind, const std::string& surface, const std::string& nm);
 	bool in_pool(double x, double z) const;
 	bool on_metal(double x, double z) const;

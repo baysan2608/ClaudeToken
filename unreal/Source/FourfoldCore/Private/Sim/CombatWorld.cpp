@@ -53,7 +53,7 @@ CombatWorld::~CombatWorld() = default;
 
 ActorState* CombatWorld::add_actor(const std::string& nm, Vec3 p, int team, const Dict& kit, int element) {
 	auto a = std::make_unique<ActorState>();
-	a->id = static_cast<int>(actors.size()) + 1;
+	a->id = ++_next_actor_id;
 	a->name = nm;
 	a->team = team;
 	a->pos = p;
@@ -67,8 +67,37 @@ ActorState* CombatWorld::add_actor(const std::string& nm, Vec3 p, int team, cons
 }
 
 ActorState* CombatWorld::get_actor(int id) const {
-	if (id >= 1 && id <= static_cast<int>(actors.size())) return actors[static_cast<size_t>(id - 1)].get();
+	if (id >= 1 && id <= static_cast<int>(actors.size()) && actors[static_cast<size_t>(id - 1)]->id == id)
+		return actors[static_cast<size_t>(id - 1)].get();
+	for (const auto& a : actors)
+		if (a->id == id) return a.get();
 	return nullptr;
+}
+
+void CombatWorld::remove_actor(int id) {
+	for (size_t i = 0; i < actors.size(); ++i) {
+		if (actors[i]->id != id) continue;
+		for (const BodyRef& b : bodies)
+			if (b->controller == id) b->controller = -1;
+		for (auto& a : actors)
+			if (a->lock_target == id) a->lock_target = -1;
+		actors.erase(actors.begin() + static_cast<std::ptrdiff_t>(i));
+		return;
+	}
+}
+
+void CombatWorld::translate(Vec3 d) {
+	for (auto& ap : actors) {
+		ActorState& a = *ap;
+		a.pos = a.pos - d;
+		a.ground_y -= d.y;
+	}
+	for (const BodyRef& bp : bodies) {
+		MatBody& b = *bp;
+		b.pos = b.pos - d;
+		b.hold_point = b.hold_point - d;
+		for (Vec3& p : b.wave_path) p = p - d;
+	}
 }
 
 MatBody* CombatWorld::get_body(int id) const {

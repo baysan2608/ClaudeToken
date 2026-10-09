@@ -7,10 +7,12 @@
 
 #include "ff/Config.h"
 #include "ff/Math.h"
+#include "ff/OpenWorld.h"
 #include "ff/Types.h"
 #include "ff/Value.h"
 
 #include <array>
+#include <memory>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -158,6 +160,13 @@ struct ArenaView {
 	Vec2 metal_min, metal_max;    // x, z
 	float metal_top = 0.02f;
 	Vec3 player_spawn, opponent_spawn;
+	// Open world (additive, 2026-10-09): the terrain under this window (null in the Lab arenas) and the world
+	// position of local (0,0,0). TerrainAt = local standing floor from the terrain alone (no solids / metal).
+	std::shared_ptr<const WorldDef> world;
+	double origin_x = 0.0, origin_y = 0.0, origin_z = 0.0;
+	float TerrainAt(float x, float z) const {
+		return world ? static_cast<float>(world->FloorAt(x + origin_x, z + origin_z) - origin_y) : 0.0f;
+	}
 };
 
 struct Snapshot {
@@ -167,6 +176,7 @@ struct Snapshot {
 	int rival_id = -1;
 	std::vector<ActorView> actors;
 	std::vector<BodyView> bodies; // alive bodies only, sim order
+	double origin_x = 0.0, origin_y = 0.0, origin_z = 0.0;   // open world: world position of sim (0,0,0) (additive)
 
 	const ActorView* FindActor(int id) const {
 		for (const ActorView& a : actors)
