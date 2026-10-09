@@ -12,10 +12,10 @@ extends RefCounted
 const GRIP_MARGIN := 0.12        # challenger must beat the holder by this much
 const RESIDUAL_START := 0.6      # thrower's leftover authority on release
 const RESIDUAL_DECAY := 1.7      # per second
-const TURN_RATE := 14.0          # rad/s free
-const RUN_SPEED := 5.5
-const RUN_MIN := 4.0
-const WALK_MAX := 1.8
+const TURN_RATE := 9.0          # rad/s free
+const RUN_SPEED := 5.0
+const RUN_MIN := 3.6
+const WALK_MAX := 1.6
 const RUN_STICK := 0.62
 const ACCEL := 34.0
 const DECEL := 42.0

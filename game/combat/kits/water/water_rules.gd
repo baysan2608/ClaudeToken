@@ -321,7 +321,9 @@ static func o_feed(w: CombatWorld, t: Agent, c: Agent, res: Dictionary, r: Dicti
 		if t.kind == "volume":
 			res.stopped = true
 			res.pass_scale = 0.0
+			_report(res, "block")          # a volume the wall cannot drink stops at it
 			return true
+		_report(res, "pass")               # nothing to drink: the event must still carry a catalogued outcome
 		return false
 	var take := minf(b.mass, float(r.get("max_kg", 8.0)))
 	w.ledger.removed += b.thermal_energy() * take / maxf(b.mass, 1e-9)

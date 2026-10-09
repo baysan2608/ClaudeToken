@@ -2621,20 +2621,20 @@ const char* const kEmbed_sim[] = {
 	"false,\"insulator\":false}],[8,{\"c\":0.0,\"melt\":0.0,\"latent\":0.0,\"max_temp\":0.0,\"hardness\":0.0,\"conductive\":false,\"brittle\":false,\"porous\":false,\"flammable\":false,"
 	"\"magnetic\":false,\"insulator\":false}]]},\"TAG_HARDNESS\":{\"obsidian\":0.33,\"glass\":0.3,\"ice\":0.44,\"vine\":0.4,\"mud\":0.25,\"plate\":3.3,\"sand\":0.25},\"BRITTLE_TAGS\":[\"ob"
 	"sidian\",\"glass\",\"ice\",\"crust\"],\"CONDUCTIVE_TAGS\":[\"caltrops\",\"rod\",\"plate\"],\"INSULATING_TAGS\":[\"vacuum\",\"vacuum_well\",\"null_bubble\",\"ice_floor\",\"glass\",\"ice\",\"s"
-	"and\"],\"FOG_CONDUCTION\":0.6},\"combat_world\":{\"GRIP_MARGIN\":0.12,\"RESIDUAL_START\":0.6,\"RESIDUAL_DECAY\":1.7,\"TURN_RATE\":14.0,\"RUN_SPEED\":5.5,\"RUN_MIN\":4.0,\"WALK_MA"
-	"X\":1.8,\"RUN_STICK\":0.62,\"ACCEL\":34.0,\"DECEL\":42.0,\"WAVE_TURN_RATE\":32.0,\"MORPH_WINDOW\":0.12,\"EVADE_HOLD_TIME\":0.2,\"WEAVE_COST\":6.0,\"COUNTER_CANCEL_COST\":8.0,\"CO"
-	"UNTER_CANCEL_WINDOW\":0.5,\"CHAIN_MAX\":3,\"MAT_OF_KIND\":{\"stone\":\"stone\",\"water\":\"water\",\"lava\":\"magma\",\"fire\":\"flame\",\"air\":\"wind\",\"lightning\":\"lightning\",\"blast\""
-	":\"blast\",\"sound\":\"sound\",\"ice\":\"ice\",\"sand\":\"sand\",\"steam\":\"steam\",\"vacuum\":\"vacuum\",\"metal\":\"metal\",\"plant\":\"plant\",\"blue\":\"blue\",\"frost\":\"ice\"},\"WALL_THROUGH\""
-	":[\"weaken\",\"slow\",\"pass\",\"overwhelm\",\"bend\"]},\"arena_lab\":{\"half_size\":16.0,\"solids\":[{\"min\":{\"$v3\":[-17.0,0.0,-17.0]},\"max\":{\"$v3\":[17.0,3.5,-16.0]},\"kind\":\"wa"
-	"ll\",\"surface\":\"stone\",\"name\":\"north_wall\"},{\"min\":{\"$v3\":[-17.0,0.0,16.0]},\"max\":{\"$v3\":[17.0,3.5,17.0]},\"kind\":\"wall\",\"surface\":\"stone\",\"name\":\"south_wall\"},{\""
-	"min\":{\"$v3\":[-17.0,0.0,-16.0]},\"max\":{\"$v3\":[-16.0,3.5,16.0]},\"kind\":\"wall\",\"surface\":\"stone\",\"name\":\"west_wall\"},{\"min\":{\"$v3\":[16.0,0.0,-16.0]},\"max\":{\"$v3\":["
-	"17.0,3.5,16.0]},\"kind\":\"wall\",\"surface\":\"stone\",\"name\":\"east_wall\"},{\"min\":{\"$v3\":[-5.0,0.0,-1.25]},\"max\":{\"$v3\":[-2.5,1.7,-0.75]},\"kind\":\"wall\",\"surface\":\"ston"
-	"e\",\"name\":\"cover_wall\"},{\"min\":{\"$v3\":[-4.0,0.0,10.0]},\"max\":{\"$v3\":[4.0,0.6,14.0]},\"kind\":\"ledge\",\"surface\":\"stone\",\"name\":\"terrace\"},{\"min\":{\"$v3\":[9.0,0.0,9."
-	"0]},\"max\":{\"$v3\":[12.0,0.35,12.0]},\"kind\":\"ledge\",\"surface\":\"stone\",\"name\":\"step_block\"},{\"min\":{\"$v3\":[-15.0,0.0,-15.0]},\"max\":{\"$v3\":[-10.5,1.8,-10.5]},\"kind\""
-	":\"ledge\",\"surface\":\"stone\",\"name\":\"high_ledge\"},{\"min\":{\"$v3\":[12.5,0.0,-13.5]},\"max\":{\"$v3\":[13.5,3.2,-12.5]},\"kind\":\"pillar\",\"surface\":\"stone\",\"name\":\"pillar_"
-	"ne\"},{\"min\":{\"$v3\":[-13.5,0.0,12.5]},\"max\":{\"$v3\":[-12.5,3.2,13.5]},\"kind\":\"pillar\",\"surface\":\"stone\",\"name\":\"pillar_sw\"}],\"pool_min\":{\"$v2\":[7.0,-5.0]},\"pool_m"
-	"ax\":{\"$v2\":[13.0,3.0]},\"pool_floor\":-0.3,\"pool_level\":-0.05,\"metal_min\":{\"$v2\":[-12.0,-4.0]},\"metal_max\":{\"$v2\":[-6.0,2.0]},\"metal_top\":0.02,\"player_spawn\":{\"$v"
-	"3\":[0.0,0.0,7.0]},\"opponent_spawn\":{\"$v3\":[0.0,0.0,-7.0]}}}"
+	"and\"],\"FOG_CONDUCTION\":0.6},\"combat_world\":{\"GRIP_MARGIN\":0.12,\"RESIDUAL_START\":0.6,\"RESIDUAL_DECAY\":1.7,\"TURN_RATE\":9.0,\"RUN_SPEED\":5.0,\"RUN_MIN\":3.6,\"WALK_MAX"
+	"\":1.6,\"RUN_STICK\":0.62,\"ACCEL\":34.0,\"DECEL\":42.0,\"WAVE_TURN_RATE\":32.0,\"MORPH_WINDOW\":0.12,\"EVADE_HOLD_TIME\":0.2,\"WEAVE_COST\":6.0,\"COUNTER_CANCEL_COST\":8.0,\"COU"
+	"NTER_CANCEL_WINDOW\":0.5,\"CHAIN_MAX\":3,\"MAT_OF_KIND\":{\"stone\":\"stone\",\"water\":\"water\",\"lava\":\"magma\",\"fire\":\"flame\",\"air\":\"wind\",\"lightning\":\"lightning\",\"blast\":"
+	"\"blast\",\"sound\":\"sound\",\"ice\":\"ice\",\"sand\":\"sand\",\"steam\":\"steam\",\"vacuum\":\"vacuum\",\"metal\":\"metal\",\"plant\":\"plant\",\"blue\":\"blue\",\"frost\":\"ice\"},\"WALL_THROUGH\":"
+	"[\"weaken\",\"slow\",\"pass\",\"overwhelm\",\"bend\"]},\"arena_lab\":{\"half_size\":16.0,\"solids\":[{\"min\":{\"$v3\":[-17.0,0.0,-17.0]},\"max\":{\"$v3\":[17.0,3.5,-16.0]},\"kind\":\"wal"
+	"l\",\"surface\":\"stone\",\"name\":\"north_wall\"},{\"min\":{\"$v3\":[-17.0,0.0,16.0]},\"max\":{\"$v3\":[17.0,3.5,17.0]},\"kind\":\"wall\",\"surface\":\"stone\",\"name\":\"south_wall\"},{\"m"
+	"in\":{\"$v3\":[-17.0,0.0,-16.0]},\"max\":{\"$v3\":[-16.0,3.5,16.0]},\"kind\":\"wall\",\"surface\":\"stone\",\"name\":\"west_wall\"},{\"min\":{\"$v3\":[16.0,0.0,-16.0]},\"max\":{\"$v3\":[1"
+	"7.0,3.5,16.0]},\"kind\":\"wall\",\"surface\":\"stone\",\"name\":\"east_wall\"},{\"min\":{\"$v3\":[-5.0,0.0,-1.25]},\"max\":{\"$v3\":[-2.5,1.7,-0.75]},\"kind\":\"wall\",\"surface\":\"stone"
+	"\",\"name\":\"cover_wall\"},{\"min\":{\"$v3\":[-4.0,0.0,10.0]},\"max\":{\"$v3\":[4.0,0.6,14.0]},\"kind\":\"ledge\",\"surface\":\"stone\",\"name\":\"terrace\"},{\"min\":{\"$v3\":[9.0,0.0,9.0"
+	"]},\"max\":{\"$v3\":[12.0,0.35,12.0]},\"kind\":\"ledge\",\"surface\":\"stone\",\"name\":\"step_block\"},{\"min\":{\"$v3\":[-15.0,0.0,-15.0]},\"max\":{\"$v3\":[-10.5,1.8,-10.5]},\"kind\":"
+	"\"ledge\",\"surface\":\"stone\",\"name\":\"high_ledge\"},{\"min\":{\"$v3\":[12.5,0.0,-13.5]},\"max\":{\"$v3\":[13.5,3.2,-12.5]},\"kind\":\"pillar\",\"surface\":\"stone\",\"name\":\"pillar_n"
+	"e\"},{\"min\":{\"$v3\":[-13.5,0.0,12.5]},\"max\":{\"$v3\":[-12.5,3.2,13.5]},\"kind\":\"pillar\",\"surface\":\"stone\",\"name\":\"pillar_sw\"}],\"pool_min\":{\"$v2\":[7.0,-5.0]},\"pool_ma"
+	"x\":{\"$v2\":[13.0,3.0]},\"pool_floor\":-0.3,\"pool_level\":-0.05,\"metal_min\":{\"$v2\":[-12.0,-4.0]},\"metal_max\":{\"$v2\":[-6.0,2.0]},\"metal_top\":0.02,\"player_spawn\":{\"$v3"
+	"\":[0.0,0.0,7.0]},\"opponent_spawn\":{\"$v3\":[0.0,0.0,-7.0]}}}"
 	,
 };
 
@@ -3708,7 +3708,7 @@ const EmbedEntry kEmbedTable[] = {
 	{"moves", kEmbed_moves, 19, 145244ul},
 	{"rules", kEmbed_rules, 31, 247007ul},
 	{"hooks", kEmbed_hooks, 1, 3852ul},
-	{"sim", kEmbed_sim, 1, 5979ul},
+	{"sim", kEmbed_sim, 1, 5978ul},
 	{"scenarios", kEmbed_scenarios, 1, 5922ul},
 	{"lab", kEmbed_lab, 6, 41634ul},
 	{"move_index", kEmbed_move_index, 15, 112994ul},

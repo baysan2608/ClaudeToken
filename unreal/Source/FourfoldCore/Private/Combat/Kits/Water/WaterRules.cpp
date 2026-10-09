@@ -236,8 +236,10 @@ bool o_feed(CombatWorld& w, Agent& t, Agent& c, IxResult& res, const Dict& r, Ix
 		if (t.kind == "volume") {
 			res.stopped = true;
 			res.pass_scale = 0.0;
+			_report(res, "block");          // a volume the wall cannot drink stops at it
 			return true;
 		}
+		_report(res, "pass");               // nothing to drink: the event must still carry a catalogued outcome
 		return false;
 	}
 	const double take = minf(b->mass, dnum(r, "max_kg", 8.0));

@@ -25,3 +25,10 @@
 | 21 | Review round 3: plain guards blocked a 200 kg boulder and lava with 12 % chip; a perfect press deflected anything | Plain guard chip ×TP/(2 CP) past 2×CP, overwhelmed past 4×CP, perfect only at ratio ≥ 0.5; molten eff 0.35 vs wind / fire / static / blast guards | Boulder through any plain guard: 34-37 of 38 dmg; 20 kg stone keeps the 12 % chip; lava overwhelms a held Wind Guard / Static Ward (a perfect press still blocks a weakened wave) |
 | 22 | Review round 3: Static Ward stored half of every bolt and let half through (worse than a plain guard) | the ward drinks up to 2.5 × its CP of the bolt | T0 ward stores a whole T1 Bolt (0 dmg); plain guards take the bolt minus their CP |
 | 23 | Review round 3: charge tiers were hard to read at gameplay distance | thrown stones drawn ×1.25 / 1.5 / 1.8 at T1-T3 with a tier-tinted streak; T2/T3 release shockwave ring (T3 double + dust + shake); charge ring / ripple / aura grow per tier, T3 keeps a glow light | Checked in the `show_owner` render: T3 reads from the default camera |
+
+## 2026-10-09 - movement pace (owner: "a little slower, more deliberate and fluid")
+- combat_world TURN_RATE 14 -> 9 rad/s, RUN_SPEED 5.5 -> 5.0 m/s, RUN_MIN 4.0 -> 3.6, WALK_MAX 1.8 -> 1.6 (Godot
+  game/core/combat_world.gd and unreal sim.json together). ACCEL / DECEL stay 34 / 42: lowering them changed air-move
+  hover heights (kit tests), so the softer starts belong in the presentation layer instead.
+- The slower turning surfaced a latent bug: WaterRules.o_feed's early returns left the raw kit outcome "water_feed" in
+  the interaction event (not in FxEvents.OUTCOMES); they now report block (volume stopped) / pass.
