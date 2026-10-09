@@ -346,6 +346,12 @@ FXT_TEST(director_events_spawn_and_finish_one_shots) {
 		f.Tick();
 		d.Update(f.in);
 	}
+	FXT_CHECK(d.Stats().oneShots - d.Stats().worldFx == 0);
+	// ground scars (cracks, scorch, wet marks) fade within their lives (<= 10 s)
+	for (int i = 0; i < 60 * 8; ++i) {
+		f.Tick();
+		d.Update(f.in);
+	}
 	FXT_CHECK(d.Stats().oneShots == 0);
 	// the burning status follows the actor until its status list drops it
 	FXT_CHECK(d.Stats().actorFx >= 1);

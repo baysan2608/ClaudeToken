@@ -16,6 +16,14 @@ float3 FFShrinkOffset(float3 pos, float fade)
 	return pos * ((0.15 + 0.85 * saturate(fade)) - 1.0);
 }
 
+// Local offset (cm): metal spikes rise out of the ground like M_FX_Rock's (Rise 0..1, stagger delay in vertex colour R;
+// Rise defaults to 1, so discs / lances / plates stay put).
+float3 FFMetalRiseOffset(float delay, float rise, float riseHeight)
+{
+	const float r = FFEaseOutCubic(saturate(rise * 1.5 - delay * 0.5));
+	return float3(0.0, 0.0, -(1.0 - r) * riseHeight);
+}
+
 // Lit surface (tangent-space normal). n1 = noise at the brushed coordinates (the node stretches them along the angle
 // as the spin grows: motion smear), n2 = noise at the general coordinates, ndv = saturate(dot(normal, view)),
 // spin = angular speed (rad/s).

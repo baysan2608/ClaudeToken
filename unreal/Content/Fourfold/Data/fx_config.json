@@ -781,7 +781,11 @@
       "distortion": false,
       "rock_pieces": 0,
       "wall_pieces": 0,
-      "pieces_max": 0
+      "pieces_max": 0,
+      "scars": 5,
+      "ripples": 4,
+      "scuffs": 3,
+      "footfalls": false
     },
     {
       "particles": 0.8,
@@ -796,7 +800,11 @@
       "distortion": true,
       "rock_pieces": 4,
       "wall_pieces": 2,
-      "pieces_max": 24
+      "pieces_max": 24,
+      "scars": 9,
+      "ripples": 7,
+      "scuffs": 6,
+      "footfalls": true
     },
     {
       "particles": 1.0,
@@ -811,7 +819,11 @@
       "distortion": true,
       "rock_pieces": 6,
       "wall_pieces": 3,
-      "pieces_max": 48
+      "pieces_max": 48,
+      "scars": 14,
+      "ripples": 10,
+      "scuffs": 8,
+      "footfalls": true
     }
   ],
   "lights": {
@@ -835,6 +847,28 @@
     "max_depenetration": 0.6,
     "density": 2.4
   },
+  "world": {
+    "dust": [0.68, 0.64, 0.58, 1.0],
+    "footfall_speed": 2.4,
+    "footfall_alpha": 0.2,
+    "skid_speed": 3.0,
+    "land_speed": 2.5,
+    "scar_life": 10.0,
+    "scorch_life": 9.0,
+    "bolt_life": 7.0,
+    "wet_life": 8.0,
+    "scar_scale": 1.0,
+    "ripple_life": 1.7,
+    "ripple_glow": 0.9,
+    "ripple_color": [0.86, 0.92, 0.98, 1.0],
+    "steam_near_pool": 1.4,
+    "gust_decay": 1.1,
+    "gust_max": 1.0,
+    "tornado_gust": 0.45,
+    "chips": true,
+    "mpc": true
+  },
+  "mpc_path": "/Game/Fourfold/Env/Materials/MPC_Arena.MPC_Arena",
   "flash_scale": 1.0,
   "materials": {
     "rock": "/Game/Fourfold/FX/Materials/M_FX_Rock",

@@ -91,6 +91,27 @@ const FieldDesc kFractureFields[] = {
 	{"max_depenetration", FT::F, offsetof(FractureSettings, maxDepenetration)},
 	{"density", FT::F, offsetof(FractureSettings, density)},
 };
+const FieldDesc kWorldFields[] = {
+	{"dust", FT::C, offsetof(WorldSettings, dust)},
+	{"footfall_speed", FT::F, offsetof(WorldSettings, footfallSpeed)},
+	{"footfall_alpha", FT::F, offsetof(WorldSettings, footfallAlpha)},
+	{"skid_speed", FT::F, offsetof(WorldSettings, skidSpeed)},
+	{"land_speed", FT::F, offsetof(WorldSettings, landSpeed)},
+	{"scar_life", FT::F, offsetof(WorldSettings, scarLife)},
+	{"scorch_life", FT::F, offsetof(WorldSettings, scorchLife)},
+	{"bolt_life", FT::F, offsetof(WorldSettings, boltLife)},
+	{"wet_life", FT::F, offsetof(WorldSettings, wetLife)},
+	{"scar_scale", FT::F, offsetof(WorldSettings, scarScale)},
+	{"ripple_life", FT::F, offsetof(WorldSettings, rippleLife)},
+	{"ripple_glow", FT::F, offsetof(WorldSettings, rippleGlow)},
+	{"ripple_color", FT::C, offsetof(WorldSettings, rippleColor)},
+	{"steam_near_pool", FT::F, offsetof(WorldSettings, steamNearPool)},
+	{"gust_decay", FT::F, offsetof(WorldSettings, gustDecay)},
+	{"gust_max", FT::F, offsetof(WorldSettings, gustMax)},
+	{"tornado_gust", FT::F, offsetof(WorldSettings, tornadoGust)},
+	{"chips", FT::B, offsetof(WorldSettings, chips)},
+	{"mpc", FT::B, offsetof(WorldSettings, mpc)},
+};
 const FieldDesc kLightFields[] = {
 	{"intensity_scale", FT::F, offsetof(LightSettings, intensityScale)},
 	{"radius_scale", FT::F, offsetof(LightSettings, radiusScale)},
@@ -112,6 +133,8 @@ const QField kQualityFields[] = {
 	{"distortion", QT::B, offsetof(QualityLevel, distortion)},
 	{"rock_pieces", QT::I, offsetof(QualityLevel, rockPieces)},  {"wall_pieces", QT::I, offsetof(QualityLevel, wallPieces)},
 	{"pieces_max", QT::I, offsetof(QualityLevel, piecesMax)},
+	{"scars", QT::I, offsetof(QualityLevel, scars)},          {"ripples", QT::I, offsetof(QualityLevel, ripples)},
+	{"scuffs", QT::I, offsetof(QualityLevel, scuffs)},        {"footfalls", QT::B, offsetof(QualityLevel, footfalls)},
 };
 
 ff::Value ColorToValue(const Color& c) {
@@ -450,6 +473,14 @@ FxConfig::FxConfig() {
 	quality[0] = {0.55f, 7, 5, 8, 8, 5, 5, 2, false, false, 0, 0, 0};
 	quality[1] = {0.8f, 10, 7, 11, 11, 8, 6, 3, true, true, 4, 2, 24};
 	quality[2] = {1.0f, 12, 9, 14, 14, 10, 7, 4, true, true, 6, 3, 48};
+	// world reactions: low keeps the big reads (impact scars, splashes, landings), drops the per-step puffs
+	const int kScars[3] = {5, 9, 14}, kRipples[3] = {4, 7, 10}, kScuffs[3] = {3, 6, 8};
+	for (int i = 0; i < 3; ++i) {
+		quality[static_cast<size_t>(i)].scars = kScars[i];
+		quality[static_cast<size_t>(i)].ripples = kRipples[i];
+		quality[static_cast<size_t>(i)].scuffs = kScuffs[i];
+		quality[static_cast<size_t>(i)].footfalls = i > 0;
+	}
 
 	for (int i = 0; i < kNumMatSlots; ++i) materials[static_cast<size_t>(i)] = MatAssetPath(static_cast<MatSlot>(i));
 	for (int i = 1; i < kNumMeshAssets; ++i) {
@@ -573,6 +604,8 @@ std::string FxConfig::ToJson() const {
 	}
 	root.set("lights", ff::Value(FieldsToDict(&lights, kLightFields)));
 	root.set("fracture", ff::Value(FieldsToDict(&fracture, kFractureFields)));
+	root.set("world", ff::Value(FieldsToDict(&world, kWorldFields)));
+	root.set("mpc_path", ff::Value(mpcPath));
 	root.set("flash_scale", ff::Value(Round4(flashScale)));
 	{
 		ff::Dict m;
@@ -677,6 +710,8 @@ bool FxConfig::LoadJson(std::string_view text, std::string* error, std::string* 
 	}
 	DictToFields(v["lights"], &c.lights, kLightFields, "lights", warnings);
 	DictToFields(v["fracture"], &c.fracture, kFractureFields, "fracture", warnings);
+	DictToFields(v["world"], &c.world, kWorldFields, "world", warnings);
+	if (v["mpc_path"].is_string()) c.mpcPath = v["mpc_path"].as_string();
 	c.flashScale = v["flash_scale"].as_f32(c.flashScale);
 	auto readPaths = [&](const ff::Value& d, auto& out, const auto& names, int first, const char* where) {
 		const ff::Dict* dd = d.dict_ptr();

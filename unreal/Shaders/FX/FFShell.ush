@@ -5,7 +5,8 @@
 //     flickering bright ridges (static, corona), Core = fill of the face-on centre (mines, fireball cores),
 //     Pulse = breathing, Absorb = extra coverage so saturated tints survive over bright ground.
 //   M_FX_Ring (GroundQuad / FaceQuad, uv0 0..1): Style 0 shock / cast band, 1 spiral inflow, 2 sound ripple (concentric
-//     pressure waves), 3 spin-blur arc ring, 4 filled soft glow dot. Radius / Width as fractions of the quad half size.
+//     pressure waves), 3 spin-blur arc ring, 4 filled soft glow dot, 5 water ripple (pool surface: crest glint + trough
+//     + two trailing wavelets). Radius / Width as fractions of the quad half size.
 // Port + upgrade of game/presentation/vfx/shaders/shell_core.gdshaderinc and ring.gdshader.
 // Portability rules: FFCommon.ush.
 #ifndef FF_SHELL_USH
@@ -87,10 +88,33 @@ float4 FFRingShade(float2 uv0, float4 nA, float4 nB, float style, float radius, 
 		const float streak = 0.55 + 0.45 * sin(ang * 2.0 - phase * 30.0);
 		k = band * streak * (0.7 + 0.6 * n);
 	}
-	else
+	else if (style < 4.5)
 	{
 		const float dd = d / max(radius, 1e-3);
 		k = exp(-dd * dd * 3.0) + exp(-dd * dd * 18.0) * 0.8;
+	}
+	else
+	{
+		// water ripple (pool surface, FxWorld): a bright crest (sky glint) with a darker trough just inside it and two
+		// smaller wavelets trailing behind; the crests break up a little with the noise. The trough only covers (no
+		// light), so the water reads darker there.
+		float crest = 0.0;
+		float trough = 0.0;
+		FF_UNROLL
+		for (int i = 0; i < 3; i++)
+		{
+			const float fi = float(i);
+			const float rr = radius - fi * w * 2.6;
+			const float amp = (1.0 - 0.38 * fi) * saturate(rr / w);
+			const float x = (d - rr + (n - 0.5) * 0.3 * w) / (w * (1.0 + 0.25 * fi));
+			crest += exp(-x * x * 3.0) * amp;
+			const float xt = x + 1.1;
+			trough += exp(-xt * xt * 2.5) * amp;
+		}
+		const float edge = 1.0 - FFSmooth(0.9, 1.0, d);
+		const float kc = saturate(crest * (0.75 + 0.35 * nB.x) * opacity) * edge;
+		const float kt = saturate(trough * opacity) * edge;
+		return float4(col * (glow * kc), saturate((kc * 0.6 + kt * 0.45) * cover));
 	}
 	k = saturate(k * opacity);
 	return float4(col * (glow * k), saturate(k * cover));

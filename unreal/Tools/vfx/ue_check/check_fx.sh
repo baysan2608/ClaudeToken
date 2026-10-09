@@ -7,6 +7,13 @@
 #   git -C ue sparse-checkout init --no-cone && echo '/Engine/Plugins/Runtime/ProceduralMeshComponent/Source/' >
 #   ue/.git/info/sparse-checkout && git -C ue checkout
 # Prints only diagnostics inside Source/FourfoldFX (the mock UHT leaves unrelated noise in engine headers).
+# On the Mac (no mirror download needed): point a scratch dir at the installed engine and run the game stream's setup,
+#   mkdir -p $D/ue/.git && ln -sfn "/Users/Shared/Epic Games/UE_5.8/Engine" $D/ue/Engine
+#   FF_UE_CHECK_DIR=$D bash unreal/Source/Fourfold/Private/Logic/tools/ue_syntax_check/setup.sh
+#   FF_UE_CHECK_DIR=$D FF_UE_PMC_DIR="/Users/Shared/Epic Games/UE_5.8" bash unreal/Tools/vfx/ue_check/check_fx.sh
+# (Darwin: Mac platform defines + the SDK sysroot; the Niagara plugin headers come from $FF_UE_PMC_DIR as well. The
+# mock UHT does not model Niagara's generated types: FourfoldFxNiagara.cpp keeps a few false errors there.)
+# Negative control: a bogus member call in FourfoldFxSubsystem.cpp must be reported.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SRC="$(cd "$HERE/../../../Source" && pwd)"
@@ -16,14 +23,31 @@ PMC_PUB="$PMC/Engine/Plugins/Runtime/ProceduralMeshComponent/Source/ProceduralMe
 GEN="${FF_FX_GEN_DIR:-$DIR/genfx}"
 R="$DIR/ue/Engine/Source/Runtime"
 mkdir -p "$GEN"
-python3 "$HERE/mockuht.py" "$GEN" "$R" "$SRC/Fourfold" "$SRC/FourfoldCore" "$SRC/FourfoldFX" "$PMC_PUB" >/dev/null
+NIAG="$PMC/Engine/Plugins/FX/Niagara/Source"
+NIAG_ROOTS=()
+NIAG_INC=()
+if [ -d "$NIAG" ]; then
+  for m in Niagara NiagaraCore NiagaraShader NiagaraVertexFactories; do
+    NIAG_ROOTS+=("$NIAG/$m")
+    for k in Public Classes Internal; do [ -d "$NIAG/$m/$k" ] && NIAG_INC+=("-I$NIAG/$m/$k"); done
+  done
+  NIAG_INC+=(-DNIAGARA_API= -DNIAGARACORE_API= -DNIAGARASHADER_API= -DNIAGARAVERTEXFACTORIES_API=)
+fi
+python3 "$HERE/mockuht.py" "$GEN" "$R" "$SRC/Fourfold" "$SRC/FourfoldCore" "$SRC/FourfoldFX" "$PMC_PUB" ${NIAG_ROOTS[@]+"${NIAG_ROOTS[@]}"} >/dev/null
 PRE="$GEN/fx_prelude.h"
 { cat "$DIR/prelude.h"; echo "#define FOURFOLDFX_API"; echo "#define PROCEDURALMESHCOMPONENT_API"; } > "$PRE"
-INC=""
-while read d; do INC="$INC -I$d"; done < "$DIR/incdirs.txt"
+INC=()
+while read -r d; do INC+=("-I$d"); done < "$DIR/incdirs.txt"
+if [ "$(uname)" = Darwin ]; then
+  PLAT=(-DPLATFORM_MAC=1 -DPLATFORM_APPLE=1 -DUBT_COMPILED_PLATFORM=Mac -DPLATFORM_MAC_ARM64=1 -DUE_MERGED_MODULES=0
+        -isysroot "$(xcrun --show-sdk-path)")
+else
+  PLAT=(-DPLATFORM_LINUX=1 -DPLATFORM_UNIX=1 -DUBT_COMPILED_PLATFORM=Linux -DPLATFORM_LINUXARM64=0)
+fi
+TO=(); command -v timeout >/dev/null && TO=(timeout 300)
 cc_one() {
-  timeout 300 clang++ -std=c++20 -fsyntax-only -ferror-limit=0 -Wno-everything ${FF_WARN:-} \
-  -DPLATFORM_LINUX=1 -DPLATFORM_UNIX=1 -DUBT_COMPILED_PLATFORM=Linux -DUBT_COMPILED_TARGET=Game \
+  ${TO[@]+"${TO[@]}"} clang++ -std=c++20 -fsyntax-only -ferror-limit=0 -Wno-everything ${FF_WARN:-} \
+  "${PLAT[@]}" -DUBT_COMPILED_TARGET=Game \
   -DUE_BUILD_DEVELOPMENT=1 -DUE_GAME=1 -DWITH_EDITOR=0 -DWITH_EDITORONLY_DATA=0 -DWITH_ENGINE=1 \
   -DWITH_UNREAL_DEVELOPER_TOOLS=0 -DWITH_UNREAL_TARGET_DEVELOPER_TOOLS=0 -DWITH_APPLICATION_CORE=1 -DWITH_COREUOBJECT=1 \
   -DWITH_VERSE_VM=0 -DUSE_STATS_WITHOUT_ENGINE=0 -DWITH_PLUGIN_SUPPORT=0 -DWITH_ACCESSIBILITY=1 -DWITH_PERFCOUNTERS=0 \
@@ -33,12 +57,12 @@ cc_one() {
   -DUE_IS_ENGINE_MODULE=0 -DENABLE_PGO_PROFILE=0 -DWITH_DEV_AUTOMATION_TESTS=0 -DWITH_PERF_AUTOMATION_TESTS=0 \
   -DWITH_LOW_LEVEL_TESTS=0 -DEXPLICIT_TESTS_TARGET=0 -DWITH_TESTS=0 -DFORCE_ANSI_ALLOCATOR=0 -DWITH_STATE_STREAM=0 \
   -DUE_PROJECT_NAME=Fourfold -DUE_TARGET_NAME=Fourfold -DUE_MODULE_NAME=\"FourfoldFX\" -DUE_PLUGIN_NAME=\"\" \
-  -DUBT_MODULE_MANIFEST=\"x\" -DUBT_MODULE_MANIFEST_DEBUGGAME=\"x\" -DPLATFORM_LINUXARM64=0 -DUE_ENABLE_ICU=1 -DWITH_ICU_V64=0 \
+  -DUBT_MODULE_MANIFEST=\"x\" -DUBT_MODULE_MANIFEST_DEBUGGAME=\"x\" -DUE_ENABLE_ICU=1 -DWITH_ICU_V64=0 \
   -DDLLEXPORT= -DDLLIMPORT= -DIMPLEMENT_ENCRYPTION_KEY_REGISTRATION\(\)= -DIMPLEMENT_SIGNING_KEY_REGISTRATION\(\)= -DFF_WITH_UE=1 \
   -DUE_VALIDATE_INTERNAL_API=0 -DUE_VALIDATE_EXPERIMENTAL_API=0 -DUE_DISABLE_INLINE_GEN_CPP=1 \
   -I"$DIR/ue/Engine/Source" -I"$DIR/ue/Engine/Shaders/Shared" \
   -include "$PRE" -include "$DIR/ue/Engine/Source/Runtime/Engine/Public/EngineSharedPCH.h" \
-  -I"$GEN" $INC -I"$PMC_PUB" \
+  -I"$GEN" "${INC[@]}" ${NIAG_INC[@]+"${NIAG_INC[@]}"} -I"$PMC_PUB" \
   -I"$SRC/Fourfold/Public" -I"$SRC/FourfoldCore/Public" \
   -I"$SRC/FourfoldFX/Public" -I"$SRC/FourfoldFX/Private" -I"$SRC/FourfoldFX/Private/Logic" "$@" 2>&1
 }

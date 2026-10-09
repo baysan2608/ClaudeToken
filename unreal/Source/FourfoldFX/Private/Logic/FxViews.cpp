@@ -807,7 +807,7 @@ public:
 		it.params.Set(P::Rise, Sat(rise_) * fade);
 		it.params.Set(P::RiseHeight, 1.25f * height_);
 		it.params.Set(P::Heat, heat_);
-		it.params.Set(P::Detail, 1.6f);
+		if (slot == MatSlot::Rock) it.params.Set(P::Detail, 1.6f);   // stone spikes only (M_FX_Metal has no Detail)
 		it.params.Set(P::Seed, SeedParam(seed_));
 		it.params.Set(P::Fade, 1.0f);
 		if (crystal_) {

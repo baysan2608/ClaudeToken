@@ -58,6 +58,7 @@ void FxDirector::Reset() {
 	transients_.clear();
 	glides_.clear();
 	fx_.Clear();
+	world_.Reset();
 	out_.Clear();
 	lastTick_ = -1;
 	stingT_ = 0.0f;
@@ -74,6 +75,7 @@ const DrawList& FxDirector::Update(const FxFrameIn& in) {
 	time_ += static_cast<double>(dt);
 	Ctx c = MakeCtx(in, dt);
 	stingT_ = MaxF(0.0f, stingT_ - dt);
+	out_.env = EnvState();
 	if (!in.curr) return out_;
 	// events first: cues that spawn this frame are drawn this frame
 	if (in.events) {
@@ -91,12 +93,14 @@ const DrawList& FxDirector::Update(const FxFrameIn& in) {
 	}
 	SyncViews(c);
 	UpdateActors(c);
+	world_.Update(c);
 	fx_.Step(c);
 	SelectLights(out_.lights, MinI(c.q.maxLights, 4), in.cam.pos);
 	stats_.items = static_cast<int>(out_.items.size());
 	stats_.lights = static_cast<int>(out_.lights.size());
 	stats_.fractures = static_cast<int>(out_.fractures.size());
-	stats_.oneShots = fx_.ActiveCount();
+	stats_.worldFx = world_.ActiveCount();
+	stats_.oneShots = fx_.ActiveCount() + stats_.worldFx;
 	stats_.views = static_cast<int>(views_.size());
 	stats_.dyingViews = static_cast<int>(dying_.size());
 	stats_.actorFx = static_cast<int>(charges_.size() + fireCharges_.size() + status_.size() + auras_.size() +

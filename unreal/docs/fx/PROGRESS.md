@@ -331,3 +331,66 @@ The world moved to a 14 lux sun at 22 deg (side / back light), manual exposure 1
   (smoke light grey in sun, blue-grey shade; no dark blobs at the feet on every hit); `ff.fx.ShowcaseFilter blast`
   (explosion smoke grey, not black); Afterglow (fire / blast sub, evade hold) = small fire pops only. If smoke reads
   too bright / dim, tune `LightScale` on M_FX_Smoke (no rebuild of the logic needed).
+
+## World reactions: footfall dust, ground scars, pool, wind (2026-10-09)
+The arena now reacts to the fighters and their element moves (`Private/Logic/FxWorld.{h,cpp}`, `WorldFx` owned by the
+director; README "World reactions" has the full table). Nothing changes the sim: cues from events, the rest from state
+deltas between sim ticks.
+- **Movement dust**: foot plants from the glue's foot bones (a foot coming down near the floor; stride clock when no
+  bones), run start / stop / pivot from the velocity over 8 ticks, dash kicks, landing dust rings (heavy landings crack
+  the floor), Earth stomps (`stance` on, Earth ground / sink / guard moves going active via the `action` event). Pale
+  granite dust `world.dust` (0.68, 0.64, 0.58), sand zones sand-coloured, puddles splash, metal / ice / mud none.
+- **Ground scars** (M_FX_Ground new styles): 9 impact crater + radial cracks (+ dust shockwave ring, + 4 Chaos chips
+  on heavy hits at quality >= 1), 10 fire scorch (ember specks while hot), 11 lightning burn (Lichtenberg veins flash
+  blue-white) + sparks + a 0.16 s light pulse; 8 wet mark now dries from its edges (Heat = dryness) and is also left by
+  a disappearing puddle and by water bursts / splashes / lashes on dry floor; frost patches and sand drifts reused.
+  Lives 10 / 9 / 7 / 8 s, merged when close, capped per quality (5 / 9 / 14). No cracks on the metal plate or in the pool.
+- **Pool**: bodies crossing the surface (enter: splash scaled by mass and fall speed, a crown for heavy ones; leave
+  upward), water bodies formed in it, fighters stepping in and wading, skimming waves -> M_FX_Ring style 5 ripple rings
+  (crest glint + trough + 2 wavelets); fire / hot stone in it hisses steam, fire bodies low over it and fire fields
+  reaching its rim steam; `draw_water` from it pulls rings in, then out.
+- **Wind**: gusts / wind cones / releases / updrafts sweep floor dust along their path (curling), kick up leaves, ruffle
+  the pool, and drive `DrawList::env` (WindGust 0..1, WindDirX / WindDirY in Unreal XY); the subsystem writes MPC_Arena
+  (`fx_config.json` "mpc_path") only on change, skipping parameters the collection lacks (log "Arena MPC ...").
+- **Fix on the way**: metal spike lines set Rise / RiseHeight / Detail on M_FX_Metal, which had none (they popped up
+  fully grown): M_FX_Metal now has Rise / RiseHeight (`FFMetalRiseOffset`, same stagger as M_FX_Rock); Detail is only
+  sent to rock spikes. The parameter cross-check (fresh soak dump) flagged it.
+- Config: `world` {dust, footfall_speed, footfall_alpha, skid_speed, land_speed, scar_life, scorch_life, bolt_life,
+  wet_life, scar_scale, ripple_life, ripple_glow, ripple_color, steam_near_pool, gust_decay, gust_max, tornado_gust,
+  chips, mpc}, `quality[].scars / ripples / scuffs / footfalls`, `mpc_path`. fx_config.json regenerated.
+- Look-check tooling: `ff.fx.ShowcaseFilter world` (`world/crack|scorch|bolt|wet|pool|gust`, `fx_test_world`
+  events); gallery `g11_world_scars`, `g12_pool_ripples` (the preview floor is now granite-toned, 0.24 albedo).
+- Tests: `tests/test_world.cpp` (11: scars by material, merge + caps per quality, pool splash / ripples / steam,
+  wading + draws, footfalls + skids + quality, bone-anchored plants + puddle steps, landings + stomps, gusts + env +
+  tornado + mpc switch, drying puddle marks, showcase cues, config round trip); director one-shot test waits for the
+  scars. Logic tests 50/50; core soak full + quick OK (max 81 items, 11.1 k tris, 41 one-shots, Update max 0.13 ms,
+  0 frames over 2 ms); lint + parameter check OK.
+- **New on the Mac**: real HLSL compiles. `Tools/vfx/shader_check/mini_dxc.cpp` is a tiny dxc front end over the
+  engine's bundled libdxcompiler.dylib (build line in its header): `check_shaders.py --dxc <scratch>/mini_dxc` = 116
+  compiles (DXIL SM6 + SPIR-V, HV 2018 / 2021), 0 failed. `Tools/vfx/ue_check/check_fx.sh` runs on the Mac against the
+  installed engine (Darwin defines, quoted include paths, Niagara plugin headers; setup in its header); the negative
+  control (a bogus member call) is reported; the mock UHT leaves 4 false errors in FourfoldFxNiagara.cpp (Niagara's
+  generated types are not modelled) - everything else is clean.
+- **Main session, to apply**: build (new Logic files FxWorld.cpp + tests/test_world.cpp; glue: FourfoldFxSubsystem
+  includes Materials/MaterialParameterCollection(Instance).h, Engine module only). Rebuild the masters whose spec /
+  .ush changed, in the editor Python console:
+  `import fourfold.fx as f, fourfold.fx.spec as s; r = {"created": [], "skipped": [], "failed": [], "notes": []}`
+  then `for k in ("metal", "ground", "ring"): f.build_material(k, s.MATERIALS[k], True, r)` (metal is required: new
+  Rise / RiseHeight parameters + WPO inputs; ground / ring / shell recompile from the .ush edits anyway). MPC_Arena
+  already has WindGust / WindDirX / WindDirY in the world stream's working tree (materials.py `_create_mpc`); nothing
+  new is needed from the main session.
+- **Look checks** (Mac, `bash unreal/Tools/mac/shot.sh <dir> <secs> <args>`):
+  1. `bash unreal/Tools/mac/shot.sh logs/fx_world 38 -scenario=lab -ExecCmds="ff.fx.Showcase 5, ff.fx.ShowcaseFilter world, ff.fx.ShowcaseShots 0.15|1.2|4.5"`
+     -> showcase_NN_world_<kind>_<ms>.png: crack with pale dust ring (0.15 s), dust settled / cracks left (4.5 s);
+     scorch with ember specks then soot; bolt burn flash then dark veins (+ light on the fighter); wet mark drying;
+     pool splash + ripples + steam at the pool corner nearest the fighter; gust dust sweep (trees lean: MPC).
+  2. `bash unreal/Tools/mac/shot.sh logs/fx_world2 4,5,8,9,12,13,16,22,28 -scenario=lab -FFLabSpawn=stone_80@3,fireball@7,bolt@11,water_puddle@14,gust_cone@18,tornado@21`
+     (real Lab threats: crack where the stone lands, scorch under the fireball burst, strike burn, the puddle's mark
+     drying after it soaks away, gust / tornado sway in the trees).
+  3. Footfalls / skids: `-scenario=spar -autoplay=duel` shots every few seconds, or the Lab with
+     `-FFMove="2:0,1|3.5:1,0|4.5:0,0"` (run start, pivot, stop; from the Lab spawn stick-right runs toward the pool:
+     `-FFMove="2:1,0|4.5:0,0"` should wade in -> splash + ripples per stride).
+  4. GPU (budget <= 2 ms for FX): `-csvCaptureFrames=2400 -ExecCmds="ff.fx.Showcase 5, ff.fx.ShowcaseFilter world" -FFExec="2:t.MaxFPS 60|2:r.DynamicRes.FrameTimeBudget 16.67"`
+     then `python3 unreal/Tools/vfx/csv_fx.py <csv>` (no showcase shots in profiled runs).
+  Tuning without a rebuild: fx_config.json "world" + `ff.fx.ReloadConfig` (e.g. footfall_alpha, ripple_glow,
+  scar_scale); decal looks live in FFGround.ush styles 8..11 / FFShell.ush ring style 5.

@@ -12,6 +12,8 @@
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialParameterCollection.h"
+#include "Materials/MaterialParameterCollectionInstance.h"
 #include "Logic/FxDirector.h"
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
@@ -41,7 +43,8 @@ static TAutoConsoleVariable<int32> CVarFourfoldFxDebris(TEXT("ff.fx.Debris"), 1,
 	ECVF_Default);
 static TAutoConsoleVariable<float> CVarFourfoldFxShowcase(TEXT("ff.fx.Showcase"), 0.0f,
 	TEXT("Fourfold effects: N > 0 = every N seconds (the first one N seconds after switching it on) play the next cue of ")
-	TEXT("a fixed list (blast, stone, metal, glass, ice, lightning, sand, water, steam, magma, fire cone, plant) 3 m ")
+	TEXT("a fixed list (blast, stone, metal, glass, ice, lightning, sand, water, steam, magma, fire cone, plant, breaks, ")
+	TEXT("bodies, world reactions: crack / scorch / bolt / wet / pool / gust) 3 m ")
 	TEXT("beyond the first fighter through the normal event path (look checks and screenshots; the log names each cue)."),
 	ECVF_Default);
 static TAutoConsoleVariable<FString> CVarFourfoldFxShowcaseFilter(TEXT("ff.fx.ShowcaseFilter"), TEXT(""),
@@ -124,7 +127,8 @@ namespace
 		static const char* const kCues[][2] = {{"burst", "blast"}, {"burst", "stone"}, {"burst", "metal"}, {"burst", "glass"},
 			{"burst", "ice"}, {"burst", "lightning"}, {"burst", "sand"}, {"burst", "water"}, {"burst", "steam"},
 			{"erupt", "magma"}, {"cone", "flame"}, {"erupt", "plant"}, {"break", "rock"}, {"break", "wall"}, {"bolt", "lightning"},
-		{"body", "tornado"}, {"body", "crescent"}, {"body", "fire_field"}, {"body", "steam"}};
+		{"body", "tornado"}, {"body", "crescent"}, {"body", "fire_field"}, {"body", "steam"},
+		{"world", "crack"}, {"world", "scorch"}, {"world", "bolt"}, {"world", "wet"}, {"world", "pool"}, {"world", "gust"}};
 		constexpr int32 kNum = int32(sizeof(kCues) / sizeof(kCues[0]));
 		// ff.fx.ShowcaseFilter: the Index-th cue among those whose "fx/mat" name contains the filter
 		const FString Filter = CVarFourfoldFxShowcaseFilter.GetValueOnGameThread();
@@ -169,6 +173,19 @@ namespace
 			B.set("path", ff::Value(ff::Array({ff::Value(From), ff::Value(To)})));
 			ff::Event E;
 			E.type = "lightning";
+			E.data = ff::Value(B);
+			return E;
+		}
+		if (FCStringAnsi::Strcmp(Cue[0], "world") == 0)
+		{
+			// world reactions (FxWorld): a ground scar / pool splash / gust 3 m beyond the fighter (the pool: its nearest
+			// point to there), no sim body behind it
+			ff::Dict B;
+			B.set("kind", ff::Value(Cue[1]));
+			B.set("pos", ff::Value(ffx::Vec3(At.x, At.y - 1.0f, At.z)));
+			B.set("dir", ff::Value(Right));
+			ff::Event E;
+			E.type = "fx_test_world";
 			E.data = ff::Value(B);
 			return E;
 		}
@@ -301,6 +318,7 @@ bool UFourfoldFxSubsystem::ReloadConfig()
 	}
 	const bool bOk = LoadConfigFile(Impl->Config);
 	Impl->Director.SetConfig(Impl->Config);
+	bMpcTried = false;   // the collection path / switch may have changed
 	if (FxActor)
 	{
 		FxActor->Setup(Impl->Config, FMath::Max(SetupQuality, 0));
@@ -326,6 +344,58 @@ void UFourfoldFxSubsystem::SetEnabled(bool bInEnabled)
 		{
 			FxActor->ReleaseAll();
 		}
+		ApplyEnv(0.0f, MpcLast[1], MpcLast[2]);   // calm trees while effects are off
+	}
+}
+
+void UFourfoldFxSubsystem::ApplyEnv(float WindGust, float WindDirX, float WindDirY)
+{
+	UWorld* World = GetWorld();
+	if (!World || !Impl)
+	{
+		return;
+	}
+	if (!bMpcTried)
+	{
+		bMpcTried = true;
+		ArenaMpc = nullptr;
+		const FString Path = UTF8_TO_TCHAR(Impl->Config.mpcPath.c_str());
+		if (Impl->Config.world.mpc && !Path.IsEmpty())
+		{
+			ArenaMpc = LoadObject<UMaterialParameterCollection>(nullptr, *Path, nullptr, LOAD_NoWarn | LOAD_Quiet);
+		}
+		static const TCHAR* const kNames[3] = {TEXT("WindGust"), TEXT("WindDirX"), TEXT("WindDirY")};
+		for (int32 i = 0; i < 3; ++i)
+		{
+			bMpcHas[i] = ArenaMpc && ArenaMpc->GetScalarParameterByName(FName(kNames[i])) != nullptr;
+			MpcLast[i] = i == 0 ? -1.0f : -9.0f;
+		}
+		UE_LOG(LogFourfoldFx, Display, TEXT("Arena MPC %s: WindGust %d, WindDirX %d, WindDirY %d"),
+			ArenaMpc ? *Path : TEXT("(none)"), bMpcHas[0] ? 1 : 0, bMpcHas[1] ? 1 : 0, bMpcHas[2] ? 1 : 0);
+	}
+	if (!ArenaMpc || !(bMpcHas[0] || bMpcHas[1] || bMpcHas[2]))
+	{
+		return;
+	}
+	UMaterialParameterCollectionInstance* Inst = World->GetParameterCollectionInstance(ArenaMpc);
+	if (!Inst)
+	{
+		return;
+	}
+	auto Push = [&](int32 i, const TCHAR* Name, float Value)
+	{
+		if (bMpcHas[i] && FMath::Abs(Value - MpcLast[i]) > 1e-3f)
+		{
+			Inst->SetScalarParameterValue(FName(Name), Value);
+			MpcLast[i] = Value;
+		}
+	};
+	Push(0, TEXT("WindGust"), FMath::Clamp(WindGust, 0.0f, 1.0f));
+	if (WindGust > 1e-3f)
+	{
+		// the direction only matters while a gust blows (calm keeps the world's last / default direction)
+		Push(1, TEXT("WindDirX"), WindDirX);
+		Push(2, TEXT("WindDirY"), WindDirY);
 	}
 }
 
@@ -525,6 +595,7 @@ void UFourfoldFxSubsystem::OnSimFrame(const FFourfoldFrame& Frame)
 	const ffx::DrawList& List = Impl->Director.Update(In);
 	FxActor->ClearDebrisImpacts();   // consumed (new hits arrive during this frame's physics)
 	FxActor->Apply(List, Sim, bNiagara);
+	ApplyEnv(List.env.windGust, List.env.windDirX, List.env.windDirY);
 
 	Impl->LastUpdateMs = (FPlatformTime::Seconds() - T0) * 1000.0;
 	Impl->PeakUpdateMs = FMath::Max(Impl->PeakUpdateMs * 0.995, Impl->LastUpdateMs);

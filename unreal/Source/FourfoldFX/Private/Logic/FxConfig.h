@@ -114,6 +114,11 @@ struct QualityLevel {
 	int rockPieces = 6;         // physics debris pieces of a broken stone (0: procedural chips only)
 	int wallPieces = 3;         // physics pieces per block of a crumbling wall (0: the wall sinks, as before)
 	int piecesMax = 48;         // physics debris pieces alive at once (the glue's budget)
+	// world reactions (FxWorld)
+	int scars = 14;             // ground scars alive at once (cracks, scorch, bolt burns, wet marks); oldest recycled
+	int ripples = 10;           // pool ripple rings alive at once
+	int scuffs = 8;             // footfall / skid dust puffs alive at once
+	bool footfalls = true;      // a puff at every running foot plant (starts / stops / pivots / landings always puff)
 };
 
 // Physics debris of broken stones / walls (FxFracture; simulated by the glue with Chaos rigid bodies).
@@ -132,6 +137,31 @@ struct FractureSettings {
 	float angularDamping = 0.35f;
 	float maxDepenetration = 0.6f;   // m/s: overlapping pieces drift apart instead of popping
 	float density = 2.4f;            // g/cm3 (stone)
+};
+
+// World reactions to the fighters and their moves (FxWorld): footfall / skid / landing dust, ground scars (impact
+// cracks, scorch, lightning burns, drying wet marks), pool splashes + ripple rings + steam, floor dust swept by gusts
+// and the arena wind gust the glue mirrors into MPC_Arena (WindGust / WindDirX / WindDirY). Colours display sRGB.
+struct WorldSettings {
+	Color dust{0.68f, 0.64f, 0.58f, 1.0f};   // footfall / skid / shockwave dust: pale granite grey-tan, never dark
+	float footfallSpeed = 2.4f;     // m/s: running faster puffs at each foot plant
+	float footfallAlpha = 0.20f;    // peak alpha of a foot plant puff (skids / landings x1.6)
+	float skidSpeed = 3.0f;         // m/s gained / lost within 0.13 s (run start / stop) or kept through a pivot
+	float landSpeed = 2.5f;         // m/s down: landing dust; x2.8 = heavy landing (dust ring + small crack)
+	float scarLife = 10.0f;         // s: impact cracks / craters (fade over the last third)
+	float scorchLife = 9.0f;        // s: fire scorch
+	float boltLife = 7.0f;          // s: lightning burn
+	float wetLife = 8.0f;           // s until a wet mark has dried from its edges inward
+	float scarScale = 1.0f;         // x every scar radius
+	float rippleLife = 1.7f;        // s: one pool ripple ring
+	float rippleGlow = 0.9f;        // crest brightness (sky glint) of the ripple rings
+	Color rippleColor{0.86f, 0.92f, 0.98f, 1.0f};
+	float steamNearPool = 1.4f;     // m: fire bodies this low over the pool raise steam
+	float gustDecay = 1.1f;         // s: MPC WindGust falls back to calm (e-folding time)
+	float gustMax = 1.0f;           // cap of WindGust
+	float tornadoGust = 0.45f;      // WindGust floor while a tornado / funnel lives
+	bool chips = true;              // heavy stone impacts lift a few physics chips (the Chaos debris layer)
+	bool mpc = true;                // the glue writes MPC_Arena WindGust / WindDirX / WindDirY (skipped when missing)
 };
 
 struct LightSettings {
@@ -173,6 +203,8 @@ struct FxConfig {
 	std::array<QualityLevel, 3> quality{};
 	LightSettings lights{};
 	FractureSettings fracture{};
+	WorldSettings world{};
+	std::string mpcPath = "/Game/Fourfold/Env/Materials/MPC_Arena.MPC_Arena";   // arena parameter collection (world stream)
 	float flashScale = 1.0f;               // perfect / lightning in-world flashes (x Settings.Flashes)
 	std::array<std::string, kNumMatSlots> materials{};    // MatSlot -> material asset path
 	std::array<std::string, kNumMeshAssets> meshes{};     // MeshAsset -> static mesh asset path ("" = procedural)

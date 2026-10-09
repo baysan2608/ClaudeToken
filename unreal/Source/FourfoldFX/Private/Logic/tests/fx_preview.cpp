@@ -263,7 +263,8 @@ public:
 			const float jx = std::fabs(sx * 1.6f - std::round(sx * 1.6f));
 			const float jy = std::fabs(sy * 1.6f + 0.5f * std::floor(sx * 1.6f) - std::round(sy * 1.6f + 0.5f * std::floor(sx * 1.6f)));
 			const float joint = std::min(jx, jy) < 0.03f ? 0.55f : 1.0f;
-			const float tone = 0.12f + 0.03f * std::sin(std::floor(sx * 1.6f) * 7.1f + std::floor(sy * 1.6f) * 3.7f);
+			// granite pavers (the arena floor, Poly Haven rock_tile_floor: ~0.25-0.3 albedo; was 0.12 before 2026-10-09)
+			const float tone = 0.24f + 0.035f * std::sin(std::floor(sx * 1.6f) * 7.1f + std::floor(sy * 1.6f) * 3.7f);
 			return Vec3(tone, tone * 0.96f, tone * 0.9f) * joint;
 		});
 	}
@@ -912,6 +913,54 @@ struct Gallery {
 			}
 		}
 		Shoot("g10_ground", Vec3(0.0f, 3.2f, 4.2f), Vec3(0.0f, 0.0f, 0.3f), 1.0f, w, h, 55.0f);
+		// 11. world reaction scars (FxWorld): crack fresh / magma-hot / settled, scorch hot / cold, bolt burn flash /
+		// cold, wet mark drying 0 / 0.5 / 0.85; back row: pool ripples over a water patch (ring style 5)
+		{
+			struct S {
+				float style, age, heat;
+			};
+			const S sc[10] = {{9, 0.3f, 0}, {9, 0.6f, 0.9f}, {9, 7.0f, 0}, {10, 0.4f, 1}, {10, 6.0f, 0},
+			                  {11, 0.03f, 1}, {11, 3.0f, 0}, {8, 0.5f, 0}, {8, 4.0f, 0.5f}, {8, 7.0f, 0.85f}};
+			for (int i = 0; i < 10; ++i) {
+				ffx::DrawItem& it = Add(MatSlot::Ground, &ffx::meshlib::GroundQuad(),
+				                        Vec3(-2.6f + 1.3f * static_cast<float>(i % 5), 0.012f, 0.4f - 1.3f * static_cast<float>(i / 5)),
+				                        ffx::Basis::Identity().Scaled(0.6f));
+				it.params.Set(P::Style, sc[i].style);
+				it.params.Set(P::Phase, sc[i].age);
+				it.params.Set(P::Heat, sc[i].heat);
+				it.params.Set(P::Fade, 1.0f);
+				it.params.Set(P::Seed, static_cast<float>(i) * 0.77f);
+			}
+		}
+		Shoot("g11_world_scars", Vec3(0.0f, 2.6f, 2.4f), Vec3(0.0f, 0.0f, -0.35f), 1.0f, w, h, 62.0f);
+		{
+			ffx::MeshData& water = NewMesh();
+			ffx::AppendQuad(water, Vec3(0.0f, 0.004f, 0.0f), Vec3(3.4f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.2f));
+			for (int i = 0; i < 4; ++i) {
+				const float t = 0.12f + 0.24f * static_cast<float>(i);   // life fraction of each ring
+				ffx::DrawItem& it = Add(MatSlot::Ring, &ffx::meshlib::GroundQuad(), Vec3(-2.4f + 1.6f * static_cast<float>(i), 0.012f, 0.0f),
+				                        ffx::Basis::Identity().Scaled(0.8f));
+				it.params.Set(P::Style, 5.0f);
+				it.params.Set(PV::Color, ffx::Linear(ffx::Color(0.86f, 0.92f, 0.98f)));
+				it.params.Set(P::Radius, 0.15f + 0.7f * (1.0f - (1.0f - t) * (1.0f - t)));
+				it.params.Set(P::Width, (0.03f * (1.0f + 0.7f * t)) / 0.8f);   // ~ the logic's 5-8 cm on its bigger quad
+				it.params.Set(P::Opacity, std::pow(1.0f - t, 1.3f));
+				it.params.Set(P::Cover, 0.55f);
+				it.params.Set(P::Glow, ffx::FxConfig().world.rippleGlow);
+				it.params.Set(P::Phase, t * 1.7f);
+			}
+			r.cam = MakeCamera(Vec3(0.0f, 2.6f, 3.4f), Vec3(0.0f, 0.0f, -0.2f), w, h, 55.0f);
+			r.time = 1.0f;
+			r.actors.clear();
+			r.Begin();
+			r.SetLights(dl);
+			r.DrawGround();
+			r.DrawMeshGeneric(water, ffx::Xform(), [](const Vec3&, const Vec3&) { return Vec3(0.035f, 0.07f, 0.08f); });
+			r.DrawItems(dl);
+			r.WritePPM(outDir + "/g12_pool_ripples.ppm");
+			dl.Clear();
+			meshes.clear();
+		}
 	}
 };
 

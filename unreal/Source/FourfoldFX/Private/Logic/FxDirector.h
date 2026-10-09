@@ -4,7 +4,8 @@
 //   * one-shot cues from events (ports of FxDirector._event and FxCues: fx / interaction / charge / status / zone /
 //     clash / morph / slump / convert / capture / ricochet / stance / mode / inrush / extinguish / stick ... and the
 //     legacy events hit / block / launch / impact / wall / transform / shatter / flare / lightning / gust / lash ...),
-//   * per-fighter persistent effects (charge tiers, status visuals, stance auras, water lash / draw, dash trails).
+//   * per-fighter persistent effects (charge tiers, status visuals, stance auras, water lash / draw, dash trails),
+//   * world reactions (FxWorld): footfall dust, ground scars, pool splashes / ripples / steam, gusts + arena wind.
 // Hit-stop, camera shake, haptics and screen flashes belong to the game's feel director; sounds to FourfoldAudio.
 // Owner: stream `fx`.
 #pragma once
@@ -15,6 +16,7 @@
 #include "FxMapping.h"
 #include "FxOneShots.h"
 #include "FxViews.h"
+#include "FxWorld.h"
 
 #include <map>
 #include <memory>
@@ -34,6 +36,7 @@ struct FxStats {
 	int triangles = 0;
 	int eventsHandled = 0;
 	int fractures = 0;        // physics debris requests this frame
+	int worldFx = 0;          // world reactions running (scars, ripples, dust puffs; also counted in oneShots)
 	int unmappedBodies = 0;   // live bodies without a view (should stay 0; listed in `unmapped`)
 	std::vector<std::string> unmapped;
 };
@@ -96,6 +99,7 @@ private:
 	KeyAlloc keys_;
 	Rng rng_;
 	OneShots fx_;
+	WorldFx world_;
 	double time_ = 0.0;
 	int64_t lastTick_ = -1;
 	std::map<int, ViewSlot> views_;                 // live views by body id

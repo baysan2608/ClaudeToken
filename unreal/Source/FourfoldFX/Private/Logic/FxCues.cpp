@@ -173,16 +173,32 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 		return;
 	}
 	if (t == "impact") {
-		if (F(d, "speed") > 3.0f) fx_.Dust(c, BodyPos(c, body), kUp, Clamp(F(d, "mass") / 30.0f, 0.4f, 1.2f), stoneDust);
+		const float speed = F(d, "speed");
+		const Vec3 p = BodyPos(c, body);
+		if (speed > 3.0f && !world_.InPool(c, p)) fx_.Dust(c, p, kUp, Clamp(F(d, "mass") / 30.0f, 0.4f, 1.2f), stoneDust);
+		// the floor answers the hit: cracks / scorch / wet marks by material (the pool is handled by the body tracker)
+		if (S(d, "on") == "ground" && !world_.InPool(c, p)) {
+			const float k = Sat((speed - 3.0f) / 8.0f) * Clamp(std::sqrt(MaxF(F(d, "mass"), 1.0f)) / 4.5f, 0.25f, 1.8f);
+			world_.Impact(c, p, FamFromName(S(d, "mat"), BodyFam(c, body, Fam::Stone)), k);
+		}
 		return;
 	}
 	if (t == "wall") {
-		fx_.Dust(c, BodyPos(c, body), kUp, 1.0f, stoneDust);
+		const Vec3 p = BodyPos(c, body);
+		fx_.Dust(c, p, kUp, 1.0f, stoneDust);
+		// an earth wall / spike line rising out of the floor cracks it around its base (sand: a drift)
+		const ff::BodyView* wb = c.Body(body);
+		if (wb && (wb->mat == ff::Mat::Stone || wb->mat == ff::Mat::Sand || wb->mat == ff::Mat::Metal)) {
+			const float half = MaxF(wb->form == ff::Form::Wall ? wb->wall_half.x : wb->radius, 0.5f);
+			world_.Scar(c, p, wb->mat == ff::Mat::Sand ? ScarKind::Sand : ScarKind::Crack, half * 0.9f);
+			world_.DustRing(c, p, half, 0.7f, wb->mat == ff::Mat::Sand ? cfg_.DustColor(Fam::Sand) : cfg_.world.dust);
+		}
 		return;
 	}
 	if (t == "wall_crumble") {
 		const Vec3 p = BodyPos(c, body);
 		fx_.Dust(c, p, kUp, 1.4f, stoneDust);
+		world_.DustRing(c, p, 1.2f, 1.0f, cfg_.world.dust);
 		// physics pieces replace the sinking wall (the view stops drawing); otherwise chips fly
 		if (!B(d, "melted") && BreakView(c, body)) return;
 		fx_.Shards(c, p + Vec3(0.0f, 0.4f, 0.0f), kUp, 1.0f, ShardMat::Stone, static_cast<uint32_t>(body) * 31u + 7u, c.Ground(p));
@@ -228,6 +244,39 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 			r.life = fs.rockLife;
 		}
 		r.seed = HashCombine(seed, static_cast<uint32_t>(c.in.curr->tick));
+		return;
+	}
+	if (t == "fx_test_world") {
+		// look checks (ff.fx.Showcase "world/<kind>"): world reactions with no sim body behind them
+		const std::string kind = S(d, "kind");
+		const Vec3 p = V(d, "pos");
+		const Vec3 dir = V(d, "dir", Vec3(1, 0, 0));
+		const float gy = c.Ground(p + Vec3(0.0f, 0.5f, 0.0f));
+		const Vec3 g(p.x, gy, p.z);
+		if (kind == "crack") {
+			fx_.Dust(c, g, kUp, 1.0f, stoneDust);
+			fx_.Shards(c, g + Vec3(0.0f, 0.1f, 0.0f), kUp, 1.0f, ShardMat::Stone, 7u, gy);
+			world_.Impact(c, g, Fam::Stone, 1.4f, 0.9f);
+		} else if (kind == "scorch") {
+			fx_.FireBurst(c, g, kUp, 1.8f, 1.0f, false);
+			world_.Impact(c, g, Fam::Flame, 1.0f, 1.1f);
+		} else if (kind == "bolt") {
+			fx_.Bolt(c, {g + Vec3(0.6f, 9.0f, -0.4f), g + Vec3(-0.2f, 4.0f, 0.1f), g}, 11u, 1.3f, true, 0.14f);
+			world_.LightningStrike(c, g, 1.3f);
+		} else if (kind == "wet") {
+			fx_.Splash(c, g, kUp, 1.0f);
+			world_.Impact(c, g, Fam::Water, 1.0f, 1.0f);
+		} else if (kind == "pool" && c.in.arena) {
+			// the pool point nearest to p, a metre in from the rim
+			const ff::ArenaView& ar = *c.in.arena;
+			const Vec3 q(Clamp(p.x, ar.pool_min.x + 1.0f, ar.pool_max.x - 1.0f), ar.pool_level,
+			             Clamp(p.z, ar.pool_min.y + 1.0f, ar.pool_max.y - 1.0f));
+			world_.PoolHit(c, q, Fam::Stone, 1.3f);
+			world_.PoolHit(c, q + Vec3(1.2f, 0.0f, 0.6f), Fam::Flame, 0.8f);   // and a hiss of steam beside it
+		} else if (kind == "gust") {
+			fx_.AirPush(c, p + Vec3(0.0f, 1.2f, 0.0f) - dir * 2.0f, dir, 1.6f, 6.0f);
+			world_.Gust(c, p + Vec3(0.0f, 1.2f, 0.0f) - dir * 2.0f, dir, 6.0f, 1.0f);
+		}
 		return;
 	}
 	if (t == "transform") {
@@ -284,7 +333,12 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 				k += 7;
 			}
 		}
-		if (pts.size() >= 2) BurstM(c, pts.back(), kUp, 0.6f, Burst::Static);
+		if (pts.size() >= 2) {
+			BurstM(c, pts.back(), kUp, 0.6f, Burst::Static);
+			// where it reaches the floor: a burn, sparks, a flash on the surroundings
+			const Vec3& tip = pts.back();
+			if (tip.y - c.Ground(tip) < 0.6f) world_.LightningStrike(c, tip, 1.0f);
+		}
 		return;
 	}
 	if (t == "grounded") {
@@ -296,6 +350,7 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 		const Vec3 o = chest(a);
 		const Vec3 gd = V(d, "dir", Vec3(0, 0, 1));
 		const float rng = F(d, "range", 4.0f);
+		world_.Gust(c, o, gd, rng, heavy ? 1.0f : 0.55f);
 		if (heavy) {
 			fx_.AirPush(c, o, gd, 2.4f, rng * 1.15f);
 			fx_.AirPush(c, o, gd, 1.3f, rng * 0.8f);
@@ -310,23 +365,56 @@ void FxDirector::CueLegacy(Ctx& c, const std::string& t, const ff::Value& d) {
 		const Vec3 dir = V(d, "dir", Vec3(0, 0, 1));
 		LashTransient(c, a, dir, F(d, "range", 3.0f));
 		fx_.Splash(c, chest(a) + dir * 2.5f, kUp, 0.4f);
+		world_.Impact(c, feet(a) + Flat(dir) * 2.5f, Fam::Water, 0.35f, 0.45f);   // the whip's spray wets the floor
 		return;
 	}
 	if (t == "draw_water") {
-		DrawStream(c, a, d.has("at") ? V(d, "at") : chest(a), body);
+		const Vec3 at = d.has("at") ? V(d, "at") : chest(a);
+		DrawStream(c, a, at, body);
+		world_.DrawFromPool(c, at, a);
 		return;
 	}
 	if (t == "evade") {
-		if (B(d, "dash")) DashTrail(c, a, V(d, "dir"));
+		if (B(d, "dash")) {
+			DashTrail(c, a, V(d, "dir"));
+			const ff::ActorView* da = c.Actor(a);
+			if (da && da->grounded) world_.Kick(c, feet(a), V(d, "dir") * -1.0f, 0.8f, 1.8f, cfg_.world.dust);
+		}
 		return;
 	}
 	if (t == "updraft") {
 		fx_.Dust(c, feet(a), kUp, 0.9f, stoneDust);
+		world_.DustRing(c, feet(a), 1.1f, 0.8f, cfg_.world.dust);
+		world_.Gust(c, feet(a), kUp, 1.0f, 0.5f);
 		RingM(c, feet(a) + Vec3(0.0f, 0.05f, 0.0f), kUp, 0.3f, 1.2f, 0.35f, Fam::Wind, Opts(0.4f, 1.2f));
 		return;
 	}
 	if (t == "land") {
-		if (F(d, "speed") > 3.0f) fx_.Dust(c, feet(a), kUp, 0.5f, stoneDust);
+		const float speed = F(d, "speed");
+		const ff::ActorView* la = c.Actor(a);
+		if (speed > 5.0f && la && !la->in_water) fx_.Dust(c, feet(a), kUp, 0.5f, stoneDust);
+		world_.Landing(c, a, speed);
+		return;
+	}
+	if (t == "slam") {
+		// a fighter slammed into the floor
+		const Vec3 p = feet(a);
+		fx_.Dust(c, p, kUp, 1.0f, stoneDust);
+		world_.Impact(c, p, Fam::Stone, 1.0f, 0.7f);
+		return;
+	}
+	if (t == "fire_burst") {
+		// a fireball / comet bursting: scorch under it when it burst near the floor
+		const Vec3 p = d.has("pos") ? V(d, "pos") : BodyPos(c, body);
+		world_.Impact(c, p, B(d, "blue") ? Fam::Blue : Fam::Flame, 1.0f, 1.1f);
+		return;
+	}
+	if (t == "action") {
+		// Earth ground / sink / guard moves going active: the fighter stamps the floor
+		const ff::ActorView* aa = c.Actor(a);
+		if (aa && S(d, "phase") == "active" && aa->action.active && aa->action.element == 0 &&
+		    (aa->action.slot == ff::Slot::Ground || aa->action.slot == ff::Slot::Sink || aa->action.slot == ff::Slot::Guard))
+			world_.Stomp(c, a, (B(d, "heavy") ? 1.0f : 0.6f) + 0.12f * static_cast<float>(I(d, "tier", 0)));
 		return;
 	}
 	if (t == "reform") {
@@ -367,7 +455,10 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 				break;
 			case Fam::Lightning: BurstM(c, pos, dir, 0.6f * k, Burst::Static); break;
 			case Fam::Wind:
-			case Fam::Vortex: fx_.AirPush(c, pos, dir, 0.6f, 2.5f * k); break;
+			case Fam::Vortex:
+				fx_.AirPush(c, pos, dir, 0.6f, 2.5f * k);
+				world_.Gust(c, pos, dir, 2.5f * k, 0.35f * k);
+				break;
 			case Fam::Sand: BurstM(c, pos, dir, 0.6f * k, Burst::Sand); break;
 			case Fam::Metal: BurstM(c, pos, dir, 0.5f * k, Burst::Metal); break;
 			case Fam::Sound: RingM(c, pos + dir * 0.4f, dir, 0.15f, 0.9f * k, 0.3f, Fam::Sound, Opts(0.3f, 1.4f, 1, false, false, 0.12f)); break;
@@ -386,9 +477,13 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 			case Fam::Flame: fx_.FireBurst(c, pos, dir, len, k, false); break;
 			case Fam::Blue: fx_.FireBurst(c, pos, dir, len, k, true); break;
 			case Fam::Wind:
-			case Fam::Vortex: fx_.AirPush(c, pos, dir, rad, len); break;
+			case Fam::Vortex:
+				fx_.AirPush(c, pos, dir, rad, len);
+				world_.Gust(c, pos, dir, len, 0.6f * k + 0.2f);
+				break;
 			case Fam::Sand:
 				fx_.AirPush(c, pos, dir, rad, len);
+				world_.Gust(c, pos, dir, len, 0.4f * k);
 				for (int i = 0; i < 2; ++i) BurstM(c, pos + dir * (len * (0.3f + 0.35f * static_cast<float>(i))), dir, 0.8f * k, Burst::Sand);
 				break;
 			case Fam::Water:
@@ -432,6 +527,7 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 					RingM(c, Vec3(pos.x, c.Ground(pos) + 0.05f, pos.z), kUp, 0.3f, 2.5f, 0.4f, Fam::Lightning, Opts(0.2f, 3.0f));
 					BurstM(c, pos, kUp, 1.2f, Burst::Static);
 					fx_.Dust(c, Vec3(pos.x, c.Ground(pos), pos.z), kUp, 1.2f, cfg_.DustColor(Fam::Stone));
+					world_.LightningStrike(c, Vec3(pos.x, c.Ground(pos), pos.z), 1.4f);
 				} else if (path.size() >= 2) {
 					pts = path;
 				} else {
@@ -456,6 +552,8 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 				fx_.Beam(c, pos, tip, 0.3f + 0.12f * k, st);
 				if (mat == Fam::Blue) BurstM(c, tip, dir * -1.0f, 0.6f * k, Burst::BlueSparks);
 				if (mat == Fam::Water) fx_.Splash(c, tip, dir * -1.0f, 0.5f * k);
+				// a beam ending on the floor marks it (nothing when it ends in the air)
+				if (mat == Fam::Water || mat == Fam::Flame || mat == Fam::Blue) world_.Impact(c, tip, mat, 0.4f * k, 0.45f);
 				break;
 			}
 			default: BurstM(c, tip, dir * -1.0f, 0.6f * k, mb); break;
@@ -476,8 +574,10 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 					fx_.Blast(c, pos, rad, Clamp(0.6f + power / 40.0f, 0.5f, 1.4f), mat == Fam::Blue, gy);
 					// floor dust kicked up by the shock: stone dust, lighter than the blast itself
 					fx_.Dust(c, Vec3(pos.x, gy, pos.z), kUp, MinF(0.35f + rad * 0.2f, 1.2f), cfg_.DustColor(Fam::Stone));
+					world_.Impact(c, pos, mat, k, MinF(rad * 0.75f, 2.2f));   // scorch + dust shockwave
 				} else {
 					fx_.FireBurst(c, pos, kUp, rad * 1.5f, k, mat == Fam::Blue);
+					world_.Impact(c, pos, mat, 0.6f * k, rad * 0.6f);
 				}
 				break;
 			case Fam::Sand:
@@ -486,10 +586,12 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 				BurstM(c, pos, kUp, k * 0.8f, mat == Fam::Sand ? Burst::Grit : Burst::Dust);
 				if (mat == Fam::Stone) fx_.Shards(c, pos, kUp, k, ShardMat::Stone, rng_.Next() % 997u, gy);
 				RingM(c, Vec3(pos.x, gy + 0.04f, pos.z), kUp, 0.3f, rad * 1.3f, 0.4f, mat, Opts(0.6f, 1.0f));
+				world_.Impact(c, pos, mat, k, MinF(rad * 0.7f, 2.0f));
 				break;
 			case Fam::Water:
 				fx_.Splash(c, pos, kUp, k);
 				RingM(c, Vec3(pos.x, gy + 0.04f, pos.z), kUp, 0.3f, rad * 1.2f, 0.4f, Fam::Water, Opts(0.5f, 1.5f));
+				world_.Impact(c, pos, Fam::Water, k, MinF(rad * 0.8f, 2.2f));
 				break;
 			case Fam::Steam:
 			case Fam::Mist:
@@ -501,6 +603,7 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 			case Fam::Metal:
 				fx_.Shards(c, pos, kUp, k, ShardOf(mat), rng_.Next() % 997u, gy);
 				BurstM(c, pos, kUp, k * 0.7f, mb);
+				world_.Impact(c, pos, mat, 0.7f * k, MinF(rad * 0.5f, 1.4f));
 				break;
 			case Fam::Sound:
 				for (int i = 0; i < 2; ++i) {
@@ -518,6 +621,7 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 					const float a = kFxTau * static_cast<float>(i) / 3.0f + rng_.F01();
 					const Vec3 tip = Vec3(pos.x + std::cos(a) * rad, gy + 0.05f, pos.z + std::sin(a) * rad);
 					fx_.Bolt(c, {pos, LerpV(pos, tip, 0.5f) + Vec3(0.0f, 0.3f, 0.0f), tip}, rng_.Next(), 1.0f, i == 0);
+					if (i == 0) world_.LightningStrike(c, tip, 0.7f);
 				}
 				break;
 			default: BurstM(c, pos, kUp, k, mb); break;
@@ -529,6 +633,10 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 		RingM(c, Vec3(pos.x, gy + 0.04f, pos.z), kUp, 0.3f, MaxF(radius, 1.5f), 0.45f + 0.1f * static_cast<float>(tier), mat,
 		      Opts(0.5f, 1.3f, (mat == Fam::Sound || tier >= 2) ? 2 : 1, false, false, 0.09f));
 		if (mat == Fam::Sound || mat == Fam::Stone) BurstM(c, Vec3(pos.x, gy, pos.z), kUp, 0.6f * k, Burst::Dust);
+		if (mat == Fam::Stone || mat == Fam::Sound || mat == Fam::Wind || mat == Fam::Sand)
+			world_.DustRing(c, Vec3(pos.x, gy, pos.z), MaxF(radius, 1.5f) * 0.6f, 0.6f * k, mat == Fam::Sand ? cfg_.DustColor(Fam::Sand) : cfg_.world.dust);
+		if (mat == Fam::Stone && tier >= 1) world_.Scar(c, Vec3(pos.x, gy, pos.z), ScarKind::Crack, 0.5f + 0.15f * static_cast<float>(tier));
+		if (world_.InPool(c, pos)) world_.Ripples(c, pos, MaxF(radius, 1.5f), 0.7f, 2);
 		return;
 	}
 	if (key == "erupt") {
@@ -559,6 +667,8 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 			default: BurstM(c, g, kUp, k, mb); break;
 		}
 		RingM(c, g + Vec3(0.0f, 0.04f, 0.0f), kUp, 0.2f, rad * 1.4f, 0.35f, mat, Opts(0.6f, 1.0f));
+		// the floor it erupted from: cracks / scorch / wet / frost / sand by material
+		if (mat != Fam::Plant) world_.Impact(c, g, mat, 1.1f * k, MinF(rad * 0.9f, 2.2f));
 		return;
 	}
 	if (key == "trail") {
@@ -568,6 +678,7 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 				const Vec3 ft = c.ActorPos(actor);
 				fx_.Ember(c, ft, Norm(dir * -1.0f + kUp * 0.3f), 0.7f);
 				fx_.FireBurst(c, ft + Vec3(0.0f, 0.3f, 0.0f), Norm(dir * -1.0f + Vec3(0.0f, -0.5f, 0.0f)), 1.2f, 0.6f, mat == Fam::Blue);
+				world_.Scar(c, ft, ScarKind::Scorch, 0.4f, 0.6f);   // the fire dash singes the floor it pushed off
 			}
 		}
 		DashTrail(c, actor, dir);
@@ -576,7 +687,10 @@ void FxDirector::CueFx(Ctx& c, const ff::Value& d) {
 	if (key == "splash") {
 		switch (mat) {
 			case Fam::Water:
-			case Fam::Ice: fx_.Splash(c, pos, kUp, 0.6f * k); break;
+			case Fam::Ice:
+				fx_.Splash(c, pos, kUp, 0.6f * k);
+				world_.Impact(c, pos, Fam::Water, 0.5f * k, 0.5f);
+				break;
 			case Fam::Steam:
 			case Fam::Mist: fx_.Steam(c, pos, 0.7f * k); break;
 			default: BurstM(c, pos, kUp, 0.7f * k, mb); break;
@@ -643,6 +757,7 @@ void FxDirector::CueInteraction(Ctx& c, const ff::Value& d) {
 		const float gy = c.Ground(pos);
 		BurstM(c, Vec3(pos.x, gy, pos.z), kUp, 0.8f * st, tm != Fam::Sand ? Burst::Dust : Burst::Sand);
 		RingM(c, Vec3(pos.x, gy + 0.04f, pos.z), kUp, 1.0f, 0.2f, 0.35f, Fam::Stone, Opts(0.7f, 0.8f, 1, false, true));
+		world_.DustRing(c, Vec3(pos.x, gy, pos.z), 0.8f, 0.5f * st, tm != Fam::Sand ? cfg_.world.dust : cfg_.DustColor(Fam::Sand));
 	} else if (outcome == "ground" || outcome == "conduct") {
 		const Vec3 gp(pos.x, c.Ground(pos), pos.z);
 		Vec3 tgt = gp;
@@ -651,6 +766,7 @@ void FxDirector::CueInteraction(Ctx& c, const ff::Value& d) {
 		}
 		fx_.Bolt(c, {pos, LerpV(pos, tgt, 0.5f) + Vec3(0.2f, 0.1f, 0.0f), tgt}, rng_.Next(), 0.9f, false, 0.08f);
 		BurstM(c, tgt, kUp, 0.4f, Burst::Static);
+		if (outcome == "ground") world_.LightningStrike(c, gp, 0.5f);
 	} else if (outcome == "extinguish" || outcome == "neutralize" || outcome == "disperse") {
 		const bool fire = tm == Fam::Flame || tm == Fam::Blue || tm == Fam::Blast || tm == Fam::Magma;
 		BurstM(c, pos, kUp, 0.8f * st, fire ? Burst::Smoke : Burst::Mist);
@@ -812,6 +928,10 @@ void FxDirector::CueZone(Ctx& c, const ff::Value& d) {
 		if (mat == Fam::Flame) closeStyle = Burst::Smoke;
 		else if (mat == Fam::Mist || mat == Fam::Ice || mat == Fam::Vacuum) closeStyle = Burst::Mist;
 		BurstM(c, g, kUp, Clamp(r / 2.5f, 0.3f, 1.0f), closeStyle);
+		// what the zone leaves on the floor
+		if (kind == "fire_field" || kind == "lava_pool") world_.Scar(c, g, ScarKind::Scorch, MaxF(r, 0.6f) * 0.9f, 0.4f);
+		else if (kind == "ice_floor") world_.Scar(c, g, ScarKind::Wet, MaxF(r, 0.6f));
+		else if (kind == "sand_cloud" || kind == "sandstorm") world_.Scar(c, g, ScarKind::Sand, MinF(MaxF(r, 0.8f), 3.0f));
 	}
 }
 
@@ -871,6 +991,9 @@ void FxDirector::CueMisc(Ctx& c, const std::string& t, const ff::Value& d) {
 		const bool on = B(d, "on", true);
 		const std::string what = d.has("stance") ? S(d, "stance") : S(d, "kind");
 		Aura(c, a, ActorFam(c, a), on && !what.empty());
+		// Earth stances root the fighter: a stamp into the floor
+		const ff::ActorView* sa = c.Actor(a);
+		if (t == "stance" && on && sa && sa->element == 0) world_.Stomp(c, a, 0.8f);
 	}
 }
 

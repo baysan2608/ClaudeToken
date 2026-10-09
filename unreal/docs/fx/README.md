@@ -15,6 +15,7 @@ pre-authored Niagara systems (Epic's free Niagara Examples Pack by default) - se
 | `Source/FourfoldFX/{Public,Private}/FourfoldFx{Subsystem,Actor}*`, `Private/FxUeConvert.h` | thin UE glue: world subsystem (binds `OnFrame`), pooled component renderer, sim -> UE conversion |
 | `Source/FourfoldFX/Private/FourfoldFxNiagara.*` | Niagara cue layer: spawns the configured system per `SystemReq`, binds user parameters |
 | `Source/FourfoldFX/Private/Logic/FxFracture.*` | Voronoi fracture pieces of rocks / wall blocks (engine-free, cached) |
+| `Source/FourfoldFX/Private/Logic/FxWorld.*` | world reactions: footfall / skid dust, ground scars, pool splashes / ripples / steam, gusts + arena wind (engine-free) |
 | `Source/FourfoldFX/Private/FourfoldFxDebris.*` | physics debris: Chaos rigid bodies for `FractureReq` pieces on a collision copy of the sim arena |
 | `Source/FourfoldShaders/` | maps `unreal/Shaders` -> `/Fourfold` (PostConfigInit, guarded) |
 | `Shaders/Common/*.ush` | noise (value / gradient / simplex / fbm / ridged / curl / Voronoi 2D-3D, triplanar), flipbook blending, flow, fresnel / fake lighting, dithering, black-body, `FFSurf` |
@@ -75,12 +76,35 @@ anchor dust, armor aura, levitation rings, kit statuses - attached to fighter bo
 [Beam], fire bursts [Flame x 2 + FireSprite billows], air pushes [Wind cone + streaks], splashes [Splash + Smoke],
 steam / dust / embers, bolts [Lightning], light pulses.
 
+## World reactions (FxWorld, 2026-10-09)
+The arena answers the fighters and their moves; nothing feeds back into the sim. Hooks: cues in `FxCues.cpp` (events)
+call `WorldFx` (`FxDirector::world_`); the rest is derived from state deltas between sim ticks (`WorldFx::Update`).
+| Reaction | From | Look |
+|---|---|---|
+| foot plants while running (>= `world.footfall_speed`) | glue foot bones (`foot_l` / `foot_r` coming down near the floor), else a stride clock | a low pale granite puff thrown back (`world.dust`, alpha `footfall_alpha`); sand zones sand-coloured, puddles splash, metal / ice / mud / water none; Earth fighters x1.25 |
+| run start / stop / pivot | speed / direction change over 8 sim ticks (`skid_speed`) | kicks behind both feet / a forward skid puff / the outer foot digging in |
+| dash, landing, slam, Earth stance or Earth ground / sink / guard move going active (`action` phase "active") | `evade` (dash), `land`, `slam`, `stance`, `action` | dash kick; landing dust ring (> `land_speed`), heavy landings (x2.8) crack the floor + chips; stomps: dust ring + crack |
+| heavy impacts | `impact` on "ground", `fx` burst / erupt / ring, `wall` (earth wall / spikes rising), `wall_crumble`, `slam` | **crack**: crushed pale dish, radial cracks, a dust ring that settles in ~5 s, fades over 10 s (`scar_life`); a dust shockwave ring rolling out; heavy hits lift 4 physics chips (Chaos debris layer, `world.chips`, quality >= 1); magma cracks glow + scorch |
+| fire | `fx` burst blast / flame / blue, `fire_burst`, erupt flame, fire dash trail, fire field / lava pool closing | **scorch**: soot, ember specks while hot, fades over `scorch_life` |
+| lightning reaching the floor | `lightning` (path end near the floor), beam "down", burst lightning, interaction "ground" | **bolt burn** (Lichtenberg veins flashing blue-white, then soot), sparks, dust, a 0.16 s light pulse on the surroundings |
+| water on dry floor | `fx` burst / splash / beam water, `lash`, water `impact`, a **puddle disappearing**, an ice floor closing | **wet mark** that dries from its edges (`wet_life`); ice: frost patch; sand: sand drift |
+| the pool (ArenaView pool rect / level) | bodies crossing the surface (enter / leave), new water bodies formed in it, fighters stepping in / wading, waves / fast low bodies skimming, `draw_water`, gusts over it, strikes into it | splash (+ a tall crown for heavy bodies), **ripple rings** (M_FX_Ring style 5: crest glint + trough + wavelets), draws pull rings in then out; fire / hot stone: steam hiss; fire bodies low over it (< `steam_near_pool`) and fire fields touching its rim steam |
+| air | `gust`, `fx` cone / release wind / vortex / sand, `updraft` | floor dust swept along the gust with a curl, leaves kicked up (quality >= 1), pool ruffles, **arena wind**: `DrawList::env` WindGust (max of recent gusts, decays over `gust_decay`; a live tornado holds `tornado_gust`) + WindDirX / WindDirY (Unreal XY) -> MPC_Arena |
+* Pools (fixed, built up front; oldest recycled at the quality cap): 16 scars (`quality[].scars` 5 / 9 / 14), 12 ripples
+  (`ripples` 4 / 7 / 10), 10 kicks of 8 particles (`scuffs` 3 / 6 / 8), 6 sweeps / dust rings of 24 particles (scuffs / 2
+  + 1); `footfalls` false on quality 0 (iOS low keeps landings, skids, scars, splashes). Close scars of one kind merge.
+* Cost: one GroundQuad per scar / ripple (Ground / Ring materials, already pre-warmed: styles are parameters, no new
+  PSOs), puffs = Smoke dust flipbook; no Niagara. Chip pieces are 3 cached `RockPieces` sets built at start-up.
+* MPC: `UFourfoldFxSubsystem::ApplyEnv` loads `fx_config.json` "mpc_path" (default
+  /Game/Fourfold/Env/Materials/MPC_Arena) once, checks which of WindGust / WindDirX / WindDirY exist (log line "Arena
+  MPC ...") and writes them only on change (direction only while a gust blows); `world.mpc` false = never written.
+
 ## Materials (all `/Game/Fourfold/FX/Materials/M_FX_*`)
 | Slot | Blend | Notes |
 |---|---|---|
-| Rock, LavaStrip, Metal, GroundStrip, Vine | opaque lit | WPO melt / rise / shrink; world-space normal (Rock: baked normal map + melt + Voronoi plate relief) |
-| Ground | translucent lit (Surface ForwardShading) | decals |
-| Crystal, Water, Flame, FireSprite, Smoke, Splash, Beam, Ring, Shell, Vortex, Wind | unlit AlphaComposite (premultiplied: Cover 0 = additive .. 1 = covering) | <= 2 layers per effect |
+| Rock, LavaStrip, Metal, GroundStrip, Vine | opaque lit | WPO melt / rise / shrink (Metal: Rise / RiseHeight since 2026-10-09, metal spikes rise like stone ones); world-space normal (Rock: baked normal map + melt + Voronoi plate relief) |
+| Ground | translucent lit (Surface ForwardShading) | decals: styles 0-7 zones, 8 wet mark (Heat = dryness), 9 impact crack, 10 scorch, 11 lightning burn |
+| Crystal, Water, Flame, FireSprite, Smoke, Splash, Beam, Ring, Shell, Vortex, Wind | unlit AlphaComposite (premultiplied: Cover 0 = additive .. 1 = covering) | <= 2 layers per effect; Ring style 5 = pool ripple |
 | Spark, Lightning | unlit additive | |
 Parameter names = `ffx::kParamNames` (`FxTypes.h`); tuning-only scalars: `GlowScale`, `Duration`, `LightScale` (Smoke 2.2 /
 Splash 1.8: the fake smoke light, balanced for a 3.14 lux sun, x the arena's 14 lux sun / sky), `EmissiveScale`
@@ -193,6 +217,10 @@ Visual only: the sim decides when a body breaks and spawns its own rubble bodies
 * `-FFLabSpawn=<entry>@<sim s>,...` (game module): real Lab threats, e.g. `fire_field`, `steam`, `fireball`, `comet`,
   `fire_line`, `bolt`, `tornado`, `wind_crescent`, `stone_80` (list: Source/FourfoldCore/Data/lab.json).
 * Process-time `-FFShot` is too coarse for short events (bolts, crescents); use the showcase shots instead.
+* World reactions: `ff.fx.ShowcaseFilter world` plays `world/crack|scorch|bolt|wet|pool|gust` (`fx_test_world`
+  events; the pool cue lands on the pool point nearest to 3 m beyond the fighter). The gallery renders
+  `g11_world_scars` (crack fresh / magma / settled, scorch hot / cold, bolt flash / cold, wet drying 0 / 0.5 / 0.85) and
+  `g12_pool_ripples`.
 
 ## Tuning without a rebuild
 Edit `Content/Fourfold/Data/fx_config.json` (any subset of keys; colours are display sRGB) and run console
@@ -209,6 +237,9 @@ cmake -S unreal/Source/FourfoldFX/Private/Logic/tests -B $SCR/lt_gcc -G Ninja &&
 $SCR/lt_gcc/ffx_logic_tests                       # 26 tests (also with clang: CXX=clang++)
 $SCR/lt_gcc/ffx_core_soak --quick --dump-params $SCR/params.json      # real sim through the director
 python3 unreal/Tools/vfx/shader_check/check_shaders.py --dxc <dxc> --params $SCR/params.json   # lint + DXC
+# Mac: no dxc binary ships, build the 60-line front end over the engine's libdxcompiler (DXIL + SPIR-V compiles):
+#   see the build line at the top of unreal/Tools/vfx/shader_check/mini_dxc.cpp, then --dxc <scratch>/mini_dxc
+# UE header syntax check on the Mac against the installed engine: see the header of unreal/Tools/vfx/ue_check/check_fx.sh
 python3 unreal/Tools/vfx/py_mock_fx.py            # editor builder dry run (also the shared mock runner)
 PY=/home/user/tools/bpyenv/bin/python
 $PY unreal/Tools/vfx/noise_textures.py --raw $SCR/noise.rgba8

@@ -124,6 +124,13 @@ struct ColliderReq {
 	Xform xform;
 };
 
+// Arena-wide state the glue mirrors into the world's material parameter collection (fx_config "mpc_path", scalars
+// WindGust 0..1, WindDirX / WindDirY = unit gust direction in Unreal XY = sim (x, z)). Skipped for missing parameters.
+struct EnvState {
+	float windGust = 0.0f;
+	float windDirX = 0.8f, windDirY = 0.6f;
+};
+
 struct DrawList {
 	std::vector<DrawItem> items;
 	std::vector<LightReq> lights;
@@ -131,6 +138,7 @@ struct DrawList {
 	std::vector<FractureReq> fractures;
 	std::vector<ColliderReq> colliders;
 	std::vector<LoopReq> loops;
+	EnvState env;
 	void Clear() {
 		items.clear();
 		lights.clear();

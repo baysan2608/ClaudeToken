@@ -2,7 +2,8 @@
 //   M_FX_GroundStrip (opaque Default Lit) - ground-hugging path strips (Style 0 sand surge, 1 rime / ice sheet, 2 mud)
 //   M_FX_Ground (translucent Default Lit, a lifted quad instead of a deferred decal) - zone decals: Style
 //     0 quicksand swirl  1 ice floor  2 mud  3 melt pit  4 static field  5 caltrop shade  6 frost patch  7 sand drift
-//     8 wet mark (puddles, splashes)
+//     8 wet mark (puddles, splashes; Heat = dryness)  9 impact crater + cracks  10 fire scorch  11 lightning burn
+//     (9..11 and the drying wet mark are the world reactions' ground scars, Private/Logic/FxWorld.cpp; Phase = age s)
 // Port + upgrade of game/presentation/vfx/shaders/strip_ground.gdshader and ground_fx.gdshader.
 // Strip contract (AppendPathStrip): uv0 = (metres along, metres across), uv2 = (metres to the front, height fraction
 // 0 edge .. 1 crest). Decal contract (GroundQuad): uv0 0..1 across the zone. Portability rules: FFCommon.ush.
@@ -157,14 +158,89 @@ FFSurf FFGroundDecalSurface(float2 uv, float4 n, float4 n2, float4 crackle, floa
 		col = lerp(float3(0.42, 0.33, 0.20), float3(0.62, 0.50, 0.33), n2.x);
 		a = body * FFSmooth(0.35, 0.65, n.y + 0.2) * 0.7;
 	}
-	else
+	else if (style < 8.5)
 	{
 		// wet mark: darkened, glossy ground (2026-10-09: was 0.025 at 0.55-0.75 opacity, a black ink splat in daylight;
-		// now darkens the floor by ~35 % with a soft edge)
+		// now darkens the floor by ~35 % with a soft edge). Heat = dryness 0..1: the mark retreats from its edges into
+		// blotches and loses its gloss as it dries
 		col = float3(0.085, 0.08, 0.075);
-		s.rough = 0.15;
-		s.spec = 0.7;
-		a = soft * (0.36 + 0.14 * n.y);
+		s.rough = lerp(0.15, 0.55, heat);
+		s.spec = lerp(0.7, 0.4, heat);
+		const float wetness = soft * (0.65 + 0.35 * n.x) + (n2.y - 0.5) * 0.25;
+		const float dryMask = lerp(1.0, FFSmooth(heat, heat + 0.18, wetness), saturate(heat * 12.0));
+		a = soft * (0.36 + 0.14 * n.y) * dryMask;
+	}
+	else if (style < 9.5)
+	{
+		// impact crater (heavy stone hits, slams, stomps, eruptions): a shallow dish of crushed pale granite with broken
+		// plates, radial cracks running out of it (fissure floors dark grey-brown, never ink black) and a ring of thrown
+		// dust that settles within ~5 s. Heat glows the fissures (magma). The cracks run out over the first 0.12 s.
+		const float grow = FFSmooth(0.0, 0.12, phase);
+		const float nSec = 9.0;
+		const float sec = ang / FF_TAU * nSec + seed * 3.1;
+		const float hc = FFHash2i(floor(sec), floor(seed * 7.0));
+		const float off = frac(sec) - 0.5 - (hc - 0.5) * 0.55 + (n.x - 0.5) * 0.5 * r + (n2.y - 0.5) * 0.18;
+		const float arc = abs(off) * (FF_TAU / nSec) * r;
+		const float reach = (0.42 + 0.5 * hc) * grow;
+		const float wid = (0.010 + 0.022 * (1.0 - r)) * (0.6 + 0.6 * hc);
+		const float crackA = (1.0 - FFSmooth(wid * 0.5, wid, arc)) * (1.0 - FFSmooth(reach * 0.7, reach + 1e-3, r)) *
+			FFSmooth(0.05, 0.16, r);
+		// finer, shorter branch cracks between them
+		const float sec2 = ang / FF_TAU * 17.0 + seed * 5.3 + 0.5;
+		const float hc2 = FFHash2i(floor(sec2), floor(seed * 11.0) + 3.0);
+		const float off2 = frac(sec2) - 0.5 - (hc2 - 0.5) * 0.7 + (n2.x - 0.5) * 0.7 * r;
+		const float arc2 = abs(off2) * (FF_TAU / 17.0) * r;
+		const float reach2 = (0.22 + 0.3 * hc2) * grow;
+		const float crackB = (1.0 - FFSmooth(0.004, 0.009, arc2)) * (1.0 - FFSmooth(reach2 * 0.6, reach2 + 1e-3, r)) *
+			FFSmooth(0.12, 0.2, r) * FFSmooth(0.33, 0.37, hc2);
+		// broken plates in the dish
+		float2 g = float2(0.0, 0.0);
+		const float4 vr = FFVoronoi2(float2(p.x * 4.5 + seed * 3.0, p.y * 4.5 - seed * 2.0), g);
+		const float dish = 1.0 - FFSmooth(0.18, 0.34, r + ragged * 0.5);
+		const float plate = (1.0 - FFSmooth(0.0, 0.035, vr.y)) * dish;
+		const float crack = saturate(max(max(crackA, crackB * 0.8), plate * 0.9));
+		const float settle = 1.0 - FFSmooth(1.0, 6.0, phase);
+		const float powder = dish * (0.5 + 0.25 * n2.z);
+		const float ringD = FFSmooth(0.2, 0.36, r) * (1.0 - FFSmooth(0.42, 0.8, r + ragged)) * settle;
+		const float dustA = ringD * FFSmooth(0.3, 0.8, n.y + n2.z * 0.4) * 0.45;
+		const float3 pale = lerp(float3(0.46, 0.44, 0.40), float3(0.58, 0.55, 0.50), n2.x);
+		col = lerp(pale, float3(0.075, 0.068, 0.06) + FFV3(0.04 * n.z), crack);
+		s.rough = lerp(0.95, 0.8, crack);
+		s.spec = 0.25;
+		// a shallow dish: normals tilt toward the centre, each plate a little on its own
+		const float2 rd = float2(p.x / max(r, 1e-3), p.y / max(r, 1e-3));
+		const float slope = FFSmooth(0.05, 0.3, r) * (1.0 - FFSmooth(0.3, 0.42, r)) * 0.45;
+		s.normal = normalize(float3(-rd.x * slope + g.x * 0.04 * dish, -rd.y * slope + g.y * 0.04 * dish, 1.0));
+		s.emissive = FFBlackbody(0.38 + 0.3 * heat) * (crack * heat * 2.5 * (0.7 + 0.3 * n2.y));
+		a = max(max(crack * 0.9, powder * 0.55), dustA) * (1.0 - FFSmooth(0.85, 1.0, r));
+	}
+	else if (style < 10.5)
+	{
+		// fire scorch: soot over the stone, darkest in the middle with a blotchy brown edge (dark grey-brown, not ink
+		// black); ember specks glow while it is hot (Heat)
+		const float blot = FFSmooth(0.3, 0.75, n.x * 0.6 + n2.y * 0.4 + (1.0 - r) * 0.55);
+		const float core = 1.0 - FFSmooth(0.0, 0.62, r + ragged * 0.7);
+		col = lerp(float3(0.17, 0.145, 0.12), float3(0.055, 0.05, 0.047), saturate(core * 0.8 + blot * 0.35));
+		s.rough = 0.97;
+		s.spec = 0.12;
+		const float specks = FFSmooth(0.8, 0.93, n2.z) * FFSmooth(0.4, 0.7, n.y) * (0.3 + core);
+		s.emissive = FFBlackbody(0.4 + 0.3 * n2.x * heat) * (specks * heat * heat * 3.0 + core * heat * heat * 0.4);
+		a = soft * (0.25 + 0.5 * blot) + core * 0.15;
+	}
+	else
+	{
+		// lightning burn: a charred spot with branching burn veins running out of it (a Lichtenberg figure); the veins
+		// flash blue-white for an instant (Heat), then stay as dark soot lines
+		const float2 rd = float2(p.x / max(r, 1e-3), p.y / max(r, 1e-3));
+		const float vein = FFRidged2(float2(rd.x * 2.6 + p.x * 1.4 + seed, rd.y * 2.6 + p.y * 1.4 - seed * 1.3), 3.0);
+		const float lineK = FFSmooth(0.55, 0.85, vein) * (1.0 - FFSmooth(0.3, 0.92, r + ragged)) * FFSmooth(0.04, 0.12, r);
+		const float core = 1.0 - FFSmooth(0.05, 0.3, r + ragged * 0.4);
+		const float k = saturate(max(lineK, core));
+		col = lerp(float3(0.16, 0.15, 0.145), float3(0.05, 0.048, 0.05), k);
+		s.rough = 0.9;
+		s.spec = 0.2;
+		s.emissive = float3(0.55, 0.68, 1.0) * ((lineK * 5.0 + core * 2.0) * heat);
+		a = saturate(k * 0.8 + soft * 0.15);
 	}
 	s.albedo = col;
 	s.opacity = saturate(a * fade);

@@ -105,7 +105,7 @@ OutRough = s.rough;
 OutSpec = s.spec;
 return s.albedo;"""
 
-METAL_WPO = "return FFShrinkOffset(Pos, Fade);"
+METAL_WPO = "return FFShrinkOffset(Pos, Fade) + FFMetalRiseOffset(VC.x, Rise, RiseHeight * 100.0);"
 METAL_SURF = """float smear = saturate(abs(Spin) / 40.0);
 float2 uv = UV0 + float2(Seed * 0.37, Seed * 0.11);
 float4 n1 = Noise.Sample(NoiseSampler, float2(uv.x * lerp(0.15, 0.01, smear), uv.y * 28.0));
@@ -315,10 +315,11 @@ MATERIALS = {
     "metal": {
         "asset": "M_FX_Metal", "blend": "opaque", "lit": True, "two_sided": False, "tangent_normal": True,
         "includes": ["/Fourfold/FX/FFMetal.ush"],
-        "scalars": {"Heat": 0.0, "Seed": 0.0, "Spin": 0.0, "Fade": 1.0}, "vectors": {},
+        "scalars": {"Heat": 0.0, "Seed": 0.0, "Spin": 0.0, "Fade": 1.0, "Rise": 1.0, "RiseHeight": 1.0}, "vectors": {},
         "textures": {"Noise": "T_FX_Noise"},
         "nodes": {
-            "wpo": {"stage": "vs", "type": _F3, "code": METAL_WPO, "inputs": {"Pos": "lpos", "Fade": "p:Fade"},
+            "wpo": {"stage": "vs", "type": _F3, "code": METAL_WPO,
+                    "inputs": {"Pos": "lpos", "Fade": "p:Fade", "VC": "vc", "Rise": "p:Rise", "RiseHeight": "p:RiseHeight"},
                     "outputs": {}},
             "surf": {"stage": "ps", "type": _F3, "code": METAL_SURF,
                      "inputs": _merge({"Noise": "tex:Noise", "UV0": "uv0", "N": "nrm_ws", "Cam": "cam"},
