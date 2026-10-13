@@ -436,9 +436,8 @@ def scatter_props(h, splat, slope, sites, path_dist):
                 kind = rng.choice(TREES["broad"] + TREES["fir"])
             props.append({"mesh": f"tree_{kind}", "pos": [round(x, 2), round(hh - 0.15, 2), round(z, 2)],
                           "yaw": round(rng.uniform(0, 360), 1), "scale": round(rng.uniform(0.8, 1.25), 3)})
-    # rocks: everywhere off-path, more in earth / fire / on slopes. Off until real boulder meshes exist: the scanned
-    # rock meshes are thin cliff shells that read as black spikes at boulder size.
-    rock_density = {"hub": 0.0, "water": 0.0, "earth": 0.0, "fire": 0.0, "air": 0.0}
+    # boulders (CC0 scans, prep_vegetation.py): everywhere off-path, more in the quarry / ash plain / peaks and on slopes
+    rock_density = {"hub": 0.05, "water": 0.06, "earth": 0.22, "fire": 0.16, "air": 0.14}
     g2 = np.arange(-HALF + 20, HALF - 20, 14.0)
     for gz_ in g2:
         for gx_ in g2:
@@ -451,10 +450,11 @@ def scatter_props(h, splat, slope, sites, path_dist):
             if np.min(np.hypot(site_xz[:, 0] - x, site_xz[:, 1] - z)) < 22.0:
                 continue
             reg = min(centers, key=lambda r: math.hypot(x - centers[r][0], z - centers[r][1]))
-            if rng.random() > rock_density[reg] * (1.0 + 2.0 * min(slope[k, i], 1.0)):
+            if rng.random() > rock_density[reg] * (1.0 + 2.0 * min(slope[k, i], 1.0)) or slope[k, i] > 0.9:
                 continue
-            props.append({"mesh": rng.choice(ROCKS), "pos": [round(x, 2), round(float(h[k, i]) - 0.4, 2), round(z, 2)],
-                          "yaw": round(rng.uniform(0, 360), 1), "scale": round(rng.uniform(0.35, 1.1), 3)})
+            props.append({"mesh": "boulder_" + str(rng.choice(list("abcdef"))),
+                          "pos": [round(x, 2), round(float(h[k, i]) - 0.25, 2), round(z, 2)],
+                          "yaw": round(rng.uniform(0, 360), 1), "scale": round(float(rng.uniform(0.7, 1.9)), 3)})
     # cliffs: big scanned rock faces on steep ground (mountain ring, mesa walls, volcano, peaks); "size" = metres across
     g3 = np.arange(-HALF + 10, HALF - 10, 34.0)
     for gz_ in g3:

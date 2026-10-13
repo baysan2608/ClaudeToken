@@ -106,6 +106,13 @@ AFourfoldOpenWorld::AFourfoldOpenWorld()
 		const FString Path = FString::Printf(TEXT("/Game/Fourfold/Env/Trees/%s.%s"), T[1], T[1]);
 		PropMeshes.Add(FName(T[0]), TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(Path)));
 	}
+	// CC0 scans (Tools/openworld/prep_vegetation.py): boulders placed by the generator, ground cover streamed at runtime
+	for (const TCHAR* B : {TEXT("a"), TEXT("b"), TEXT("c"), TEXT("d"), TEXT("e"), TEXT("f")})
+	{
+		const FString Name = FString::Printf(TEXT("SM_OW_Boulder_%s"), B);
+		PropMeshes.Add(FName(*FString::Printf(TEXT("boulder_%s"), B)),
+		               TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(FString::Printf(TEXT("/Game/Fourfold/OpenWorld/Vegetation/%s.%s"), *Name, *Name))));
+	}
 }
 
 std::shared_ptr<const ff::WorldDef> AFourfoldOpenWorld::LoadWorldDef(FString* OutError)
@@ -586,6 +593,134 @@ void AFourfoldOpenWorld::Tick(float DeltaSeconds)
 		View = Cam->GetCameraLocation();
 	}
 	UpdateLods(View);
+	const uint64 Rev = World->edits ? World->edits->revision : 0;
+	UpdateCover(View, Rev != CoverEditRevision);
+	CoverEditRevision = Rev;
+}
+
+namespace FourfoldOW
+{
+	struct FCoverKind
+	{
+		const TCHAR* Mesh;
+		float PerM2;        // instances per square metre at full grass weight
+		float SMin, SMax;
+		int32 Kind;         // 0 grass, 1 fern, 2 flower, 3 shrub
+		float CullM;
+	};
+	static const FCoverKind kCover[] = {
+		{TEXT("SM_OW_GrassLawn_a"), 0.55f, 1.5f, 2.3f, 0, 45.0f}, {TEXT("SM_OW_GrassLawn_b"), 0.40f, 1.5f, 2.3f, 0, 45.0f},
+		{TEXT("SM_OW_GrassTuft_a"), 0.28f, 1.4f, 2.2f, 0, 45.0f}, {TEXT("SM_OW_GrassTuft_b"), 0.22f, 1.4f, 2.2f, 0, 45.0f},
+		{TEXT("SM_OW_Fern_a"), 0.010f, 0.8f, 1.3f, 1, 55.0f}, {TEXT("SM_OW_Fern_b"), 0.008f, 0.8f, 1.3f, 1, 55.0f},
+		{TEXT("SM_OW_Fern_c"), 0.010f, 0.9f, 1.4f, 1, 55.0f}, {TEXT("SM_OW_Flower_a"), 0.018f, 1.0f, 1.7f, 2, 40.0f},
+		{TEXT("SM_OW_Flower_b"), 0.018f, 1.0f, 1.7f, 2, 40.0f}, {TEXT("SM_OW_Dandelion_a"), 0.012f, 1.0f, 1.5f, 2, 40.0f},
+		{TEXT("SM_OW_Dandelion_b"), 0.012f, 1.0f, 1.5f, 2, 40.0f}, {TEXT("SM_OW_Shrub_a"), 0.004f, 2.4f, 3.6f, 3, 64.0f},
+		{TEXT("SM_OW_Shrub_b"), 0.004f, 2.4f, 3.6f, 3, 64.0f}, {TEXT("SM_OW_Shrub_c"), 0.004f, 2.4f, 3.6f, 3, 64.0f},
+		{TEXT("SM_OW_Shrub_d"), 0.004f, 2.4f, 3.6f, 3, 64.0f},
+	};
+	constexpr double kCoverCell = 16.0;   // m
+}
+
+void AFourfoldOpenWorld::UpdateCover(const FVector& ViewUE, bool bForce)
+{
+	using namespace FourfoldOW;
+	const double MoveM = FVector::Dist2D(ViewUE, CoverCenter) / FF::SimToUE;
+	if (!bForce && MoveM < 14.0)
+	{
+		return;
+	}
+	if (CoverComps.Num() == 0)
+	{
+		for (const FCoverKind& K : kCover)
+		{
+			const FString Path = FString::Printf(TEXT("/Game/Fourfold/OpenWorld/Vegetation/%s.%s"), K.Mesh, K.Mesh);
+			UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, *Path);
+			UHierarchicalInstancedStaticMeshComponent* H = nullptr;
+			if (Mesh)
+			{
+				H = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
+				H->SetupAttachment(RootComponent);
+				H->SetMobility(EComponentMobility::Static);
+				H->SetStaticMesh(Mesh);
+				H->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				H->SetCastShadow(K.Kind == 3);
+				H->bAffectDistanceFieldLighting = false;
+				H->WorldPositionOffsetDisableDistance = int32(K.CullM * 60.0f);
+				H->SetCullDistances(int32(K.CullM * 75.0f), int32(K.CullM * 100.0f));
+				H->RegisterComponent();
+			}
+			CoverComps.Add(H);
+		}
+	}
+	CoverCenter = ViewUE;
+	const double Cx = ViewUE.X / FF::SimToUE;   // world x
+	const double Cz = ViewUE.Y / FF::SimToUE;   // world z
+#if PLATFORM_IOS || PLATFORM_ANDROID
+	const double Radius = FMath::Min(double(CoverRadius) / FF::SimToUE, 44.0);
+	const double Density = CoverDensity * 0.45;
+#else
+	const double Radius = double(CoverRadius) / FF::SimToUE;
+	const double Density = CoverDensity;
+#endif
+	TArray<TArray<FTransform>> Out;
+	Out.SetNum(UE_ARRAY_COUNT(kCover));
+	const ff::WorldDef& W = *World;
+	const int32 C0x = FMath::FloorToInt((Cx - Radius) / kCoverCell), C1x = FMath::FloorToInt((Cx + Radius) / kCoverCell);
+	const int32 C0z = FMath::FloorToInt((Cz - Radius) / kCoverCell), C1z = FMath::FloorToInt((Cz + Radius) / kCoverCell);
+	for (int32 CzI = C0z; CzI <= C1z; ++CzI)
+	{
+		for (int32 CxI = C0x; CxI <= C1x; ++CxI)
+		{
+			const double Ox = CxI * kCoverCell, Oz = CzI * kCoverCell;
+			if (FMath::Square(Ox + kCoverCell * 0.5 - Cx) + FMath::Square(Oz + kCoverCell * 0.5 - Cz) > FMath::Square(Radius + kCoverCell * 0.7))
+			{
+				continue;
+			}
+			FRandomStream R(int32(uint32(CxI) * 73856093u ^ uint32(CzI) * 19349663u));   // same cell, same plants
+			for (int32 Ki = 0; Ki < int32(UE_ARRAY_COUNT(kCover)); ++Ki)
+			{
+				const FCoverKind& K = kCover[Ki];
+				const int32 N = FMath::RoundToInt(K.PerM2 * kCoverCell * kCoverCell * Density);
+				for (int32 n = 0; n < N; ++n)
+				{
+					const double X = Ox + R.FRand() * kCoverCell, Z = Oz + R.FRand() * kCoverCell;
+					const float Roll = R.FRand(), Yaw = R.FRand() * 360.0f, Sc = FMath::Lerp(K.SMin, K.SMax, R.FRand());
+					const int32 I = FMath::Clamp(int32((X - W.x0) / W.cell + 0.5), 0, W.nx - 1);
+					const int32 Kk = FMath::Clamp(int32((Z - W.z0) / W.cell + 0.5), 0, W.nz - 1);
+					float Grass = 1.0f, Sand = 0.0f;
+					if (Splat.Num() > 0)
+					{
+						const uint8* S = &Splat[(size_t(Kk) * size_t(W.nx) + size_t(I)) * 4];
+						Grass = S[0] / 255.0f;
+						Sand = S[2] / 255.0f;
+					}
+					const float Torn = W.edits ? FMath::Abs(W.edits->At(I, Kk)) : 0.0f;
+					if (Roll > Grass * Grass || Sand > 0.45f || Torn > 0.25f || W.IsWater(X, Z))
+					{
+						continue;
+					}
+					const double H = W.HeightAt(X, Z);
+					const double Slope = FMath::Abs(W.HeightAt(X + 1.0, Z) - H) + FMath::Abs(W.HeightAt(X, Z + 1.0) - H);
+					if (Slope > (K.Kind == 0 ? 0.9 : 0.6))
+					{
+						continue;
+					}
+					Out[Ki].Add(FTransform(FRotator(0.0, Yaw, 0.0), FF::WorldToUE(X, H - 0.03, Z), FVector(Sc)));
+				}
+			}
+		}
+	}
+	int32 Total = 0;
+	for (int32 Ki = 0; Ki < CoverComps.Num(); ++Ki)
+	{
+		if (UHierarchicalInstancedStaticMeshComponent* H = CoverComps[Ki])
+		{
+			H->ClearInstances();
+			H->AddInstances(Out[Ki], false, true, false);
+			Total += Out[Ki].Num();
+		}
+	}
+	UE_LOG(LogFourfold, Verbose, TEXT("Ground cover: %d instances around (%.0f, %.0f)"), Total, Cx, Cz);
 }
 
 int32 AFourfoldOpenWorld::ChunkIndexAt(double Wx, double Wz) const

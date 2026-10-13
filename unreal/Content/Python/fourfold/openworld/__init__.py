@@ -398,5 +398,13 @@ def build_all(force=False):
     texs, manifest = import_textures(force, rep)
     mat = build_terrain_material(force, texs, manifest, rep)
     mi = build_instance(mat, force, rep)
+    try:
+        from . import vegetation
+        v = vegetation.build_all(force)
+        for k in ("created", "skipped", "failed", "notes"):
+            rep[k] += v[k]
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        rep["failed"].append({"item": "vegetation", "error": f"{e}\n{traceback.format_exc()}"})
     build_level(force, mi, rep)
     return rep

@@ -50,6 +50,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float CliffCullDistance = 300000.0f;
 	/** Flip triangle winding if the terrain renders inside out on some platform. */
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bFlipWinding = false;
+	/** Ground cover (grass / ferns / flowers / shrubs) streamed around the camera: radius (cm) and density scale. */
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float CoverRadius = 6400.0f;
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float CoverDensity = 1.0f;
 	/** The player controller starts roaming on BeginPlay when the level has this actor. */
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bAutoStartRoam = true;
 
@@ -90,6 +93,8 @@ private:
 	/** Re-meshes chunks the sim's terrain edits touched; props on moved ground ride it or topple. */
 	void ApplyTerrainEdits();
 	void UpdateProp(FPropRef& P);
+	/** Rebuilds the ground cover around ViewUE when the camera moved far enough or the terrain changed. */
+	void UpdateCover(const FVector& ViewUE, bool bForce);
 	int32 ChunkIndexAt(double Wx, double Wz) const;
 
 	std::shared_ptr<const ff::WorldDef> World;
@@ -99,6 +104,9 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> TerrainMat;
 	UPROPERTY(Transient) TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> PropComps;
 	TArray<FPropRef> PropRefs;
+	UPROPERTY(Transient) TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> CoverComps;
+	FVector CoverCenter = FVector(1e12);
+	uint64 CoverEditRevision = 0;
 	uint64 SeenEditRevision = 0;
 	float LodTimer = 0.0f;
 	bool bBuilt = false;
