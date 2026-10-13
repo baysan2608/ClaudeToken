@@ -1,0 +1,988 @@
+{
+ "license": "CC0 1.0 (Poly Haven, polyhaven.com; no attribution required, authors listed per mesh)",
+ "generator": "Tools/openworld/prep_vegetation.py (sources: Tools/openworld/fetch_models.py)",
+ "units": "metres; Blender Z-up exported with prep_trees.py's FBX settings; pivot xy = root / bbox centre, z 0 = ground",
+ "lod_files": "one FBX per LOD (SM_OW_<Name>_LOD<n>.fbx); import LOD0 and add LOD1+ like foliage.py does for trees",
+ "vertex_color": "foliage only: R = height fraction (wind bend weight), G = random phase per sprig / blade / frond",
+ "textures": "BC sRGB (foliage: alpha = opacity mask), N DirectX tangent space, ORM = AO / roughness / metallic",
+ "meshes": {
+  "SM_OW_GrassLawn_a": {
+   "kind": "grass",
+   "lods": [
+    {
+     "fbx": "SM_OW_GrassLawn_a_LOD0.fbx",
+     "tris": 1475,
+     "size_mb": 0.08
+    },
+    {
+     "fbx": "SM_OW_GrassLawn_a_LOD1.fbx",
+     "tris": 389,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_GrassLawn_a_LOD2.fbx",
+     "tris": 112,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    0.638,
+    0.656,
+    0.249
+   ],
+   "below_ground_m": 0.021,
+   "slots": {
+    "Grass": {
+     "BC": "T_OW_Veg_Grass_BC.png",
+     "N": "T_OW_Veg_Grass_N.png",
+     "ORM": "T_OW_Veg_Grass_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "grass_bermuda_01",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/grass_bermuda_01",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_GrassLawn_b": {
+   "kind": "grass",
+   "lods": [
+    {
+     "fbx": "SM_OW_GrassLawn_b_LOD0.fbx",
+     "tris": 1479,
+     "size_mb": 0.09
+    },
+    {
+     "fbx": "SM_OW_GrassLawn_b_LOD1.fbx",
+     "tris": 392,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_GrassLawn_b_LOD2.fbx",
+     "tris": 118,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.553,
+    0.525,
+    0.278
+   ],
+   "below_ground_m": 0.014,
+   "slots": {
+    "Grass": {
+     "BC": "T_OW_Veg_Grass_BC.png",
+     "N": "T_OW_Veg_Grass_N.png",
+     "ORM": "T_OW_Veg_Grass_ORM.png"
+    },
+    "GrassTall": {
+     "BC": "T_OW_Veg_GrassTall_BC.png",
+     "BC_Dry": "T_OW_Veg_GrassTall_BC_Dry.png",
+     "N": "T_OW_Veg_GrassTall_N.png",
+     "ORM": "T_OW_Veg_GrassTall_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "grass_bermuda_01",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/grass_bermuda_01",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    },
+    {
+     "id": "grass_medium_02",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/grass_medium_02",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_GrassTuft_a": {
+   "kind": "grass",
+   "lods": [
+    {
+     "fbx": "SM_OW_GrassTuft_a_LOD0.fbx",
+     "tris": 1469,
+     "size_mb": 0.1
+    },
+    {
+     "fbx": "SM_OW_GrassTuft_a_LOD1.fbx",
+     "tris": 390,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_GrassTuft_a_LOD2.fbx",
+     "tris": 115,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.468,
+    0.433,
+    0.403
+   ],
+   "below_ground_m": 0.004,
+   "slots": {
+    "GrassTall": {
+     "BC": "T_OW_Veg_GrassTall_BC.png",
+     "BC_Dry": "T_OW_Veg_GrassTall_BC_Dry.png",
+     "N": "T_OW_Veg_GrassTall_N.png",
+     "ORM": "T_OW_Veg_GrassTall_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "grass_medium_02",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/grass_medium_02",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_GrassTuft_b": {
+   "kind": "grass",
+   "lods": [
+    {
+     "fbx": "SM_OW_GrassTuft_b_LOD0.fbx",
+     "tris": 1470,
+     "size_mb": 0.11
+    },
+    {
+     "fbx": "SM_OW_GrassTuft_b_LOD1.fbx",
+     "tris": 390,
+     "size_mb": 0.05
+    },
+    {
+     "fbx": "SM_OW_GrassTuft_b_LOD2.fbx",
+     "tris": 116,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.459,
+    0.448,
+    0.266
+   ],
+   "below_ground_m": 0.005,
+   "slots": {
+    "GrassTall": {
+     "BC": "T_OW_Veg_GrassTall_BC.png",
+     "BC_Dry": "T_OW_Veg_GrassTall_BC_Dry.png",
+     "N": "T_OW_Veg_GrassTall_N.png",
+     "ORM": "T_OW_Veg_GrassTall_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "grass_medium_02",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/grass_medium_02",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Dandelion_a": {
+   "kind": "plant",
+   "lods": [
+    {
+     "fbx": "SM_OW_Dandelion_a_LOD0.fbx",
+     "tris": 1933,
+     "size_mb": 0.09
+    },
+    {
+     "fbx": "SM_OW_Dandelion_a_LOD1.fbx",
+     "tris": 629,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Dandelion_a_LOD2.fbx",
+     "tris": 260,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.22,
+    0.258,
+    0.162
+   ],
+   "below_ground_m": 0.003,
+   "slots": {
+    "Dandelion": {
+     "BC": "T_OW_Veg_Dandelion_BC.png",
+     "N": "T_OW_Veg_Dandelion_N.png",
+     "ORM": "T_OW_Veg_Dandelion_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "dandelion_01",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/dandelion_01",
+     "authors": [
+      "Rob Tuytel",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Dandelion_b": {
+   "kind": "plant",
+   "lods": [
+    {
+     "fbx": "SM_OW_Dandelion_b_LOD0.fbx",
+     "tris": 1873,
+     "size_mb": 0.09
+    },
+    {
+     "fbx": "SM_OW_Dandelion_b_LOD1.fbx",
+     "tris": 619,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Dandelion_b_LOD2.fbx",
+     "tris": 265,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.202,
+    0.218,
+    0.114
+   ],
+   "below_ground_m": 0.003,
+   "slots": {
+    "Dandelion": {
+     "BC": "T_OW_Veg_Dandelion_BC.png",
+     "N": "T_OW_Veg_Dandelion_N.png",
+     "ORM": "T_OW_Veg_Dandelion_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "dandelion_01",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/dandelion_01",
+     "authors": [
+      "Rob Tuytel",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Fern_a": {
+   "kind": "plant",
+   "lods": [
+    {
+     "fbx": "SM_OW_Fern_a_LOD0.fbx",
+     "tris": 1948,
+     "size_mb": 0.1
+    },
+    {
+     "fbx": "SM_OW_Fern_a_LOD1.fbx",
+     "tris": 620,
+     "size_mb": 0.05
+    },
+    {
+     "fbx": "SM_OW_Fern_a_LOD2.fbx",
+     "tris": 209,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.99,
+    0.894,
+    0.428
+   ],
+   "below_ground_m": 0.031,
+   "slots": {
+    "Fern": {
+     "BC": "T_OW_Veg_Fern_BC.png",
+     "N": "T_OW_Veg_Fern_N.png",
+     "ORM": "T_OW_Veg_Fern_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "fern_02",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/fern_02",
+     "authors": [
+      "Rob Tuytel",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Fern_b": {
+   "kind": "plant",
+   "lods": [
+    {
+     "fbx": "SM_OW_Fern_b_LOD0.fbx",
+     "tris": 1950,
+     "size_mb": 0.1
+    },
+    {
+     "fbx": "SM_OW_Fern_b_LOD1.fbx",
+     "tris": 619,
+     "size_mb": 0.05
+    },
+    {
+     "fbx": "SM_OW_Fern_b_LOD2.fbx",
+     "tris": 209,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.874,
+    0.765,
+    0.349
+   ],
+   "below_ground_m": 0.029,
+   "slots": {
+    "Fern": {
+     "BC": "T_OW_Veg_Fern_BC.png",
+     "N": "T_OW_Veg_Fern_N.png",
+     "ORM": "T_OW_Veg_Fern_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "fern_02",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/fern_02",
+     "authors": [
+      "Rob Tuytel",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Fern_c": {
+   "kind": "plant",
+   "lods": [
+    {
+     "fbx": "SM_OW_Fern_c_LOD0.fbx",
+     "tris": 816,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Fern_c_LOD1.fbx",
+     "tris": 300,
+     "size_mb": 0.03
+    },
+    {
+     "fbx": "SM_OW_Fern_c_LOD2.fbx",
+     "tris": 120,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    0.573,
+    0.593,
+    0.213
+   ],
+   "below_ground_m": 0.014,
+   "slots": {
+    "Fern": {
+     "BC": "T_OW_Veg_Fern_BC.png",
+     "N": "T_OW_Veg_Fern_N.png",
+     "ORM": "T_OW_Veg_Fern_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "fern_02",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/fern_02",
+     "authors": [
+      "Rob Tuytel",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Flower_a": {
+   "kind": "plant",
+   "lods": [
+    {
+     "fbx": "SM_OW_Flower_a_LOD0.fbx",
+     "tris": 758,
+     "size_mb": 0.05
+    },
+    {
+     "fbx": "SM_OW_Flower_a_LOD1.fbx",
+     "tris": 455,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Flower_a_LOD2.fbx",
+     "tris": 150,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.217,
+    0.251,
+    0.267
+   ],
+   "below_ground_m": 0.002,
+   "slots": {
+    "Flower": {
+     "BC": "T_OW_Veg_Flower_BC.png",
+     "N": "T_OW_Veg_Flower_N.png",
+     "ORM": "T_OW_Veg_Flower_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "flower_empodium",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/flower_empodium",
+     "authors": [
+      "Jenelle van Heerden",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Flower_b": {
+   "kind": "plant",
+   "lods": [
+    {
+     "fbx": "SM_OW_Flower_b_LOD0.fbx",
+     "tris": 933,
+     "size_mb": 0.06
+    },
+    {
+     "fbx": "SM_OW_Flower_b_LOD1.fbx",
+     "tris": 568,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Flower_b_LOD2.fbx",
+     "tris": 150,
+     "size_mb": 0.03
+    }
+   ],
+   "size_m": [
+    0.217,
+    0.158,
+    0.179
+   ],
+   "below_ground_m": 0.004,
+   "slots": {
+    "Flower": {
+     "BC": "T_OW_Veg_Flower_BC.png",
+     "N": "T_OW_Veg_Flower_N.png",
+     "ORM": "T_OW_Veg_Flower_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "flower_empodium",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/flower_empodium",
+     "authors": [
+      "Jenelle van Heerden",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Shrub_a": {
+   "kind": "shrub",
+   "lods": [
+    {
+     "fbx": "SM_OW_Shrub_a_LOD0.fbx",
+     "tris": 2276,
+     "size_mb": 0.1
+    },
+    {
+     "fbx": "SM_OW_Shrub_a_LOD1.fbx",
+     "tris": 1322,
+     "size_mb": 0.07
+    },
+    {
+     "fbx": "SM_OW_Shrub_a_LOD2.fbx",
+     "tris": 664,
+     "size_mb": 0.05
+    }
+   ],
+   "size_m": [
+    0.231,
+    0.206,
+    0.372
+   ],
+   "below_ground_m": 0.009,
+   "slots": {
+    "Shrub01": {
+     "BC": "T_OW_Veg_Shrub01_BC.png",
+     "N": "T_OW_Veg_Shrub01_N.png",
+     "ORM": "T_OW_Veg_Shrub01_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "shrub_01",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/shrub_01",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Shrub_b": {
+   "kind": "shrub",
+   "lods": [
+    {
+     "fbx": "SM_OW_Shrub_b_LOD0.fbx",
+     "tris": 1374,
+     "size_mb": 0.07
+    },
+    {
+     "fbx": "SM_OW_Shrub_b_LOD1.fbx",
+     "tris": 802,
+     "size_mb": 0.05
+    },
+    {
+     "fbx": "SM_OW_Shrub_b_LOD2.fbx",
+     "tris": 406,
+     "size_mb": 0.04
+    }
+   ],
+   "size_m": [
+    0.161,
+    0.175,
+    0.294
+   ],
+   "below_ground_m": 0.0,
+   "slots": {
+    "Shrub01": {
+     "BC": "T_OW_Veg_Shrub01_BC.png",
+     "N": "T_OW_Veg_Shrub01_N.png",
+     "ORM": "T_OW_Veg_Shrub01_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "shrub_01",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/shrub_01",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Shrub_c": {
+   "kind": "shrub",
+   "lods": [
+    {
+     "fbx": "SM_OW_Shrub_c_LOD0.fbx",
+     "tris": 1741,
+     "size_mb": 0.08
+    },
+    {
+     "fbx": "SM_OW_Shrub_c_LOD1.fbx",
+     "tris": 700,
+     "size_mb": 0.06
+    },
+    {
+     "fbx": "SM_OW_Shrub_c_LOD2.fbx",
+     "tris": 299,
+     "size_mb": 0.04
+    }
+   ],
+   "size_m": [
+    0.201,
+    0.151,
+    0.403
+   ],
+   "below_ground_m": 0.002,
+   "slots": {
+    "Shrub03": {
+     "BC": "T_OW_Veg_Shrub03_BC.png",
+     "N": "T_OW_Veg_Shrub03_N.png",
+     "ORM": "T_OW_Veg_Shrub03_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "shrub_03",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/shrub_03",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Shrub_d": {
+   "kind": "shrub",
+   "lods": [
+    {
+     "fbx": "SM_OW_Shrub_d_LOD0.fbx",
+     "tris": 1998,
+     "size_mb": 0.12
+    },
+    {
+     "fbx": "SM_OW_Shrub_d_LOD1.fbx",
+     "tris": 800,
+     "size_mb": 0.07
+    },
+    {
+     "fbx": "SM_OW_Shrub_d_LOD2.fbx",
+     "tris": 320,
+     "size_mb": 0.04
+    }
+   ],
+   "size_m": [
+    0.156,
+    0.169,
+    0.28
+   ],
+   "below_ground_m": 0.008,
+   "slots": {
+    "Shrub04": {
+     "BC": "T_OW_Veg_Shrub04_BC.png",
+     "N": "T_OW_Veg_Shrub04_N.png",
+     "ORM": "T_OW_Veg_Shrub04_ORM.png"
+    }
+   },
+   "masked": true,
+   "two_sided": true,
+   "source": [
+    {
+     "id": "shrub_04",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/shrub_04",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Boulder_a": {
+   "kind": "boulder",
+   "lods": [
+    {
+     "fbx": "SM_OW_Boulder_a_LOD0.fbx",
+     "tris": 3000,
+     "size_mb": 0.12
+    },
+    {
+     "fbx": "SM_OW_Boulder_a_LOD1.fbx",
+     "tris": 799,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Boulder_a_LOD2.fbx",
+     "tris": 200,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    2.52,
+    1.232,
+    0.877
+   ],
+   "below_ground_m": 0.058,
+   "slots": {
+    "Rock": {
+     "BC": "T_OW_Boulder_a_BC.png",
+     "N": "T_OW_Boulder_a_N.png",
+     "N_baked": true,
+     "ORM": "T_OW_Boulder_a_ORM.png"
+    }
+   },
+   "masked": false,
+   "two_sided": false,
+   "source": [
+    {
+     "id": "namaqualand_boulder_02",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/namaqualand_boulder_02",
+     "authors": [
+      "Greg Zaal",
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Boulder_b": {
+   "kind": "boulder",
+   "lods": [
+    {
+     "fbx": "SM_OW_Boulder_b_LOD0.fbx",
+     "tris": 3000,
+     "size_mb": 0.11
+    },
+    {
+     "fbx": "SM_OW_Boulder_b_LOD1.fbx",
+     "tris": 800,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Boulder_b_LOD2.fbx",
+     "tris": 200,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    2.406,
+    3.061,
+    1.474
+   ],
+   "below_ground_m": 0.014,
+   "slots": {
+    "Rock": {
+     "BC": "T_OW_Boulder_b_BC.png",
+     "N": "T_OW_Boulder_b_N.png",
+     "N_baked": true,
+     "ORM": "T_OW_Boulder_b_ORM.png"
+    }
+   },
+   "masked": false,
+   "two_sided": false,
+   "source": [
+    {
+     "id": "namaqualand_boulder_03",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/namaqualand_boulder_03",
+     "authors": [
+      "Jenelle van Heerden",
+      "Dario Barresi"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Boulder_c": {
+   "kind": "boulder",
+   "lods": [
+    {
+     "fbx": "SM_OW_Boulder_c_LOD0.fbx",
+     "tris": 3000,
+     "size_mb": 0.11
+    },
+    {
+     "fbx": "SM_OW_Boulder_c_LOD1.fbx",
+     "tris": 800,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Boulder_c_LOD2.fbx",
+     "tris": 200,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    2.523,
+    2.497,
+    1.895
+   ],
+   "below_ground_m": 0.021,
+   "slots": {
+    "Rock": {
+     "BC": "T_OW_Boulder_c_BC.png",
+     "N": "T_OW_Boulder_c_N.png",
+     "N_baked": true,
+     "ORM": "T_OW_Boulder_c_ORM.png"
+    }
+   },
+   "masked": false,
+   "two_sided": false,
+   "source": [
+    {
+     "id": "namaqualand_boulder_04",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/namaqualand_boulder_04",
+     "authors": [
+      "Jenelle van Heerden"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Boulder_d": {
+   "kind": "boulder",
+   "lods": [
+    {
+     "fbx": "SM_OW_Boulder_d_LOD0.fbx",
+     "tris": 3000,
+     "size_mb": 0.11
+    },
+    {
+     "fbx": "SM_OW_Boulder_d_LOD1.fbx",
+     "tris": 800,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Boulder_d_LOD2.fbx",
+     "tris": 200,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    1.36,
+    0.747,
+    0.53
+   ],
+   "below_ground_m": 0.004,
+   "slots": {
+    "Rock": {
+     "BC": "T_OW_Boulder_d_BC.png",
+     "N": "T_OW_Boulder_d_N.png",
+     "N_baked": true,
+     "ORM": "T_OW_Boulder_d_ORM.png"
+    }
+   },
+   "masked": false,
+   "two_sided": false,
+   "source": [
+    {
+     "id": "namaqualand_boulder_05",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/namaqualand_boulder_05",
+     "authors": [
+      "Jenelle van Heerden",
+      "Dario Barresi"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Boulder_e": {
+   "kind": "boulder",
+   "lods": [
+    {
+     "fbx": "SM_OW_Boulder_e_LOD0.fbx",
+     "tris": 3000,
+     "size_mb": 0.11
+    },
+    {
+     "fbx": "SM_OW_Boulder_e_LOD1.fbx",
+     "tris": 800,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Boulder_e_LOD2.fbx",
+     "tris": 200,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    0.672,
+    1.208,
+    0.647
+   ],
+   "below_ground_m": 0.016,
+   "slots": {
+    "Rock": {
+     "BC": "T_OW_Boulder_e_BC.png",
+     "N": "T_OW_Boulder_e_N.png",
+     "N_baked": true,
+     "ORM": "T_OW_Boulder_e_ORM.png"
+    }
+   },
+   "masked": false,
+   "two_sided": false,
+   "source": [
+    {
+     "id": "namaqualand_boulder_06",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/namaqualand_boulder_06",
+     "authors": [
+      "Greg Zaal",
+      "Jenelle van Heerden"
+     ]
+    }
+   ]
+  },
+  "SM_OW_Boulder_f": {
+   "kind": "boulder",
+   "lods": [
+    {
+     "fbx": "SM_OW_Boulder_f_LOD0.fbx",
+     "tris": 3000,
+     "size_mb": 0.11
+    },
+    {
+     "fbx": "SM_OW_Boulder_f_LOD1.fbx",
+     "tris": 800,
+     "size_mb": 0.04
+    },
+    {
+     "fbx": "SM_OW_Boulder_f_LOD2.fbx",
+     "tris": 200,
+     "size_mb": 0.02
+    }
+   ],
+   "size_m": [
+    1.269,
+    1.822,
+    0.997
+   ],
+   "below_ground_m": 0.07,
+   "slots": {
+    "Rock": {
+     "BC": "T_OW_Boulder_f_BC.png",
+     "N": "T_OW_Boulder_f_N.png",
+     "N_baked": true,
+     "ORM": "T_OW_Boulder_f_ORM.png"
+    }
+   },
+   "masked": false,
+   "two_sided": false,
+   "source": [
+    {
+     "id": "boulder_01",
+     "license": "CC0",
+     "url": "https://polyhaven.com/a/boulder_01",
+     "authors": [
+      "Rico Cilliers"
+     ]
+    }
+   ]
+  }
+ }
+}

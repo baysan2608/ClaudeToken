@@ -21,3 +21,4 @@ unreal/Content/MetaHumans/
 # MetaHuman body exported from the Epic sample (Tools/gasp/export_mh_body.py); derived pants FBX
 unreal/SourceArt/Character/MetaHuman/
 unreal/SourceArt/VFX/Flipbooks/CC0/
+unreal/SourceArt/OpenWorld/Meshes/*.png
