@@ -5,6 +5,8 @@ __pycache__/
 *.blend1
 unreal/SourceArt/Environment/PolyHaven/
 unreal/SourceArt/OpenWorld/PolyHaven/
+# open-world ground detail scans (Tools/openworld/fetch_models.py, Poly Haven CC0; large, re-run after clone)
+unreal/SourceArt/OpenWorld/Models/
 
 # Epic Game Animation Sample content migrated by unreal/Tools/gasp/migrate_from_gasp.py (large; re-run after clone)
 unreal/Content/Characters/
@@ -18,3 +20,4 @@ unreal/Content/MetaHumans/
 
 # MetaHuman body exported from the Epic sample (Tools/gasp/export_mh_body.py); derived pants FBX
 unreal/SourceArt/Character/MetaHuman/
+unreal/SourceArt/VFX/Flipbooks/CC0/

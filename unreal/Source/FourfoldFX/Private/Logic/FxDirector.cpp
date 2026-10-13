@@ -97,6 +97,20 @@ const DrawList& FxDirector::Update(const FxFrameIn& in) {
 	world_.Update(c);
 	fx_.Step(c);
 	SelectLights(out_.lights, MinI(c.q.maxLights, 4), in.cam.pos);
+	// Persistent Niagara budget (each NS_Fire ~0.3-0.5 ms on the Mac): keep the loops nearest the camera.
+	{
+		const size_t cap = in.quality >= 2 ? 28u : 12u;
+		if (out_.loops.size() > cap) {
+			const Vec3 cam = in.cam.pos;
+			// grand-technique walls (keys 0xB1......) first, then nearest
+			std::stable_sort(out_.loops.begin(), out_.loops.end(), [&cam](const LoopReq& x, const LoopReq& y) {
+				const bool gx = (x.key & 0xFF000000u) == 0xB1000000u, gy = (y.key & 0xFF000000u) == 0xB1000000u;
+				if (gx != gy) return gx;
+				return (x.pos - cam).length_squared() < (y.pos - cam).length_squared();
+			});
+			out_.loops.resize(cap);
+		}
+	}
 	stats_.items = static_cast<int>(out_.items.size());
 	stats_.lights = static_cast<int>(out_.lights.size());
 	stats_.fractures = static_cast<int>(out_.fractures.size());
@@ -210,11 +224,10 @@ void FxDirector::UpdateGrand(Ctx& c) {
 	const Color smoke(0.34f, 0.31f, 0.29f);
 	for (const ff::BodyView& b : cur.bodies) {
 		const bool wall = b.form == ff::Form::Wave && b.props["grand"].as_bool(false);
-		const bool field = b.form == ff::Form::Zone && b.tag == "fire_field" && b.zone_radius >= 2.3f;
-		if (!wall && !field) continue;
+		if (!wall) continue;
 		const uint32_t key0 = 0xB1000000u + static_cast<uint32_t>(b.id) * 8u;
-		if (wall) {
-			// three roaring columns across the advancing wall + a smoke pall above it
+		{
+			// roaring columns across the advancing wall + a smoke pall above it
 			Vec3 fwd = b.wave_dir;
 			fwd.y = 0.0f;
 			fwd = fwd.length_squared() > 1e-6f ? Norm(fwd) : Vec3(0.0f, 0.0f, 1.0f);
@@ -234,13 +247,8 @@ void FxDirector::UpdateGrand(Ctx& c) {
 				s.intensity = 1.0f;
 				s.color = smoke;
 			}
-		} else {
-			LoopReq& l = c.out.Loop(key0, LCue::Fire, b.pos);
-			l.scale = 1.0f * b.zone_radius;
-			l.intensity = 1.3f;
-			l.color = c.cfg.flame[1];
-			l.color2 = smoke;
 		}
+		// big fields: the field view itself places its Niagara sites (FxViews), nothing extra here
 	}
 }
 

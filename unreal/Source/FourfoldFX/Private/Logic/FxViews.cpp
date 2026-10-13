@@ -981,16 +981,18 @@ public:
 			const int n = Sites(sites);
 			for (int k = 0; k < n; ++k) {
 				LoopReq& l = c.out.Loop(loopKeys_[static_cast<size_t>(k)], cue, sites[static_cast<size_t>(k)]);
-				l.scale = (sel.style == "field" ? Clamp(radius_ * 0.45f, 0.6f, 1.2f) : 0.75f) * (0.75f + 0.25f * intensity_);
+				const bool big = radius_ >= 2.3f;   // grand-technique fields: real flames, waist to head high
+				l.scale = (big ? radius_ * 0.85f : (sel.style == "field" ? Clamp(radius_ * 0.45f, 0.6f, 1.2f) : 0.75f)) *
+				          (0.75f + 0.25f * intensity_);
 				l.intensity = intensity_;
 				l.color = cols[1];
 				l.color2 = smoke;
 			}
 		}
 		// big (grand) fields: the Niagara fire carries the look, the procedural tongues only glow underneath
-		const float tongues = loops && c.cfg.Loop(cue).replace ? (radius_ >= 2.3f ? 0.22f : 0.55f) : 1.0f;
+		const float tongues = loops && c.cfg.Loop(cue).replace ? 0.55f : 1.0f;
 		flames_.SetIntensity(intensity_ * tongues);
-		flames_.Draw(c, x_, fade, true);
+		if (!(loops && radius_ >= 2.3f)) flames_.Draw(c, x_, fade, true);   // big fields: the Niagara fire alone
 	}
 	float FadeTime() const override { return 0.35f; }
 

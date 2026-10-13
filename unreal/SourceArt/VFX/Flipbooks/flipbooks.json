@@ -7,49 +7,63 @@
       "frames": 64,
       "grid": 8,
       "tile": 128,
-      "seconds": 39.6
+      "seconds": 39.6,
+      "source": "CC0 Unity Labs VFX sequences: WispySmoke02",
+      "generator": "unreal/Tools/vfx/cc0_flipbooks_to_house.py"
     },
     "steam_puff": {
       "file": "SourceArt/VFX/Flipbooks/T_FX_FB_steam_puff.png",
       "frames": 64,
       "grid": 8,
       "tile": 128,
-      "seconds": 38.8
+      "seconds": 38.8,
+      "source": "CC0 Unity Labs VFX sequences: WispySmoke03",
+      "generator": "unreal/Tools/vfx/cc0_flipbooks_to_house.py"
     },
     "dust_puff": {
       "file": "SourceArt/VFX/Flipbooks/T_FX_FB_dust_puff.png",
       "frames": 64,
       "grid": 8,
       "tile": 128,
-      "seconds": 18.8
+      "seconds": 18.8,
+      "source": "CC0 Unity Labs VFX sequences: Explosion01-nofire",
+      "generator": "unreal/Tools/vfx/cc0_flipbooks_to_house.py"
     },
     "sand_burst": {
       "file": "SourceArt/VFX/Flipbooks/T_FX_FB_sand_burst.png",
       "frames": 64,
       "grid": 8,
       "tile": 128,
-      "seconds": 19.5
+      "seconds": 19.5,
+      "source": "CC0 Unity Labs VFX sequences: Explosion01-nofire",
+      "generator": "unreal/Tools/vfx/cc0_flipbooks_to_house.py"
     },
     "fire_loop": {
       "file": "SourceArt/VFX/Flipbooks/T_FX_FB_fire_loop.png",
       "frames": 64,
       "grid": 8,
-      "tile": 128,
-      "seconds": 153.6
+      "tile": 256,
+      "seconds": 153.6,
+      "source": "CC0 Unity Labs VFX sequences: Flame02",
+      "generator": "unreal/Tools/vfx/cc0_flipbooks_to_house.py"
     },
     "fire_burst": {
       "file": "SourceArt/VFX/Flipbooks/T_FX_FB_fire_burst.png",
       "frames": 64,
       "grid": 8,
-      "tile": 128,
-      "seconds": 81.6
+      "tile": 256,
+      "seconds": 81.6,
+      "source": "CC0 Unity Labs VFX sequences: FireBall01",
+      "generator": "unreal/Tools/vfx/cc0_flipbooks_to_house.py"
     },
     "explosion": {
       "file": "SourceArt/VFX/Flipbooks/T_FX_FB_explosion.png",
       "frames": 64,
       "grid": 8,
-      "tile": 128,
-      "seconds": 64.7
+      "tile": 256,
+      "seconds": 64.7,
+      "source": "CC0 Unity Labs VFX sequences: Explosion01",
+      "generator": "unreal/Tools/vfx/cc0_flipbooks_to_house.py"
     },
     "water_splash": {
       "file": "SourceArt/VFX/Flipbooks/T_FX_FB_water_splash.png",
@@ -65,5 +79,6 @@
       "tile": 256,
       "seconds": 21.0
     }
-  }
+  },
+  "license_notes": "fire / smoke / explosion atlases: CC0 1.0 (Unity Labs 2016 VFX image sequences); others: generated"
 }
