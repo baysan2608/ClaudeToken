@@ -777,6 +777,11 @@ void AFourfoldFighter::UpdateMaterials(const ff::ActorView& Actor, float Dt)
 	if (Actor.charge.active && Actor.charge.max_tier > 0)
 	{
 		GlowT = FMath::Clamp((float(Actor.charge.tier) + Actor.charge.frac) / float(Actor.charge.max_tier), 0.0f, 1.0f);
+		// the skin only takes the element's light where it would: a cool sheen while lightning crawls over the body,
+		// faint warmth from fire at the fists, nothing for water / earth / air (the element itself is drawn by the FX)
+		const int32 El = Actor.action.active ? Actor.action.element : Actor.element;
+		const int32 Sub = Actor.action.active ? Actor.action.sub : 0;
+		GlowT *= (El == 2 && Sub == 2) ? 0.45f : (El == 2 ? 0.18f : 0.0f);
 	}
 	S.Wet += (FMath::Clamp(Actor.wetness, 0.0f, 1.0f) - S.Wet) * K;
 	S.Frost += (FrostT - S.Frost) * K;

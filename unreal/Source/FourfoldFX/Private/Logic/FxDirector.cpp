@@ -289,98 +289,185 @@ void FxDirector::BurstM(Ctx& c, const Vec3& pos, const Vec3& normal, float stren
 }
 
 // ============================================================================================== fighters
+void BuildBodyArcs(Ctx& c, int actor, int count, bool ground, Rng& rng, std::vector<BoltLine>& out, MeshData& mesh) {
+	static constexpr Bone kPairs[][2] = {
+		{Bone::HandL, Bone::Chest}, {Bone::HandR, Bone::Chest}, {Bone::HandL, Bone::HandR}, {Bone::Chest, Bone::Head},
+		{Bone::Chest, Bone::Pelvis}, {Bone::Pelvis, Bone::FootL}, {Bone::Pelvis, Bone::FootR}, {Bone::HandL, Bone::Head},
+		{Bone::HandR, Bone::Pelvis}, {Bone::Spine, Bone::HandR}, {Bone::Spine, Bone::HandL}, {Bone::Head, Bone::HandR}};
+	constexpr int kNumPairs = static_cast<int>(sizeof(kPairs) / sizeof(kPairs[0]));
+	out.clear();
+	std::vector<BoltLine> one;
+	BoltParams bp;
+	bp.jitter = 0.07f;
+	bp.maxLevels = MaxI(3, c.q.boltLevels - 2);
+	bp.maxSegment = 0.08f;
+	bp.width = 0.03f;
+	bp.minBranches = 0;
+	bp.maxBranches = 1;
+	bp.branchLen = 0.4f;
+	for (int k = 0; k < count; ++k) {
+		const auto& pr = kPairs[static_cast<int>(rng.Range(0.0f, static_cast<float>(kNumPairs) - 0.001f))];
+		// a little off the skin so the arc wraps around the body instead of cutting through it
+		const Vec3 a = c.Anchor(actor, pr[0]) + rng.OnSphere() * 0.08f;
+		const Vec3 b = c.Anchor(actor, pr[1]) + rng.OnSphere() * 0.08f;
+		const Vec3 mid = (a + b) * 0.5f + rng.OnSphere() * rng.Range(0.1f, 0.22f);
+		GenerateBolt({a, mid, b}, static_cast<uint32_t>(rng.Range(0.0f, 1e9f)), bp, one);
+		out.insert(out.end(), one.begin(), one.end());
+	}
+	if (ground) {
+		for (const Bone h : {Bone::HandL, Bone::HandR}) {
+			const Vec3 a = c.Anchor(actor, h);
+			Vec3 g = c.ActorPos(actor) + Vec3(rng.Range(-1.4f, 1.4f), 0.0f, rng.Range(-1.4f, 1.4f));
+			g.y = c.GroundAt(g.x, g.z, a.y);
+			BoltParams gp = bp;
+			gp.width = 0.026f;
+			gp.jitter = 0.12f;
+			gp.maxSegment = 0.12f;
+			GenerateBolt({a, (a + g) * 0.5f + rng.OnSphere() * 0.25f, g}, static_cast<uint32_t>(rng.Range(0.0f, 1e9f)), gp, one);
+			out.insert(out.end(), one.begin(), one.end());
+		}
+	}
+	mesh.Clear();
+	BuildBoltMesh(mesh, out, c.in.cam.pos);
+	mesh.Commit();
+}
+
+// Charging: the element itself gathers on the fighter (no shells or rings). Lightning crawls over the whole body,
+// fire burns at both fists with embers rising off the body, water spirals up the arms, earth lifts grit off the ground,
+// air winds around the body.
 void FxDirector::ChargeFx::Draw(Ctx& c, const Vec3& hands, const Vec3& feet) {
 	t += c.dt;
+	scroll += c.dt;
 	const int tr = MaxI(tier, 0);
 	const float ft = static_cast<float>(tr);
 	const Color col = Linear(c.cfg.MatColor(fam));
-	// T1+: hand ring (camera-facing), pulsing from T2
-	const float grow = ft + frac * 0.6f;
-	const float rr = 0.14f + 0.12f * grow;
-	const float pul = 1.0f + (tr >= 2 ? 0.12f * std::sin(t * 14.0f) : 0.0f);
-	Xform xr;
-	xr.pos = hands;
-	const float sq = rr * pul / 0.8f;
-	xr.basis = c.Facing(hands).Scaled(sq, sq, 1.0f);
-	DrawItem& ring = c.out.Add(keyRing, MatSlot::Ring, &meshlib::FaceQuad(), xr);
-	ring.params.Set(PV::Color, col);
-	ring.params.Set(P::Cover, 0.15f);
-	ring.params.Set(P::Opacity, 0.5f + 0.12f * ft);
-	ring.params.Set(P::Width, 0.08f + 0.02f * ft);
-	ring.params.Set(P::Glow, 1.0f + 0.3f * ft + (glint > 0 ? 5.0f * c.cfg.flashScale * c.in.flashes : 0.0f));
-	ring.params.Set(P::Radius, 0.8f);
-	ring.params.Set(P::Phase, t);
-	ring.sortPriority = 3;
-	// motes: sparks drawn in toward the hands (energy gathering), more with the tier
+	const bool lightning = fam == Fam::Lightning;
+	const bool fire = fam == Fam::Flame || fam == Fam::Blue || fam == Fam::Blast;
+	const bool water = fam == Fam::Water || fam == Fam::Ice || fam == Fam::Mist || fam == Fam::Steam || fam == Fam::Plant;
+	const bool air = fam == Fam::Wind || fam == Fam::Vortex || fam == Fam::Vacuum || fam == Fam::Sound;
+	const bool earth = !lightning && !fire && !water && !air;
+	const float charge = Sat((ft + frac) / 3.0f);   // 0 .. 1 over the tiers
+	Rng& r = motes.R();
+	if (lightning) {
+		arcT -= c.dt;
+		if (arcT <= 0.0f || arcMesh.Empty()) {
+			arcT = r.Range(0.04f, 0.075f);
+			BuildBodyArcs(c, actor, 2 + 2 * tr, tr >= 3, r, arcLines, arcMesh);
+		}
+		DrawItem& it = c.out.Add(keyArcs, MatSlot::Lightning, &arcMesh);
+		it.params.Set(P::Age, 0.1f);
+		it.params.Set(P::Intensity, 1.0f + 0.3f * ft + (glint > 0 ? 0.8f : 0.0f));
+		it.params.Set(PV::Color, Linear(c.cfg.MatColor(Fam::Lightning)));
+		it.sortPriority = 3;
+	}
+	if (fire) {
+		// a living flame in each fist, growing with the charge
+		const std::array<Color, 4>& cols = fam == Fam::Blue ? c.cfg.blueFlame : c.cfg.flame;
+		const float size = 0.12f + 0.2f * charge;
+		int side = 0;
+		for (const Bone h : {Bone::HandL, Bone::HandR}) {
+			Xform x;
+			x.pos = c.Anchor(actor, h) - Vec3(0.0f, size * 0.2f, 0.0f);
+			x.basis = Basis::Identity().Scaled(size * 0.45f, size * 1.7f, size * 0.45f);
+			DrawItem& it = c.out.Add(side == 0 ? keyFlameL : keyFlameR, MatSlot::Flame, &meshlib::Flame(), x);
+			it.params.Set(P::Style, 1.0f);
+			it.params.Set(P::Shape, 1.0f);
+			it.params.Set(P::Core, 0.0f);
+			it.params.Set(P::Cover, 0.7f);
+			it.params.Set(P::Scroll, scroll + 0.37f * static_cast<float>(side));
+			it.params.Set(P::Intensity, 0.8f + 0.7f * charge);
+			it.params.Set(P::Seed, side == 0 ? 0.21f : 0.64f);
+			it.params.Set(PV::Color, Linear(cols[0]));
+			it.params.Set(PV::Color2, Linear(cols[1]));
+			it.params.Set(PV::Color3, Linear(cols[2]));
+			it.params.Set(PV::Color4, Linear(cols[3]));
+			it.sortPriority = 2;
+			++side;
+		}
+	}
+	// particles of the element itself
 	moteT -= c.dt;
-	if (moteT <= 0.0f && tr >= 1) {
-		moteT = 0.09f / (1.0f + 0.5f * ft);
+	const float rate = (fire ? 40.0f : water ? 55.0f : earth ? 0.0f : air ? 60.0f : 18.0f) * (0.4f + 0.3f * ft);
+	while (moteT <= 0.0f) {
+		moteT += 1.0f / MaxF(rate, 1.0f);
 		Particle* p = motes.Spawn();
-		if (p) {
-			Rng& r = motes.R();
-			const Vec3 off = r.OnSphere() * r.Range(0.35f, 0.6f);
-			p->p = hands + off;
-			p->v = off * -2.2f;
-			p->life = 0.28f;
+		if (!p) break;
+		const Vec3 body = c.ActorPos(actor);
+		if (fire) {
+			const Bone from = r.F01() < 0.6f ? (r.F01() < 0.5f ? Bone::HandL : Bone::HandR) : (r.F01() < 0.5f ? Bone::FootL : Bone::FootR);
+			p->p = c.Anchor(actor, from) + r.InSphere() * 0.08f;
+			p->v = Vec3(r.Range(-0.4f, 0.4f), r.Range(1.0f, 2.4f), r.Range(-0.4f, 0.4f));
+			p->life = r.Range(0.35f, 0.7f);
 			p->size0 = 0.035f;
-			p->size1 = 0.01f;
-			p->c0 = col.WithA(1.0f) * 1.0f;
+			p->size1 = 0.008f;
+			p->c0 = Linear(c.cfg.flame[1]).WithA(1.0f) * 1.6f;
+			p->c1 = Linear(c.cfg.flame[2]).WithA(0.0f);
+		} else if (water) {
+			const Vec3 hub = r.F01() < 0.5f ? c.Anchor(actor, Bone::HandL) : c.Anchor(actor, Bone::HandR);
+			const float ang = r.Range(0.0f, 6.2831f), rad = r.Range(0.18f, 0.32f);
+			const Vec3 off(std::cos(ang) * rad, r.Range(-0.25f, 0.05f), std::sin(ang) * rad);
+			p->p = hub + off;
+			p->v = Vec3(-off.z, 0.0f, off.x) * (9.0f + 4.0f * ft) + Vec3(0.0f, 0.5f, 0.0f);   // spiralling round the arm
+			p->life = r.Range(0.3f, 0.55f);
+			p->size0 = 0.05f;
+			p->size1 = 0.03f;
+			p->c0 = Color(0.82f, 0.92f, 1.0f, 0.9f);
+			p->c1 = Color(0.6f, 0.8f, 1.0f, 0.0f);
+		} else if (earth) {
+			const float ang = r.Range(0.0f, 6.2831f), rad = r.Range(0.35f, 1.3f);
+			Vec3 g = body + Vec3(std::cos(ang) * rad, 0.0f, std::sin(ang) * rad);
+			g.y = c.GroundAt(g.x, g.z, body.y + 0.5f) + 0.02f;
+			p->p = g;
+			p->v = Vec3(0.0f, r.Range(0.5f, 1.3f + 0.3f * ft), 0.0f);
+			p->life = r.Range(0.6f, 1.1f);
+			p->size0 = r.Range(0.025f, 0.055f);
+			p->size1 = p->size0 * 0.8f;
+			p->c0 = (fam == Fam::Magma ? Linear(c.cfg.flame[1]) * 1.3f : col * 0.55f).WithA(1.0f);
+			p->c1 = (fam == Fam::Magma ? Linear(c.cfg.flame[2]) : col * 0.45f).WithA(0.0f);
+		} else if (air) {
+			const float ang = r.Range(0.0f, 6.2831f), rad = r.Range(0.55f, 0.85f);
+			const Vec3 off(std::cos(ang) * rad, r.Range(0.1f, 1.7f), std::sin(ang) * rad);
+			p->p = body + off;
+			p->v = Vec3(-off.z, 0.0f, off.x) * (6.0f + 2.0f * ft) + Vec3(0.0f, 0.7f, 0.0f);
+			p->life = r.Range(0.25f, 0.45f);
+			p->size0 = 0.045f;
+			p->size1 = 0.015f;
+			p->c0 = Color(0.9f, 0.94f, 1.0f, 0.55f);
+			p->c1 = Color(0.9f, 0.94f, 1.0f, 0.0f);
+		} else {   // lightning: sparks jumping off the hands
+			p->p = hands + r.InSphere() * 0.1f;
+			p->v = r.OnSphere() * r.Range(1.5f, 3.5f);
+			p->life = 0.18f;
+			p->size0 = 0.02f;
+			p->size1 = 0.004f;
+			p->c0 = col.WithA(1.0f) * 2.0f;
 			p->c1 = col.WithA(0.0f);
 		}
 	}
 	ParticlePhysics ph;
-	ph.drag = 1.5f;
+	ph.drag = earth ? 1.6f : water ? 3.0f : air ? 2.0f : 1.2f;
+	ph.gravity = earth ? 0.6f : 0.0f;
 	motes.Step(c.dt, ph);
 	ParticleLook lk;
-	lk.streak = true;
-	lk.streakScale = 0.05f;
-	lk.fadeIn = 0.2f;
-	lk.fadeOut = 0.3f;
+	lk.streak = !earth;
+	lk.streakScale = air ? 0.16f : water ? 0.08f : 0.04f;
+	lk.fadeIn = 0.15f;
+	lk.fadeOut = 0.35f;
 	motes.Build(motesMesh, c.in.cam.pos, c.in.cam.up, lk);
 	motesMesh.Commit();
 	DrawItem& m = c.out.Add(keyMotes, MatSlot::Spark, &motesMesh);
-	m.params.Set(P::EmissiveScale, 2.0f + ft);
+	m.params.Set(P::EmissiveScale, fire || lightning ? 2.0f + ft : earth ? 0.25f : 0.6f);
 	m.sortPriority = 3;
-	// T1+: ground ripple at the feet
-	if (tr >= 1) {
-		const float rp = std::fmod(t * (0.7f + 0.25f * ft), 1.0f);
-		const float r2 = (0.3f + 0.9f * rp) * (0.6f + 0.4f * ft);
-		Xform xg;
-		xg.pos = feet + Vec3(0.0f, 0.03f, 0.0f);
-		xg.basis = Basis::Identity().Scaled(r2 / 0.8f, 1.0f, r2 / 0.8f);
-		DrawItem& g = c.out.Add(keyRipple, MatSlot::Ring, &meshlib::GroundQuad(), xg);
-		g.params.Set(PV::Color, col);
-		g.params.Set(P::Cover, 0.6f);
-		g.params.Set(P::Opacity, (1.0f - rp) * (0.25f + 0.12f * ft));
-		g.params.Set(P::Width, 0.03f + 0.012f * ft);
-		g.params.Set(P::Radius, 0.8f);
-		g.params.Set(P::Glow, 1.2f);
-		g.params.Set(P::Phase, t);
-	}
-	// T2: a faint body rim; T3: the full aura shell
-	if (tr >= 2) {
-		const float big = tr >= 3 ? 1.0f : 0.82f;
-		Xform xa;
-		xa.pos = feet + Vec3(0.0f, 0.95f, 0.0f);
-		const float wob = 1.0f + 0.04f * std::sin(t * 9.0f);
-		xa.basis = Basis::Identity().Scaled(0.66f * big * wob, 1.08f * big * wob, 0.66f * big * wob);
-		DrawItem& a = c.out.Add(keyAura, MatSlot::Shell, &meshlib::Sphere(2), xa);
-		a.params.Set(PV::Color, col);
-		a.params.Set(PV::Color2, col);
-		a.params.Set(P::Rim, 2.2f);
-		a.params.Set(P::Streak, -0.4f);
-		a.params.Set(P::Pulse, 0.25f);
-		a.params.Set(P::Phase, t);
-		a.params.Set(P::Opacity, (tr >= 3 ? 0.34f : 0.14f) + 0.5f * pulse);
-		a.params.Set(P::Glow, 1.1f);
-		a.params.Set(P::Cover, 0.3f);
-		a.sortPriority = 1;
-	}
+	// light: flickering for lightning / fire, a soft glow otherwise
 	pulse = MaxF(0.0f, pulse - c.dt * 2.5f);
-	const float steady = tr >= 3 ? 0.55f + 0.2f * std::sin(t * 9.0f) : 0.0f;
-	const float le = (1.6f * pulse + steady) * MaxF(c.in.flashes, 0.3f);
-	if (le > 0.02f) c.out.Light(keyLight, hands, c.cfg.MatColor(fam), le, 4.0f, 2.2f);
+	// a lit fighter, not a lit courtyard: small, flickering lights
+	float le = 0.35f * pulse;
+	if (lightning) le += (0.12f + 0.1f * ft) * (0.55f + 0.45f * std::sin(t * 53.0f) * std::sin(t * 31.0f));
+	else if (fire) le += (0.06f + 0.14f * charge) * (0.85f + 0.15f * std::sin(t * 21.0f) * std::sin(t * 7.7f));
+	le *= MaxF(c.in.flashes, 0.3f);
+	if (le > 0.01f) c.out.Light(keyLight, lightning ? c.Chest(actor) : hands, c.cfg.MatColor(fire ? Fam::Flame : fam), le, 2.2f, 1.6f);
 	if (glint > 0) --glint;
+	(void)feet;
 }
 
 void FxDirector::FireChargeFx::Draw(Ctx& c, const Vec3& hands, const Vec3& target, float charge01) {
@@ -410,7 +497,7 @@ void FxDirector::FireChargeFx::Draw(Ctx& c, const Vec3& hands, const Vec3& targe
 			it.sortPriority = core ? 3 : 2;
 		}
 		const float flick = 0.85f + 0.15f * std::sin(scroll * 21.0f) * std::sin(scroll * 7.7f);
-		c.out.Light(keyLight, hands, Color(1.0f, 0.55f, 0.2f), (0.15f + 1.65f * charge01 * charge01) * flick, 4.0f, 1.8f);
+		c.out.Light(keyLight, hands, Color(1.0f, 0.55f, 0.2f), (0.04f + 0.22f * charge01 * charge01) * flick, 2.2f, 1.4f);
 		return;
 	}
 	// bolt ready: a thin crackling line that calms and brightens as the charge completes
@@ -512,7 +599,16 @@ void FxDirector::DashTrail(Ctx& c, int actor, const Vec3& dir) {
 
 void FxDirector::UpdateActors(Ctx& c) {
 	const ff::Snapshot& cur = *c.in.curr;
-	// ---- charge tiers: live while the action charges / channels
+	// ---- charge tiers: live while the action charges / channels (from the first charging frame, not only from T1)
+	for (const ff::ActorView& a : cur.actors) {
+		if (ActionCharging(a) && a.action.id != "guard" && a.action.slot != ff::Slot::Guard && !charges_.count(a.id)) {
+			auto ch = std::make_unique<ChargeFx>();
+			ch->Init(c, a.id);
+			ch->fam = FamOfSub(a.action.element, a.action.sub);
+			ch->tier = 0;
+			charges_.emplace(a.id, std::move(ch));
+		}
+	}
 	for (auto it = charges_.begin(); it != charges_.end();) {
 		const ff::ActorView* a = c.Actor(it->first);
 		if (!a || !ActionCharging(*a)) {
@@ -522,6 +618,34 @@ void FxDirector::UpdateActors(Ctx& c) {
 		ChargeFx& ch = *it->second;
 		ch.Set(MaxI(ch.tier, a->charge.tier), a->charge.frac, ch.fam);
 		ch.Draw(c, c.Hands(a->id), c.ActorPos(a->id));
+		// the world answers the gathering element: dust lifting off the floor, wind circling, spray, embers
+		ch.ambT -= c.dt;
+		if (ch.ambT <= 0.0f) {
+			const float ft = static_cast<float>(MaxI(ch.tier, 0));
+			const Vec3 feet = c.ActorPos(a->id);
+			const Fam f = ch.fam;
+			Rng& r = ch.motes.R();
+			if (f == Fam::Stone || f == Fam::Metal || f == Fam::Sand || f == Fam::Magma || f == Fam::Glass) {
+				ch.ambT = 0.3f - 0.04f * ft;
+				const float ang = r.Range(0.0f, 6.2831f), rad = r.Range(0.4f, 1.1f);
+				Vec3 g = feet + Vec3(std::cos(ang) * rad, 0.0f, std::sin(ang) * rad);
+				g.y = c.GroundAt(g.x, g.z, feet.y + 0.5f);
+				fx_.Dust(c, g, Vec3(0.0f, 1.0f, 0.0f), 0.22f + 0.12f * ft, cfg_.DustColor(f == Fam::Sand ? Fam::Sand : Fam::Stone));
+				if (r.F01() < 0.35f) world_.DustRing(c, feet, 0.9f + 0.25f * ft, 0.35f + 0.15f * ft, cfg_.world.dust);
+			} else if (f == Fam::Wind || f == Fam::Vortex || f == Fam::Vacuum || f == Fam::Sound) {
+				ch.ambT = 0.28f - 0.03f * ft;
+				world_.DustRing(c, feet, 1.2f + 0.3f * ft, 0.3f + 0.12f * ft, Color(0.62f, 0.6f, 0.56f));
+			} else if (f == Fam::Water || f == Fam::Ice || f == Fam::Mist || f == Fam::Steam || f == Fam::Plant) {
+				ch.ambT = 0.32f - 0.04f * ft;
+				const Vec3 h = r.F01() < 0.5f ? c.Anchor(a->id, Bone::HandL) : c.Anchor(a->id, Bone::HandR);
+				fx_.Splash(c, h, Vec3(0.0f, 1.0f, 0.0f), 0.12f + 0.08f * ft);
+			} else if (f == Fam::Flame || f == Fam::Blue || f == Fam::Blast) {
+				ch.ambT = 0.22f;
+				fx_.Ember(c, c.Hands(a->id), Vec3(0.0f, 1.0f, 0.0f), 0.25f + 0.1f * ft);
+			} else {
+				ch.ambT = 1.0f;
+			}
+		}
 		++it;
 	}
 	// ---- legacy fire charge flame / bolt aim line (from the action state, FxDirector._charge_visual)
@@ -655,23 +779,19 @@ void FxDirector::UpdateActors(Ctx& c) {
 			continue;
 		}
 		au.phase += c.dt;
-		Xform x;
-		x.pos = c.Anchor(a->id, Bone::Pelvis);
-		x.basis = Basis::Identity().Scaled(0.75f, 0.75f * 1.3f, 0.75f);
-		const ShellLook& sl = cfg_.Shell(ShellStyle::Aura);
-		DrawItem& d = c.out.Add(au.key, MatSlot::Shell, &meshlib::Sphere(2), x);
-		d.params.Set(PV::Color, Linear(cfg_.MatColor(au.fam)));
-		d.params.Set(PV::Color2, Linear(cfg_.MatColor(au.fam)));
-		d.params.Set(P::Rim, sl.rim);
-		d.params.Set(P::Pulse, sl.pulse);
-		d.params.Set(P::Opacity, sl.opacity * au.fade);
-		d.params.Set(P::Glow, sl.glow);
-		d.params.Set(P::Phase, au.phase);
-		d.params.Set(P::Cover, 0.3f);
-		d.params.Set(P::Height, 1.3f);
-		d.sortPriority = 1;
-		d.attachActor = a->id;
-		d.attachBone = Bone::Pelvis;
+		// no shells around fighters: a lightning-family aura (static charge) crawls over the body, others show in pose
+		if (au.fam == Fam::Lightning) {
+			au.restrike -= c.dt;
+			if (au.restrike <= 0.0f || au.mesh.Empty()) {
+				au.restrike = au.rng.Range(0.06f, 0.14f);
+				BuildBodyArcs(c, a->id, 2, false, au.rng, au.lines, au.mesh);
+			}
+			DrawItem& d = c.out.Add(au.key, MatSlot::Lightning, &au.mesh);
+			d.params.Set(P::Age, 0.2f);
+			d.params.Set(P::Intensity, 0.45f * au.fade);
+			d.params.Set(PV::Color, Linear(cfg_.MatColor(Fam::Lightning)));
+			d.sortPriority = 3;
+		}
 		++it;
 	}
 	// ---- transients: water lash arcs, water draw streams, dash trails

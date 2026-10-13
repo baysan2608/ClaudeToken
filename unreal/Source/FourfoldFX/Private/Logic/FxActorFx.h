@@ -17,9 +17,13 @@ struct FxDirector::ChargeFx {
 	std::string move;
 	float t = 0.0f, pulse = 0.0f, moteT = 0.0f;
 	int glint = 0;
-	uint32_t keyRing = 0, keyRipple = 0, keyAura = 0, keyLight = 0, keyMotes = 0;
+	uint32_t keyRing = 0, keyRipple = 0, keyAura = 0, keyLight = 0, keyMotes = 0, keyArcs = 0, keyFlameL = 0, keyFlameR = 0;
 	ParticleSet motes;
 	MeshData motesMesh;
+	// lightning: arcs crawling over the whole body (re-struck every few frames)
+	std::vector<BoltLine> arcLines;
+	MeshData arcMesh;
+	float arcT = 0.0f, scroll = 0.0f, ambT = 0.0f;   // ambT: next dust / gust / spray / ember puff (FxDirector)
 	void Init(Ctx& c, int a) {
 		actor = a;
 		keyRing = c.keys.New();
@@ -27,7 +31,10 @@ struct FxDirector::ChargeFx {
 		keyAura = c.keys.New();
 		keyLight = c.keys.New();
 		keyMotes = c.keys.New();
-		motes.Reset(12, static_cast<uint32_t>(a) * 97u + 5u);
+		keyArcs = c.keys.New();
+		keyFlameL = c.keys.New();
+		keyFlameR = c.keys.New();
+		motes.Reset(64, static_cast<uint32_t>(a) * 97u + 5u);
 	}
 	void Set(int newTier, float newFrac, Fam f) {
 		frac = Sat(newFrac);
@@ -84,9 +91,15 @@ struct FxDirector::AuraFx {
 	int actor = -1;
 	Fam fam = Fam::Wind;
 	uint32_t key = 0;
-	float phase = 0.0f, fade = 0.0f;
+	float phase = 0.0f, fade = 0.0f, restrike = 0.0f;
 	bool on = true;
+	std::vector<BoltLine> lines;   // lightning family: static crawling over the body (no shell)
+	MeshData mesh;
+	Rng rng;
 };
+
+// Arcs between body points (hands, chest, head, hips, feet) of `actor`; `ground` adds hand -> floor strikes.
+void BuildBodyArcs(Ctx& c, int actor, int count, bool ground, Rng& rng, std::vector<BoltLine>& out, MeshData& mesh);
 
 struct FxDirector::Transient {
 	enum class Kind : uint8_t { Lash, Draw, Dash } kind = Kind::Lash;

@@ -825,8 +825,7 @@ void FxDirector::CueCharge(Ctx& c, const ff::Value& d) {
 	ChargeFx& ch = *it->second;
 	ch.Set(tier, 0.0f, mat);
 	ch.move = S(d, "move");
-	// the tier step itself: a quick flash ring at the hands
-	RingM(c, c.Hands(a), kBack, 0.05f, 0.35f + 0.1f * static_cast<float>(tier), 0.2f, mat, Opts(0.0f, 2.0f + static_cast<float>(tier), 1, true));
+	// the tier step itself reads through the element (ChargeFx pulse / glint), no flash ring
 }
 
 void FxDirector::CueStatus(Ctx& c, const ff::Value& d, bool fromEvent) {

@@ -946,16 +946,25 @@ void AFourfoldPlayerController::PollSimInput(ff::InputFrame& Out, float& InOutCa
 				}
 			}
 		}
-		// -FFElement=<0..3> picks the element on the first frame; -FFGrand=<s>[,<s>...] presses the grand technique
-		// and -FFLeap=<s>[,...] the leap at those times (seconds after the first polled frame).
+		// -FFElement=<0..3> / -FFSub=<0..3> pick element / sub on the first frames; -FFGrand=<s>[,<s>...] presses the grand
+		// technique and -FFLeap=<s>[,...] the leap at those times (seconds after the first polled frame);
+		// -FFCharge=<s>:<dur> holds ATTACK (charging) from s for dur seconds.
 		static TArray<double> GrandAt, LeapAt;
-		static int32 StartElement = -2;
+		static int32 StartElement = -2, StartSub = -1;
+		static double ChargeAt = -1.0, ChargeDur = 0.0;
 		static double DevStart = -1.0;
 		if (StartElement == -2)
 		{
 			StartElement = -1;
 			FString Spec;
 			if (FParse::Value(FCommandLine::Get(), TEXT("-FFElement="), Spec, false)) StartElement = FCString::Atoi(*Spec);
+			if (FParse::Value(FCommandLine::Get(), TEXT("-FFSub="), Spec, false)) StartSub = FCString::Atoi(*Spec);
+			FString CW, CD;
+			if (FParse::Value(FCommandLine::Get(), TEXT("-FFCharge="), Spec, false) && Spec.Split(TEXT(":"), &CW, &CD))
+			{
+				ChargeAt = FCString::Atod(*CW);
+				ChargeDur = FCString::Atod(*CD);
+			}
 			for (const TPair<const TCHAR*, TArray<double>*>& Opt : {TPair<const TCHAR*, TArray<double>*>(TEXT("-FFGrand="), &GrandAt),
 			                                                          TPair<const TCHAR*, TArray<double>*>(TEXT("-FFLeap="), &LeapAt)})
 			{
@@ -972,6 +981,26 @@ void AFourfoldPlayerController::PollSimInput(ff::InputFrame& Out, float& InOutCa
 		{
 			DevStart = Now;
 			if (StartElement >= 0) F.element_select = StartElement;
+		}
+		else if (StartSub >= 0 && Now - DevStart > 0.3)
+		{
+			F.sub_select = StartSub;   // after the element switch landed
+			StartSub = -1;
+		}
+		if (ChargeAt >= 0.0)
+		{
+			const double Tc = Now - DevStart - ChargeAt;
+			if (Tc >= 0.0 && Tc < ChargeDur)
+			{
+				static bool bPressed = false;
+				F.attack_pressed = !bPressed;
+				F.attack_held = true;
+				bPressed = true;
+			}
+			else if (Tc >= ChargeDur && Tc < ChargeDur + 0.2)
+			{
+				F.attack_released = true;
+			}
 		}
 		for (TArray<double>* List : {&GrandAt, &LeapAt})
 		{

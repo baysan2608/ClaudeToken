@@ -1096,8 +1096,8 @@ public:
 		core.sortPriority = 3;
 		if (kind_ != 2)
 			c.out.Light(keyLight_, pos_, blue_ ? Color(0.5f, 0.7f, 1.0f) : Color(1.0f, 0.55f, 0.2f),
-			            (kind_ == 1 ? 1.2f : 1.5f) * power_ * (0.85f + 0.15f * std::sin(scroll_ * 17.0f)) * fade,
-			            Clamp(radius_ * 10.0f, 2.0f, 6.0f), 2.0f);
+			            (kind_ == 1 ? 0.45f : 0.55f) * power_ * (0.85f + 0.15f * std::sin(scroll_ * 17.0f)) * fade,
+			            Clamp(radius_ * 7.0f, 1.5f, 4.0f), 2.0f);   // a lit fighter / floor patch, not a lit courtyard
 		// a smoke / flare trail follows the ball (the system's particles stay in the world as it moves)
 		const LCue cue = blue_ ? LCue::TrailBlue : LCue::TrailFire;
 		if (kind_ != 2 && fade >= 1.0f && c.LoopOn(cue)) {
