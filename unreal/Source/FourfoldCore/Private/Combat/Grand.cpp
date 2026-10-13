@@ -99,15 +99,17 @@ void ensure_defs() {
 	up.set("anim", dstr(Moves::defs().get("rising_fangs").as_dict(), "anim", "mv_ground_slap"));
 	up.set("threat", D({{"cls", "spikes"}}));
 	Moves::register_def("grand_upheaval", up);
-	// the firestorm reuses the flame-line machinery (FireFlame::line_execute + line_tick) at grand scale
+	// the firestorm reuses the flame-line machinery (FireFlame::line_execute + line_tick) at grand scale: 7 heads 40 deg apart
+	// overlap (4.5 m wide, at most 3.6 m apart at 30 m), so the front and the burning band behind it are one continuous wall;
+	// 7 x 3 trail fields + 7 heads stay under Sim::MAX_BODIES
 	Dict fs = Moves::defs().get("fire_line").as_dict().duplicate(true);
 	fs.erase("tiers");
 	fs.erase("hook_execute");
-	const Dict b = base_def(2, "Firestorm", "A fan of flame walls rolls 30 m out and leaves the ground burning.");
+	const Dict b = base_def(2, "Firestorm", "A 40 degree wall of flame rolls 30 m out and leaves the ground burning.");
 	for (const auto& kv : b) fs.set(kv.first, kv.second);
-	for (const auto& kv : D({{"startup", 0.55}, {"active", 0.35}, {"heat", 0.0}, {"lines", 4}, {"spread", 34.0}, {"width", 4.5},
+	for (const auto& kv : D({{"startup", 0.55}, {"active", 0.35}, {"heat", 0.0}, {"lines", 7}, {"spread", 40.0}, {"width", 4.5},
 	                         {"budget", 30.0}, {"speed", 13.0}, {"steer", 0.0}, {"damage", 22.0}, {"balance", 60.0}, {"knock", 7.0},
-	                         {"lift", 5.0}, {"trail_every", 6.0}, {"trail_r", 2.6}, {"trail_life", 6.0}, {"trail_share", 0.15},
+	                         {"lift", 5.0}, {"trail_every", 10.0}, {"trail_r", 3.4}, {"trail_life", 6.0}, {"trail_share", 0.15},
 	                         {"hit_status_t", 3.0}}))
 		fs.set(kv.first, kv.second);
 	Moves::register_def("grand_firestorm", fs);
@@ -140,8 +142,17 @@ void on_phase(CombatWorld& w, ActorState& a, ActionInst& inst, ActionPhase p) {
 		w.ledger.generated += kFireHeat;
 		inst.data.set("heat_paid", kFireHeat);
 		FireFlame::line_execute(w, a, inst);
-		for (const Value& id : darr(inst.data, "bodies"))
-			if (MatBody* fb = w.get_body(vint(id)); fb != nullptr) fb->props.set("grand", true);   // FX: grand-scale fire walls
+		int k = 0;
+		for (const Value& id : darr(inst.data, "bodies")) {
+			if (MatBody* fb = w.get_body(vint(id)); fb != nullptr) {
+				fb->props.set("grand", true);   // FX: one continuous wall across the heads of the same storm, in fan order
+				fb->props.set("grand_group", inst.attack_id);
+				fb->props.set("grand_index", k);
+				// odd heads lay their burning ground half a step later: the band behind the front is a checkerboard, no gaps
+				if (k % 2 == 1) fb->props.set("last_trail", fb->pos - dvec(inst.data, "dir", a.forward()) * 5.0f);
+			}
+			++k;
+		}
 		w.emit("grand", D({{"actor", a.id}, {"kind", "firestorm"}, {"phase", "release"}, {"pos", a.pos}, {"dir", dvec(inst.data, "dir")},
 		                   {"length", 30.0}, {"width", 15.0}}));
 	}

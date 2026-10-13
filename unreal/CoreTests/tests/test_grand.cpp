@@ -68,8 +68,18 @@ FF_TEST(test_grand, test_firestorm_rolls_out_hits_and_keeps_the_energy_ledger) {
 	int lines = 0;
 	for (MatBody* b : g->world->body_list())
 		if (b->alive && b->tag == "fire_line") ++lines;
-	check(lines >= 3, S("a fan of flame walls (", lines, ")"));
-	tick_game(*g, 120);
+	check(lines >= 7, S("a fan of flame walls (", lines, ")"));
+	tick_game(*g, 70);
+	// one continuous front: neighbouring heads (fan order) never further apart than a wall is wide
+	std::vector<MatBody*> heads(7, nullptr);
+	for (MatBody* b : g->world->body_list())
+		if (b->alive && b->tag == "fire_line" && b->props.has("grand_index")) heads[static_cast<size_t>(dint(b->props, "grand_index"))] = b;
+	for (size_t k = 1; k < heads.size(); ++k) {
+		if (heads[k] == nullptr || heads[k - 1] == nullptr) continue;
+		const double gap = Vec2(heads[k]->pos.x - heads[k - 1]->pos.x, heads[k]->pos.z - heads[k - 1]->pos.z).length();
+		check(gap <= heads[k]->wave_width, S("heads ", k - 1, "-", k, " overlap (gap ", gap, " m)"));
+	}
+	tick_game(*g, 50);
 	check(r->health < hp0 - 10.0, S("the rival 14 m away was caught (hp ", r->health, ")"));
 	near(g->world->system_energy() - g->world->ledger_balance(), e0, 1e-4, "energy ledger exact");
 }
