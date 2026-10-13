@@ -30,6 +30,8 @@ struct ActorIntent {
 	int attack_gesture = 0;        // Gesture
 	int guard_gesture = 0;
 	bool evade_held = false;
+	bool jump_pressed = false;
+	bool jump_held = false;
 
 	void clear() { *this = ActorIntent(); }
 };
@@ -70,6 +72,7 @@ public:
 	bool in_water = false;
 	std::string surface = "stone";
 	bool gliding = false;
+	int air_jumps = 0;             // cloud steps used since leaving the ground
 
 	double health = Sim::HEALTH_MAX;
 	double balance = Sim::BALANCE_MAX;

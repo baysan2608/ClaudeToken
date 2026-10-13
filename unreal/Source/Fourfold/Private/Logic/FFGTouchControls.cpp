@@ -60,6 +60,8 @@ void TouchControls::FillFrame(ff::InputFrame& f) {
 	f.guard_held = btn_finger_[TI(TouchId::Guard)] != -1;
 	f.evade_pressed = l_evade_;
 	f.evade_held = btn_finger_[TI(TouchId::Evade)] != -1;
+	f.jump_pressed = l_jump_;
+	f.jump_held = btn_finger_[TI(TouchId::Jump)] != -1;
 	f.attack_gesture = l_attack_gesture_;
 	f.guard_gesture = l_guard_gesture_;
 	f.sub_select = l_sub_;
@@ -87,6 +89,7 @@ void TouchControls::FillFrame(ff::InputFrame& f) {
 	l_attack_pressed_ = l_attack_released_ = false;
 	l_guard_pressed_ = l_guard_released_ = false;
 	l_evade_ = false;
+	l_jump_ = false;
 	l_tech_pressed_ = l_tech_released_ = l_tech_cancel_ = false;
 	l_element_ = -1;
 	l_target_ = l_pause_ = false;
@@ -330,6 +333,10 @@ void TouchControls::PressButton(int idx, int id, Vec2 pos) {
 		case TouchId::Evade:
 			OwnButton(idx, id);
 			l_evade_ = true;
+			break;
+		case TouchId::Jump:
+			OwnButton(idx, id);
+			l_jump_ = true;
 			break;
 		case TouchId::Tech:
 			if (tech_finger_ != -1) {

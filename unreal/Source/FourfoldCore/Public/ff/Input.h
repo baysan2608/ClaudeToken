@@ -32,6 +32,8 @@ struct InputFrame {
 	Gesture guard_gesture = Gesture::None;    // Up = push, Down = sink (while guarding)
 	bool target_cycle = false;
 	bool pause_pressed = false;
+	bool jump_pressed = false;    // (additive) leap: hop from the ground, one "cloud step" in the air for focus
+	bool jump_held = false;
 
 	void ClearEdges() {
 		attack_pressed = attack_released = false;
@@ -42,6 +44,7 @@ struct InputFrame {
 		sub_select = -1;
 		target_cycle = false;
 		pause_pressed = false;
+		jump_pressed = false;
 		cam_delta = Vec2{};
 		attack_gesture = Gesture::None;
 		guard_gesture = Gesture::None;
@@ -72,6 +75,8 @@ struct InputFrame {
 		if (attack_gesture == Gesture::None) attack_gesture = o.attack_gesture;
 		if (guard_gesture == Gesture::None) guard_gesture = o.guard_gesture;
 		evade_held = evade_held || o.evade_held;
+		jump_pressed = jump_pressed || o.jump_pressed;
+		jump_held = jump_held || o.jump_held;
 	}
 };
 

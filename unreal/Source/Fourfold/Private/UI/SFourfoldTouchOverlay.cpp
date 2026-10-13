@@ -260,6 +260,7 @@ int32 SFourfoldTouchOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 		D.P.Circle(Gc, Gr * 0.96f, Col(1, 1, 1, 0.18f));
 	}
 	DrawRoundButton(D, ffg::TI(ffg::TouchId::Evade), int32(FFUi::EGlyph::Evade), TEXT("EVADE"), FLinearColor::White, D.Op);
+	DrawRoundButton(D, ffg::TI(ffg::TouchId::Jump), int32(FFUi::EGlyph::Evade), TEXT("LEAP"), FLinearColor::White, D.Op);
 	DrawAttack(D);
 	DrawTechnique(D);
 	DrawChargeRing(D);

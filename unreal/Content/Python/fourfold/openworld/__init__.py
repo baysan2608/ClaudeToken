@@ -270,8 +270,8 @@ def build_level(force, terrain_mi, rep):
     # re-tune the Lab rig for a 2 km valley: longer shadows, thinner fog that starts further out
     sun = b.lights.get("sun")
     if sun is not None:
-        for k, v in (("dynamic_shadow_distance_movable_light", 20000.0), ("dynamic_shadow_cascades", 4),
-                     ("far_shadow_cascade_count", 2), ("far_shadow_distance", 120000.0), ("intensity", 12.0)):
+        for k, v in (("dynamic_shadow_distance_movable_light", 12000.0), ("dynamic_shadow_cascades", 3),
+                     ("far_shadow_cascade_count", 0), ("intensity", 12.0)):
             C.set_prop(sun, k, v, rep, quiet=True)
     fog = b.actors.get("FF_Fog")
     if fog is not None:

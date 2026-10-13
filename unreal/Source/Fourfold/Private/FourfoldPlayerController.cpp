@@ -53,9 +53,11 @@ namespace
 		static const TArray<FDeskBinding> Bindings = {
 			{ffg::DeskAction::Attack, {EKeys::J, EKeys::LeftMouseButton, EKeys::Gamepad_FaceButton_Left}, FKey()},
 			{ffg::DeskAction::Guard, {EKeys::K, EKeys::Gamepad_RightShoulder}, FKey()},
-			{ffg::DeskAction::Evade, {EKeys::SpaceBar, EKeys::Gamepad_FaceButton_Bottom}, FKey()},
+			// Space / A = leap (open-world traversal); Shift / B = evade
+			{ffg::DeskAction::Jump, {EKeys::SpaceBar, EKeys::Gamepad_FaceButton_Bottom}, FKey()},
+			{ffg::DeskAction::Evade, {EKeys::LeftShift, EKeys::RightShift, EKeys::Gamepad_FaceButton_Right}, FKey()},
 			{ffg::DeskAction::Tech, {EKeys::L, EKeys::RightMouseButton}, EKeys::Gamepad_RightTriggerAxis},
-			{ffg::DeskAction::Cancel, {EKeys::Gamepad_LeftShoulder}, FKey()},
+			{ffg::DeskAction::Cancel, {EKeys::Gamepad_Special_Left}, FKey()},
 			{ffg::DeskAction::Pause, {EKeys::Escape, EKeys::BackSpace, EKeys::Gamepad_Special_Right}, FKey()},
 			{ffg::DeskAction::Elem0, {EKeys::One, EKeys::Gamepad_DPad_Left}, FKey()},
 			{ffg::DeskAction::Elem1, {EKeys::Two, EKeys::Gamepad_DPad_Down}, FKey()},
@@ -64,7 +66,7 @@ namespace
 			{ffg::DeskAction::Target, {EKeys::Tab, EKeys::Gamepad_RightThumbstick}, FKey()},
 			{ffg::DeskAction::Thrust, {EKeys::U, EKeys::Gamepad_FaceButton_Top}, FKey()},
 			{ffg::DeskAction::Ground, {EKeys::N}, EKeys::Gamepad_LeftTriggerAxis},
-			{ffg::DeskAction::Sweep, {EKeys::H, EKeys::Gamepad_FaceButton_Right}, FKey()},
+			{ffg::DeskAction::Sweep, {EKeys::H, EKeys::Gamepad_LeftShoulder}, FKey()},
 			{ffg::DeskAction::SubPrev, {EKeys::Q}, FKey()},
 			{ffg::DeskAction::SubNext, {EKeys::E}, FKey()},
 		};

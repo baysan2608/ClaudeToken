@@ -43,7 +43,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") TMap<FName, TSoftObjectPtr<UStaticMesh>> PropMeshes;
 	/** Chunks closer than this (cm, to the chunk's box) get the 2 m section + collision. */
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float NearRadius = 34000.0f;
-	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float TreeCullDistance = 60000.0f;
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float TreeCullDistance = 42000.0f;
+	/** Trees sway (WPO) only closer than this (cm). */
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float TreeWindDistance = 6000.0f;
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float RockCullDistance = 30000.0f;
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") float CliffCullDistance = 300000.0f;
 	/** Flip triangle winding if the terrain renders inside out on some platform. */

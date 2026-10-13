@@ -13,7 +13,7 @@
 namespace ffg {
 
 enum class DeskAction : int {
-	Attack = 0, Guard, Evade, Tech, Cancel, Pause, Elem0, Elem1, Elem2, Elem3, Target, Thrust, Ground, Sweep, SubPrev, SubNext, Count
+	Attack = 0, Guard, Evade, Tech, Cancel, Pause, Elem0, Elem1, Elem2, Elem3, Target, Thrust, Ground, Sweep, SubPrev, SubNext, Jump, Count
 };
 inline constexpr int kDeskCount = static_cast<int>(DeskAction::Count);
 inline constexpr int DA(DeskAction a) { return static_cast<int>(a); }

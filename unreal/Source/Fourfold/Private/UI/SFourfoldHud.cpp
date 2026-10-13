@@ -31,7 +31,7 @@ namespace
 		static const TCHAR* const kTouchKeys[8] = {TEXT("GUARD"), TEXT("GUARD ↑"), TEXT("GUARD ↓"), TEXT("TECH"),
 		                                           TEXT("ATTACK ↑"), TEXT("ATTACK ↓"), TEXT("ATTACK ↔"), TEXT("ATTACK")};
 		static const TCHAR* const kDeskKeys[8] = {TEXT("K"), TEXT("K + J"), TEXT("K + N"), TEXT("L"), TEXT("U"), TEXT("N"), TEXT("H"), TEXT("J")};
-		static const TCHAR* const kPadKeys[8] = {TEXT("RB"), TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT"), TEXT("Y"), TEXT("LT"), TEXT("B"), TEXT("X")};
+		static const TCHAR* const kPadKeys[8] = {TEXT("RB"), TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT"), TEXT("Y"), TEXT("LT"), TEXT("LB"), TEXT("X")};
 		int32 I = 0;
 		while (I < 7 && Slot != kSlots[I])
 		{

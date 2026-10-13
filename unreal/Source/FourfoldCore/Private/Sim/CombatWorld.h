@@ -65,6 +65,11 @@ public:
 	static constexpr double WALK_MAX = 1.8;
 	static constexpr double RUN_STICK = 0.62;
 	static constexpr double ACCEL = 34.0;
+	// Leap (light-body work): a 1.2 m standing hop; running leaps keep their speed; one cloud step in the air.
+	static constexpr double JUMP_SPEED = 6.6;
+	static constexpr double JUMP_RUN_BOOST = 1.08;
+	static constexpr double CLOUD_STEP_SPEED = 6.0;
+	static constexpr double CLOUD_STEP_FOCUS = 12.0;
 	static constexpr double DECEL = 42.0;
 	static constexpr double WAVE_TURN_RATE = 32.0;
 	static constexpr double MORPH_WINDOW = 0.12;

@@ -36,6 +36,8 @@ const ActorIntent& PlayerController::build(const InputFrame& f, double cam_yaw) 
 	intent.attack_gesture = static_cast<int>(f.attack_gesture);
 	intent.guard_gesture = static_cast<int>(f.guard_gesture);
 	intent.evade_held = f.evade_held;
+	intent.jump_pressed = f.jump_pressed;
+	intent.jump_held = f.jump_held;
 	return intent;
 }
 
@@ -52,6 +54,8 @@ InputFrame PlayerController::frame_from_intent(const ActorIntent& it, double cam
 	f.guard_released = false;
 	f.evade_pressed = it.evade_pressed;
 	f.evade_held = it.evade_held;
+	f.jump_pressed = it.jump_pressed;
+	f.jump_held = it.jump_held;
 	f.tech_pressed = it.tech_pressed;
 	f.tech_held = it.tech_held;
 	f.tech_released = it.tech_released;

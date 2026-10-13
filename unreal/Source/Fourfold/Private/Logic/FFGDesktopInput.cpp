@@ -8,7 +8,7 @@ namespace {
 constexpr DeskAction kDeskScanOrder[kDeskCount] = {
 	DeskAction::Guard, DeskAction::Attack, DeskAction::Evade, DeskAction::Tech, DeskAction::Cancel, DeskAction::Pause,
 	DeskAction::Elem0, DeskAction::Elem1, DeskAction::Elem2, DeskAction::Elem3, DeskAction::Target, DeskAction::Thrust,
-	DeskAction::Ground, DeskAction::Sweep, DeskAction::SubPrev, DeskAction::SubNext};
+	DeskAction::Ground, DeskAction::Sweep, DeskAction::SubPrev, DeskAction::SubNext, DeskAction::Jump};
 }  // namespace
 
 void DesktopInput::Sample(const DeviceSample& s) {
@@ -69,6 +69,8 @@ void DesktopInput::FillFrame(ff::InputFrame& f) {
 	f.guard_held = prev_[DA(DeskAction::Guard)];
 	f.evade_pressed = p_latch_[DA(DeskAction::Evade)];
 	f.evade_held = prev_[DA(DeskAction::Evade)];
+	f.jump_pressed = p_latch_[DA(DeskAction::Jump)];
+	f.jump_held = prev_[DA(DeskAction::Jump)];
 	f.tech_pressed = p_latch_[DA(DeskAction::Tech)];
 	f.tech_released = r_latch_[DA(DeskAction::Tech)] && !tech_cancelled_at_release_;
 	f.tech_held = tech_active;
@@ -120,7 +122,8 @@ void DesktopInput::CancelAll() {
 
 void DesktopInput::ResyncEdgeActions(const std::array<bool, kDeskCount>& down_now) {
 	constexpr DeskAction kEdgeOnly[] = {DeskAction::Evade, DeskAction::Cancel, DeskAction::Pause, DeskAction::Elem0, DeskAction::Elem1,
-	                                    DeskAction::Elem2, DeskAction::Elem3, DeskAction::Target, DeskAction::SubPrev, DeskAction::SubNext};
+	                                    DeskAction::Elem2, DeskAction::Elem3, DeskAction::Target, DeskAction::SubPrev, DeskAction::SubNext,
+	                                    DeskAction::Jump};
 	for (DeskAction a : kEdgeOnly) {
 		const size_t u = static_cast<size_t>(DA(a));
 		prev_[u] = down_now[u];
@@ -137,6 +140,7 @@ void DesktopInput::OnPressed(int i) {
 		case DeskAction::Sweep: AttackSourcePressed(i); break;
 		case DeskAction::Guard:
 		case DeskAction::Evade:
+		case DeskAction::Jump:
 		case DeskAction::Target: p_latch_[u] = true; break;
 		case DeskAction::SubPrev: CycleSub(-1); break;
 		case DeskAction::SubNext: CycleSub(1); break;

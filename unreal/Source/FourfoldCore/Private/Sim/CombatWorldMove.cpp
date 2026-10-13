@@ -95,6 +95,28 @@ void CombatWorld::_move_actor(ActorState& a, const ActorIntent& it) {
 		const double max_turn = TURN_RATE * turn_scale * dt;
 		a.facing = wrapf(a.facing + clampf(diff, -max_turn, max_turn), -kPi, kPi);
 	}
+	// Leap: only when free (no action, not stunned, not gliding / hovering).
+	if (it.jump_pressed && inst == nullptr && a.stun <= 0.0 && !a.gliding && !hover && !Status::rooted(a)) {
+		if (a.grounded) {
+			a.vel.y = f32(JUMP_SPEED);
+			a.vel.x = f32(a.vel.x * JUMP_RUN_BOOST);
+			a.vel.z = f32(a.vel.z * JUMP_RUN_BOOST);
+			a.grounded = false;
+			a.air_jumps = 0;
+			emit("jump", D({{"actor", a.id}, {"kind", "leap"}}));
+		} else if (a.air_jumps < 1 && a.focus >= CLOUD_STEP_FOCUS) {
+			a.vel.y = f32(maxf(a.vel.y, CLOUD_STEP_SPEED));
+			// the step redirects the body toward the stick (air control alone is too weak to turn a leap)
+			if (mv.length() > 0.2f) {
+				const Vec3 d = mv.normalized() * f32(maxf(hv.length(), RUN_MIN));
+				a.vel.x = d.x;
+				a.vel.z = d.z;
+			}
+			a.focus -= CLOUD_STEP_FOCUS;
+			a.air_jumps += 1;
+			emit("jump", D({{"actor", a.id}, {"kind", "cloud_step"}}));
+		}
+	}
 	// Vertical
 	if (hover) {
 		const double hg = _ground_under(a.pos, a.pos.y + 3.0);
@@ -118,6 +140,7 @@ void CombatWorld::_move_actor(ActorState& a, const ActorIntent& it) {
 		if (!a.grounded) {
 			a.grounded = true;
 			a.gliding = false;
+			a.air_jumps = 0;
 			emit("land", D({{"actor", a.id}, {"speed", -a.vel.y}}));
 		}
 		np.y = f32(g);

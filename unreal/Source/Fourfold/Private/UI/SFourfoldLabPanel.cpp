@@ -45,9 +45,9 @@ namespace
 		                                       TEXT("GUARD flick up"), TEXT("GUARD flick down"), TEXT("TECH hold, drag, lift (ATTACK tap = shape)"),
 		                                       TEXT("EVADE tap"), TEXT("EVADE hold")};
 		static const TCHAR* const Keys[10] = {TEXT("J (hold = charge)"), TEXT("U"), TEXT("N"), TEXT("H"), TEXT("K (tap before contact = perfect)"),
-		                                      TEXT("K + J"), TEXT("K + N"), TEXT("L hold (J = shape)"), TEXT("Space"), TEXT("Space hold")};
-		static const TCHAR* const Pad[10] = {TEXT("X (hold = charge)"), TEXT("Y"), TEXT("LT"), TEXT("B"), TEXT("RB (tap before contact = perfect)"),
-		                                     TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT hold (X = shape)"), TEXT("A"), TEXT("A hold")};
+		                                      TEXT("K + J"), TEXT("K + N"), TEXT("L hold (J = shape)"), TEXT("Shift"), TEXT("Shift hold")};
+		static const TCHAR* const Pad[10] = {TEXT("X (hold = charge)"), TEXT("Y"), TEXT("LT"), TEXT("LB"), TEXT("RB (tap before contact = perfect)"),
+		                                     TEXT("RB + X"), TEXT("RB + LT"), TEXT("RT hold (X = shape)"), TEXT("B"), TEXT("B hold")};
 		const int32 I = int32(Slot);
 		if (I < 0 || I >= 10)
 		{

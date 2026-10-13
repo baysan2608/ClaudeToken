@@ -458,6 +458,10 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 			const bool bRock = MeshKey.ToString().StartsWith(TEXT("rock"));
 			const float Cull = bCliff ? CliffCullDistance : (bRock ? RockCullDistance : TreeCullDistance);
 			H->SetCullDistances(int32(Cull * 0.8f), int32(Cull));
+			// wind (world position offset) only near the camera: far trees render without WPO / velocity
+			H->WorldPositionOffsetDisableDistance = int32(bCliff || bRock ? 1 : TreeWindDistance);
+			H->bCastFarShadow = false;
+			H->bAffectDistanceFieldLighting = false;
 			H->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			H->RegisterComponent();
 			PropComps.Add(H);
