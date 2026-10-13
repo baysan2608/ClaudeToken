@@ -259,7 +259,10 @@ void CombatWorld::step(const std::map<int, ActorIntent>& intents) {
 	_resolve_grips();
 	_update_bodies();
 	_contacts();
-	for (auto& a : actors) _regen(*a);
+	for (auto& a : actors) {
+		_regen(*a);
+		if (!a->is_dummy) a->surge = minf(100.0, a->surge + 8.0 * Sim::DT);   // Grand::kSurgeRate
+	}
 	_cleanup();
 	tick += 1;
 }

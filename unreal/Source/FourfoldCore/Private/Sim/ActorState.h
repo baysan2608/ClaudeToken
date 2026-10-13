@@ -32,6 +32,7 @@ struct ActorIntent {
 	bool evade_held = false;
 	bool jump_pressed = false;
 	bool jump_held = false;
+	bool grand_pressed = false;
 
 	void clear() { *this = ActorIntent(); }
 };
@@ -73,6 +74,7 @@ public:
 	std::string surface = "stone";
 	bool gliding = false;
 	int air_jumps = 0;             // cloud steps used since leaving the ground
+	double surge = 0.0;            // grand-technique meter 0..100 (Combat/Grand.h)
 
 	double health = Sim::HEALTH_MAX;
 	double balance = Sim::BALANCE_MAX;

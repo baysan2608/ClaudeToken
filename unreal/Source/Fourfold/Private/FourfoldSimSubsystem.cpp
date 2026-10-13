@@ -294,6 +294,13 @@ bool UFourfoldSimSubsystem::IsRoaming() const
 
 std::shared_ptr<const ff::WorldDef> UFourfoldSimSubsystem::GetWorldDef() const
 {
+	if (Impl.IsValid() && Impl->Session.IsValid() && Impl->WorldDef)
+	{
+		if (std::shared_ptr<const ff::WorldDef> Live = Impl->Session->RoamWorld())
+		{
+			return Live;   // the session's copy with the live terrain edits
+		}
+	}
 	return Impl.IsValid() ? Impl->WorldDef : nullptr;
 }
 
@@ -389,6 +396,10 @@ void UFourfoldSimSubsystem::StepOnce()
 	for (size_t i = First; i < Impl->Events.size(); ++i)
 	{
 		const ff::Event& E = Impl->Events[i];
+		if (E.type == "grand" || (E.type == "insufficient" && E.data["what"].as_string() == "surge"))
+		{
+			UE_LOG(LogFourfold, Log, TEXT("sim %s: %s"), UTF8_TO_TCHAR(E.type.c_str()), UTF8_TO_TCHAR(ff::ToJson(E.data).c_str()));
+		}
 		if (E.type != "app_recenter")
 		{
 			continue;

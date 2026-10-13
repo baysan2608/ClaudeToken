@@ -53,6 +53,31 @@ struct Shrine {                 // respawn point after a lost fight
 	Vec3 pos;
 };
 
+// Live terrain edits (earth techniques reshape the valley): a height delta per heightfield sample, owned by the session
+// (Session::LoadRoam gives its world a fresh one) and read by the sim and the renderer through WorldDef::HeightAt.
+// Every op is cut-and-fill: the earth a crater removes goes into its rim, a ridge is raised from trenches beside it.
+struct TerrainEdits {
+	static constexpr int kChunkCells = 64;          // render chunk edge in cells (AFourfoldOpenWorld)
+	static constexpr float kMinDelta = -14.0f;
+	static constexpr float kMaxDelta = 16.0f;
+	int nx = 0, nz = 0;
+	int chunks_x = 0, chunks_z = 0;
+	std::vector<float> delta;                       // nx * nz, empty until the first edit
+	std::vector<uint32_t> chunk_rev;                // per render chunk; bumps when an edit touches it
+	uint64_t revision = 0;                          // bumps on every edit
+
+	void Init(int in_nx, int in_nz) {
+		nx = in_nx;
+		nz = in_nz;
+		chunks_x = nx > 1 ? (nx - 2) / kChunkCells + 1 : 0;
+		chunks_z = nz > 1 ? (nz - 2) / kChunkCells + 1 : 0;
+		delta.clear();
+		chunk_rev.assign(static_cast<size_t>(chunks_x) * static_cast<size_t>(chunks_z), 0u);
+		revision = 0;
+	}
+	float At(int i, int k) const { return delta.empty() ? 0.0f : delta[static_cast<size_t>(k) * static_cast<size_t>(nx) + static_cast<size_t>(i)]; }
+};
+
 struct FOURFOLDCORE_API WorldDef {
 	// Heightfield: nx * nz samples, row-major (z outer); sample (i, k) sits at (x0 + i * cell, z0 + k * cell).
 	int nx = 0;
@@ -69,22 +94,34 @@ struct FOURFOLDCORE_API WorldDef {
 	std::vector<Shrine> shrines;
 	Vec3 player_spawn;
 	float spawn_facing = 0.0f;
+	std::shared_ptr<TerrainEdits> edits;   // null = pristine terrain
 
 	double SizeX() const { return nx > 1 ? (nx - 1) * cell : 0.0; }
 	double SizeZ() const { return nz > 1 ? (nz - 1) * cell : 0.0; }
-	// Bilinear terrain height, clamped to the grid edge (0 when the grid is empty).
-	double HeightAt(double x, double z) const;
+	// Bilinear terrain height incl. edits, clamped to the grid edge (0 when the grid is empty).
+	double HeightAt(double x, double z) const { return Sample(x, z, true); }
+	// The generated terrain without edits (the lake stays where the valley holds it).
+	double BaseHeightAt(double x, double z) const { return Sample(x, z, false); }
+	double Sample(double x, double z, bool with_edits) const;
 	// Standing floor: terrain, raised to water_level - wade_depth in deep water.
 	double FloorAt(double x, double z) const;
-	bool IsWater(double x, double z) const { return HeightAt(x, z) < water_level; }
+	bool IsWater(double x, double z) const { return BaseHeightAt(x, z) < water_level && HeightAt(x, z) < water_level; }
 	bool OnMetal(double x, double z) const;
 
 	// Parses world.json; `heights` is the float32 blob it names (nx * nz * 4 bytes). False + error on bad data.
 	static bool Parse(std::string_view json, const void* heights, size_t bytes, WorldDef& out, std::string* error = nullptr);
+
+	// ---- terrain edits (need `edits`; return the earth volume moved, m^3; clamped by TerrainEdits::k*Delta)
+	// Bowl of radius r and depth `depth` at (x, z); the dug volume heaps into a rim out to 1.6 r.
+	double EditCrater(double x, double z, double r, double depth);
+	// Ridge along a -> b, `width` wide at the base, `height` tall; trenches on both sides supply the earth.
+	double EditRidge(double ax, double az, double bx, double bz, double width, double height);
+	// Plain displacement (no fill): +h raises a smooth mound, -h sinks; radius r. Used by cut-and-fill pairs.
+	double EditMound(double x, double z, double r, double h);
 };
 
 // Header-inline so the presentation logic islands (camera, IK, FX ground) link without the core library.
-inline double WorldDef::HeightAt(double x, double z) const {
+inline double WorldDef::Sample(double x, double z, bool with_edits) const {
 	if (nx < 2 || nz < 2 || heights.size() < static_cast<size_t>(nx) * static_cast<size_t>(nz)) return 0.0;
 	double fx = (x - x0) / cell;
 	double fz = (z - z0) / cell;
@@ -98,10 +135,17 @@ inline double WorldDef::HeightAt(double x, double z) const {
 	const double tz = fz - k;
 	const size_t row = static_cast<size_t>(nx);
 	const size_t b = static_cast<size_t>(k) * row + static_cast<size_t>(i);
-	const double h00 = heights[b];
-	const double h10 = heights[b + 1];
-	const double h01 = heights[b + row];
-	const double h11 = heights[b + row + 1];
+	double h00 = heights[b];
+	double h10 = heights[b + 1];
+	double h01 = heights[b + row];
+	double h11 = heights[b + row + 1];
+	if (with_edits && edits && !edits->delta.empty()) {
+		const std::vector<float>& d = edits->delta;
+		h00 += d[b];
+		h10 += d[b + 1];
+		h01 += d[b + row];
+		h11 += d[b + row + 1];
+	}
 	return (h00 * (1.0 - tx) + h10 * tx) * (1.0 - tz) + (h01 * (1.0 - tx) + h11 * tx) * tz;
 }
 
@@ -138,6 +182,7 @@ struct EncounterView {
 
 struct RoamView {
 	bool active = false;            // a roam session is loaded
+	uint64_t terrain_revision = 0;  // TerrainEdits::revision of the live world (re-mesh when it changes)
 	double origin_x = 0.0, origin_y = 0.0, origin_z = 0.0;   // world position of sim (0,0,0)
 	int engaged = -1;               // index into sites, -1 when roaming
 	std::vector<EncounterView> sites;

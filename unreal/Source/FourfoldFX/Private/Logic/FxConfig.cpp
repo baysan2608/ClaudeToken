@@ -537,7 +537,7 @@ FxConfig::FxConfig() {
 	};
 	// NS_Fire's own lights stay off (the procedural fire already lights the field; they cost ~1 ms per field)
 	const PL fire = {{"Flame Color", "color*6"}, {"Smoke Color", "color2"}, {"Base Light Intentsity", "0"},
-	                 {"Smoke Spawn Scale", "0.6"}};
+	                 {"Smoke Spawn Scale", "0.6"}, {"Flame Scale", "scale"}};   // flames grow with the loop scale (grand walls)
 	loop(LCue::Fire, "FX_Misc/NS_Fire", 1.0f, true, fire);
 	loop(LCue::FireBlue, "FX_Misc/NS_Fire", 1.0f, true, fire);
 	loop(LCue::Steam, "FX_Smoke/NS_Chimney_Smoke", 0.6f, false, {{"Smoke Color", "color"}});

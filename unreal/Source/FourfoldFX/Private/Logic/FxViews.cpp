@@ -987,7 +987,9 @@ public:
 				l.color2 = smoke;
 			}
 		}
-		flames_.SetIntensity(intensity_ * (loops && c.cfg.Loop(cue).replace ? 0.55f : 1.0f));
+		// big (grand) fields: the Niagara fire carries the look, the procedural tongues only glow underneath
+		const float tongues = loops && c.cfg.Loop(cue).replace ? (radius_ >= 2.3f ? 0.22f : 0.55f) : 1.0f;
+		flames_.SetIntensity(intensity_ * tongues);
 		flames_.Draw(c, x_, fade, true);
 	}
 	float FadeTime() const override { return 0.35f; }

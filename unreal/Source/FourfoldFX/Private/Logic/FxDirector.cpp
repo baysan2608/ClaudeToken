@@ -93,6 +93,7 @@ const DrawList& FxDirector::Update(const FxFrameIn& in) {
 	}
 	SyncViews(c);
 	UpdateActors(c);
+	UpdateGrand(c);
 	world_.Update(c);
 	fx_.Step(c);
 	SelectLights(out_.lights, MinI(c.q.maxLights, 4), in.cam.pos);
@@ -200,6 +201,46 @@ void FxDirector::SyncViews(Ctx& c) {
 		}
 		s.view->Draw(c, s.fade);
 		++i;
+	}
+}
+
+void FxDirector::UpdateGrand(Ctx& c) {
+	if (!c.LoopOn(LCue::Fire)) return;
+	const ff::Snapshot& cur = *c.in.curr;
+	const Color smoke(0.34f, 0.31f, 0.29f);
+	for (const ff::BodyView& b : cur.bodies) {
+		const bool wall = b.form == ff::Form::Wave && b.props["grand"].as_bool(false);
+		const bool field = b.form == ff::Form::Zone && b.tag == "fire_field" && b.zone_radius >= 2.3f;
+		if (!wall && !field) continue;
+		const uint32_t key0 = 0xB1000000u + static_cast<uint32_t>(b.id) * 8u;
+		if (wall) {
+			// three roaring columns across the advancing wall + a smoke pall above it
+			Vec3 fwd = b.wave_dir;
+			fwd.y = 0.0f;
+			fwd = fwd.length_squared() > 1e-6f ? Norm(fwd) : Vec3(0.0f, 0.0f, 1.0f);
+			const Vec3 side(fwd.z, 0.0f, -fwd.x);
+			const float w = MaxF(b.wave_width, 1.0f);
+			for (int k = 0; k < 5; ++k) {
+				const float off = (static_cast<float>(k) - 2.0f) * w * 0.24f;
+				LoopReq& l = c.out.Loop(key0 + static_cast<uint32_t>(k), LCue::Fire, b.pos + side * off);
+				l.scale = 2.2f + 0.45f * w;
+				l.intensity = 1.8f;
+				l.color = c.cfg.flame[1];
+				l.color2 = smoke;
+			}
+			if (c.LoopOn(LCue::Smoke)) {
+				LoopReq& s = c.out.Loop(key0 + 5u, LCue::Smoke, b.pos + Vec3(0.0f, 2.5f, 0.0f));
+				s.scale = 1.4f + 0.25f * w;
+				s.intensity = 1.0f;
+				s.color = smoke;
+			}
+		} else {
+			LoopReq& l = c.out.Loop(key0, LCue::Fire, b.pos);
+			l.scale = 1.0f * b.zone_radius;
+			l.intensity = 1.3f;
+			l.color = c.cfg.flame[1];
+			l.color2 = smoke;
+		}
 	}
 }
 

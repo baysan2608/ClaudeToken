@@ -86,6 +86,7 @@ public:
 	Rng rng;
 	std::vector<Dict> events;
 	MatBody* pool = nullptr;
+	std::shared_ptr<WorldDef> terrain_live;   // open world: writable terrain under the bubble (grand techniques)
 	EnergyLedger ledger;
 	MassLedger mass_ledger;
 

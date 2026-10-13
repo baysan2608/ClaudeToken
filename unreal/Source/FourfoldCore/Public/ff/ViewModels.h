@@ -49,6 +49,8 @@ struct HudModel {
 	bool valid = false;               // false when there is no player actor
 	int player_id = -1;
 	float health = 0.0f, balance = 0.0f, focus = 0.0f;
+	float surge = 0.0f;                // grand-technique meter 0..100 (additive)
+	bool grand_ready = false;          // full: the grand press unleashes the element's grand technique
 	float heat_reserve = 0.0f, water_carried = 0.0f, metal_carried = 0.0f, static_charge = 0.0f;
 	bool show_heat = false, show_water = false, show_metal = false, show_static = false;   // only what matters now
 	int element = 0, sub = 0;

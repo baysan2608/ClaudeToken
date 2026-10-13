@@ -83,6 +83,8 @@ void TouchLayout::Place(Vec2 anchor, float kp, float ks) {
 	}
 	centers[TI(TouchId::Jump)] = anchor - Vec2(kJumpMm[0], kJumpMm[1]) * kp;
 	radii[TI(TouchId::Jump)] = kJumpMm[2] * 0.5f * ks;
+	centers[TI(TouchId::Grand)] = anchor - Vec2(kGrandMm[0], kGrandMm[1]) * kp;
+	radii[TI(TouchId::Grand)] = kGrandMm[2] * 0.5f * ks;
 	// Element chips: arc around the technique button, Earth at the low end.
 	const Vec2 tech = centers[TI(TouchId::Tech)];
 	for (int e = 0; e < 4; ++e) {

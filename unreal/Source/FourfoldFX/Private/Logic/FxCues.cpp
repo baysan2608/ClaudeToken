@@ -107,6 +107,7 @@ void FxDirector::HandleEvent(Ctx& c, const ff::Event& e) {
 	else if (t == "status") CueStatus(c, d, true);
 	else if (t == "zone") CueZone(c, d);
 	else if (t == "clash") CueClash(c, d);
+	else if (t == "grand") CueGrand(c, d);
 	else if (In(t, {"morph", "chain", "weave", "counter_cancel", "slump", "convert", "capture", "ricochet", "stance", "mode",
 	                "inrush", "extinguish", "current_grounded", "fork", "stick"}))
 		CueMisc(c, t, d);
@@ -941,6 +942,41 @@ void FxDirector::CueClash(Ctx& c, const ff::Value& d) {
 	BurstM(c, pos, kUp, 0.8f, IsEnergy(mat) ? BurstOfFam(mat) : Burst::Sparks);
 	RingM(c, pos, kBack, 0.1f, 0.8f, 0.22f, mat, Opts(0.1f, 3.0f, 1, true));
 	fx_.LightPulse(c, pos, cfg_.MatColor(mat), 1.2f, 4.0f, 0.15f);
+}
+
+void FxDirector::CueGrand(Ctx& c, const ff::Value& d) {
+	const std::string& phase = S(d, "phase");
+	const std::string& kind = S(d, "kind");
+	if (d.has("segment")) {
+		// a ridge segment tears up: dirt explosions along it, rock spray, a smoke column, a dust ring at the foot
+		const Vec3 a = V(d, "from"), b = V(d, "to");
+		const float h = F(d, "height");
+		for (int k = 0; k < 3; ++k) {
+			const float t = (static_cast<float>(k) + 0.5f) / 3.0f;
+			const Vec3 p = a + (b - a) * t;
+			const float g = c.GroundAt(p.x, p.z, p.y + h + 1.0f);
+			c.out.System(NCue::BurstDust, Vec3(p.x, g, p.z), kUp, 2.6f + 0.4f * h, 1.0f).color = cfg_.DustColor(Fam::Stone);
+			if (k == 1) {
+				c.out.System(NCue::ShardsStone, Vec3(p.x, g + h * 0.6f, p.z), kUp, 2.2f, 1.0f);
+				c.out.System(NCue::Blast, Vec3(p.x, g + 0.3f, p.z), kUp, 1.2f, 0.6f);
+			}
+			world_.DustRing(c, Vec3(p.x, g, p.z), 3.5f, 1.0f, cfg_.world.dust);
+			world_.Impact(c, Vec3(p.x, g, p.z), Fam::Stone, 1.4f, 2.2f);
+		}
+		return;
+	}
+	if (kind == "firestorm" && phase == "release") {
+		const Vec3 p = V(d, "pos");
+		const Vec3 dir = V(d, "dir");
+		c.out.System(NCue::Blast, p + dir * 2.5f + Vec3(0.0f, 0.5f, 0.0f), kUp, 2.4f, 1.0f);
+		world_.Impact(c, p + dir * 2.0f, Fam::Flame, 1.6f, 3.0f);
+		return;
+	}
+	if (phase == "gather") {
+		const Vec3 p = V(d, "pos");
+		world_.DustRing(c, p, 2.6f, 0.8f, cfg_.world.dust);
+		c.out.System(NCue::BurstDust, p, kUp, 1.2f, 0.6f).color = cfg_.DustColor(Fam::Stone);
+	}
 }
 
 void FxDirector::CueMisc(Ctx& c, const std::string& t, const ff::Value& d) {

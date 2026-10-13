@@ -3,6 +3,7 @@
 
 #include "FourfoldCoords.h"
 #include "FourfoldLog.h"
+#include "FourfoldSimSubsystem.h"
 #include "ff/Json.h"
 
 #include "Camera/PlayerCameraManager.h"
@@ -77,14 +78,15 @@ namespace FourfoldOW
 	{
 		I = FMath::Clamp(I, 0, W.nx - 1);
 		K = FMath::Clamp(K, 0, W.nz - 1);
-		return W.heights[size_t(K) * size_t(W.nx) + size_t(I)];
+		const size_t Ix = size_t(K) * size_t(W.nx) + size_t(I);
+		return W.heights[Ix] + ((W.edits && !W.edits->delta.empty()) ? W.edits->delta[Ix] : 0.0f);
 	}
 }
 
 AFourfoldOpenWorld::AFourfoldOpenWorld()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickInterval = 0.1f;
+	PrimaryActorTick.TickInterval = 0.0f;   // terrain edits show the frame they happen; LODs update every 0.1 s
 	Tags.Add(FName(TEXT("FourfoldArena")));
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent->SetMobility(EComponentMobility::Static);
@@ -218,17 +220,23 @@ void AFourfoldOpenWorld::BuildChunkSection(FChunk& C, int32 Section, int32 Step,
 		const double Wx = W.x0 + double(I) * Cell;
 		const double Wz = W.z0 + double(K) * Cell;
 		UV.Add(FVector2D(Wx / 4.0, Wz / 4.0));
+		FLinearColor C(1.0f, 0.0f, 0.0f, 0.0f);
+		const int32 Ic = FMath::Clamp(I, 0, W.nx - 1);
+		const int32 Kc = FMath::Clamp(K, 0, W.nz - 1);
 		if (Splat.Num() > 0)
 		{
-			const int32 Ic = FMath::Clamp(I, 0, W.nx - 1);
-			const int32 Kc = FMath::Clamp(K, 0, W.nz - 1);
 			const uint8* S = &Splat[(size_t(Kc) * size_t(W.nx) + size_t(Ic)) * 4];
-			Col.Add(FLinearColor(S[0] / 255.0f, S[1] / 255.0f, S[2] / 255.0f, S[3] / 255.0f));
+			C = FLinearColor(S[0] / 255.0f, S[1] / 255.0f, S[2] / 255.0f, S[3] / 255.0f);
 		}
-		else
+		if (W.edits && !W.edits->delta.empty())
 		{
-			Col.Add(FLinearColor(1.0f, 0.0f, 0.0f, 0.0f));
+			// torn ground: raised earth shows raw rock, dug ground bare soil (sand layer)
+			const float D = W.edits->At(Ic, Kc);
+			const float T = FMath::Clamp(FMath::Abs(D) / 0.8f, 0.0f, 1.0f);
+			const FLinearColor Torn = D > 0.0f ? FLinearColor(0.0f, 0.85f, 0.15f, 0.0f) : FLinearColor(0.1f, 0.25f, 0.65f, 0.0f);
+			C = FMath::Lerp(C, Torn, T);
 		}
+		Col.Add(C);
 	};
 	// Measured in game (2026-10-10): with the grid below, Unreal's front face is (A, C, B).
 	auto AddTri = [&](int32 A, int32 B, int32 Cc) {
@@ -494,7 +502,19 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 		}
 		const FTransform Xf(FRotator(0.0, D.get("yaw").as_float(0.0), 0.0),
 		                    FF::WorldToUE(Pos.get(0).as_float(), Pos.get(1).as_float(), Pos.get(2).as_float()), FVector(Sc));
-		(*Found)->AddInstance(Xf, false);
+		FPropRef Ref;
+		Ref.H = *Found;
+		Ref.Index = (*Found)->AddInstance(Xf, false);
+		Ref.Base = Xf;
+		Ref.Wx = Pos.get(0).as_float();
+		Ref.Wz = Pos.get(2).as_float();
+		Ref.bTree = MeshKey.ToString().StartsWith(TEXT("tree"));
+		const int32 Ci = ChunkIndexAt(Ref.Wx, Ref.Wz);
+		if (Chunks.IsValidIndex(Ci) && !bCliff)
+		{
+			Chunks[Ci].Props.Add(PropRefs.Num());
+		}
+		PropRefs.Add(Ref);
 		++Placed;
 	}
 	UE_LOG(LogFourfold, Log, TEXT("Open world: %d props placed"), Placed);
@@ -553,10 +573,112 @@ void AFourfoldOpenWorld::Tick(float DeltaSeconds)
 	{
 		return;
 	}
+	ApplyTerrainEdits();
+	LodTimer -= DeltaSeconds;
+	if (LodTimer > 0.0f)
+	{
+		return;
+	}
+	LodTimer = 0.1f;
 	FVector View = FVector::ZeroVector;
 	if (APlayerCameraManager* Cam = UGameplayStatics::GetPlayerCameraManager(this, 0))
 	{
 		View = Cam->GetCameraLocation();
 	}
 	UpdateLods(View);
+}
+
+int32 AFourfoldOpenWorld::ChunkIndexAt(double Wx, double Wz) const
+{
+	if (!World)
+	{
+		return INDEX_NONE;
+	}
+	const int32 NumC = FMath::Max(1, (World->nx - 1) / ChunkCells);
+	const int32 Cx = FMath::Clamp(int32((Wx - World->x0) / (World->cell * ChunkCells)), 0, NumC - 1);
+	const int32 Cz = FMath::Clamp(int32((Wz - World->z0) / (World->cell * ChunkCells)), 0, NumC - 1);
+	return Cz * NumC + Cx;
+}
+
+void AFourfoldOpenWorld::ApplyTerrainEdits()
+{
+	// Render the session's live world (its own copy carries the edits) once roaming starts.
+	if (UFourfoldSimSubsystem* Sim = UFourfoldSimSubsystem::Get(this); Sim && Sim->IsRoaming())
+	{
+		std::shared_ptr<const ff::WorldDef> Live = Sim->GetSession().RoamWorld();
+		if (Live && Live != World && Live->nx == World->nx && Live->nz == World->nz)
+		{
+			World = Live;
+			SeenEditRevision = 0;
+			for (FChunk& C : Chunks)
+			{
+				C.EditRev = 0;
+			}
+		}
+	}
+	if (!World->edits || World->edits->revision == SeenEditRevision)
+	{
+		return;
+	}
+	SeenEditRevision = World->edits->revision;
+	const ff::TerrainEdits& E = *World->edits;
+	for (FChunk& C : Chunks)
+	{
+		const int32 Idx = C.Cz * E.chunks_x + C.Cx;
+		if (C.Cx >= E.chunks_x || C.Cz >= E.chunks_z || Idx < 0 || size_t(Idx) >= E.chunk_rev.size())
+		{
+			continue;
+		}
+		const uint32 Rev = E.chunk_rev[size_t(Idx)];
+		if (Rev == C.EditRev)
+		{
+			continue;
+		}
+		C.EditRev = Rev;
+		BuildChunkSection(C, 0, 4, false);
+		if (C.bNearBuilt)
+		{
+			BuildChunkSection(C, 1, 1, true);
+		}
+		C.Mesh->SetMeshSectionVisible(0, !C.bNear || !C.bNearBuilt);
+		if (C.bNearBuilt)
+		{
+			C.Mesh->SetMeshSectionVisible(1, C.bNear);
+		}
+		C.Bounds = C.Bounds.ExpandBy(FVector(0.0, 0.0, 1600.0));
+		for (int32 Pi : C.Props)
+		{
+			UpdateProp(PropRefs[Pi]);
+		}
+	}
+}
+
+void AFourfoldOpenWorld::UpdateProp(FPropRef& P)
+{
+	if (P.bDown || !P.H)
+	{
+		return;
+	}
+	const double D = World->HeightAt(P.Wx, P.Wz) - World->BaseHeightAt(P.Wx, P.Wz);
+	if (FMath::Abs(D) < 0.03)
+	{
+		return;
+	}
+	// Tilt of the moved ground under the prop (edit gradient over 1.5 m).
+	const auto Delta = [this](double X, double Z) { return World->HeightAt(X, Z) - World->BaseHeightAt(X, Z); };
+	const double Gx = (Delta(P.Wx + 1.5, P.Wz) - Delta(P.Wx - 1.5, P.Wz)) / 3.0;
+	const double Gz = (Delta(P.Wx, P.Wz + 1.5) - Delta(P.Wx, P.Wz - 1.5)) / 3.0;
+	FTransform Xf = P.Base;
+	Xf.AddToTranslation(FVector(0.0, 0.0, D * FF::SimToUE));
+	if (P.bTree && (FMath::Abs(D) > 1.4 || FMath::Sqrt(Gx * Gx + Gz * Gz) > 0.55))
+	{
+		// Uprooted: falls away from the rising side, roots sunk.
+		const FVector Fall = FVector(-Gx, -Gz, 0.0).GetSafeNormal(1e-4, FVector(1.0, 0.0, 0.0));
+		const FVector Axis = FVector::CrossProduct(FVector::UpVector, Fall).GetSafeNormal();
+		const FQuat Tip(Axis, FMath::DegreesToRadians(82.0));
+		Xf.SetRotation(Tip * Xf.GetRotation());
+		Xf.AddToTranslation(FVector(0.0, 0.0, -60.0));
+		P.bDown = true;
+	}
+	P.H->UpdateInstanceTransform(P.Index, Xf, true, true, true);
 }

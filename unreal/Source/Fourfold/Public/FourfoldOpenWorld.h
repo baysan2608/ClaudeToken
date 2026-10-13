@@ -67,6 +67,18 @@ private:
 		bool bNear = false;
 		bool bNearBuilt = false;
 		FBox Bounds;
+		uint32 EditRev = 0;          // TerrainEdits::chunk_rev last meshed
+		TArray<int32> Props;         // indices into PropRefs standing on this chunk
+	};
+
+	struct FPropRef
+	{
+		TObjectPtr<UHierarchicalInstancedStaticMeshComponent> H;
+		int32 Index = 0;
+		FTransform Base;
+		double Wx = 0.0, Wz = 0.0;
+		bool bTree = false;
+		bool bDown = false;          // toppled by moving ground (stays down)
 	};
 
 	void BuildAll();
@@ -75,6 +87,10 @@ private:
 	void BuildSolids();
 	void BuildSitesAndProps();
 	void UpdateLods(const FVector& ViewUE);
+	/** Re-meshes chunks the sim's terrain edits touched; props on moved ground ride it or topple. */
+	void ApplyTerrainEdits();
+	void UpdateProp(FPropRef& P);
+	int32 ChunkIndexAt(double Wx, double Wz) const;
 
 	std::shared_ptr<const ff::WorldDef> World;
 	TArray<uint8> Splat;          // RGBA per sample (may be empty)
@@ -82,5 +98,8 @@ private:
 	int32 ChunkCells = 64;        // samples per chunk edge - 1
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> TerrainMat;
 	UPROPERTY(Transient) TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> PropComps;
+	TArray<FPropRef> PropRefs;
+	uint64 SeenEditRevision = 0;
+	float LodTimer = 0.0f;
 	bool bBuilt = false;
 };

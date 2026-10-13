@@ -32,7 +32,7 @@ struct Insets {
 	float left = 0.0f, top = 0.0f, right = 0.0f, bottom = 0.0f;
 };
 
-enum class TouchId : int { Attack = 0, Guard, Evade, Tech, Target, Pause, Elem0, Elem1, Elem2, Elem3, Jump, Cancel, Count };
+enum class TouchId : int { Attack = 0, Guard, Evade, Tech, Target, Pause, Elem0, Elem1, Elem2, Elem3, Jump, Grand, Cancel, Count };
 inline constexpr int kTouchCount = static_cast<int>(TouchId::Count);
 inline constexpr int kTouchNone = -1;
 inline constexpr int TI(TouchId id) { return static_cast<int>(id); }
@@ -53,6 +53,7 @@ public:
 		{23.0f, 50.0f, 9.0f},
 	};
 	static constexpr float kJumpMm[3] = {58.0f, 9.0f, 11.0f};   // LEAP: left of GUARD, along the thumb arc
+	static constexpr float kGrandMm[3] = {7.0f, 62.0f, 11.5f};  // GRAND: above EVADE, at the cluster's top
 	static constexpr float kPauseDiameterMm = 9.5f;
 	static constexpr float kPauseInsetMm = 7.0f;
 	static constexpr float kChipDiameterMm = 8.5f;

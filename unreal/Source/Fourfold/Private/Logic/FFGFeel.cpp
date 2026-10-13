@@ -253,6 +253,7 @@ const char* InsufficientText(const std::string& what) {
 	if (what == "technique") return "Technique not learned";
 	if (what == "sight") return "No line of sight";
 	if (what == "mass") return "Too heavy";
+	if (what == "surge") return "Surge not full";
 	return nullptr;
 }
 
@@ -304,6 +305,21 @@ void HandleFeelEvents(const std::vector<ff::Event>& events, const ff::Snapshot& 
 		} else if (t == "control_lost") {
 			FeelHaptic(c, "lost_control", a);
 			if (a == pid) FeelToast(c, "Lost control (" + FeelS(d, "reason") + ")");
+		} else if (t == "grand") {
+			// grand techniques: the gather rumbles, every ridge segment / the firestorm release lands like a T3 blow
+			const std::string& phase = FeelS(d, "phase");
+			const bool mine = a >= 0 && a == pid;
+			if (phase == "gather") {
+				FeelHaptic(c, "heavy", a);
+				FeelPlainShake(c, 0.12f);
+			} else if (phase == "release") {
+				FeelBeat(c, "t3", FeelV(d, "pos"), FeelV(d, "dir"), a, 1.6f, mine);
+				if (mine) FeelCinematic(c, HitStop::kCineHoldS, FeelV(d, "pos"), false);
+			} else if (d.has("segment")) {
+				const Vec3 p = (FeelV(d, "from") + FeelV(d, "to")) * 0.5f;
+				FeelBeat(c, "boom", p, Vec3(), FeelI(d, "segment", 0) == 0 ? a : -1, 2.4f, mine);
+				if (mine && FeelI(d, "segment", 0) == 0) FeelCinematic(c, HitStop::kCineHoldS, p, false);
+			}
 		} else if (t == "insufficient") {
 			if (a == pid) {
 				const char* msg = InsufficientText(FeelS(d, "what"));

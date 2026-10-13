@@ -135,6 +135,8 @@ public:
 	// engaged | won | fled | lost, element, actor?}, app_respawn {actor}. ResetScenario reloads the same world.
 	bool LoadRoam(std::shared_ptr<const WorldDef> world, const RoamOptions& opts = RoamOptions());
 	RoamView Roam() const;
+	// The live world of the roam session (its own copy + terrain edits; null outside roam). Render from this one.
+	std::shared_ptr<const WorldDef> RoamWorld() const;
 
 private:
 	struct Impl;

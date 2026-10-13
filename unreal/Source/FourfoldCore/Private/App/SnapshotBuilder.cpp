@@ -74,6 +74,7 @@ void build(const CombatWorld& w, const Roles& roles, Snapshot& out) {
 		v.health = static_cast<float>(a.health);
 		v.balance = static_cast<float>(a.balance);
 		v.focus = static_cast<float>(a.focus);
+		v.surge = static_cast<float>(a.surge);
 		v.heat_reserve = static_cast<float>(a.heat_reserve);
 		v.wetness = static_cast<float>(a.wetness);
 		v.water_carried = static_cast<float>(a.water_carried);

@@ -493,6 +493,13 @@ int32 SFourfoldHud::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 			H.Bar(FVector2D(X, Y + Row), Bw * 0.8f, Hud.balance / 100.0f, C4(0.75f, 0.82f, 0.92f, 1), Alpha * 0.9f);
 			H.Bar(FVector2D(X, Y + 2 * Row), Bw * 0.8f, Hud.focus / 100.0f, C4(0.96f, 0.82f, 0.45f, 1), Alpha * 0.9f);
 		}
+		// Surge (grand technique) meter: element coloured, pulses white when full.
+		{
+			const FLinearColor Sc = FFUi::ElementColor(Hud.element);
+			const float Pulse = Hud.grand_ready ? 0.65f + 0.35f * FMath::Sin(float(FPlatformTime::Seconds()) * 7.0f) : 0.75f;
+			const FLinearColor Col = Hud.grand_ready ? FMath::Lerp(Sc, FLinearColor::White, 0.5f * Pulse) : Sc;
+			H.Bar(FVector2D(X, Y - Row * 0.85), Bw * 0.6f, Hud.surge / 100.0f, Col, Alpha * Pulse);
+		}
 		// Sub-element line, then the resource bars that matter right now.
 		const FLinearColor Ec = FFUi::ElementColor(Hud.element);
 		const double SubBase = Y + 3 * Row + H.FsStat + H.GrowStat * 0.2;

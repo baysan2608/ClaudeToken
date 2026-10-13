@@ -185,6 +185,7 @@ private:
 	bool l_guard_pressed_ = false, l_guard_released_ = false;
 	bool l_evade_ = false;
 	bool l_jump_ = false;
+	bool l_grand_ = false;
 	bool l_tech_pressed_ = false, l_tech_released_ = false, l_tech_cancel_ = false;
 	int l_element_ = -1;
 	bool l_target_ = false, l_pause_ = false;

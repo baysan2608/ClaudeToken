@@ -71,6 +71,10 @@ private:
 	Ctx MakeCtx(const FxFrameIn& in, float dt);
 	void SyncViews(Ctx& c);
 	void UpdateActors(Ctx& c);
+	// Grand techniques (core Combat/Grand.h): Niagara fire walls along every grand flame line + its big trail
+	// fields; dust / rock / smoke columns for every rising ridge segment.
+	void UpdateGrand(Ctx& c);
+	void CueGrand(Ctx& c, const ff::Value& d);
 	void HandleEvent(Ctx& c, const ff::Event& e);
 	// cue families (FxCues.cpp)
 	void CueFx(Ctx& c, const ff::Value& d);

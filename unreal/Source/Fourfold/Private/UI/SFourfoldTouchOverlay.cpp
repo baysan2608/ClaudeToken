@@ -261,6 +261,7 @@ int32 SFourfoldTouchOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 	}
 	DrawRoundButton(D, ffg::TI(ffg::TouchId::Evade), int32(FFUi::EGlyph::Evade), TEXT("EVADE"), FLinearColor::White, D.Op);
 	DrawRoundButton(D, ffg::TI(ffg::TouchId::Jump), int32(FFUi::EGlyph::Evade), TEXT("LEAP"), FLinearColor::White, D.Op);
+	DrawRoundButton(D, ffg::TI(ffg::TouchId::Grand), int32(FFUi::EGlyph::Evade), TEXT("GRAND"), FLinearColor(1.0f, 0.86f, 0.5f, 1.0f), D.Op);
 	DrawAttack(D);
 	DrawTechnique(D);
 	DrawChargeRing(D);

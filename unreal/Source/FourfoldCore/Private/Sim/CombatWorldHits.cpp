@@ -95,6 +95,8 @@ std::string CombatWorld::hit_actor(ActorState& t, const Dict& info, AgentRef age
 		if (Status::immune(t, "lift")) knock.y = std::min(knock.y, 0.0f);
 	}
 	t.health = maxf(0.0, t.health - dmg);
+	if (ActorState* by = get_actor(dint(info, "attacker", -1)); by != nullptr && by != &t)
+		by->surge = minf(100.0, by->surge + dmg * 1.2);   // Grand::kSurgePerDamage
 	t.balance -= bal;
 	t.balance_idle = 0.0;
 	t.vel += knock;

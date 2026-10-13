@@ -3,6 +3,7 @@
 #include "Sim/CombatWorld.h"
 
 #include "Combat/Acts.h"
+#include "Combat/Grand.h"
 #include "Combat/Kits/Kits.h"
 #include "Combat/Moves.h"
 #include "Combat/Verbs.h"
@@ -37,7 +38,8 @@ void CombatWorld::_process_intent(ActorState& a, const ActorIntent& it) {
 	if (a.lock_target < 0 || !_valid_target(a, a.lock_target)) a.lock_target = _auto_target(a);
 	if (it.tech_cancel && a.buffered == "tech") a.buffered = "";
 	std::string press;
-	if (it.evade_pressed) press = "evade";
+	if (it.grand_pressed && a.surge >= Grand::kSurgeMax - 1e-6) press = "grand";
+	else if (it.evade_pressed) press = "evade";
 	else if (it.guard_pressed) press = "guard";
 	else if (it.tech_pressed && !it.tech_cancel) press = "tech";
 	else if (it.attack_pressed) press = "attack";
@@ -228,7 +230,10 @@ bool CombatWorld::_try_start(ActorState& a, const std::string& press, const Acto
 		spend_focus(a, COUNTER_CANCEL_COST);
 		emit("counter_cancel", D({{"actor", a.id}, {"into", press}}));
 	}
-	if (press == "evade") {
+	if (press == "grand") {
+		Grand::ensure_defs();
+		start_action(a, Grand::id_for(a.element), it, D({{"slot", "grand"}}));
+	} else if (press == "evade") {
 		std::string id = Moves::resolve(a.element, a.sub(), "evade");
 		if (id.empty() || !Moves::defs().has(id)) id = "evade";
 		if (a.focus < dnum(Moves::defs().get(id).as_dict(), "cost", 0.0) * 0.5) {
@@ -375,6 +380,7 @@ void CombatWorld::module_start(const std::string& module, ActorState& a, ActionI
 	else if (module == "kit_water") KitWater::on_start(*this, a, inst, it);
 	else if (module == "kit_fire") KitFire::on_start(*this, a, inst, it);
 	else if (module == "kit_air") KitAir::on_start(*this, a, inst, it);
+	else if (module == "grand") Grand::on_start(*this, a, inst, it);
 }
 
 ActionPhase CombatWorld::module_after_startup(const std::string& module, ActorState& a, ActionInst& inst, const ActorIntent& it) {
@@ -388,6 +394,7 @@ ActionPhase CombatWorld::module_after_startup(const std::string& module, ActorSt
 	if (module == "kit_water") return KitWater::after_startup(*this, a, inst, it);
 	if (module == "kit_fire") return KitFire::after_startup(*this, a, inst, it);
 	if (module == "kit_air") return KitAir::after_startup(*this, a, inst, it);
+	if (module == "grand") return Grand::after_startup(*this, a, inst, it);
 	return ActionPhase::Active;
 }
 
@@ -402,6 +409,7 @@ void CombatWorld::module_phase(const std::string& module, ActorState& a, ActionI
 	else if (module == "kit_water") KitWater::on_phase(*this, a, inst, p);
 	else if (module == "kit_fire") KitFire::on_phase(*this, a, inst, p);
 	else if (module == "kit_air") KitAir::on_phase(*this, a, inst, p);
+	else if (module == "grand") Grand::on_phase(*this, a, inst, p);
 }
 
 void CombatWorld::module_tick(const std::string& module, ActorState& a, ActionInst& inst, const ActorIntent& it) {
@@ -415,6 +423,7 @@ void CombatWorld::module_tick(const std::string& module, ActorState& a, ActionIn
 	else if (module == "kit_water") KitWater::on_tick(*this, a, inst, it);
 	else if (module == "kit_fire") KitFire::on_tick(*this, a, inst, it);
 	else if (module == "kit_air") KitAir::on_tick(*this, a, inst, it);
+	else if (module == "grand") Grand::on_tick(*this, a, inst, it);
 }
 
 void CombatWorld::module_interrupt(const std::string& module, ActorState& a, ActionInst& inst, const std::string& reason) {
@@ -428,6 +437,7 @@ void CombatWorld::module_interrupt(const std::string& module, ActorState& a, Act
 	else if (module == "kit_water") KitWater::on_interrupt(*this, a, inst, reason);
 	else if (module == "kit_fire") KitFire::on_interrupt(*this, a, inst, reason);
 	else if (module == "kit_air") KitAir::on_interrupt(*this, a, inst, reason);
+	else if (module == "grand") Grand::on_interrupt(*this, a, inst, reason);
 }
 
 ActionPhase CombatWorld::attack_after_startup(ActorState&, ActionInst& inst, const ActorIntent& it) {

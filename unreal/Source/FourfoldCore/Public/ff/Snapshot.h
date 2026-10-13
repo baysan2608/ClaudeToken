@@ -76,6 +76,7 @@ struct ActorView {
 	bool flying = false;
 
 	float health = 100.0f, balance = 100.0f, focus = 100.0f;
+	float surge = 0.0f;           // grand-technique meter 0..100 (additive)
 	float heat_reserve = 0.0f, wetness = 0.0f;
 	float water_carried = 0.0f, metal_carried = 0.0f, static_charge = 0.0f;
 

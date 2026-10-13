@@ -56,6 +56,8 @@ namespace
 			// Space / A = leap (open-world traversal); Shift / B = evade
 			{ffg::DeskAction::Jump, {EKeys::SpaceBar, EKeys::Gamepad_FaceButton_Bottom}, FKey()},
 			{ffg::DeskAction::Evade, {EKeys::LeftShift, EKeys::RightShift, EKeys::Gamepad_FaceButton_Right}, FKey()},
+			// G / L3 = grand technique (full surge meter)
+			{ffg::DeskAction::Grand, {EKeys::G, EKeys::Gamepad_LeftThumbstick}, FKey()},
 			{ffg::DeskAction::Tech, {EKeys::L, EKeys::RightMouseButton}, EKeys::Gamepad_RightTriggerAxis},
 			{ffg::DeskAction::Cancel, {EKeys::Gamepad_Special_Left}, FKey()},
 			{ffg::DeskAction::Pause, {EKeys::Escape, EKeys::BackSpace, EKeys::Gamepad_Special_Right}, FKey()},
@@ -941,6 +943,67 @@ void AFourfoldPlayerController::PollSimInput(ff::InputFrame& Out, float& InOutCa
 				{
 					F.move = Script[i].Value;
 					break;
+				}
+			}
+		}
+		// -FFElement=<0..3> picks the element on the first frame; -FFGrand=<s>[,<s>...] presses the grand technique
+		// and -FFLeap=<s>[,...] the leap at those times (seconds after the first polled frame).
+		static TArray<double> GrandAt, LeapAt;
+		static int32 StartElement = -2;
+		static double DevStart = -1.0;
+		if (StartElement == -2)
+		{
+			StartElement = -1;
+			FString Spec;
+			if (FParse::Value(FCommandLine::Get(), TEXT("-FFElement="), Spec, false)) StartElement = FCString::Atoi(*Spec);
+			for (const TPair<const TCHAR*, TArray<double>*>& Opt : {TPair<const TCHAR*, TArray<double>*>(TEXT("-FFGrand="), &GrandAt),
+			                                                          TPair<const TCHAR*, TArray<double>*>(TEXT("-FFLeap="), &LeapAt)})
+			{
+				if (FParse::Value(FCommandLine::Get(), Opt.Key, Spec, false))
+				{
+					TArray<FString> Parts;
+					Spec.ParseIntoArray(Parts, TEXT(","));
+					for (const FString& P : Parts) Opt.Value->Add(FCString::Atod(*P));
+				}
+			}
+		}
+		const double Now = FPlatformTime::Seconds();
+		if (DevStart < 0.0)
+		{
+			DevStart = Now;
+			if (StartElement >= 0) F.element_select = StartElement;
+		}
+		for (TArray<double>* List : {&GrandAt, &LeapAt})
+		{
+			for (int32 i = List->Num() - 1; i >= 0; --i)
+			{
+				// the grand press repeats for 2 s (it only fires once the surge meter is full)
+				const double Window = List == &GrandAt ? 2.0 : 0.0;
+				if (Now - DevStart >= (*List)[i] && List == &GrandAt && Now - DevStart < (*List)[i] + Window)
+				{
+					F.grand_pressed = true;
+					continue;
+				}
+				if (Now - DevStart >= (*List)[i])
+				{
+					(List == &GrandAt ? F.grand_pressed : F.jump_pressed) = true;
+					float Surge = -1.0f;
+					int32 Elem = -1;
+					bool bBusy = false;
+					if (UFourfoldSimSubsystem* DevSim = GetSim())
+					{
+						const ff::Snapshot& DS = DevSim->GetSnapshot();
+						if (const ff::ActorView* P = DS.FindActor(DS.player_id))
+						{
+							Surge = P->surge;
+							Elem = P->element;
+							bBusy = P->action.active || P->stun > 0.0f;
+							if (P->action.active) UE_LOG(LogFourfold, Log, TEXT("Dev input: player action %s phase %d"), UTF8_TO_TCHAR(P->action.id.c_str()), int32(P->action.phase));
+						}
+					}
+					UE_LOG(LogFourfold, Log, TEXT("Dev input: %s at %.2f s (surge %.0f, element %d, busy %d)"),
+					       List == &GrandAt ? TEXT("grand") : TEXT("leap"), Now - DevStart, Surge, Elem, int32(bBusy));
+					List->RemoveAt(i);
 				}
 			}
 		}

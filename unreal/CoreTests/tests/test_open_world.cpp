@@ -227,3 +227,47 @@ FF_TEST_F(test_open_world, RoamFx, test_steep_cliff_blocks_and_slides) {
 	step(s, 60 * 2);
 	check(std::fabs(world_x(s) - x0) > 3.0, S("slid along the face (dx ", world_x(s) - x0, ")"));
 }
+
+FF_TEST(test_open_world, test_terrain_edits_conserve_earth_and_reshape_the_floor) {
+	SessionCore g;
+	RoamOptions o;
+	o.kit = "all";
+	o.encounters = false;
+	g.load_roam(make_world(false), o);
+	WorldDef& w = *g.roam_live;
+	check(w.edits != nullptr && w.edits->delta.empty(), "fresh edit layer");
+	const double h0 = w.HeightAt(0.0, -10.0);
+	const double moved = w.EditCrater(0.0, -10.0, 4.0, 2.0);
+	check(moved > 10.0, S("crater dug earth (", moved, " m3)"));
+	check(w.HeightAt(0.0, -10.0) < h0 - 1.8, "bowl floor sunk");
+	check(w.HeightAt(5.0, -10.0) > w.BaseHeightAt(5.0, -10.0) + 0.1, "rim heaped");
+	double sum = 0.0;
+	for (float d : w.edits->delta) sum += d;
+	near(sum * w.cell * w.cell, 0.0, 0.05, "crater: cut = fill");
+	w.EditRidge(-6.0, 6.0, 6.0, 6.0, 3.0, 3.0);
+	sum = 0.0;
+	for (float d : w.edits->delta) sum += d;
+	near(sum * w.cell * w.cell, 0.0, 0.1, "ridge: raised from its trenches");
+	check(w.HeightAt(0.0, 6.0) > w.BaseHeightAt(0.0, 6.0) + 2.5, "ridge crest up");
+	check(g.roam_view().terrain_revision == 2, "two edits");
+	check(!w.edits->chunk_rev.empty(), "render chunks marked");
+	// the sim floor follows: a fighter standing where the ridge rises is carried up
+	g.player->pos = Vec3(static_cast<float>(0.0 - g.origin_x), g.player->pos.y, static_cast<float>(6.0 - g.origin_z));
+	InputFrame f;
+	for (int t = 0; t < 30; ++t) g.step(f, 0.0f);
+	near(g.player->pos.y + g.origin_y, w.HeightAt(0.0, 6.0), 0.15, "standing on the crest");
+}
+
+FF_TEST_F(test_open_world, RoamFx, test_a_raised_ridge_walls_off_the_path) {
+	SessionCore g;
+	RoamOptions o;
+	o.kit = "all";
+	o.encounters = false;
+	g.load_roam(make_world(false), o);
+	g.roam_live->EditRidge(-10.0, -8.0, 10.0, -8.0, 3.0, 4.0);   // across the way to -z
+	InputFrame f;
+	f.move = Vec2(0.0f, 1.0f);
+	for (int t = 0; t < 60 * 4; ++t) g.step(f, 3.14159265f);
+	const double wz = g.player->pos.z + g.origin_z;
+	check(wz > -9.0, S("the ridge stops the run (z ", wz, ")"));
+}

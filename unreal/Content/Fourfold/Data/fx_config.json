@@ -1259,7 +1259,8 @@
         "Flame Color": "color*6",
         "Smoke Color": "color2",
         "Base Light Intentsity": "0",
-        "Smoke Spawn Scale": "0.6"
+        "Smoke Spawn Scale": "0.6",
+        "Flame Scale": "scale"
       }
     },
     "fire_blue": {
@@ -1273,7 +1274,8 @@
         "Flame Color": "color*6",
         "Smoke Color": "color2",
         "Base Light Intentsity": "0",
-        "Smoke Spawn Scale": "0.6"
+        "Smoke Spawn Scale": "0.6",
+        "Flame Scale": "scale"
       }
     },
     "steam": {

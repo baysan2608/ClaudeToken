@@ -136,7 +136,7 @@ def build_terrain_material(force, texs, manifest, rep):
         orm = g.texture(f"{layer}_ORM", unreal.load_asset(texs.get(f"T_OW_{layer}_ORM", "")) if texs.get(f"T_OW_{layer}_ORM") else None,
                         ST.SAMPLERTYPE_MASKS, X + 750, y + 440, uv)
         if layer == "Grass":
-            gt = g.vector("GrassTint", (0.56, 0.74, 0.45), X + 1000, y - 120, "Grade")
+            gt = g.vector("GrassTint", (0.5, 0.62, 0.4), X + 1000, y - 120, "Grade")
             bc = _mul(g, (bc, "RGB"), (gt, ""), X + 1100, y)[0]
         if layer == "Rock":
             # far rock: the same scan at 14x the tile, faded in with distance so cliffs keep strata at 1 km
@@ -154,6 +154,48 @@ def build_terrain_material(force, texs, manifest, rep):
             fs = _node(g, "MaterialExpressionSaturate", X + 1100, y + 820)
             g.link(fd, "", fs, "")
             bc = _lerp(g, (bc, "RGB"), (far, "RGB"), (fs, ""), X + 1250, y + 600)[0]
+            # tri-planar: cliffs take the scan from the two side planes (no vertical smear on the mountains)
+            tex_bc = unreal.load_asset(texs["T_OW_Rock_BC"]) if texs.get("T_OW_Rock_BC") else None
+            tex_n = unreal.load_asset(texs["T_OW_Rock_N"]) if texs.get("T_OW_Rock_N") else None
+            yz = _node(g, "MaterialExpressionComponentMask", X + 200, y + 1000, r=False, g=True, b=True, a=False)
+            g.link(wp, "", yz, "")
+            xz = _node(g, "MaterialExpressionComponentMask", X + 200, y + 1120, r=True, g=False, b=True, a=False)
+            g.link(wp, "", xz, "")
+            uvx = _node(g, "MaterialExpressionDivide", X + 450, y + 1000)
+            g.link(yz, "", uvx, "A")
+            g.link(tile, "", uvx, "B")
+            uvy = _node(g, "MaterialExpressionDivide", X + 450, y + 1120)
+            g.link(xz, "", uvy, "A")
+            g.link(tile, "", uvy, "B")
+            bcx = g.texture("Rock_BC_SideX", tex_bc, ST.SAMPLERTYPE_COLOR, X + 750, y + 1000, uvx)
+            bcy = g.texture("Rock_BC_SideY", tex_bc, ST.SAMPLERTYPE_COLOR, X + 750, y + 1200, uvy)
+            nx_ = g.texture("Rock_N_SideX", tex_n, ST.SAMPLERTYPE_NORMAL, X + 750, y + 1400, uvx)
+            ny_ = g.texture("Rock_N_SideY", tex_n, ST.SAMPLERTYPE_NORMAL, X + 750, y + 1600, uvy)
+            vn = _node(g, "MaterialExpressionVertexNormalWS", X + 750, y + 1800)
+            absn = _node(g, "MaterialExpressionAbs", X + 950, y + 1800)
+            g.link(vn, "", absn, "")
+            sq = _mul(g, (absn, ""), (absn, ""), X + 1100, y + 1800)
+            sq4 = _mul(g, sq, sq, X + 1250, y + 1800)
+            wx = _node(g, "MaterialExpressionComponentMask", X + 1400, y + 1700, r=True, g=False, b=False, a=False)
+            g.link(sq4[0], "", wx, "")
+            wy = _node(g, "MaterialExpressionComponentMask", X + 1400, y + 1800, r=False, g=True, b=False, a=False)
+            g.link(sq4[0], "", wy, "")
+            wz = _node(g, "MaterialExpressionComponentMask", X + 1400, y + 1900, r=False, g=False, b=True, a=False)
+            g.link(sq4[0], "", wz, "")
+            wsum = _add(g, _add(g, (wx, ""), (wy, ""), X + 1550, y + 1750), (wz, ""), X + 1700, y + 1800)
+            wsum = _add(g, wsum, (g.const(1e-4, X + 1700, y + 1950), ""), X + 1850, y + 1800)
+
+            def tri(top, sx, sy, out, xx):
+                t = _mul(g, top, (wz, ""), xx, y + 1300)
+                t = _add(g, t, _mul(g, (sx, out), (wx, ""), xx, y + 1420), xx + 150, y + 1350)
+                t = _add(g, t, _mul(g, (sy, out), (wy, ""), xx, y + 1540), xx + 300, y + 1400)
+                dv = _node(g, "MaterialExpressionDivide", xx + 450, y + 1400)
+                g.link(t[0], "", dv, "A")
+                g.link(wsum[0], "", dv, "B")
+                return dv
+
+            bc = tri((bc, ""), bcx, bcy, "RGB", X + 2000)
+            nm = tri((nm, "RGB"), nx_, ny_, "RGB", X + 2000 + 700)
         samples[layer] = (bc, nm, orm)
         y += 700
     vc = _node(g, "MaterialExpressionVertexColor", X + 1100, 1800)
@@ -185,6 +227,8 @@ def build_terrain_material(force, texs, manifest, rep):
     def src(layer, idx, out_name):
         if idx == 0 and layer in graded:
             return (samples[layer][0], "")
+        if idx == 1 and layer == "Rock":
+            return (samples[layer][1], "")       # tri-planar normal (math node)
         return (samples[layer][idx], out_name)
 
     def blend(idx, out_name, x):
@@ -280,6 +324,7 @@ def build_level(force, terrain_mi, rep):
                      ("fog_max_opacity", 0.9), ("volumetric_fog_distance", 8000.0)):
             C.set_prop(fc, k, v, rep, quiet=True)
         fog.set_actor_location(unreal.Vector(0.0, 0.0, 0.0), False, False)
+    cinematic(b, rep)
     ow = b.spawn(unreal.FourfoldOpenWorld, (0, 0, 0), label="FF_OpenWorld", tags=("FourfoldArena",), folder="Fourfold/OpenWorld")
     if terrain_mi is not None:
         C.set_prop(ow, "terrain_material", terrain_mi, rep)
@@ -288,6 +333,64 @@ def build_level(force, terrain_mi, rep):
         rep["created"].append(MAP_PATH)
     except Exception as e:  # noqa: BLE001
         rep["failed"].append({"item": MAP_PATH, "error": f"save: {e}"})
+
+
+# Golden-hour look (2026-10-13): low warm sun from the side-back of the opening view, light shafts through the haze,
+# valley aerial perspective, forward-scattering volumetric fog (god rays on the Mac; the mobile renderer skips it),
+# a filmic grade (warm highlights, cool shadows, muted greens). Exposure stays manual (the FX emissives assume it).
+SUN_PITCH, SUN_YAW = -11.0, 38.0
+SUN_COLOR = (255, 212, 168)
+
+
+def cinematic(b, rep):
+    P = C.set_prop
+    sun_a = b.actors.get("FF_Sun")
+    if sun_a is not None:
+        sun_a.set_actor_rotation(unreal.Rotator(roll=0.0, pitch=SUN_PITCH, yaw=SUN_YAW), False)
+        sc = sun_a.get_component_by_class(unreal.DirectionalLightComponent)
+        for k, v in (("intensity", 11.0), ("light_color", unreal.Color(*SUN_COLOR, 255)),
+                     ("enable_light_shaft_bloom", True), ("bloom_scale", 0.25), ("bloom_threshold", 0.6),
+                     ("bloom_tint", unreal.Color(180, 205, 255, 255)), ("enable_light_shaft_occlusion", True),
+                     ("occlusion_mask_darkness", 0.55), ("volumetric_scattering_intensity", 2.2),
+                     ("light_source_angle", 1.2)):
+            P(sc, k, v, rep, quiet=True)
+    atm = b.actors.get("FF_SkyAtmosphere")
+    if atm is not None:
+        ac = atm.get_component_by_class(unreal.SkyAtmosphereComponent)
+        for k, v in (("mie_scattering_scale", 0.012), ("mie_anisotropy", 0.85), ("aerial_pespective_view_distance_scale", 1.6),
+                     ("rayleigh_exponential_distribution", 9.0), ("height_fog_contribution", 1.0)):
+            P(ac, k, v, rep, quiet=True)
+    fog = b.actors.get("FF_Fog")
+    if fog is not None:
+        fc = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
+        for k, v in (("fog_density", 0.012), ("fog_height_falloff", 0.045), ("start_distance", 1500.0), ("fog_max_opacity", 0.92),
+                     ("fog_inscattering_luminance", unreal.LinearColor(0.11, 0.13, 0.17, 1.0)),
+                     ("directional_inscattering_luminance", unreal.LinearColor(0.95, 0.62, 0.32, 1.0)),
+                     ("directional_inscattering_exponent", 10.0), ("directional_inscattering_start_distance", 3000.0),
+                     ("enable_volumetric_fog", True), ("volumetric_fog_scattering_distribution", 0.72),
+                     ("volumetric_fog_albedo", unreal.Color(255, 236, 214, 255)), ("volumetric_fog_extinction_scale", 0.55),
+                     ("volumetric_fog_distance", 9000.0)):
+            P(fc, k, v, rep, quiet=True)
+    ppv = b.actors.get("FF_Post")
+    if ppv is not None:
+        try:
+            st = ppv.get_editor_property("settings")
+            for k, v in (("auto_exposure_bias", 0.35), ("bloom_intensity", 0.65), ("bloom_threshold", 0.7),
+                         ("vignette_intensity", 0.46), ("film_grain_intensity", 0.12),
+                         ("scene_fringe_intensity", 0.18),
+                         ("color_saturation", unreal.Vector4(0.94, 0.94, 0.94, 1.0)),
+                         ("color_contrast", unreal.Vector4(1.1, 1.1, 1.1, 1.0)),
+                         ("color_saturation_shadows", unreal.Vector4(0.9, 0.95, 1.08, 1.0)),
+                         ("color_gamma_shadows", unreal.Vector4(0.94, 0.97, 1.05, 1.0)),
+                         ("color_gain_highlights", unreal.Vector4(1.07, 1.0, 0.9, 1.0)),
+                         ("color_saturation_highlights", unreal.Vector4(1.05, 0.98, 0.9, 1.0)),
+                         ("film_toe", 0.62), ("film_shoulder", 0.3), ("film_slope", 0.84), ("white_temp", 6200.0),
+                         ("ambient_occlusion_intensity", 0.75), ("ambient_occlusion_radius", 180.0)):
+                P(st, "override_" + k, True, rep, quiet=True)
+                P(st, k, v, rep, quiet=True)
+            ppv.set_editor_property("settings", st)
+        except Exception as e:  # noqa: BLE001
+            rep["notes"].append(f"cinematic post: {e}")
 
 
 def build_all(force=False):

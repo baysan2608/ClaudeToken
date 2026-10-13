@@ -384,4 +384,6 @@ bool Session::LoadRoam(std::shared_ptr<const WorldDef> world, const RoamOptions&
 
 RoamView Session::Roam() const { return impl_->roam_view(); }
 
+std::shared_ptr<const WorldDef> Session::RoamWorld() const { return impl_->roam; }
+
 }  // namespace ff

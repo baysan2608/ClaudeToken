@@ -34,6 +34,7 @@ struct InputFrame {
 	bool pause_pressed = false;
 	bool jump_pressed = false;    // (additive) leap: hop from the ground, one "cloud step" in the air for focus
 	bool jump_held = false;
+	bool grand_pressed = false;   // (additive) unleash the element's grand technique (needs a full surge meter)
 
 	void ClearEdges() {
 		attack_pressed = attack_released = false;
@@ -45,6 +46,7 @@ struct InputFrame {
 		target_cycle = false;
 		pause_pressed = false;
 		jump_pressed = false;
+		grand_pressed = false;
 		cam_delta = Vec2{};
 		attack_gesture = Gesture::None;
 		guard_gesture = Gesture::None;
@@ -77,6 +79,7 @@ struct InputFrame {
 		evade_held = evade_held || o.evade_held;
 		jump_pressed = jump_pressed || o.jump_pressed;
 		jump_held = jump_held || o.jump_held;
+		grand_pressed = grand_pressed || o.grand_pressed;
 	}
 };
 

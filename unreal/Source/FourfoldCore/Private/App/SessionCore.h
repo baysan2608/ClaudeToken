@@ -93,6 +93,7 @@ struct SessionCore {
 	uint64_t seed = 1;
 	// open world (roam): see ff/OpenWorld.h
 	std::shared_ptr<const WorldDef> roam;
+	std::shared_ptr<WorldDef> roam_live;   // the same world, writable: terrain edits
 	RoamOptions roam_opts;
 	double origin_x = 0.0, origin_y = 0.0, origin_z = 0.0;
 	std::vector<uint8_t> site_state;   // 0 waiting, 1 engaged, 2 defeated
@@ -182,6 +183,7 @@ struct SessionCore {
 
 	void load_scenario(const std::string& id) {
 		roam.reset();
+		roam_live.reset();
 		engaged = -1;
 		origin_x = origin_y = origin_z = 0.0;
 		Scenarios::Built r = Scenarios::build(id, prog(), seed);
@@ -229,12 +231,17 @@ struct SessionCore {
 		player_script.reset();
 		rival_script.reset();
 		world = std::make_unique<CombatWorld>(seed);
-		roam = std::move(def);
+		// Own copy with a fresh edit layer: every load starts from the generated valley.
+		roam_live = std::make_shared<WorldDef>(*def);
+		roam_live->edits = std::make_shared<TerrainEdits>();
+		roam_live->edits->Init(roam_live->nx, roam_live->nz);
+		roam = roam_live;
 		const WorldDef& wd = *roam;
 		origin_x = wd.player_spawn.x;
 		origin_y = wd.FloorAt(wd.player_spawn.x, wd.player_spawn.z);
 		origin_z = wd.player_spawn.z;
 		world->arena = ArenaMap::make_window(roam, origin_x, origin_y, origin_z);
+		world->terrain_live = roam_live;
 		place_pool();
 		const Dict kit = o.kit == "all" ? Progression::lab_kit() : prog().kit();
 		player = world->add_actor("You", V3(0, 0, 0), 0, kit, o.player_element >= 0 && o.player_element < 4 ? o.player_element : 0);
@@ -407,6 +414,7 @@ struct SessionCore {
 		RoamView v;
 		if (!roam) return v;
 		v.active = true;
+		v.terrain_revision = roam->edits ? roam->edits->revision : 0;
 		v.origin_x = origin_x;
 		v.origin_y = origin_y;
 		v.origin_z = origin_z;

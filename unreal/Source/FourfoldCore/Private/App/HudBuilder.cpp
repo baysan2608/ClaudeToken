@@ -190,6 +190,8 @@ HudModel build(const Context& c) {
 	h.health = static_cast<float>(p.health);
 	h.balance = static_cast<float>(p.balance);
 	h.focus = static_cast<float>(p.focus);
+	h.surge = static_cast<float>(p.surge);
+	h.grand_ready = p.surge >= 100.0 - 1e-6;
 	h.heat_reserve = static_cast<float>(p.heat_reserve);
 	h.water_carried = static_cast<float>(p.water_carried);
 	h.metal_carried = static_cast<float>(p.metal_carried);
