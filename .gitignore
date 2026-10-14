@@ -22,3 +22,6 @@ unreal/Content/MetaHumans/
 unreal/SourceArt/Character/MetaHuman/
 unreal/SourceArt/VFX/Flipbooks/CC0/
 unreal/SourceArt/OpenWorld/Meshes/*.png
+
+# Intel Sample Library "Jungle Ruins" (CC BY 4.0, credit Cristiano Siqueira, Charlene Teets / Intel); 4.25 GB, re-download after clone
+unreal/SourceArt/OpenWorld/JungleRuins/
