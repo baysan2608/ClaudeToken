@@ -125,6 +125,61 @@ class Boxes(unittest.TestCase):
         self.assertEqual((b["min"][0], b["max"][0]), (5.5, 16.5))
         self.assertEqual((b["min"][2], b["max"][2]), (3.5, 10.5))
 
+    def _assert_sound(self, boxes, cap):
+        self.assertLessEqual(len(boxes), cap)
+        for b in boxes:
+            for a in range(3):
+                self.assertLess(b["min"][a], b["max"][a], b)
+        self.assertEqual([b["name"] for b in boxes], [f"stone_{n}" for n in range(len(boxes))])
+
+    def test_a_coarser_quantum_merges_uneven_columns_and_never_inverts(self):
+        g = RD.Grid(41, 41, 0.0, 0.0, 2.0)
+        h_ter = [1.0] * (41 * 41)
+        h_all = [5.4 if (j % 41 + j // 41) % 2 == 0 else 5.9 for j in range(41 * 41)]     # checkerboard: tops 5.0 / 5.5 at 0.5
+        boxes = RD.stone_boxes(h_all, h_ter, g, [True] * (41 * 41))
+        self._assert_sound(boxes, 400)
+        self.assertEqual(len(boxes), 1)                                  # at quantum 1 both tops are 5.0: one rectangle
+        self.assertAlmostEqual(boxes[0]["max"][1], 5.0)
+
+    def test_the_box_cap_holds_and_low_columns_never_make_inverted_boxes(self):
+        g = RD.Grid(51, 51, 0.0, 0.0, 2.0)
+        h_ter = [2.0] * (51 * 51)
+        h_all = list(h_ter)
+        mask = [False] * (51 * 51)
+        for k in range(0, 51, 2):
+            for i in range(0, 51, 2):                                    # 676 isolated 1 m columns: nothing to merge
+                h_all[g.idx(i, k)] = 3.0
+                mask[g.idx(i, k)] = True
+        boxes = RD.stone_boxes(h_all, h_ter, g, mask)
+        self._assert_sound(boxes, 400)
+        self.assertEqual(len(boxes), 400)                                # truncated, not silently emptied
+        for b in boxes:
+            self.assertGreaterEqual(b["max"][1] - b["min"][1], 0.25)
+        small = RD.stone_boxes(h_all, h_ter, g, mask, max_boxes=50)
+        self._assert_sound(small, 50)
+        self.assertEqual(len(small), 50)
+
+    def test_a_fine_grid_still_gives_boxes_a_footprint(self):
+        g = RD.Grid(9, 9, 0.0, 0.0, 1.0)                                 # inset 0.5 would leave a 1 m cell zero width
+        h_ter = [0.0] * 81
+        h_all = list(h_ter)
+        mask = [False] * 81
+        h_all[g.idx(4, 4)] = 3.0
+        mask[g.idx(4, 4)] = True
+        boxes = RD.stone_boxes(h_all, h_ter, g, mask)
+        self._assert_sound(boxes, 400)
+        self.assertEqual(len(boxes), 1)
+
+    def test_coarse_quanta_drop_columns_that_would_sit_below_their_own_floor(self):
+        g = RD.Grid(11, 11, 0.0, 0.0, 2.0)
+        h_ter = [2.0] * 121
+        h_all = list(h_ter)
+        mask = [False] * 121
+        h_all[g.idx(5, 5)] = 3.0
+        mask[g.idx(5, 5)] = True
+        # quantum 4: floor((3.0 - 0.3) / 4) * 4 = 0 < terrain 2.0 - 1: no box (rather than an inverted one)
+        self.assertEqual(RD.stone_boxes(h_all, h_ter, g, mask, quant=4.0), [])
+
 
 class Sites(unittest.TestCase):
     def test_flat_site_prefers_the_flattest_sample(self):

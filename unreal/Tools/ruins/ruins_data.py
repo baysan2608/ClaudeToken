@@ -129,7 +129,7 @@ def traps(fl, grid, start, margin, max_slope=1.0):
 
 
 def _box(grid, i0, i1, k0, k1, top, bottom, name, inset):
-    half = grid.cell * 0.5 - inset
+    half = grid.cell * 0.5 - min(inset, 0.4 * grid.cell)       # a fine grid keeps a footprint: never a zero-width box
     xa, za = grid.pos(i0, k0)
     xb, zb = grid.pos(i1, k1)
     return {"min": [round(xa - half, 3), round(bottom, 3), round(za - half, 3)],
@@ -137,46 +137,75 @@ def _box(grid, i0, i1, k0, k1, top, bottom, name, inset):
             "kind": "wall", "surface": "stone", "name": name}
 
 
-def stone_boxes(h_all, h_ter, grid, mask, min_rise=1.0, sink=0.3, quant=0.5, inset=0.5, max_boxes=400):
+def _stone_boxes_at(h_all, h_ter, grid, mask, min_rise, sink, quant, inset, foot, min_height):
+    """One merge pass at a fixed quantum -> (boxes, dropped columns). A column whose quantised top would sit less than
+    min_height above its own box floor (bare terrain - foot) is dropped: a box that thin or inverted stops nothing."""
+    tops, dropped = {}, 0
+    for k in range(grid.nz):
+        for i in range(grid.nx):
+            j = grid.idx(i, k)
+            if mask[j] and h_all[j] - h_ter[j] >= min_rise:
+                top = math.floor((h_all[j] - sink) / quant) * quant
+                if top < h_ter[j] - foot + min_height:
+                    dropped += 1
+                else:
+                    tops[(i, k)] = top
+    runs = {}
+    for k in range(grid.nz):
+        row, i = [], 0
+        while i < grid.nx:
+            t = tops.get((i, k))
+            if t is None:
+                i += 1
+                continue
+            i1 = i
+            while tops.get((i1 + 1, k)) == t:
+                i1 += 1
+            row.append((i, i1, t))
+            i = i1 + 1
+        runs[k] = row
+    boxes, open_runs = [], {}
+    for k in range(grid.nz + 1):
+        cur = set(runs.get(k, []))
+        for key in sorted(open_runs):
+            if key not in cur:
+                i0, i1, t = key
+                k0 = open_runs.pop(key)
+                bottom = min(h_ter[grid.idx(i, kk)] for kk in range(k0, k) for i in range(i0, i1 + 1)) - foot
+                boxes.append(_box(grid, i0, i1, k0, k - 1, t, bottom, f"stone_{len(boxes)}", inset))
+        for key in runs.get(k, []):
+            open_runs.setdefault(key, k)
+    return boxes, dropped
+
+
+def _largest(boxes, count):
+    """The `count` boxes with the biggest footprint (ties: earlier first), in their original order, renumbered."""
+    def area(n):
+        return (boxes[n]["max"][0] - boxes[n]["min"][0]) * (boxes[n]["max"][2] - boxes[n]["min"][2])
+
+    keep_ids = sorted(sorted(range(len(boxes)), key=lambda n: (-area(n), n))[:count])
+    out = []
+    for n in keep_ids:
+        out.append(dict(boxes[n], name=f"stone_{len(out)}"))
+    return out
+
+
+def stone_boxes(h_all, h_ter, grid, mask, min_rise=1.0, sink=0.3, quant=0.5, inset=0.5, max_boxes=400, foot=1.0,
+                min_height=0.25, max_quant=8.0):
     """Interior boxes of raised stone: samples in `mask` standing min_rise above the bare terrain become columns whose top
-    sits at least `sink` below the walkable surface (quantised down to `quant`), merged into rectangles (equal runs of a row,
-    then equal runs of consecutive rows). They stop shots and line of sight inside the stone without changing footing:
-    ArenaMap::ground_height and push_out ignore box tops below the feet + step. The quantum doubles until <= max_boxes."""
-    while True:
-        tops = {}
-        for k in range(grid.nz):
-            for i in range(grid.nx):
-                j = grid.idx(i, k)
-                if mask[j] and h_all[j] - h_ter[j] >= min_rise:
-                    tops[(i, k)] = math.floor((h_all[j] - sink) / quant) * quant
-        runs = {}
-        for k in range(grid.nz):
-            row, i = [], 0
-            while i < grid.nx:
-                t = tops.get((i, k))
-                if t is None:
-                    i += 1
-                    continue
-                i1 = i
-                while tops.get((i1 + 1, k)) == t:
-                    i1 += 1
-                row.append((i, i1, t))
-                i = i1 + 1
-            runs[k] = row
-        boxes, open_runs = [], {}
-        for k in range(grid.nz + 1):
-            cur = set(runs.get(k, []))
-            for key in sorted(open_runs):
-                if key not in cur:
-                    i0, i1, t = key
-                    k0 = open_runs.pop(key)
-                    bottom = min(h_ter[grid.idx(i, kk)] for kk in range(k0, k) for i in range(i0, i1 + 1)) - 1.0
-                    boxes.append(_box(grid, i0, i1, k0, k - 1, t, bottom, f"stone_{len(boxes)}", inset))
-            for key in runs.get(k, []):
-                open_runs.setdefault(key, k)
-        if len(boxes) <= max_boxes or quant >= 8.0:
-            return boxes
-        quant *= 2.0
+    sits at least `sink` below the walkable surface (quantised down to `quant`) and whose floor is `foot` below the bare
+    terrain, merged into rectangles (equal runs of a row, then equal runs of consecutive rows). They stop shots and line of
+    sight inside the stone without changing footing: ArenaMap::ground_height and push_out ignore box tops below the feet +
+    step. Never more than max_boxes, and every box is at least min_height tall: while over the cap the quantum doubles
+    (up to max_quant) to merge uneven tops, but stops as soon as a coarser quantum would drop columns (their quantised top
+    falls below their own floor); then, or at max_quant, the max_boxes largest footprints are kept."""
+    boxes, dropped = _stone_boxes_at(h_all, h_ter, grid, mask, min_rise, sink, quant, inset, foot, min_height)
+    while len(boxes) > max_boxes and quant * 2.0 <= max_quant:
+        coarser, lost = _stone_boxes_at(h_all, h_ter, grid, mask, min_rise, sink, quant * 2.0, inset, foot, min_height)
+        if lost > dropped:
+            break
+        quant, boxes, dropped = quant * 2.0, coarser, lost
+    return boxes if len(boxes) <= max_boxes else _largest(boxes, max_boxes)
 
 
 def trunk_boxes(props, heights, water, grid, wade, margin, height=6.0):
