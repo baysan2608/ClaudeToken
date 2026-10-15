@@ -10,6 +10,7 @@
 
 #include "ff/Json.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -443,6 +444,90 @@ FAT_TEST(state_loops_from_bodies_and_actors) {
 			FAT_NEAR(w.gain_db, -4.0, 1e-6);
 		}
 		if (w.key == "a1:burn") FAT_NEAR(w.pos.y, 1.25f, 1e-5);
+	}
+}
+
+namespace {
+// A held body loop whose gain and pitch follow the body's speed (element-control hold layer).
+const char* kHoldLoops = R"JSON({
+ "schema": "fourfold.sfx/1",
+ "mix": {"global_voices": 3, "loop_voices": 4, "bus_gain_db": {"sfx": 0, "ui": 0, "ambience": -4},
+   "fade_db_per_s": {"body_in": 90, "body_out": 60, "zone_in": 30, "zone_out": 24, "floor_db": -40}},
+ "sounds": {"hold_loop": {"asset": "/Game/A/S_h", "loop": true, "bus": "sfx", "duration_s": 2.0, "category": "loop"}},
+ "loops": {"bodies": [{"id": "held", "when": [{"f": "controller", "gte": 0}], "sound": "hold_loop", "gain_db": -2,
+   "fade": "body", "at": "body", "gain_map": {"f": "$speed", "in": [0, 8], "db": [-10, 0]},
+   "pitch_map": {"f": "$speed", "in": [0, 8], "pitch": [0.9, 1.25]}}], "actors": [], "events": []}
+})JSON";
+}  // namespace
+
+FAT_TEST(loop_rules_track_speed_with_gain_and_pitch_maps) {
+	Manifest m;
+	FAT_CHECK(m.Parse(kHoldLoops));
+	FAT_CHECK(m.body_loops.size() == 1 && m.body_loops[0].gain_map.valid && m.body_loops[0].pitch_map.valid);
+	ffa::RuleEngine eng(&m);
+	ff::Snapshot s = TwoActors();
+	s.bodies.push_back(MakeBody(9, ff::Mat::Stone, ff::Form::Chunk, ff::Vec3(0, 1, 2), "stone"));
+	s.bodies.back().controller = 1;
+	for (float spd : {0.0f, 4.0f, 8.0f, 30.0f}) {
+		s.bodies.back().vel = ff::Vec3(spd, 0, 0);
+		std::vector<LoopWant> wants;
+		eng.EvaluateLoops(s, nullptr, 1.0f, wants);
+		FAT_CHECK(wants.size() == 1);
+		if (wants.empty()) continue;
+		const float t = std::min(spd, 8.0f) / 8.0f;
+		FAT_NEAR(wants[0].gain_db, -2.0f - 10.0f + 10.0f * t, 1e-4);
+		FAT_NEAR(wants[0].pitch, 0.9f + 0.35f * t, 1e-4);
+	}
+	// the tracker starts a loop at its pitch, then glides (no jumps) toward the next target
+	ffa::LoopTracker tr;
+	tr.Configure(m.mix.fade, 4);
+	LoopWant w;
+	w.key = "b9:held";
+	w.sound = "hold_loop";
+	w.pitch = 1.2f;
+	tr.BeginFrame();
+	tr.Want(w);
+	tr.EndFrame(0.0, 1.0f / 60.0f);
+	FAT_CHECK(tr.States().size() == 1);
+	if (tr.States().empty()) return;
+	FAT_NEAR(tr.States()[0].pitch, 1.2f, 1e-6);
+	w.pitch = 0.9f;
+	double now = 0.0;
+	for (int i = 0; i < 60; ++i) {
+		now += 1.0 / 60.0;
+		tr.BeginFrame();
+		tr.Want(w);
+		tr.EndFrame(now, 1.0f / 60.0f);
+		if (i == 0) FAT_CHECK(tr.States()[0].pitch < 1.2f && tr.States()[0].pitch > 0.9f);
+	}
+	FAT_NEAR(tr.States()[0].pitch, 0.9f, 1e-4);
+}
+
+FAT_TEST(loop_maps_clamp_missing_and_non_finite_fields) {
+	Manifest m;
+	FAT_CHECK(m.Parse(kHoldLoops));
+	ffa::RuleEngine eng(&m);
+	ff::Snapshot s = TwoActors();
+	s.bodies.push_back(MakeBody(9, ff::Mat::Stone, ff::Form::Chunk, ff::Vec3(0, 1, 2), "stone"));
+	s.bodies.back().controller = 1;
+	s.bodies.back().vel = ff::Vec3(std::nanf(""), 0, 0);
+	std::vector<LoopWant> wants;
+	eng.EvaluateLoops(s, nullptr, 1.0f, wants);
+	FAT_CHECK(wants.size() == 1);
+	if (!wants.empty()) {
+		FAT_NEAR(wants[0].gain_db, -12.0, 1e-4);   // rule -2 dB + the map's low end -10 dB
+		FAT_NEAR(wants[0].pitch, 0.9, 1e-4);
+	}
+	// a map naming a field the body does not have reads as the low end as well
+	m.body_loops[0].gain_map.field = "no_such_field";
+	m.body_loops[0].pitch_map.field = "no_such_field";
+	s.bodies.back().vel = ff::Vec3(5, 0, 0);
+	wants.clear();
+	eng.EvaluateLoops(s, nullptr, 1.0f, wants);
+	FAT_CHECK(wants.size() == 1);
+	if (!wants.empty()) {
+		FAT_NEAR(wants[0].gain_db, -12.0, 1e-4);
+		FAT_NEAR(wants[0].pitch, 0.9, 1e-4);
 	}
 }
 
@@ -897,6 +982,43 @@ FAT_TEST(real_manifest_loops_and_holds) {
 	holds.clear();
 	eng.ProcessEvent(Ev("draw_water", {{"actor", 2}, {"body", 10}}), w, plays, holds);
 	FAT_CHECK(holds.size() == 1 && holds[0].sound == "water_draw_loop" && holds[0].key == "e:wdraw_2");
+}
+
+FAT_TEST(real_manifest_element_control_stages) {
+	Manifest m;
+	if (!LoadReal(m)) {
+		FAT_CHECK(false);
+		return;
+	}
+	for (const char* snd : {"raise_earth", "raise_water", "raise_fire", "raise_air", "hold_earth_loop", "hold_water_loop",
+	                        "hold_fire_loop", "hold_air_loop", "release_push"})
+		FAT_CHECK(m.Find(snd) != nullptr);
+	ffa::RuleEngine eng(&m);
+	ff::Snapshot s = RealisticSnapshot();
+	s.bodies.push_back(MakeBody(30, ff::Mat::Water, ff::Form::Blob, ff::Vec3(0, 1.2f, 6), "water"));
+	s.bodies.back().controller = 1;
+	s.bodies.back().vel = ff::Vec3(6, 0, 0);
+	ffa::SnapshotWorld world(s);
+	// raise: winning control of a water body plays the water raise layer
+	std::vector<PlayRequest> plays;
+	std::vector<HoldRequest> holds;
+	eng.ProcessEvent(Ev("control_won", {{"actor", 1}, {"body", 30}, {"verb", "draw"}}), world, plays, holds);
+	bool raise = false;
+	for (const PlayRequest& p : plays) raise = raise || p.sound == "raise_water";
+	FAT_CHECK(raise);
+	// hold: the held body loops, louder and higher than at rest when it moves fast
+	std::vector<LoopWant> wants;
+	eng.EvaluateLoops(s, nullptr, 1.0f, wants);
+	const LoopWant* hold = nullptr;
+	for (const LoopWant& x : wants)
+		if (x.sound == "hold_water_loop") hold = &x;
+	FAT_CHECK(hold != nullptr && hold->pitch > 1.0f);
+	// release as an attack: the arms' push layer
+	plays.clear();
+	eng.ProcessEvent(Ev("release", {{"actor", 1}, {"body", 30}, {"attack", true}}), world, plays, holds);
+	bool push = false;
+	for (const PlayRequest& p : plays) push = push || p.sound == "release_push";
+	FAT_CHECK(push);
 }
 
 FAT_TEST(real_manifest_timing_budget) {

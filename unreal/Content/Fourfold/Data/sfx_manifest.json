@@ -1311,6 +1311,62 @@
    "priority": 3,
    "stinger": false
   },
+  "hold_air_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_hold_air_loop",
+   "gain_db": -14.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "hold_earth_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_hold_earth_loop",
+   "gain_db": -11.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "hold_fire_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_hold_fire_loop",
+   "gain_db": -14.0,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
+  "hold_water_loop": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_hold_water_loop",
+   "gain_db": -11.5,
+   "pitch_var": 0.0,
+   "max_voices": 2,
+   "loop": true,
+   "category": "loop",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 2.0,
+   "priority": 1,
+   "stinger": false
+  },
   "ice_crack": {
    "asset": "/Game/Fourfold/Audio/SFX/S_ice_crack",
    "gain_db": -0.5,
@@ -2093,6 +2149,76 @@
    "family": "sand",
    "duration_s": 2.0,
    "priority": 1,
+   "stinger": false
+  },
+  "raise_air": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_raise_air",
+   "gain_db": -6.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "air",
+   "duration_s": 0.786,
+   "priority": 2,
+   "stinger": false
+  },
+  "raise_earth": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_raise_earth",
+   "gain_db": -4.5,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "earth",
+   "duration_s": 0.939,
+   "priority": 2,
+   "stinger": false
+  },
+  "raise_fire": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_raise_fire",
+   "gain_db": -5.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "fire",
+   "duration_s": 0.771,
+   "priority": 2,
+   "stinger": false
+  },
+  "raise_water": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_raise_water",
+   "gain_db": -5.0,
+   "pitch_var": 0.04,
+   "max_voices": 2,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "water",
+   "duration_s": 0.9,
+   "priority": 2,
+   "stinger": false
+  },
+  "release_push": {
+   "asset": "/Game/Fourfold/Audio/SFX/S_release_push",
+   "gain_db": -5.5,
+   "pitch_var": 0.04,
+   "max_voices": 3,
+   "loop": false,
+   "category": "element",
+   "attenuation": "mid",
+   "bus": "sfx",
+   "family": "movement",
+   "duration_s": 0.414,
+   "priority": 2,
    "stinger": false
   },
   "roar_wave": {
@@ -3533,6 +3659,26 @@
    "molten_metal": "magma_glob",
    "molten_sand": "magma_glob"
   },
+  "raise_mat": {
+   "stone": "raise_earth",
+   "metal": "raise_earth",
+   "sand": "raise_earth",
+   "glass": "raise_earth",
+   "magma": "raise_earth",
+   "water": "raise_water",
+   "ice": "raise_water",
+   "mist": "raise_water",
+   "steam": "raise_water",
+   "plant": "raise_water",
+   "flame": "raise_fire",
+   "blue": "raise_fire",
+   "lightning": "raise_fire",
+   "blast": "raise_fire",
+   "wind": "raise_air",
+   "vortex": "raise_air",
+   "vacuum": "raise_air",
+   "sound": "raise_air"
+  },
   "body_impact": {
    "stone": [
     "stone_impact_1",
@@ -3993,6 +4139,23 @@
       ]
      }
     ]
+   },
+   {
+    "id": "control_won.raise",
+    "play": [
+     {
+      "sound": {
+       "table": "raise_mat",
+       "key": "$body_mat",
+       "default": "raise_earth"
+      },
+      "at": [
+       "body",
+       "actor"
+      ],
+      "gain_db": -2.0
+     }
+    ]
    }
   ],
   "control_fail": [
@@ -4010,6 +4173,27 @@
      {
       "f": "reason",
       "eq": "mass"
+     }
+    ]
+   }
+  ],
+  "release": [
+   {
+    "id": "release.push",
+    "play": [
+     {
+      "sound": "release_push",
+      "at": [
+       "hand",
+       "actor"
+      ],
+      "gain_db": -3.0
+     }
+    ],
+    "when": [
+     {
+      "f": "attack",
+      "truthy": true
      }
     ]
    }
@@ -7550,6 +7734,184 @@
     "gain_db": -4.0,
     "fade": "body",
     "at": "body"
+   },
+   {
+    "id": "hold.hold_earth_loop",
+    "when": [
+     {
+      "f": "controller",
+      "gte": 0
+     },
+     {
+      "f": "fx_mat",
+      "in": [
+       "stone",
+       "metal",
+       "sand",
+       "glass",
+       "magma"
+      ]
+     }
+    ],
+    "sound": "hold_earth_loop",
+    "gain_db": -3.0,
+    "fade": "body",
+    "at": "body",
+    "gain_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "db": [
+      -9.0,
+      0.0
+     ]
+    },
+    "pitch_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "pitch": [
+      0.92,
+      1.22
+     ]
+    }
+   },
+   {
+    "id": "hold.hold_water_loop",
+    "when": [
+     {
+      "f": "controller",
+      "gte": 0
+     },
+     {
+      "f": "fx_mat",
+      "in": [
+       "water",
+       "ice",
+       "mist",
+       "steam",
+       "plant"
+      ]
+     }
+    ],
+    "sound": "hold_water_loop",
+    "gain_db": -3.0,
+    "fade": "body",
+    "at": "body",
+    "gain_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "db": [
+      -9.0,
+      0.0
+     ]
+    },
+    "pitch_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "pitch": [
+      0.92,
+      1.22
+     ]
+    }
+   },
+   {
+    "id": "hold.hold_fire_loop",
+    "when": [
+     {
+      "f": "controller",
+      "gte": 0
+     },
+     {
+      "f": "fx_mat",
+      "in": [
+       "flame",
+       "blue",
+       "lightning",
+       "blast"
+      ]
+     }
+    ],
+    "sound": "hold_fire_loop",
+    "gain_db": -3.0,
+    "fade": "body",
+    "at": "body",
+    "gain_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "db": [
+      -9.0,
+      0.0
+     ]
+    },
+    "pitch_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "pitch": [
+      0.92,
+      1.22
+     ]
+    }
+   },
+   {
+    "id": "hold.hold_air_loop",
+    "when": [
+     {
+      "f": "controller",
+      "gte": 0
+     },
+     {
+      "f": "fx_mat",
+      "in": [
+       "wind",
+       "vortex",
+       "vacuum",
+       "sound"
+      ]
+     }
+    ],
+    "sound": "hold_air_loop",
+    "gain_db": -3.0,
+    "fade": "body",
+    "at": "body",
+    "gain_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "db": [
+      -9.0,
+      0.0
+     ]
+    },
+    "pitch_map": {
+     "f": "$speed",
+     "in": [
+      0.0,
+      8.0
+     ],
+     "pitch": [
+      0.92,
+      1.22
+     ]
+    }
    }
   ],
   "actors": [

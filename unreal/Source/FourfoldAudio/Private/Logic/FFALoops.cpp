@@ -48,6 +48,7 @@ void LoopTracker::EndFrame(double now, float dt) {
 			s.on = true;
 			s.pos = w->second.pos;
 			s.target_db = w->second.gain_db;
+			s.target_pitch = w->second.pitch;
 			s.zone = w->second.zone;
 			wants_.erase(w);
 			++running;
@@ -71,6 +72,7 @@ void LoopTracker::EndFrame(double now, float dt) {
 		s.two_d = w.two_d;
 		s.zone = w.zone;
 		s.target_db = w.gain_db;
+		s.pitch = s.target_pitch = w.pitch;
 		s.vol_db = std::max(fade_.floor_db, w.gain_db - (w.zone ? 40.0f : 24.0f));
 		s.on = true;
 		s.started = true;
@@ -80,6 +82,7 @@ void LoopTracker::EndFrame(double now, float dt) {
 
 	// 5. fades
 	for (LoopState& s : states_) {
+		s.pitch = MoveToward(s.pitch, s.target_pitch, kPitchGlide * dt);
 		if (s.on) {
 			s.vol_db = MoveToward(s.vol_db, s.target_db, (s.zone ? fade_.zone_in : fade_.body_in) * dt);
 		} else {

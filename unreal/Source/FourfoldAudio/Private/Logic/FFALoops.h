@@ -22,6 +22,8 @@ struct LoopState {
 	bool zone = false;
 	float vol_db = -40.0f;       // fade offset relative to the sound's manifest gain (floor .. target)
 	float target_db = 0.0f;
+	float pitch = 1.0f;          // playback pitch; glides toward target_pitch (LoopTracker::kPitchGlide per second)
+	float target_pitch = 1.0f;
 	bool on = true;
 	bool started = false;        // true in the frame the loop was created: the glue spawns its component
 	bool finished = false;       // true in the frame the loop ended: the glue destroys its component
@@ -29,6 +31,7 @@ struct LoopState {
 
 class LoopTracker {
 public:
+	static constexpr float kPitchGlide = 2.0f;   // pitch units per second
 	void Configure(const FadeDef& fade, int max_loops) { fade_ = fade; max_loops_ = max_loops; }
 	void BeginFrame() { wants_.clear(); }
 	void Want(const LoopWant& w) { wants_[w.key] = w; }

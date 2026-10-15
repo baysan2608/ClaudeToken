@@ -125,6 +125,22 @@ std::string JoinKey(const std::vector<std::string>& parts) {
 	return k;
 }
 
+// Gain (dB) / pitch of a state loop from a field of its body / actor: clamped linear maps; a missing or non-finite field
+// reads as the map's low end (no map: 0 dB / pitch 1).
+float LoopGainDb(const GainMap& g, const ff::Dict& f) {
+	if (!g.valid) return 0.0f;
+	const ff::Value& v = f.get(g.field);
+	if (!v.is_number() || !std::isfinite(v.as_f32())) return g.db_lo;
+	return MapRange(v.as_f32(), g.in_lo, g.in_hi, g.db_lo, g.db_hi);
+}
+
+float LoopPitch(const PitchMap& p, const ff::Dict& f) {
+	if (!p.valid) return 1.0f;
+	const ff::Value& v = f.get(p.field);
+	if (!v.is_number() || !std::isfinite(v.as_f32())) return p.pitch_lo;
+	return MapRange(v.as_f32(), p.in_lo, p.in_hi, p.pitch_lo, p.pitch_hi);
+}
+
 }  // namespace
 
 RuleEngine::RuleEngine(const Manifest* manifest, uint32_t seed) : m_(manifest), rng_(seed) {}
@@ -421,7 +437,8 @@ void RuleEngine::EvaluateLoops(const ff::Snapshot& curr, const ff::Snapshot* pre
 			w.key = "b" + std::to_string(b.id) + ":" + r.id;
 			w.sound = r.sound;
 			w.pos = pos;
-			w.gain_db = r.gain_db;
+			w.gain_db = r.gain_db + LoopGainDb(r.gain_map, f);
+			w.pitch = LoopPitch(r.pitch_map, f);
 			w.zone = r.zone;
 			out.push_back(std::move(w));
 		}
@@ -441,7 +458,8 @@ void RuleEngine::EvaluateLoops(const ff::Snapshot& curr, const ff::Snapshot* pre
 			w.key = "a" + std::to_string(a.id) + ":" + r.id;
 			w.sound = r.sound;
 			w.pos = r.at == "feet" ? feet : ff::Vec3(feet.x, feet.y + kChestY, feet.z);
-			w.gain_db = r.gain_db;
+			w.gain_db = r.gain_db + LoopGainDb(r.gain_map, f);
+			w.pitch = LoopPitch(r.pitch_map, f);
 			w.zone = r.zone;
 			out.push_back(std::move(w));
 		}

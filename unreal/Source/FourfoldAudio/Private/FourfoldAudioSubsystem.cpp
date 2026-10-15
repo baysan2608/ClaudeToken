@@ -573,7 +573,7 @@ void UFourfoldAudioSubsystem::ApplyLoops()
 			UAudioComponent* Comp = nullptr;
 			if (S.two_d || Def->attenuation == "2d")
 			{
-				Comp = UGameplayStatics::CreateSound2D(this, Sound, Volume, 1.0f, 0.0f, nullptr, false, false);
+				Comp = UGameplayStatics::CreateSound2D(this, Sound, Volume, S.pitch, 0.0f, nullptr, false, false);
 				if (Comp != nullptr)
 				{
 					Comp->Play();
@@ -581,7 +581,7 @@ void UFourfoldAudioSubsystem::ApplyLoops()
 			}
 			else
 			{
-				Comp = UGameplayStatics::SpawnSoundAtLocation(this, Sound, FF::ToUE(S.pos), FRotator::ZeroRotator, Volume, 1.0f, 0.0f,
+				Comp = UGameplayStatics::SpawnSoundAtLocation(this, Sound, FF::ToUE(S.pos), FRotator::ZeroRotator, Volume, S.pitch, 0.0f,
 				                                              GetAttenuation(ToFString(Def->attenuation)), nullptr, false);
 			}
 			if (Comp != nullptr)
@@ -620,6 +620,10 @@ void UFourfoldAudioSubsystem::ApplyLoops()
 			continue;
 		}
 		Comp->SetVolumeMultiplier(Volume);
+		if (FMath::Abs(Comp->PitchMultiplier - S.pitch) > 1e-3f)
+		{
+			Comp->SetPitchMultiplier(S.pitch);   // hold layers follow the held body's speed
+		}
 		if (!S.two_d && Def->attenuation != "2d")
 		{
 			Comp->SetWorldLocation(FF::ToUE(S.pos));
@@ -636,9 +640,17 @@ FString UFourfoldAudioSubsystem::DescribeState() const
 		return TEXT("audio: not initialised");
 	}
 	const FFourfoldAudioImpl& I = *Impl;
-	return FString::Printf(TEXT("audio: ready=%d sounds=%d voices=%d loops=%d (components %d) pending=%d played=%d dropped=%d missing-sound-names=%d duck=%.1f dB"),
+	FString Loops;
+	for (const ffa::LoopState& S : I.Loops.States())
+	{
+		if (S.on && !S.finished)
+		{
+			Loops += FString::Printf(TEXT(" %s@%.2f"), *ToFString(S.sound), S.pitch);
+		}
+	}
+	return FString::Printf(TEXT("audio: ready=%d sounds=%d voices=%d loops=%d (components %d) pending=%d played=%d dropped=%d missing-sound-names=%d duck=%.1f dB | loops:%s"),
 	                       I.bReady ? 1 : 0, static_cast<int32>(I.Manifest.sounds.size()), I.Voices.Active(), I.Loops.ActiveCount(),
-	                       LoopComps.Num(), I.Pending.Num(), I.Played, I.Dropped, I.Rules.MissingSounds(), I.DuckDb);
+	                       LoopComps.Num(), I.Pending.Num(), I.Played, I.Dropped, I.Rules.MissingSounds(), I.DuckDb, *Loops);
 }
 
 static void FourfoldAudioDump(UWorld* World)

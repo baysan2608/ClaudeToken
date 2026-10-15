@@ -66,6 +66,7 @@ struct LoopWant {
 	float gain_db = 0.0f;
 	bool zone = false;
 	bool two_d = false;
+	float pitch = 1.0f;                // playback pitch (the rule's pitch map; 1 = none)
 };
 
 struct StepOut {

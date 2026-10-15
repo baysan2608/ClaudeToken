@@ -90,6 +90,38 @@ SoundRef ParseSoundRef(const ff::Value& v) {
 	return r;
 }
 
+GainMap ParseGainMap(const ff::Value& v) {
+	GainMap g;
+	const ff::Dict* d = v.dict_ptr();
+	if (d == nullptr) return g;
+	const ff::Array in = d->get("in").as_array();
+	const ff::Array db = d->get("db").as_array();
+	if (in.size() < 2 || db.size() < 2) return g;
+	g.valid = true;
+	g.field = S(*d, "f");
+	g.in_lo = in[0].as_f32();
+	g.in_hi = in[1].as_f32();
+	g.db_lo = db[0].as_f32();
+	g.db_hi = db[1].as_f32();
+	return g;
+}
+
+PitchMap ParsePitchMap(const ff::Value& v) {
+	PitchMap p;
+	const ff::Dict* d = v.dict_ptr();
+	if (d == nullptr) return p;
+	const ff::Array in = d->get("in").as_array();
+	const ff::Array pitch = d->get("pitch").as_array();
+	if (in.size() < 2 || pitch.size() < 2) return p;
+	p.valid = true;
+	p.field = S(*d, "f");
+	p.in_lo = in[0].as_f32();
+	p.in_hi = in[1].as_f32();
+	p.pitch_lo = pitch[0].as_f32();
+	p.pitch_hi = pitch[1].as_f32();
+	return p;
+}
+
 Play ParsePlay(const ff::Dict& d) {
 	Play p;
 	p.sound = ParseSoundRef(d.get("sound"));
@@ -100,20 +132,7 @@ Play ParsePlay(const ff::Dict& d) {
 	p.limit = S(d, "limit");
 	p.two_d = B(d, "two_d", false);
 	p.delay_s = F(d, "delay_s", 0.0f);
-	if (const ff::Dict* g = d.get("gain_map").dict_ptr()) {
-		p.gain_map.valid = true;
-		p.gain_map.field = S(*g, "f");
-		const ff::Array in = g->get("in").as_array();
-		const ff::Array db = g->get("db").as_array();
-		if (in.size() >= 2 && db.size() >= 2) {
-			p.gain_map.in_lo = in[0].as_f32();
-			p.gain_map.in_hi = in[1].as_f32();
-			p.gain_map.db_lo = db[0].as_f32();
-			p.gain_map.db_hi = db[1].as_f32();
-		} else {
-			p.gain_map.valid = false;
-		}
-	}
+	p.gain_map = ParseGainMap(d.get("gain_map"));
 	return p;
 }
 
@@ -125,6 +144,8 @@ LoopRule ParseLoopRule(const ff::Dict& d) {
 	r.gain_db = F(d, "gain_db", 0.0f);
 	r.zone = S(d, "fade") == "zone";
 	r.at = S(d, "at", "body");
+	r.gain_map = ParseGainMap(d.get("gain_map"));
+	r.pitch_map = ParsePitchMap(d.get("pitch_map"));
 	return r;
 }
 

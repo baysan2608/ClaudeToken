@@ -28,6 +28,12 @@ struct GainMap {
 	float in_lo = 0.0f, in_hi = 1.0f, db_lo = 0.0f, db_hi = 0.0f;
 };
 
+struct PitchMap {
+	bool valid = false;
+	std::string field;
+	float in_lo = 0.0f, in_hi = 1.0f, pitch_lo = 1.0f, pitch_hi = 1.0f;
+};
+
 // What a play resolves to: a literal sound, "tmpl_{field}" (fields substituted), a round-robin list, or a table lookup.
 struct SoundRef {
 	enum class Kind : uint8_t { None, Literal, Template, List, Table };
@@ -92,6 +98,8 @@ struct LoopRule {                      // loops.bodies / loops.actors
 	float gain_db = 0.0f;
 	bool zone = false;                 // slow zone fades
 	std::string at;                    // body | chest | feet
+	GainMap gain_map;                  // dB added from a field of the body / actor (linear, clamped; low end when missing)
+	PitchMap pitch_map;                // playback pitch from a field (the hold layer follows the held body's speed)
 };
 
 struct EventLoopRule {                 // loops.events: refreshed by events, expires by itself

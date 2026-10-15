@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import synth_sfx  # noqa: E402  (registers the base sounds)
 
-for _mod in ("synth_martial", "synth_impacts", "synth_music", "synth_ambience"):
+for _mod in ("synth_martial", "synth_impacts", "synth_music", "synth_ambience", "synth_element_control"):
     try:
         __import__(_mod)
     except ModuleNotFoundError as exc:      # an extension that is not written yet is skipped, anything else is an error

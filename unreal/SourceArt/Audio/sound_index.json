@@ -1043,6 +1043,54 @@
   "notes": "Light impact: crisp click, slap and short body knock.",
   "suggested_volume_db": -1.5
  },
+ "hold_air_loop": {
+  "bus": "sfx",
+  "category": "loop",
+  "dir": "SFX",
+  "duration_s": 2.0,
+  "family": "air",
+  "loop": true,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Hold (air): a spinning ball of wind between the hands, a whirling band over a soft body; gain and pitch follow its speed at runtime (loop 2.0 s).",
+  "suggested_volume_db": -14.0
+ },
+ "hold_earth_loop": {
+  "bus": "sfx",
+  "category": "loop",
+  "dir": "SFX",
+  "duration_s": 2.0,
+  "family": "earth",
+  "loop": true,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Hold (earth): a held rock's low strain, a gritty trickle of dust and a slow creak; gain and pitch follow its speed at runtime (loop 2.0 s).",
+  "suggested_volume_db": -11.5
+ },
+ "hold_fire_loop": {
+  "bus": "sfx",
+  "category": "loop",
+  "dir": "SFX",
+  "duration_s": 2.0,
+  "family": "fire",
+  "loop": true,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Hold (fire): a contained roar at the fists with flutter, hiss and crackle; gain and pitch follow its speed at runtime (loop 2.0 s).",
+  "suggested_volume_db": -14.0
+ },
+ "hold_water_loop": {
+  "bus": "sfx",
+  "category": "loop",
+  "dir": "SFX",
+  "duration_s": 2.0,
+  "family": "water",
+  "loop": true,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Hold (water): a churning stream between the palms, rolling resonance and small bubbles; gain and pitch follow its speed at runtime (loop 2.0 s).",
+  "suggested_volume_db": -11.5
+ },
  "ice_crack": {
   "bus": "sfx",
   "category": "impact",
@@ -1714,6 +1762,66 @@
   "max_voices": 1,
   "notes": "Quicksand: hollow suction gurgle, slow sucking sweeps, wet gulps and a little grit (loop 2.0 s).",
   "suggested_volume_db": -17.5
+ },
+ "raise_air": {
+  "bus": "sfx",
+  "category": "element",
+  "dir": "SFX",
+  "duration_s": 0.786,
+  "family": "air",
+  "loop": false,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Raise (air): wind drawn in from all around, a tightening swirl that spins up toward the palms.",
+  "suggested_volume_db": -6.5
+ },
+ "raise_earth": {
+  "bus": "sfx",
+  "category": "element",
+  "dir": "SFX",
+  "duration_s": 0.939,
+  "family": "earth",
+  "loop": false,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Raise (earth): the ground cracks open, the block grinds free and rises with a low rumble into the hands.",
+  "suggested_volume_db": -4.5
+ },
+ "raise_fire": {
+  "bus": "sfx",
+  "category": "element",
+  "dir": "SFX",
+  "duration_s": 0.771,
+  "family": "fire",
+  "loop": false,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Raise (fire): a sharp inhale of air toward the fists, gathering ember ticks, a soft ignition swell.",
+  "suggested_volume_db": -5.0
+ },
+ "raise_water": {
+  "bus": "sfx",
+  "category": "element",
+  "dir": "SFX",
+  "duration_s": 0.9,
+  "family": "water",
+  "loop": false,
+  "max_dur": 1.2,
+  "max_voices": 2,
+  "notes": "Raise (water): a sucking pull off the surface, a rising watery swirl, droplets falling back as the stream reaches the hands.",
+  "suggested_volume_db": -5.0
+ },
+ "release_push": {
+  "bus": "sfx",
+  "category": "element",
+  "dir": "SFX",
+  "duration_s": 0.414,
+  "family": "movement",
+  "loop": false,
+  "max_dur": 0.8,
+  "max_voices": 3,
+  "notes": "Release: the arms' push that throws the held element - a short pressure thump with a cloth snap and a forward whoosh (under the element's own launch sound).",
+  "suggested_volume_db": -5.5
  },
  "roar_wave": {
   "bus": "sfx",

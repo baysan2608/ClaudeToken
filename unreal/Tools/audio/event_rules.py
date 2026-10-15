@@ -118,6 +118,13 @@ TABLES = {
                     "rod": "metal_scrape", "plate": "metal_scrape", "caltrops": "metal_scrape", "crescent": "crescent_whoosh",
                     "twister": "crescent_whoosh", "spiral": "crescent_whoosh", "needle": "spark_snap",
                     "molten_stone": "magma_glob", "molten_metal": "magma_glob", "molten_sand": "magma_glob"},
+    # control_won: the element-control raise layer by the held body's fx material
+    "raise_mat": {
+        "stone": "raise_earth", "metal": "raise_earth", "sand": "raise_earth", "glass": "raise_earth", "magma": "raise_earth",
+        "water": "raise_water", "ice": "raise_water", "mist": "raise_water", "steam": "raise_water", "plant": "raise_water",
+        "flame": "raise_fire", "blue": "raise_fire", "lightning": "raise_fire", "blast": "raise_fire",
+        "wind": "raise_air", "vortex": "raise_air", "vacuum": "raise_air", "sound": "raise_air",
+    },
     # a body's fx mat -> its landing / hitting sounds (round robin)
     "body_impact": {"stone": ["stone_impact_1", "stone_impact_2"], "metal": ["impact_metal_heavy"],
                     "sand": ["impact_sand_heavy"], "glass": ["impact_glass_heavy"], "ice": ["impact_ice_heavy"],
@@ -196,6 +203,10 @@ ev("intercept", R("intercept", P("block", at=("body", "actor"), gain=-4.0)))
 EV["control_won"] = [R("control_won.seize", P("stone_rip", at=("body", "actor"), gain=-6.0),
                        [C("verb", **{"in": ["seize", "magma_grip", "acquire"]})])]
 ev("control_fail", R("control_fail.mass", P("control_lost"), [C("reason", eq="mass")]))
+# element-control stages (plan 06): raise when control is won, the arms' push when a held body is released as an attack
+ev("control_won", R("control_won.raise", P({"table": "raise_mat", "key": "$body_mat", "default": "raise_earth"},
+                                           at=("body", "actor"), gain=-2.0)))
+ev("release", R("release.push", P("release_push", at=("hand", "actor"), gain=-3.0), [C("attack", truthy=True)]))
 ev("control_lost", R("control_lost", P("control_lost", at=("body", "actor"))))
 ev("conversion_interrupted", R("conversion_interrupted", P("control_lost", at=("body", "actor"), gain=-4.0)))
 ev("insufficient", R("insufficient", P("challenge_fail", at=(), gain=-8.0, two_d=True, limit="insufficient"), [C("$player", truthy=True)]))
@@ -449,6 +460,13 @@ BODY_TAG_LOOPS = {  # FxCues.LOOPS (zone / body tag -> loop), played at -4 dB wh
     "flight_field": "flight_loop", "fuse": "fuse_loop",
 }
 
+HOLD_LOOPS = {  # element-control hold layer (plan 06): held body's fx material -> loop; gain / pitch follow its speed
+    "hold_earth_loop": ["stone", "metal", "sand", "glass", "magma"],
+    "hold_water_loop": ["water", "ice", "mist", "steam", "plant"],
+    "hold_fire_loop": ["flame", "blue", "lightning", "blast"],
+    "hold_air_loop": ["wind", "vortex", "vacuum", "sound"],
+}
+
 LOOPS = {
     "bodies": (
         [{"id": f"tag.{tag}", "when": [C("tag", eq=tag)], "sound": snd, "gain_db": -4.0,
@@ -462,7 +480,12 @@ LOOPS = {
              "sound": "stone_roll_loop", "gain_db": -2.0, "fade": "body", "at": "body"},
             {"id": "stone.hot", "when": [C("mat", eq="stone"), C("controller", gte=0), C("temp", gt=350.0), C("liquid", lt=0.3)],
              "sound": "heat_crackle_loop", "gain_db": -4.0, "fade": "body", "at": "body"},
-        ]),
+        ]
+        + [{"id": f"hold.{snd}", "when": [C("controller", gte=0), C("fx_mat", **{"in": mats})], "sound": snd,
+            "gain_db": -3.0, "fade": "body", "at": "body",
+            "gain_map": {"f": "$speed", "in": [0.0, 8.0], "db": [-9.0, 0.0]},
+            "pitch_map": {"f": "$speed", "in": [0.0, 8.0], "pitch": [0.92, 1.22]}} for snd, mats in HOLD_LOOPS.items()]
+        ),
     "actors": [
         {"id": "charge.bolt", "when": [C("action.id", eq="fire_attack"), C("action.phase", eq="charge"), C("action.data.bolt_ready", truthy=True)],
          "sound": "lightning_charge_loop", "gain_db": -4.0, "fade": "body", "at": "chest"},
