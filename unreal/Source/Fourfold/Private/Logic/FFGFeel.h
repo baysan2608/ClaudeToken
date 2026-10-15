@@ -165,4 +165,9 @@ void HandleFeelEvents(const std::vector<ff::Event>& events, const ff::Snapshot& 
 // FeedbackWarning / FeedbackError / SelectionChanged).
 const char* HapticTypeFor(std::string_view kind);
 
+// First person (spec 2026-10-14 §3.2): the local player's move fired this tick - its action entered ACTIVE (from the
+// startup, a charge or a channel) in an offensive slot (strike / thrust / ground / sweep / technique). tier = the charge
+// tier reached (0..3); stomp = a ground-slot move. Defensive slots and an action that was already active are no edge.
+bool ReleaseEdge(const ff::ActionView& prev, const ff::ActionView& cur, int& tier, bool& stomp);
+
 }  // namespace ffg

@@ -15,6 +15,11 @@
 // <= 1.5 cm of translation) with falloff from the duel midpoint, a spring kick, an FOV punch that eases in, holds
 // through hit-stop and eases out, a cinematic dolly + FOV punch for big counters, and the 3 % transformation zoom.
 // Reduced motion: shake x 0.3 and no roll, no kick / FOV punch / dolly / zoom.
+// First person (spec 2026-10-14 §3.2, SetFirstPerson): the eye is the sim's (feet + 1.62 m), yaw / pitch come from look
+// input only (pitch +-80 deg); a procedural layer adds the gait bob, landing / stance / stomp dips, the release FOV punch
+// and pitch kick; the shake keeps 35 % of its rotation and loses roll and translation; knocked down / getting up / held
+// eases out to a 2.2 m over-shoulder view (collision-limited) and back. No boom, no see-through, no lock framing.
+// `spectator` (title / watch) wins: the two-shot is rendered even while first person is switched on.
 #pragma once
 
 #include "FFGArena.h"
@@ -51,6 +56,18 @@ struct CameraOutput {
 	float view_yaw = 0.0f;    // yaw of the view (sim radians; the camera looks along (sin, 0, cos))
 	float move_yaw = 0.0f;    // yaw the stick is relative to (= view_yaw, or the lock axis while locked)
 	std::vector<std::string> see_through;   // solids between the pivot and the camera (draw them shadow-only)
+};
+
+// Per-frame first-person inputs (the host fills them from the snapshot before Update; Update copies its player_pos).
+struct FirstPersonInput {
+	Vec3 player_pos;               // interpolated feet, sim space
+	float gait_phase = 0.0f;       // locomotion cycle 0..1 (left-foot touchdown at 0, the right one at ~0.5)
+	float speed = 0.0f;            // horizontal m/s
+	bool grounded = true;
+	float landed_impulse = 0.0f;   // downward m/s at a landing (that frame only), else 0
+	int charge_tier = -1;          // -1 not charging, else the tier reached 0..3
+	bool stomp = false;            // the player's ground-slot move fired this frame (dip sized by the ReleasePunch tier)
+	bool over_shoulder = false;    // knocked down / getting up / held: ease out to the over-shoulder view
 };
 
 class CameraLogic {
@@ -108,6 +125,34 @@ public:
 	static constexpr float kFovOutS = 0.3f;
 	static constexpr float kCineFov = -6.0f;
 	static constexpr float kCineDolly = 0.07f;        // fraction of the way toward the event
+	// ---- first person (spec 2026-10-14 §3.2; docs/TUNING_LOG.md)
+	static constexpr float kFpEyeHeight = 1.62f;      // = ff::fp::EYE_HEIGHT (ActorState::eye(), the aim ray's origin)
+	static constexpr float kFpPitchMax = 1.3962634f;  // 80 deg
+	static constexpr float kFpEyeYS = 0.06f;          // vertical eye spring on the ground (steps, the sim's 60 Hz)
+	static constexpr float kFpEyeYAirS = 0.02f;       // ... in the air (leaps follow closely)
+	static constexpr float kFpHFov = 90.0f;           // default horizontal FOV (setting FieldOfView)
+	static constexpr float kFpBobM = 0.012f;          // gait bob depth, two dips per locomotion cycle
+	static constexpr float kFpBobSpeed0 = 0.4f;       // the bob fades in between these speeds (m/s)
+	static constexpr float kFpBobSpeed1 = 2.5f;
+	static constexpr float kFpDipOmega = 14.0f;       // landing / stomp dip spring (critically damped, peak at 71 ms)
+	static constexpr float kFpLandDipPerMps = 0.012f; // landing dip per m/s of fall speed ...
+	static constexpr float kFpDipMax = 0.06f;         // ... and the deepest any dip goes
+	static constexpr float kFpStompDip0 = 0.04f;      // stomp dip 4 cm + 2 cm x tier / 3
+	static constexpr float kFpStompDipK = 0.02f;
+	static constexpr float kFpStanceDip0 = 0.03f;     // charging stance: 3 cm up to T1, +1 cm at T2 and T3
+	static constexpr float kFpStanceDipK = 0.01f;
+	static constexpr float kFpStanceS = 0.18f;
+	static constexpr float kFpPunchDeg0 = 3.0f;       // release FOV punch: +3 deg (T0) .. +5 deg (T3), horizontal
+	static constexpr float kFpPunchDegK = 2.0f;
+	static constexpr float kFpPunchInS = 0.08f;
+	static constexpr float kFpPunchOutS = 0.25f;
+	static constexpr float kFpKickDeg[4] = {0.5f, 1.0f, 1.5f, 2.0f};   // release pitch kick by tier
+	static constexpr float kFpKickOmega = 28.0f;      // kick spring: peak at 36 ms, half gone 0.06 s after the peak
+	static constexpr float kFpShakeMul = 0.35f;       // trauma shake rotation in first person (no roll, no translation)
+	static constexpr float kFpOtsDist = 2.2f;         // over-shoulder fallback boom
+	static constexpr float kFpOtsPitch = 0.3f;
+	static constexpr float kFpOtsSide = 0.45f;
+	static constexpr float kFpOtsS = 0.3f;            // ease out / back
 
 	float yaw = kPi;          // camera looks along (sin yaw, 0, cos yaw)
 	float pitch = kFreePitch; // radians above horizontal
@@ -120,6 +165,8 @@ public:
 	Vec3 player_vel;          // sim m/s (look-ahead)
 	float aspect = 16.0f / 9.0f;
 	const ArenaGround* arena = nullptr;
+	float fp_hfov = kFpHFov;  // first person: horizontal FOV degrees (setting FieldOfView)
+	FirstPersonInput fp_in;   // first person: fed every frame before Update
 
 	void SnapTo(Vec3 player_pos, Vec3 look_at_pos);
 	// Open world: the sim bubble moved by d; keep every sim-space state where it is in the world.
@@ -139,6 +186,19 @@ public:
 	void ZoomTo(Vec3 at, float amount = 0.03f, float dur = 0.3f);
 	void Cinematic(Vec3 at);                            // big counter: FOV punch + dolly toward `at`
 
+	// ---- first person
+	void SetFirstPerson(bool on);
+	bool IsFirstPerson() const { return first_person_; }
+	// Unit view direction including pitch. First person: from the look input only (shake / kick never move the aim);
+	// third person: the last frame's camera -> look point.
+	Vec3 ViewForward() const;
+	float ViewPitch() const;
+	// Dev scripts (-FFLook): the first-person view at these angles (sim yaw radians, pitch up +, clamped +-80 deg).
+	void SetViewAngles(float view_yaw, float view_pitch);
+	// The player's move fired (first person): FOV punch + pitch kick by tier 0..3 (none with reduced motion); the tier also
+	// sizes a stomp dip (fp_in.stomp). Third person: no-op.
+	void ReleasePunch(int tier);
+
 	// dt = game (dilated) seconds, real_dt = undilated seconds.
 	CameraOutput Update(float dt, float real_dt, Vec3 player_pos, const Vec3* target_pos, const Vec3* threat_pos);
 
@@ -152,6 +212,9 @@ public:
 	bool Locked() const { return locked_; }
 	Vec3 KickOffset() const { return kick_x_; }
 	float FramedFov() const { return fov_f_; }
+	float OverShoulder() const { return fp_out_; }
+	float PitchKick() const { return fp_kick_; }
+	Vec3 FirstPersonEye() const { return fp_eye_; }
 
 private:
 	float ClearDist(float y, float p, float want, bool boundary_only = false) const;
@@ -163,6 +226,7 @@ private:
 	bool TargetInView(float y, float dist, Vec3 player_pos, Vec3 target_pos, float half_h) const;
 	void Feel(float rdt, bool slowed, Vec3 cam_pos, Vec3& look, float& fov, float& roll, Vec3& trans, Vec3& dolly);
 	void FollowPivot(float dt, Vec3 want);
+	CameraOutput UpdateFirstPerson(float dt, float rdt, bool slowed);
 
 	Vec3 pivot_;
 	Vec3 pivot_vel_;
@@ -202,6 +266,20 @@ private:
 	float zoom_amt_ = 0.0f;
 	Vec3 zoom_at_;
 	Vec3 focus_;               // duel midpoint (shake falloff)
+	// first person
+	bool first_person_ = false;
+	float fp_pitch_ = 0.0f;                    // radians, look up +
+	Vec3 fp_eye_;                              // stabilised eye (no procedural offsets)
+	float fp_eye_vel_ = 0.0f;
+	float fp_bob_w_ = 0.0f;
+	float fp_dip_ = 0.0f, fp_dip_v_ = 0.0f;    // landing / stomp spring (metres, + up)
+	float fp_stance_ = 0.0f, fp_stance_vel_ = 0.0f;
+	float fp_kick_ = 0.0f, fp_kick_v_ = 0.0f;  // pitch kick spring (radians, + up)
+	float fp_out_ = 0.0f, fp_out_vel_ = 0.0f;  // over-shoulder blend 0..1
+	int fp_release_tier_ = 0;
+	float shake_rot_mul_ = 1.0f;               // trauma shake rotation scale (first person: kFpShakeMul)
+	FeelEnvelope fp_punch_env_;
+	Vec3 last_fwd_ = Vec3(0.0f, 0.0f, -1.0f);  // third person: the last output's view direction
 };
 
 }  // namespace ffg

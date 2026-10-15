@@ -377,4 +377,20 @@ void HandleFeelEvents(const std::vector<ff::Event>& events, const ff::Snapshot& 
 	}
 }
 
+bool ReleaseEdge(const ff::ActionView& prev, const ff::ActionView& cur, int& tier, bool& stomp) {
+	if (!cur.active || cur.phase != ff::ActionPhase::Active) return false;
+	switch (cur.slot) {
+		case ff::Slot::Strike:
+		case ff::Slot::Thrust:
+		case ff::Slot::Ground:
+		case ff::Slot::Sweep:
+		case ff::Slot::Tech: break;
+		default: return false;
+	}
+	if (prev.active && prev.id == cur.id && prev.phase == ff::ActionPhase::Active) return false;
+	tier = Clampi(cur.tier, 0, 3);
+	stomp = cur.slot == ff::Slot::Ground;
+	return true;
+}
+
 }  // namespace ffg

@@ -200,6 +200,16 @@ the rate to end with the sim's recovery and fades back to locomotion.
   and eases out over 0.3 s; the cinematic dolly (7 % toward the event) + -6 deg punch; 3 % zoom on transformations.
   Reduced motion: shake x 0.3, no roll, no kick / FOV punch / dolly / zoom.
 
+**First person** (the default in Play; `CameraLogic::SetFirstPerson`, numbers in docs/TUNING_LOG.md 2026-10-14): the
+eye is the sim's (`kFpEyeHeight` 1.62 m above the interpolated feet; x / z exact, y on a short spring); yaw / pitch
+come from look input only (pitch +-80 deg) and `ViewForward()` is what `PollSimInput` hands the sim as `look_dir`;
+horizontal FOV = the FieldOfView setting. A procedural layer (gait bob, landing / stance / stomp dips, release FOV punch
+and pitch kick) rides on top; the shared feel layer keeps 35 % of the shake rotation and drops roll and translation.
+Reduced motion removes bob, punch and kick. Knocked down, getting up or held (`stun_kind` knockdown / getup / bound, or
+the `hooked` status) the view eases out to a 2.2 m over-shoulder boom (collision-limited) and back; the face and hair
+render again while the camera is out of the head. The rig sets a 5 cm near plane (`AFourfoldCameraRig::CalcCamera`); no
+see-through list. Title and Watch always keep the spectator two-shot (`spectator` wins inside `CameraLogic::Update`).
+
 Camera input is drained and applied once per rendered frame (not per sim tick), so drags stay smooth at 120 Hz and
 through hit-stop.
 

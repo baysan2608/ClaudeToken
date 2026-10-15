@@ -64,3 +64,18 @@ All in the logic island (`unreal/Source/Fourfold/Private/Logic/FFGCamera.h`, `FF
 - Hit-stop victim shake: the struck fighter trembles along the hit (1.2-3 cm, 26 Hz) while time is frozen.
 - Hair / sash SpringChain: fixed 1/120 s steps with interpolated output and per-step animated poses (the variable last
   sub-step jittered the tails at uneven frame times).
+
+## 2026-10-14 - first-person camera (spec 2026-10-14 §3.2, Unreal `ffg::CameraLogic` first-person mode)
+- Eye = interpolated feet + 1.62 m (the sim's eye(), so the centre dot is the aim ray); x / z exact, y on a 0.06 s
+  spring (0.02 s in the air); pitch +-80 deg; horizontal FOV 90 (setting 70-110).
+- Gait bob 1.2 cm, two dips per locomotion cycle, fading in from 0.4 to 2.5 m/s. Landing dip 1.2 cm per m/s of fall,
+  at most 6 cm; stomp dip 4 cm + 2 cm x tier / 3; dips on a critically damped spring w = 14 (peak at 71 ms). Charging
+  stance dip 3 cm up to T1, 4 cm T2, 5 cm T3 (0.18 s spring).
+- Release (the player's offensive move entering ACTIVE): FOV +3 deg (T0) .. +5 deg (T3) in 0.08 s, back in 0.25 s,
+  held through hit-stop; pitch kick 0.5 / 1 / 1.5 / 2 deg up on a spring w = 28 (peak 36 ms, half gone 0.06 s later).
+  The aim (look_dir) never includes the kick.
+- Trauma shake keeps 35 % of its rotation; no roll and no translation; the hit kick, cinematic dolly and zoom drift do
+  not move the eye (hit FOV punches and the 3 % zoom stay). Reduced motion: no bob, no release punch, no kick.
+- Knockdown / get-up / bound, or hooked (a vine yank, the sim's grab): eases (0.3 s) out to a 2.2 m over-shoulder
+  boom (0.3 rad up, 0.45 m right, collision-limited) looking at the body, and back when control returns; the face and
+  hair render again while the camera is out of the head.

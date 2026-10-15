@@ -931,6 +931,30 @@ FFT_TEST(feel_event_mapping) {
 	FFT_CHECK(std::string(ffg::HapticTypeFor("heavy")) == "ImpactHeavy");
 }
 
+FFT_TEST(feel_release_edge_for_first_person) {
+	ff::ActionView prev, cur;
+	prev.active = cur.active = true;
+	prev.id = cur.id = "earth_attack";
+	prev.slot = cur.slot = ff::Slot::Strike;
+	prev.phase = ff::ActionPhase::Charge;
+	cur.phase = ff::ActionPhase::Active;
+	cur.tier = 2;
+	int tier = -1;
+	bool stomp = true;
+	FFT_CHECK(ffg::ReleaseEdge(prev, cur, tier, stomp));
+	FFT_CHECK(tier == 2 && !stomp);
+	FFT_CHECK(!ffg::ReleaseEdge(cur, cur, tier, stomp));   // still active: no second edge
+	prev.phase = ff::ActionPhase::Startup;
+	prev.slot = cur.slot = ff::Slot::Ground;
+	FFT_CHECK(ffg::ReleaseEdge(prev, cur, tier, stomp) && stomp);
+	ff::ActionView guard = cur;
+	guard.slot = ff::Slot::Guard;
+	FFT_CHECK(!ffg::ReleaseEdge(prev, guard, tier, stomp));   // defensive slots never punch
+	const ff::ActionView none;
+	FFT_CHECK(ffg::ReleaseEdge(none, cur, tier, stomp));      // a move that starts already active (chain) counts
+	FFT_CHECK(!ffg::ReleaseEdge(prev, none, tier, stomp));
+}
+
 // =================================================================================== arena + camera
 
 static ff::ArenaView LabArena() {
@@ -1337,6 +1361,277 @@ FFT_TEST(camera_input_drains_per_rendered_frame) {
 	const float y0 = cam.yaw;
 	for (int i = 0; i < 4; ++i) cam.AddInput(Vec2(0.01f, 0.0f));
 	FFT_NEAR(cam.yaw, y0 - 0.04f, 1e-5);
+}
+
+// First-person camera (spec 2026-10-14 §3.2).
+static ffg::CameraLogic FpCam() {
+	ffg::CameraLogic c;
+	c.SetFirstPerson(true);
+	c.SnapTo(Vec3(), Vec3(0, 0, -5));   // looking along -Z
+	c.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	return c;
+}
+
+FFT_TEST(camera_fp_eye_view_and_fov) {
+	ffg::CameraLogic cam;
+	cam.SetFirstPerson(true);
+	FFT_CHECK(cam.IsFirstPerson());
+	cam.SnapTo(Vec3(2, 0, 7), Vec3(2, 0, -7));
+	ffg::CameraOutput o;
+	for (int i = 0; i < 30; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(2, 0, 7), nullptr, nullptr);
+	FFT_NEAR(o.pos.distance_to(Vec3(2, ffg::CameraLogic::kFpEyeHeight, 7)), 0.0, 1e-4);   // the sim's eye
+	FFT_NEAR((o.look - o.pos).normalized().z, -1.0, 1e-4);
+	FFT_NEAR(cam.ViewForward().z, -1.0, 1e-5);
+	FFT_NEAR(CamHFov(o, cam.aspect), 90.0, 1e-2);   // horizontal FOV = the setting (not the boom's 90 deg cap rule)
+	cam.fp_hfov = 100.0f;
+	o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(2, 0, 7), nullptr, nullptr);
+	FFT_NEAR(CamHFov(o, cam.aspect), 100.0, 1e-2);
+	FFT_NEAR(o.roll, 0.0, 1e-9);
+	FFT_CHECK(o.see_through.empty());
+	FFT_NEAR(o.move_yaw, o.view_yaw, 1e-6);
+	// look input: up +, pitch clamped at +-80 deg; the rendered view and the aim agree
+	cam.AddInput(Vec2(0.0f, 0.5f));
+	FFT_NEAR(cam.ViewPitch(), 0.5, 1e-6);
+	FFT_NEAR(cam.ViewForward().y, std::sin(0.5), 1e-5);
+	o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(2, 0, 7), nullptr, nullptr);
+	FFT_NEAR(((o.look - o.pos).normalized() - cam.ViewForward()).length(), 0.0, 1e-4);
+	cam.AddInput(Vec2(0.0f, 5.0f));
+	FFT_NEAR(cam.ViewPitch(), 80.0 * ffg::kPi / 180.0, 1e-5);
+	cam.AddInput(Vec2(0.0f, -10.0f));
+	FFT_NEAR(cam.ViewPitch(), -80.0 * ffg::kPi / 180.0, 1e-5);
+	const float y0 = cam.yaw;
+	cam.AddInput(Vec2(0.3f, 0.0f));   // look right
+	FFT_NEAR(cam.yaw, y0 - 0.3f, 1e-6);
+	// a step up: the eye follows on its short spring
+	for (int i = 0; i < 12; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(2, 0.35f, 7), nullptr, nullptr);
+	FFT_NEAR(o.pos.y, 0.35 + ffg::CameraLogic::kFpEyeHeight, 0.01);
+	// open world: a bubble shift keeps the eye where it is in the world
+	const Vec3 eye0 = cam.FirstPersonEye();
+	cam.Shift(Vec3(10, 0, 0));
+	FFT_NEAR((cam.FirstPersonEye() - (eye0 - Vec3(10, 0, 0))).length(), 0.0, 1e-5);
+}
+
+FFT_TEST(camera_fp_bob_dips_and_reduced_motion) {
+	struct Range {
+		float lo = 1e9f, hi = -1e9f;
+	};
+	auto walk = [](bool reduced) {
+		ffg::CameraLogic c;
+		c.SetFirstPerson(true);
+		c.reduced_motion = reduced;
+		c.SnapTo(Vec3(), Vec3(0, 0, -5));
+		Range r;
+		for (int i = 0; i < 240; ++i) {
+			c.fp_in.speed = 4.0f;
+			c.fp_in.gait_phase = ffg::Fposmod(static_cast<float>(i) / 60.0f * 1.3f, 1.0f);
+			const ffg::CameraOutput o = c.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+			if (i > 60) {
+				r.lo = std::min(r.lo, o.pos.y);
+				r.hi = std::max(r.hi, o.pos.y);
+			}
+		}
+		return r;
+	};
+	const float eye = ffg::CameraLogic::kFpEyeHeight;
+	const Range bob = walk(false);
+	FFT_CHECK(bob.hi <= eye + 1e-4f && bob.lo >= eye - 0.012f - 1e-4f);   // <= 1.2 cm, only downward
+	FFT_CHECK(bob.hi - bob.lo > 0.008f);
+	const Range still = walk(true);
+	FFT_CHECK(still.hi - still.lo < 1e-5f);   // reduced motion: no bob
+	// a hard landing dips at most 6 cm and springs back
+	ffg::CameraLogic land = FpCam();
+	land.fp_in.landed_impulse = 9.0f;
+	float low = 1e9f;
+	for (int i = 0; i < 90; ++i) {
+		low = std::min(low, land.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).pos.y);
+		land.fp_in.landed_impulse = 0.0f;
+	}
+	FFT_CHECK(low >= eye - 0.06f - 1e-4f && low <= eye - 0.05f);
+	FFT_NEAR(land.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).pos.y, eye, 2e-3);
+	// charging stance: 3 cm below T2, 5 cm at T3, back up when the charge ends
+	ffg::CameraLogic ch = FpCam();
+	ffg::CameraOutput o;
+	ch.fp_in.charge_tier = 3;
+	for (int i = 0; i < 90; ++i) o = ch.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.pos.y, eye - 0.05f, 1e-3);
+	ch.fp_in.charge_tier = 0;
+	for (int i = 0; i < 90; ++i) o = ch.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.pos.y, eye - 0.03f, 1e-3);
+	ch.fp_in.charge_tier = -1;
+	for (int i = 0; i < 90; ++i) o = ch.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.pos.y, eye, 1e-3);
+	// a T3 stomp dips 6 cm
+	ffg::CameraLogic st = FpCam();
+	st.ReleasePunch(3);
+	st.fp_in.stomp = true;
+	float sl = 1e9f;
+	for (int i = 0; i < 60; ++i) {
+		sl = std::min(sl, st.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).pos.y);
+		st.fp_in.stomp = false;
+	}
+	FFT_CHECK(sl <= eye - 0.055f && sl >= eye - 0.0601f);
+}
+
+FFT_TEST(camera_fp_release_punch_kick_and_shake) {
+	ffg::CameraLogic cam = FpCam();
+	const Vec3 aim = cam.ViewForward();
+	cam.ReleasePunch(3);
+	float max_h = 0.0f, max_kick = 0.0f;
+	ffg::CameraOutput o;
+	for (int i = 0; i < 6; ++i) {   // 0.1 s
+		o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		max_h = std::max(max_h, CamHFov(o, cam.aspect));
+		max_kick = std::max(max_kick, cam.PitchKick());
+		FFT_NEAR((cam.ViewForward() - aim).length(), 0.0, 1e-6);   // the kick never moves the aim
+	}
+	FFT_NEAR(max_h, 95.0, 0.05);                         // T3: +5 deg, reached by 0.08 s
+	FFT_NEAR(max_kick * 180.0f / ffg::kPi, 2.0, 0.05);   // T3: 2 deg up
+	for (int i = 0; i < 24; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(CamHFov(o, cam.aspect), 90.0, 0.05);
+	FFT_NEAR(cam.PitchKick(), 0.0, 0.002);
+	ffg::CameraLogic t0 = FpCam();
+	t0.ReleasePunch(0);
+	float h0 = 0.0f, k0 = 0.0f;
+	for (int i = 0; i < 6; ++i) {
+		o = t0.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		h0 = std::max(h0, CamHFov(o, t0.aspect));
+		k0 = std::max(k0, t0.PitchKick());
+	}
+	FFT_NEAR(h0, 93.0, 0.05);                       // T0: +3 deg
+	FFT_NEAR(k0 * 180.0f / ffg::kPi, 0.5, 0.02);    // T0: 0.5 deg
+	ffg::CameraLogic rm = FpCam();
+	rm.reduced_motion = true;
+	rm.ReleasePunch(3);
+	for (int i = 0; i < 10; ++i) {
+		o = rm.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		FFT_NEAR(CamHFov(o, rm.aspect), 90.0, 1e-3);
+		FFT_NEAR(rm.PitchKick(), 0.0, 1e-9);
+	}
+	ffg::CameraLogic tp;   // third person: ReleasePunch is a no-op
+	tp.SnapTo(Vec3(), Vec3(0, 0, -5));
+	const float f0 = tp.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).fov;
+	tp.ReleasePunch(3);
+	FFT_NEAR(tp.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).fov, f0, 1e-4);
+	// trauma shake x 0.35, no roll, no translation (against an unshaken twin)
+	ffg::CameraLogic base = FpCam(), sh = FpCam();
+	sh.ShakeAt(1.0f, Vec3(), 1.0f, true, true);
+	float max_ang = 0.0f, max_pos = 0.0f, max_roll = 0.0f;
+	for (int i = 0; i < 30; ++i) {
+		const ffg::CameraOutput b = base.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		const ffg::CameraOutput s = sh.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		const Vec3 fb = (b.look - b.pos).normalized(), fs = (s.look - s.pos).normalized();
+		max_ang = std::max(max_ang, std::acos(ffg::Clampf(fb.dot(fs), -1.0f, 1.0f)) * 180.0f / ffg::kPi);
+		max_pos = std::max(max_pos, s.pos.distance_to(b.pos));
+		max_roll = std::max(max_roll, std::fabs(s.roll));
+	}
+	FFT_CHECK(max_ang > 0.05f && max_ang <= 1.6f * ffg::CameraLogic::kFpShakeMul);
+	FFT_NEAR(max_pos, 0.0, 1e-6);
+	FFT_NEAR(max_roll, 0.0, 1e-9);
+	// the kick spring and the cinematic dolly (third-person feel) never move the eye
+	ffg::CameraLogic kd = FpCam(), kb = FpCam();
+	kd.Kick(Vec3(0, 0, -1), 0.15f);
+	kd.Cinematic(Vec3(0, 1.2f, -4));
+	for (int i = 0; i < 20; ++i) {
+		const Vec3 pk = kd.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).pos;
+		FFT_NEAR(pk.distance_to(kb.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).pos), 0.0, 1e-6);
+	}
+}
+
+FFT_TEST(camera_fp_over_shoulder_on_knockdown) {
+	ffg::CameraLogic cam = FpCam();
+	cam.fp_in.over_shoulder = true;
+	ffg::CameraOutput o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	Vec3 prev = o.pos;
+	float worst_step = 0.0f;
+	for (int i = 0; i < 60; ++i) {
+		o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		worst_step = std::max(worst_step, o.pos.distance_to(prev));
+		prev = o.pos;
+	}
+	const Vec3 eye(0, ffg::CameraLogic::kFpEyeHeight, 0);
+	const float boom = std::sqrt(ffg::CameraLogic::kFpOtsDist * ffg::CameraLogic::kFpOtsDist + ffg::CameraLogic::kFpOtsSide * ffg::CameraLogic::kFpOtsSide);
+	FFT_NEAR(o.pos.distance_to(eye), boom, 0.05);
+	FFT_CHECK(o.pos.z > 1.5f && o.pos.y > eye.y);                          // behind (the player looks toward -Z) and above
+	FFT_CHECK(worst_step < 0.2f);                                          // eased, not cut
+	FFT_CHECK(CamProject(o, cam.aspect, Vec3(0, 0.7f, 0)).In());           // the fallen body is in the frame
+	cam.fp_in.over_shoulder = false;
+	for (int i = 0; i < 90; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(o.pos.distance_to(eye), 0.0, 1e-3);                           // control is back: in the eyes again
+	// against the yard wall the boom is collision-limited, never inside the wall
+	ffg::ArenaGround g;
+	g.Set(LabArena());
+	ffg::CameraLogic w;
+	w.arena = &g;
+	w.SetFirstPerson(true);
+	const Vec3 player(0, 0, 15.3f);
+	w.SnapTo(player, Vec3(0, 0, 5));   // looking north, the south wall right behind
+	w.fp_in.over_shoulder = true;
+	for (int i = 0; i < 90; ++i) o = w.Update(1.0f / 60.0f, 1.0f / 60.0f, player, nullptr, nullptr);
+	FFT_CHECK(o.pos.z < 16.0f);
+}
+
+FFT_TEST(camera_fp_toggle_keeps_the_heading) {
+	ffg::CameraLogic cam;
+	cam.SnapTo(Vec3(), Vec3(0, 0, -5));
+	for (int i = 0; i < 30; ++i) cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	cam.AddInput(Vec2(0.4f, 0.0f));
+	const float yaw0 = cam.yaw;
+	cam.SetFirstPerson(true);
+	ffg::CameraOutput o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(cam.yaw, yaw0, 1e-6);
+	FFT_NEAR(cam.ViewPitch(), 0.0, 1e-6);   // level
+	FFT_NEAR(o.pos.distance_to(Vec3(0, ffg::CameraLogic::kFpEyeHeight, 0)), 0.0, 1e-4);   // a cut into the eyes
+	cam.AddInput(Vec2(0.0f, 0.3f));
+	cam.SetFirstPerson(false);
+	FFT_NEAR(cam.pitch, ffg::CameraLogic::kFreePitch, 1e-6);
+	o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	FFT_CHECK(o.pos.distance_to(Vec3(0, ffg::CameraLogic::kFpEyeHeight, 0)) > 3.0f);   // back on the boom
+	FFT_NEAR(cam.ViewForward().length(), 1.0, 1e-4);   // the third-person view direction is reported too
+	FFT_CHECK(cam.ViewPitch() < 0.0f);                  // the boom looks down at the player
+}
+
+FFT_TEST(camera_fp_hit_stop_and_pause_keep_look_live) {
+	ffg::CameraLogic cam = FpCam();
+	cam.fp_in.landed_impulse = 6.0f;
+	cam.Update(1.0f / 60.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+	cam.fp_in.landed_impulse = 0.0f;
+	const float y_frozen = cam.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr).pos.y;
+	cam.ReleasePunch(2);
+	ffg::CameraOutput o;
+	for (int i = 0; i < 30; ++i) {   // half a second of hit-stop: game time stopped, real time runs
+		cam.AddInput(Vec2(0.01f, 0.0f));
+		o = cam.Update(0.0f, 1.0f / 60.0f, Vec3(), nullptr, nullptr);
+		FFT_CHECK(std::isfinite(o.pos.x) && std::isfinite(o.pos.y) && std::isfinite(o.look.z) && std::isfinite(o.fov));
+		FFT_NEAR(o.pos.y, y_frozen, 1e-6);   // the landing dip freezes with the body
+	}
+	FFT_NEAR(o.view_yaw, ffg::kPi - 0.3, 1e-4);   // look input keeps turning the view
+	FFT_CHECK(CamHFov(o, cam.aspect) > 90.5f);     // the release punch holds while time is frozen
+	// pause (both clocks stopped): the view still answers the look input, nothing else moves
+	const ffg::CameraOutput p0 = cam.Update(0.0f, 0.0f, Vec3(), nullptr, nullptr);
+	cam.AddInput(Vec2(0.0f, 0.2f));
+	const ffg::CameraOutput p1 = cam.Update(0.0f, 0.0f, Vec3(), nullptr, nullptr);
+	FFT_NEAR(p1.pos.distance_to(p0.pos), 0.0, 1e-6);
+	FFT_CHECK((p1.look - p1.pos).normalized().y > (p0.look - p0.pos).normalized().y + 0.1f);
+}
+
+FFT_TEST(camera_fp_spectator_keeps_the_two_shot) {
+	// Title / Watch set `spectator`: even with first person switched on, the side-on two-shot frames both fighters.
+	ffg::CameraLogic cam;
+	cam.SetFirstPerson(true);
+	cam.spectator = true;
+	const Vec3 a(-3, 0, 0), b(3, 0, 0);
+	cam.SnapTo(a, b);
+	ffg::CameraOutput o;
+	for (int i = 0; i < 180; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, a, &b, nullptr);
+	FFT_CHECK(cam.IsFirstPerson());
+	FFT_CHECK(o.pos.distance_to(a + Vec3(0, ffg::CameraLogic::kFpEyeHeight, 0)) > 3.0f);   // not the eye
+	for (Vec3 q : {a, b}) {
+		FFT_CHECK(CamProject(o, cam.aspect, q + Vec3(0, 1.75f, 0)).In());
+		FFT_CHECK(CamProject(o, cam.aspect, q + Vec3(0, 0.1f, 0)).In());
+	}
+	cam.spectator = false;   // back in Play: the eyes again
+	for (int i = 0; i < 30; ++i) o = cam.Update(1.0f / 60.0f, 1.0f / 60.0f, a, nullptr, nullptr);
+	FFT_NEAR(o.pos.distance_to(a + Vec3(0, ffg::CameraLogic::kFpEyeHeight, 0)), 0.0, 1e-3);
 }
 
 // =================================================================================== anim timing

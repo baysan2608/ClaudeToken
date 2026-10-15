@@ -32,6 +32,18 @@ float CamNoise(float t, int seed) {
 	const float u = f * f * (3.0f - 2.0f * f);
 	return Lerpf(CamHash(i, seed), CamHash(i + 1, seed), u);
 }
+
+constexpr float kCamEuler = 2.71828183f;
+
+// Critically damped spring (x'' = -w^2 x - 2 w x'), stepped with the exact solution (identical at any frame rate). An
+// impulse v0 from rest peaks at v0 / (w e) after 1 / w.
+void CamCritStep(float& x, float& v, float w, float dt) {
+	if (dt <= 0.0f) return;
+	const float e = std::exp(-w * dt);
+	const float b = v + w * x;
+	x = (x + b * dt) * e;
+	v = (v - w * b * dt) * e;
+}
 }  // namespace
 
 float SmoothDamp(float cur, float target, float& vel, float smooth_time, float dt, float max_speed) {
@@ -133,6 +145,11 @@ void CameraLogic::SnapTo(Vec3 player_pos, Vec3 look_at_pos) {
 	focus_ = player_pos;
 	move_yaw_ = yaw;
 	snap_ = true;
+	fp_in.player_pos = player_pos;
+	fp_pitch_ = 0.0f;
+	fp_out_ = fp_out_vel_ = 0.0f;
+	fp_kick_ = fp_kick_v_ = 0.0f;
+	last_fwd_ = ForwardFlat();
 }
 
 void CameraLogic::AddInput(Vec2 delta) {
@@ -142,7 +159,10 @@ void CameraLogic::AddInput(Vec2 delta) {
 		pitch_vel_ = 0.0f;
 	}
 	yaw -= delta.x;
-	pitch = Clampf(pitch - delta.y, -0.12f, 0.95f);   // looking up lowers the camera
+	if (first_person_)
+		fp_pitch_ = Clampf(fp_pitch_ + delta.y, -kFpPitchMax, kFpPitchMax);   // look up +
+	else
+		pitch = Clampf(pitch - delta.y, -0.12f, 0.95f);   // looking up lowers the camera
 }
 
 void CameraLogic::Shake(float amount, float decay_s) {
@@ -205,6 +225,8 @@ void CameraLogic::Shift(Vec3 d) {
 	dolly_at_ = dolly_at_ - d;
 	zoom_at_ = zoom_at_ - d;
 	focus_ = focus_ - d;
+	fp_eye_ = fp_eye_ - d;
+	fp_in.player_pos = fp_in.player_pos - d;
 }
 
 float CameraLogic::ClearDist(float y, float p, float want, bool boundary_only) const {
@@ -325,8 +347,8 @@ void CameraLogic::Feel(float rdt, bool slowed, Vec3 cam_pos, Vec3& look, float& 
 		shake_t_ += rdt * kShakeHz;
 		if (shake_t_ > 4096.0f) shake_t_ -= 4096.0f;
 		const float t2 = trauma_ * trauma_;
-		const float pitch_off = kShakePitchDeg * kDeg * t2 * CamNoise(shake_t_, 11);
-		const float yaw_off = kShakeYawDeg * kDeg * t2 * CamNoise(shake_t_, 23);
+		const float pitch_off = kShakePitchDeg * kDeg * t2 * CamNoise(shake_t_, 11) * shake_rot_mul_;
+		const float yaw_off = kShakeYawDeg * kDeg * t2 * CamNoise(shake_t_, 23) * shake_rot_mul_;
 		roll += kShakeRollDeg * roll_trauma_ * roll_trauma_ * CamNoise(shake_t_ * 0.8f, 37);
 		trans += (right * CamNoise(shake_t_, 41) + up * CamNoise(shake_t_, 53)) * (kShakePosM * t2);
 		const Quat q = Quat::AxisAngle(Vec3(0.0f, 1.0f, 0.0f), yaw_off) * Quat::AxisAngle(right, pitch_off);
@@ -362,6 +384,10 @@ CameraOutput CameraLogic::Update(float dt, float real_dt, Vec3 player_pos, const
 	const float rdt = Clampf(real_dt, 0.0f, 0.1f);
 	dt = Clampf(dt, 0.0f, 0.1f);
 	const bool slowed = rdt > 1e-5f && dt < 0.5f * rdt;   // hit-stop / cinematic slow motion / pause
+	if (first_person_ && !spectator) {   // title / watch (spectator) always frame the two-shot
+		fp_in.player_pos = player_pos;
+		return UpdateFirstPerson(dt, rdt, slowed);
+	}
 	const bool snap = snap_;
 	idle_ += rdt;
 	side_hold_ = std::max(0.0f, side_hold_ - rdt);
@@ -593,6 +619,8 @@ CameraOutput CameraLogic::Update(float dt, float real_dt, Vec3 player_pos, const
 	out.roll = roll;
 	out.view_yaw = vy;
 	out.move_yaw = move_yaw_;
+	const Vec3 view_dir = (out.look - out.pos).normalized();
+	if (view_dir.length_squared() > 0.5f) last_fwd_ = view_dir;
 	// See-through: solids between the pivot and the camera.
 	if (have_arena) {
 		const Vec3 d = p - pivot_;
@@ -601,6 +629,124 @@ CameraOutput CameraLogic::Update(float dt, float real_dt, Vec3 player_pos, const
 			if (ArenaGround::Slab(pivot_, d, s.mn - r, s.mx + r) >= 0.0f) out.see_through.push_back(s.name);
 	}
 	if (rdt > 0.0f) snap_ = false;   // the scenario-reset call (dt 0) keeps the snap for the first real frame
+	return out;
+}
+
+// ---------------------------------------------------------------- first person
+
+void CameraLogic::SetFirstPerson(bool on) {
+	if (on == first_person_) return;
+	first_person_ = on;
+	snap_ = true;   // a cut, not a swoop: the next frame lands on the new view
+	orbit_ = 0.0f;
+	if (on) {
+		fp_pitch_ = 0.0f;
+		fp_out_ = fp_out_vel_ = 0.0f;
+		fp_kick_ = fp_kick_v_ = 0.0f;
+	} else {
+		pitch = kFreePitch;
+		lift_ = 0.0f;
+		yaw_vel_ = pitch_vel_ = 0.0f;
+		idle_ = 0.0f;   // the lock assist waits before it pulls the view onto the two-shot
+	}
+}
+
+Vec3 CameraLogic::ViewForward() const {
+	if (!first_person_) return last_fwd_;
+	const float c = std::cos(fp_pitch_);
+	return Vec3(std::sin(yaw) * c, std::sin(fp_pitch_), std::cos(yaw) * c);
+}
+
+float CameraLogic::ViewPitch() const {
+	return first_person_ ? fp_pitch_ : std::asin(Clampf(last_fwd_.y, -1.0f, 1.0f));
+}
+
+void CameraLogic::SetViewAngles(float view_yaw, float view_pitch) {
+	yaw = view_yaw;
+	fp_pitch_ = Clampf(view_pitch, -kFpPitchMax, kFpPitchMax);
+}
+
+void CameraLogic::ReleasePunch(int tier) {
+	fp_release_tier_ = Clampi(tier, 0, 3);
+	if (!first_person_ || reduced_motion) return;
+	fp_punch_env_.Start(kFpPunchDeg0 + kFpPunchDegK * static_cast<float>(fp_release_tier_) / 3.0f, kFpPunchInS, kFpPunchOutS);
+	fp_kick_v_ += kFpKickDeg[fp_release_tier_] * kDeg * kFpKickOmega * kCamEuler;   // peaks at the tier's degrees
+}
+
+CameraOutput CameraLogic::UpdateFirstPerson(float dt, float rdt, bool slowed) {
+	const FirstPersonInput& in = fp_in;
+	const bool snap = snap_;
+	focus_ = in.player_pos;
+	// ---- eye: x / z exactly on the interpolated sim position (any lag swims), y on a short spring (steps, terrain)
+	const Vec3 want = in.player_pos + Vec3(0.0f, kFpEyeHeight, 0.0f);
+	if (snap || (want - fp_eye_).length() > 6.0f) {
+		fp_eye_ = want;
+		fp_eye_vel_ = 0.0f;
+		fp_dip_ = fp_dip_v_ = 0.0f;
+		fp_stance_ = fp_stance_vel_ = 0.0f;
+	} else {
+		fp_eye_.x = want.x;
+		fp_eye_.z = want.z;
+		fp_eye_.y = SmoothDamp(fp_eye_.y, want.y, fp_eye_vel_, in.grounded ? kFpEyeYS : kFpEyeYAirS, dt);
+	}
+	// ---- procedural layer in game time (it freezes with the body in hit-stop)
+	const float bob_want = (!reduced_motion && in.grounded) ? SmoothStep(kFpBobSpeed0, kFpBobSpeed1, in.speed) : 0.0f;
+	fp_bob_w_ = snap ? bob_want : Lerpf(fp_bob_w_, bob_want, ExpK(8.0f, dt));
+	const float bob = -kFpBobM * fp_bob_w_ * 0.5f * (1.0f + std::cos(2.0f * kTau * in.gait_phase));   // lowest at each footfall
+	if (in.landed_impulse > 0.0f) fp_dip_v_ -= std::min(kFpDipMax, kFpLandDipPerMps * in.landed_impulse) * kFpDipOmega * kCamEuler;
+	if (in.stomp) fp_dip_v_ -= (kFpStompDip0 + kFpStompDipK * static_cast<float>(fp_release_tier_) / 3.0f) * kFpDipOmega * kCamEuler;
+	CamCritStep(fp_dip_, fp_dip_v_, kFpDipOmega, dt);
+	fp_dip_ = std::max(fp_dip_, -kFpDipMax);
+	const float stance_want =
+		in.charge_tier >= 0 ? -(kFpStanceDip0 + kFpStanceDipK * static_cast<float>(Clampi(in.charge_tier - 1, 0, 2))) : 0.0f;
+	fp_stance_ = SmoothDamp(fp_stance_, stance_want, fp_stance_vel_, kFpStanceS, dt);
+	// ---- feel springs in real time (they keep moving through hit-stop)
+	CamCritStep(fp_kick_, fp_kick_v_, kFpKickOmega, rdt);
+	const float punch = fp_punch_env_.Step(rdt, slowed);
+	// ---- view
+	const float p = Clampf(fp_pitch_ + fp_kick_, -kFpPitchMax, kFpPitchMax);
+	const Vec3 flat(std::sin(yaw), 0.0f, std::cos(yaw));
+	const Vec3 fwd = flat * std::cos(p) + Vec3(0.0f, std::sin(p), 0.0f);
+	const Vec3 eye = fp_eye_ + Vec3(0.0f, bob + fp_dip_ + fp_stance_, 0.0f);
+	Vec3 pos = eye;
+	Vec3 look_pt = eye + fwd * 4.0f;
+	// ---- over-shoulder fallback (knocked down / getting up / held); the boom is collision-limited like third person
+	const float out_want = in.over_shoulder ? 1.0f : 0.0f;
+	if (snap) {
+		fp_out_ = out_want;
+		fp_out_vel_ = 0.0f;
+	} else {
+		fp_out_ = SmoothDamp(fp_out_, out_want, fp_out_vel_, kFpOtsS, rdt);
+	}
+	if (fp_out_ > 1e-4f) {
+		pivot_ = fp_eye_;
+		const float d = ClearDist(yaw, kFpOtsPitch, kFpOtsDist);
+		const Vec3 right = flat.cross(Vec3(0.0f, 1.0f, 0.0f));
+		const Vec3 ots = fp_eye_ + DirOf(yaw, kFpOtsPitch) * d + right * (kFpOtsSide * d / kFpOtsDist);
+		const Vec3 ots_look = in.player_pos + Vec3(0.0f, 0.7f, 0.0f);   // where the fallen / held body is
+		const float w = SmoothStep(0.0f, 1.0f, fp_out_);
+		pos = eye.lerp(ots, w);
+		look_pt = look_pt.lerp(ots_look, w);
+	}
+	// ---- FOV (horizontal setting + punch -> the logic's vertical FOV) and the shared feel layer: shake rotation x 0.35;
+	// hit FOV punches and the zoom stay; roll, kick translation, dolly and zoom drift are dropped (they move the eye)
+	const float a = aspect > 0.1f ? aspect : 4.0f / 3.0f;
+	const float hfov = Clampf(fp_hfov + punch, 30.0f, 140.0f);
+	float fov = 2.0f * std::atan(std::tan(hfov * kDeg * 0.5f) / a) / kDeg;
+	float roll = 0.0f;
+	Vec3 trans, dolly;
+	Vec3 look = look_pt;
+	shake_rot_mul_ = kFpShakeMul;
+	Feel(rdt, slowed, pos, look, fov, roll, trans, dolly);
+	shake_rot_mul_ = 1.0f;
+	move_yaw_ = yaw;
+	CameraOutput out;
+	out.pos = pos;
+	out.look = look;
+	out.fov = fov;
+	out.view_yaw = yaw;
+	out.move_yaw = yaw;
+	if (rdt > 0.0f) snap_ = false;
 	return out;
 }
 
