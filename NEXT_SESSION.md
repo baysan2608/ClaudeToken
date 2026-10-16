@@ -83,6 +83,12 @@ LAYOUT (unreal/)
 - Tools/blender, Tools/vfx, Tools/world, Tools/audio: generators (regenerate assets, never hand-edit outputs).
 - docs/<stream>/: README, API_NOTES, REQUESTS, PROGRESS per stream.
 
+LATEST (2026-10-16) - L_Ruins (Jungle Ruins, CC BY 4.0) is the start map on Mac and iPad: plan
+docs/superpowers/plans/2026-10-14-fp-05-jungle-ruins-map.md done (core water layer + edge margin, fetch, Blender prep,
+setup part ruins, bake with rim walls on the river gorge, start map / cook list). Pipeline + numbers: unreal/docs/ruins/
+README.md. iPad: 8.3 ms (120 fps cap). Mac: 18.3 ms GPU (over budget). Plans fp-01..04 and fp-06 (first person) not started
+beyond the camera logic island (FFGCamera) and the element-control audio layers.
+
 LATEST (2026-10-09, "AAA pass" session) - read this first, it supersedes older lines below where they conflict
 - iPad: Paddycaken (iPad Pro 13 M5, iOS 27.0) runs the current build. Deploy: compile with
   "<UE>/Engine/Build/BatchFiles/Mac/Build.sh" Fourfold IOS Development -project=... (binary builds; the final Xcode step

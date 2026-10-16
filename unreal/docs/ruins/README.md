@@ -49,6 +49,13 @@ creek (sloped water) 470 m south of the pyramid — outside the core, kept as ba
 - Static meshes compile asynchronously when a level loads: the bake turns that off (`Editor.AsyncStaticMeshCompilation 0`)
   so the level's collision exists in the frame it traces.
 
+## Performance (spawn view, 2026-10-16)
+
+- iPad Pro 13 M5 (iOS 27, mobile renderer): 8.33 ms frames (the 120 fps cap), GPU 6.2 ms, game thread 0.7 ms
+  (`IOS_ARGS="-csvCaptureFrames=2400" bash unreal/Tools/mac/ios.sh --cook`, CSV pulled with `xcrun devicectl device copy from`).
+- Mac 1600x900 (desktop renderer, Lumen): GPU 18.3 ms after the cull trim (19.5 before), over the 16.7 ms budget; shadow
+  depths, base pass and foliage velocities lead. Next knobs: tree shadows at distance, WPO velocity, cloud quality.
+
 ## Known gaps
 
 - The terrain colour is the scene's baked 12 cm map (dark, soft at eye height); a tiling detail layer belongs to the
