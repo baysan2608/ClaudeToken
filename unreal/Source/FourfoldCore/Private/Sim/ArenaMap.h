@@ -50,7 +50,7 @@ public:
 	// Open world: a grounded fighter cannot climb terrain steeper than kMaxSlope or leave the world's edge; the
 	// horizontal move is cancelled per axis (so it slides along a cliff). No-op in the arenas.
 	static constexpr double kMaxSlope = 1.0;        // rise / run (45 degrees)
-	static constexpr double kWorldEdgeMargin = 24.0;
+	static constexpr double kWorldEdgeMargin = 24.0;   // the generated valley's margin = WorldDef::edge_margin's default
 	Vec3 limit_terrain(Vec3 from, Vec3 to) const;
 	// First hit of segment a->b against solids (inflated by radius): t in 0..1, or -1.
 	double segment_hit(Vec3 a, Vec3 b, double radius = 0.0) const;

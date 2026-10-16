@@ -150,11 +150,11 @@ Vec3 ArenaMap::push_out(Vec3 p, double r, double h, double step) const {
 Vec3 ArenaMap::limit_terrain(Vec3 from, Vec3 to) const {
 	if (!world) return to;
 	const WorldDef& wd = *world;
+	const double margin = wd.edge_margin;   // per map (world.json terrain.edge_margin), 24 m by default
 	auto blocked = [&](double x, double z) {
 		const double wx = x + ox;
 		const double wz = z + oz;
-		if (wx < wd.x0 + kWorldEdgeMargin || wx > wd.x0 + wd.SizeX() - kWorldEdgeMargin || wz < wd.z0 + kWorldEdgeMargin ||
-		    wz > wd.z0 + wd.SizeZ() - kWorldEdgeMargin)
+		if (wx < wd.x0 + margin || wx > wd.x0 + wd.SizeX() - margin || wz < wd.z0 + margin || wz > wd.z0 + wd.SizeZ() - margin)
 			return true;
 		const double run = Vec2(f32(x - from.x), f32(z - from.z)).length();
 		if (run < 1e-6) return false;

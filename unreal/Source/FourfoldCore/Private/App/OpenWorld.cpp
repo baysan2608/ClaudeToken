@@ -42,6 +42,12 @@ bool WorldDef::Parse(std::string_view json, const void* heights_blob, size_t byt
 	w.z0 = dnum(t, "z0");
 	w.cell = dnum(t, "cell", 2.0);
 	if (w.nx < 2 || w.nz < 2 || w.cell <= 0.0) return fail(error, "world.json: bad terrain grid");
+	w.edge_margin = static_cast<float>(dnum(t, "edge_margin", 24.0));
+	w.editable_terrain = dbool(t, "editable", true);
+	if (t.has("edge_margin")) {
+		const double span = w.SizeX() < w.SizeZ() ? w.SizeX() : w.SizeZ();
+		if (w.edge_margin < 0.0f || static_cast<double>(w.edge_margin) * 2.0 >= span) return fail(error, "world.json: bad terrain edge_margin");
+	}
 	const size_t n = static_cast<size_t>(w.nx) * static_cast<size_t>(w.nz);
 	if (heights_blob == nullptr || bytes != n * sizeof(float)) return fail(error, "heightfield: expected " + std::to_string(n * 4) + " bytes");
 	w.heights.resize(n);
@@ -49,6 +55,7 @@ bool WorldDef::Parse(std::string_view json, const void* heights_blob, size_t byt
 	const Dict wa = ddict(d, "water");
 	w.water_level = dnum(wa, "level", -1.0e9);
 	w.wade_depth = dnum(wa, "wade_depth", 0.85);
+	w.water_layer = dstr(wa, "layer");
 	for (const Value& v : darr(d, "solids")) {
 		const Dict s = v.as_dict();
 		w.solids.push_back(WorldBox{arr3(s.get("min")), arr3(s.get("max")), dstr(s, "kind", "wall"), dstr(s, "surface", "stone"), dstr(s, "name")});
@@ -80,6 +87,15 @@ bool WorldDef::Parse(std::string_view json, const void* heights_blob, size_t byt
 	w.player_spawn = arr3(sp.get("pos"), Vec3(static_cast<float>(w.x0 + w.SizeX() * 0.5), 0.0f, static_cast<float>(w.z0 + w.SizeZ() * 0.5)));
 	w.spawn_facing = static_cast<float>(dnum(sp, "facing"));
 	out = std::move(w);
+	return true;
+}
+
+bool WorldDef::LoadWaterLayer(const void* blob, size_t bytes, std::string* error) {
+	const size_t n = static_cast<size_t>(nx) * static_cast<size_t>(nz);
+	if (n == 0 || blob == nullptr || bytes != n * sizeof(float))
+		return fail(error, "water layer: expected " + std::to_string(n * 4) + " bytes, got " + std::to_string(bytes));
+	water_h.resize(n);
+	std::memcpy(water_h.data(), blob, bytes);   // little-endian float32 (every target platform), NaN = dry
 	return true;
 }
 
