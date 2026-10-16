@@ -106,6 +106,40 @@ class Walkability(unittest.TestCase):
         traps = RD.traps(fl, g, g.nearest(0.0, 0.0), 1.0)
         self.assertEqual(set(traps), {g.idx(i, k) for k in range(3, 7) for i in range(3, 7)})
 
+    def test_rim_walls_close_a_gorge_and_validation_honours_them(self):
+        # A deep river gorge along x >= 8: an 8 m cliff, then water 1.2 m deep (floor = surface - wade).
+        g = RD.Grid(21, 21, -20.0, -20.0, 2.0)
+        h = [(-20.0 if g.pos(j % 21, j // 21)[0] >= 8.0 else 0.0) for j in range(441)]
+        w = [(-10.0 if g.pos(j % 21, j // 21)[0] >= 8.0 else RD.NAN) for j in range(441)]
+        fl = RD.sample_floors(h, w, RS.WADE_DEPTH)
+        start = g.nearest(-10.0, 0.0)
+        self.assertTrue(RD.traps(fl, g, start, 1.0), "the gorge traps without walls")
+        walls = RD.rim_walls(fl, g, start, 1.0)
+        rim = {round(x, 3) for b in walls for x in ((b["min"][0] + b["max"][0]) * 0.5,)}
+        self.assertEqual(rim, {8.0}, "one wall per sample of the gorge's first column")
+        for b in walls:
+            self.assertEqual(b["kind"], "wall")
+            self.assertGreaterEqual(b["max"][1], 0.0 + 5.0, "taller than a leap plus a cloud step above the rim")
+            self.assertLess(b["min"][1], fl[g.idx(*g.nearest(8.0, 0.0))])
+        blocked = RD.blocked_samples(walls, fl, g)
+        self.assertEqual(RD.traps(fl, g, start, 1.0, blocked=blocked), [])
+        world = RD.world_dict(g, (-10.0, 0.0, 0.0), 0.0,
+                              [RD.make_site("s_a", "A", "earth", 0, (-10.0, 0.0, 10.0), 0.0, "novice", 9.0),
+                               RD.make_site("s_b", "B", "water", 1, (-10.0, 0.0, -10.0), 0.0, "adept", 9.0)],
+                              [RD.make_shrine("shrine_t", "Test Shrine", (-14.0, 0.0, 0.0))], walls, [], {}, 1.0,
+                              RS.WADE_DEPTH, {"credit": RS.CREDIT})
+        self.assertEqual(RD.validate(world, h, w, g), [])
+        world["solids"] = []
+        self.assertTrue(any("cannot walk out" in e for e in RD.validate(world, h, w, g)))
+
+    def test_boxes_below_the_floor_do_not_block(self):
+        g = RD.Grid(5, 5, 0.0, 0.0, 2.0)
+        fl = [3.0] * 25
+        sunk = [{"min": [-1.0, 0.0, -1.0], "max": [9.0, 2.7, 9.0], "kind": "wall", "surface": "stone", "name": "stone_0"}]
+        self.assertEqual(sum(RD.blocked_samples(sunk, fl, g)), 0)
+        tall = [{"min": [3.0, 0.0, 3.0], "max": [5.0, 6.0, 5.0], "kind": "wall", "surface": "stone", "name": "rim_0"}]
+        self.assertEqual([j for j, b in enumerate(RD.blocked_samples(tall, fl, g)) if b], [g.idx(2, 2)])
+
 
 class Boxes(unittest.TestCase):
     def test_stone_columns_merge_into_one_box_below_the_surface(self):

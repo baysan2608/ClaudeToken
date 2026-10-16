@@ -56,13 +56,15 @@ BUDGET = {"tree": 1200, "sapling": 600, "seedling": 6500, "shrub": 2300, "grass"
 
 # Encounter sites (element: earth 0, water 1, fire 2, air 3). mode: flat = flattest reachable ground within radius of the
 # Blender anchor; bank = beside the river; high = the highest flat reachable ground within radius of the anchor.
+# max_slope (optional) overrides the pick's flatness limit: on the 2 m grid the pyramid's 1.5..2 m tiers read as
+# 0.5..0.75 ramps, so the summit accepts 0.5 (nothing within 18 m of the top is flatter than 0.25).
 SITE_PLAN = [
     {"id": "site_ruins_stair", "name": "Stair Warden", "region": "earth", "element": 0, "preset": "novice", "aggro": 9.0,
      "mode": "flat", "anchor": (519.7, 785.8), "radius": 8.0},
     {"id": "site_ruins_river", "name": "River Keeper", "region": "water", "element": 1, "preset": "adept", "aggro": 10.0,
      "mode": "bank", "anchor": None, "radius": 0.0},
     {"id": "site_ruins_summit", "name": "Summit Adept", "region": "air", "element": 3, "preset": "master", "aggro": 9.0,
-     "mode": "high", "anchor": PYRAMID_BL, "radius": 10.0},
+     "mode": "high", "anchor": PYRAMID_BL, "radius": 10.0, "max_slope": 0.5},
 ]
 SHRINE = {"id": "shrine_ruins", "name": "Ruins Shrine", "behind_spawn_m": 6.0, "radius": 6.0}
 MIN_SITE_GAP_M = 20.0                          # between sites, and from a site to the spawn

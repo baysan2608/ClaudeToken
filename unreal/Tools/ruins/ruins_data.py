@@ -101,9 +101,9 @@ def _step_ok(fl, a, b, cell, max_slope):
     return rise <= 0.05 or rise <= cell * max_slope           # ArenaMap::limit_terrain's rule at sample spacing
 
 
-def reach(fl, grid, start, margin, max_slope=1.0, reverse=False):
+def reach(fl, grid, start, margin, max_slope=1.0, reverse=False, blocked=None):
     """bytearray: 1 for samples a fighter can walk to from `start` (reverse: samples that can walk to `start`), inside the
-    edge band only."""
+    edge band only; `blocked` (blocked_samples) marks samples a wall closes."""
     seen = bytearray(grid.nx * grid.nz)
     seen[grid.idx(*start)] = 1
     q = deque([start])
@@ -112,7 +112,7 @@ def reach(fl, grid, start, margin, max_slope=1.0, reverse=False):
         a = grid.idx(i, k)
         for ni, nk in grid.neighbours(i, k):
             b = grid.idx(ni, nk)
-            if seen[b] or not grid.inside(*grid.pos(ni, nk), margin):
+            if seen[b] or (blocked is not None and blocked[b]) or not grid.inside(*grid.pos(ni, nk), margin):
                 continue
             ok = _step_ok(fl, b, a, grid.cell, max_slope) if reverse else _step_ok(fl, a, b, grid.cell, max_slope)
             if ok:
@@ -121,11 +121,53 @@ def reach(fl, grid, start, margin, max_slope=1.0, reverse=False):
     return seen
 
 
-def traps(fl, grid, start, margin, max_slope=1.0):
+def traps(fl, grid, start, margin, max_slope=1.0, blocked=None):
     """Samples reachable from `start` that cannot walk back to it (pits, gorges), row-major order."""
+    fwd = reach(fl, grid, start, margin, max_slope, blocked=blocked)
+    back = reach(fl, grid, start, margin, max_slope, reverse=True, blocked=blocked)
+    return [j for j in range(len(fwd)) if fwd[j] and not back[j]]
+
+
+RIM_WALL_HEIGHT = 5.0   # m above the rim: a standing leap (~2.2 m) plus a cloud step (~1.8 m) does not clear it
+STEP_HEIGHT = 0.4       # Sim::STEP_HEIGHT: a solid whose top is at most this far above the floor is stepped onto
+ACTOR_HEIGHT = 1.8
+
+
+def rim_walls(fl, grid, start, margin, max_slope=1.0, height=RIM_WALL_HEIGHT):
+    """Invisible walls on the trap samples next to walkable ground (the river gorge's cliffs, sheer pits): a fighter can no
+    longer step or fall into ground they could not climb back out of. One box per such sample (the cell around it), from
+    1 m below its floor to `height` above its highest walkable neighbour; row-major order, names rim_<n>."""
     fwd = reach(fl, grid, start, margin, max_slope)
     back = reach(fl, grid, start, margin, max_slope, reverse=True)
-    return [j for j in range(len(fwd)) if fwd[j] and not back[j]]
+    out = []
+    for k in range(grid.nz):
+        for i in range(grid.nx):
+            j = grid.idx(i, k)
+            if not fwd[j] or back[j]:
+                continue
+            rims = [fl[grid.idx(a, b)] for a, b in grid.neighbours(i, k) if fwd[grid.idx(a, b)] and back[grid.idx(a, b)]]
+            if rims:
+                out.append(_box(grid, i, i, k, k, max(rims) + height, fl[j] - 1.0, f"rim_{len(out)}", 0.0))
+    return out
+
+
+def blocked_samples(solids, fl, grid, step=STEP_HEIGHT, body=ACTOR_HEIGHT):
+    """bytearray: 1 for samples whose standing space a box fills (its top above floor + step, its bottom below the head).
+    Boxes sunk below the floor (the pyramid's interior boxes) block nothing."""
+    out = bytearray(grid.nx * grid.nz)
+    for b in solids:
+        (x0, y0, z0), (x1, y1, z1) = b["min"], b["max"]
+        i0 = max(0, int(math.floor((x0 - grid.x0) / grid.cell)))
+        i1 = min(grid.nx - 1, int(math.ceil((x1 - grid.x0) / grid.cell)))
+        k0 = max(0, int(math.floor((z0 - grid.z0) / grid.cell)))
+        k1 = min(grid.nz - 1, int(math.ceil((z1 - grid.z0) / grid.cell)))
+        for k in range(k0, k1 + 1):
+            for i in range(i0, i1 + 1):
+                x, z = grid.pos(i, k)
+                j = grid.idx(i, k)
+                if x0 < x < x1 and z0 < z < z1 and y1 > fl[j] + step and y0 < fl[j] + body:
+                    out[j] = 1
+    return out
 
 
 def _box(grid, i0, i1, k0, k1, top, bottom, name, inset):
@@ -372,8 +414,9 @@ def validate(world, heights, water, grid):
     if not grid.inside(sx, sz, margin):
         return errs + [f"spawn ({sx:.1f}, {sz:.1f}) outside the edge band"]
     start = grid.nearest(sx, sz)
-    fwd = reach(fl, grid, start, margin)
-    back = reach(fl, grid, start, margin, reverse=True)
+    blocked = blocked_samples([b for b in world["solids"] if b["kind"] == "wall"], fl, grid)
+    fwd = reach(fl, grid, start, margin, blocked=blocked)
+    back = reach(fl, grid, start, margin, reverse=True, blocked=blocked)
     trapped = [j for j in range(n) if fwd[j] and not back[j]]
     wet_traps = [j for j in trapped if _under(heights[j], water[j])]
     if wet_traps:
