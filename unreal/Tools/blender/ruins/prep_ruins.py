@@ -475,11 +475,27 @@ def build_stone(layout):
     export_lods("SM_Ruins_Pyramid", lods, "stone", slots, layout)
 
 
+def face_up(me):
+    """Turns every face of a surface mesh to face +Z (water is seen and traced from above; one-sided collision and
+    materials ignore back faces)."""
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    down = [f for f in bm.faces if f.normal.z < 0.0]
+    if down:
+        bmesh.ops.reverse_faces(bm, faces=down)
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    print(f"[prep_ruins] {me.name}: {len(down)} of {len(me.polygons)} faces turned up", flush=True)
+    return me
+
+
 def build_water(layout):
     for name, rel, prim in (("SM_Ruins_River", ("River", "River.usd"), "River"),
                             ("SM_Ruins_Creek", ("Creek", "Creek.usd"), "Creek")):
         ob = next(o for o in usd_import(os.path.join(USD, *rel)) if base(o.name) == prim)
         me = keep_faces(map_mesh(ob, name), lambda x, y: (x >= TILE_L[0]) & (x < TILE_L[2]) & (y >= TILE_L[1]) & (y < TILE_L[3]))
+        face_up(me)                                              # River.usd is wound left-handed: its faces point down
         planar_uv(me, TILE_L[0], TILE_L[1], 10.0)                # the water material pans world-space normals; UVs unused
         set_material(me, "Water")
         export_lods(name, [me], "water", {"Water": WATER_SLOT}, layout)
