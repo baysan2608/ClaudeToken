@@ -196,7 +196,7 @@ double CombatWorld::_friction_at(const ActorState& a) const {
 void CombatWorld::_update_surface(ActorState& a) {
 	MatBody* zs = nullptr;
 	if (a.grounded) zs = zone_surface_at(a.pos);
-	a.in_water = arena.in_pool(a.pos.x, a.pos.z) && a.pos.y < arena.pool_level && a.grounded && zs == nullptr;
+	a.in_water = arena.in_pool(a.pos.x, a.pos.z) && a.pos.y < arena.water_level_at(a.pos.x, a.pos.z) && a.grounded && zs == nullptr;
 	if (a.in_water) {
 		a.wetness = 1.0;
 		const double take = minf(6.0 - a.water_carried, pool->mass);

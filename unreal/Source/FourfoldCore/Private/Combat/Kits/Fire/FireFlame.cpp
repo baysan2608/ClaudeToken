@@ -113,7 +113,7 @@ bool fireball_tick(CombatWorld& w, MatBody& b, double dt) {
 		MatBody& o = *keep;
 		if (&o == &b || !o.alive || !o.is_water() || o.form == Form::Cloud) continue;
 		bool touch = false;
-		if (o.form == Form::Pool) touch = w.arena.in_pool(b.pos.x, b.pos.z) && b.pos.y < w.arena.pool_level + b.radius + 0.1;
+		if (o.form == Form::Pool) touch = w.arena.in_pool(b.pos.x, b.pos.z) && b.pos.y < w.arena.water_level_at(b.pos.x, b.pos.z) + b.radius + 0.1;
 		else if (o.form == Form::Puddle)
 			touch = Vec2(b.pos.x - o.pos.x, b.pos.z - o.pos.z).length() < o.radius && b.pos.y < o.pos.y + b.radius + 0.15;
 		else touch = (b.pos - o.pos).length() < b.radius + o.radius + 0.1;
@@ -169,7 +169,7 @@ bool line_execute(CombatWorld& w, ActorState& a, ActionInst& inst) {
 bool line_tick(CombatWorld& w, MatBody& b, double dt) {
 	(void)dt;
 	if (!b.alive || b.form != Form::Wave) return false;
-	const bool wet = w.arena.in_pool(b.pos.x, b.pos.z) && b.pos.y < w.arena.pool_level + 0.4;
+	const bool wet = w.arena.in_pool(b.pos.x, b.pos.z) && b.pos.y < w.arena.water_level_at(b.pos.x, b.pos.z) + 0.4;
 	MatBody* pd = w.puddle_at(b.pos);
 	if (wet || (pd != nullptr && pd->phase == Phase::Liquid)) {
 		MatBody* water = wet ? w.pool : pd;

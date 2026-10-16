@@ -43,8 +43,12 @@ ArenaMap ArenaMap::make_window(std::shared_ptr<const WorldDef> w, double x, doub
 		const Vec3 o(f32(x), f32(y), f32(z));
 		a.add_box(b.min - o, b.max - o, b.kind, b.surface, b.name);
 	}
-	// Bounding rects of the lake / ore inside the window (empty rects far outside when there is none).
+	// Bounding rects of the lake / ore inside the window (empty rects far outside when there is none). With a water layer
+	// the window's pool level is the surface at the wet sample nearest its centre (scan order breaks ties).
 	double pmnx = 1.0e9, pmnz = 1.0e9, pmxx = -1.0e9, pmxz = -1.0e9;
+	double near_d2 = 1.0e30;
+	double near_level = wd.water_level;
+	const bool layer = wd.has_water_layer();
 	const double step = wd.cell > 0.0 ? wd.cell * 0.5 : 1.0;
 	for (double lz = -half; lz <= half; lz += step) {
 		for (double lx = -half; lx <= half; lx += step) {
@@ -53,6 +57,12 @@ ArenaMap ArenaMap::make_window(std::shared_ptr<const WorldDef> w, double x, doub
 			pmnz = minf(pmnz, lz - step);
 			pmxx = maxf(pmxx, lx + step);
 			pmxz = maxf(pmxz, lz + step);
+			const double d2 = lx * lx + lz * lz;
+			double surface = 0.0;
+			if (layer && d2 < near_d2 && wd.WaterSurface(x + lx, z + lz, surface)) {
+				near_d2 = d2;
+				near_level = surface;
+			}
 		}
 	}
 	if (pmxx > pmnx) {
@@ -62,8 +72,8 @@ ArenaMap ArenaMap::make_window(std::shared_ptr<const WorldDef> w, double x, doub
 		a.pool_min = Vec2(1.0e6f, 1.0e6f);
 		a.pool_max = Vec2(1.0e6f, 1.0e6f);
 	}
-	a.pool_level = wd.water_level - y;
-	a.pool_floor = wd.water_level - wd.wade_depth - y;
+	a.pool_level = near_level - y;
+	a.pool_floor = near_level - wd.wade_depth - y;
 	a.metal_min = Vec2(1.0e6f, 1.0e6f);
 	a.metal_max = Vec2(1.0e6f, 1.0e6f);
 	for (const WorldRect& r : wd.metal) {
@@ -88,6 +98,34 @@ bool ArenaMap::in_pool(double x, double z) const {
 }
 bool ArenaMap::on_metal(double x, double z) const { return x > metal_min.x && x < metal_max.x && z > metal_min.y && z < metal_max.y; }
 
+double ArenaMap::water_level_at(double x, double z) const {
+	double level = 0.0;
+	if (world && world->has_water_layer() && world->WaterSurface(x + ox, z + oz, level)) return level - oy;
+	return pool_level;
+}
+
+bool ArenaMap::nearest_water(double x, double z, double reach, Vec3& out) const {
+	if (!world || !world->has_water_layer()) return false;
+	const WorldDef& wd = *world;
+	const double step = wd.cell > 0.0 ? wd.cell * 0.5 : 1.0;
+	double best = reach * reach;
+	bool found = false;
+	for (double lz = -reach; lz <= reach; lz += step) {
+		for (double lx = -reach; lx <= reach; lx += step) {
+			const double d2 = lx * lx + lz * lz;
+			if (d2 >= best) continue;
+			const double wx = x + lx + ox;
+			const double wz = z + lz + oz;
+			double level = 0.0;
+			if (!wd.IsWater(wx, wz) || !wd.WaterSurface(wx, wz, level)) continue;
+			best = d2;
+			out = Vec3(f32(x + lx), f32(level - oy), f32(z + lz));
+			found = true;
+		}
+	}
+	return found;
+}
+
 double ArenaMap::base_floor(double x, double z) const {
 	if (world) {
 		const double f = world->FloorAt(x + ox, z + oz) - oy;
@@ -109,7 +147,7 @@ double ArenaMap::ground_height(double x, double z, double from_y, double step) c
 }
 
 std::string ArenaMap::surface_at(double x, double z, double y) const {
-	if (in_pool(x, z) && y < pool_level + 0.15) return "water";
+	if (in_pool(x, z) && y < water_level_at(x, z) + 0.15) return "water";
 	if (on_metal(x, z) && std::fabs(y - (world ? base_floor(x, z) : metal_top)) < 0.15) return "metal";
 	return "stone";
 }

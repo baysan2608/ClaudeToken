@@ -241,7 +241,9 @@ struct SessionCore {
 		origin_y = wd.FloorAt(wd.player_spawn.x, wd.player_spawn.z);
 		origin_z = wd.player_spawn.z;
 		world->arena = ArenaMap::make_window(roam, origin_x, origin_y, origin_z);
-		world->terrain_live = roam_live;
+		// A level with its own static meshes (terrain.editable false, L_Ruins) gets no live edits: the ridge technique then
+		// raises stone walls as in the arenas, so the sim never reshapes ground the renderer cannot show.
+		world->terrain_live = roam_live->editable_terrain ? roam_live : nullptr;
 		place_pool();
 		const Dict kit = o.kit == "all" ? Progression::lab_kit() : prog().kit();
 		player = world->add_actor("You", V3(0, 0, 0), 0, kit, o.player_element >= 0 && o.player_element < 4 ? o.player_element : 0);

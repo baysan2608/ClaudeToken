@@ -298,7 +298,7 @@ void CombatWorld::_ricochet(MatBody& b, Vec3 at) {
 
 void CombatWorld::_quench_contact(MatBody& b, double) {
 	if (!Materials::is_fusible(b.mat) || b.liquid <= 0.0) return;
-	if (arena.in_pool(b.pos.x, b.pos.z) && b.pos.y < arena.pool_level + 0.1) {
+	if (arena.in_pool(b.pos.x, b.pos.z) && b.pos.y < arena.water_level_at(b.pos.x, b.pos.z) + 0.1) {
 		AgentRef th = Agent::of_body(*this, b);
 		AgentRef env = Agent::of_env(this, "pool", b.pos);
 		IxCtx ctx;

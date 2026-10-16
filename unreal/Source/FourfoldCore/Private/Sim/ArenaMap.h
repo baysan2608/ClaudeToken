@@ -42,6 +42,12 @@ public:
 	void add_box(Vec3 mn, Vec3 mx, const std::string& kind, const std::string& surface, const std::string& nm);
 	bool in_pool(double x, double z) const;
 	bool on_metal(double x, double z) const;
+	// Water-layer worlds (WorldDef::has_water_layer): the local water surface at (x, z) - pool_level in the arenas, in
+	// single-level worlds and where the layer is dry - and the closest local water surface point within `reach` (half-cell
+	// scan around (x, z), nearest first, ties by scan order; false when none or without a layer).
+	bool has_water_layer() const { return world && world->has_water_layer(); }
+	double water_level_at(double x, double z) const;
+	bool nearest_water(double x, double z, double reach, Vec3& out) const;
 	double base_floor(double x, double z) const;
 	// Highest walkable surface under (x, z) reachable from from_y (surfaces above from_y + step are walls).
 	double ground_height(double x, double z, double from_y = 1.0e30, double step = Sim::STEP_HEIGHT) const;

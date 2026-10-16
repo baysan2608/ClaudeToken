@@ -141,9 +141,11 @@ void _draw(CombatWorld& w, ActorState& a, ActionInst& inst, const ActorIntent& i
 	// Source priority: pool (if near), puddle in the aim cone, then the waterskin.
 	MatBody* src = nullptr;
 	Vec3 src_point;
-	const Vec3 pn = V3(clampf(a.pos.x, w.arena.pool_min.x, w.arena.pool_max.x), w.arena.pool_level,
-	                   clampf(a.pos.z, w.arena.pool_min.y, w.arena.pool_max.y));
-	if (Vec2(pn.x - a.pos.x, pn.z - a.pos.z).length() < reach && w.pool != nullptr && w.pool->mass > rate) {
+	Vec3 pn = V3(clampf(a.pos.x, w.arena.pool_min.x, w.arena.pool_max.x), w.arena.pool_level,
+	             clampf(a.pos.z, w.arena.pool_min.y, w.arena.pool_max.y));
+	bool pool_near = Vec2(pn.x - a.pos.x, pn.z - a.pos.z).length() < reach;
+	if (w.arena.has_water_layer()) pool_near = w.arena.nearest_water(a.pos.x, a.pos.z, reach, pn);   // sloped rivers / creeks
+	if (pool_near && w.pool != nullptr && w.pool->mass > rate) {
 		src = w.pool;
 		src_point = pn;
 	} else {

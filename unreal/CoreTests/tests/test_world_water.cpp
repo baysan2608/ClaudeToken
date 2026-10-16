@@ -3,8 +3,14 @@
 // per-map edge margin, and (Task 2) wading, drawing and the static-terrain switch in a session. Unreal-only feature.
 #include "ff_test.h"
 
+#include "sim_harness.h"
+
 #include "App/SessionCore.h"
 #include "Sim/ArenaMap.h"
+#include "Sim/CombatWorld.h"
+#include "Sim/Conduction.h"
+#include "Util/GdUtil.h"
+#include "Util/GodotMath.h"
 #include "ff/FourfoldCore.h"
 
 #include <cmath>
@@ -110,4 +116,138 @@ FF_TEST(test_world_water, test_edge_margin_comes_from_world_json) {
 	const ArenaMap mw = ArenaMap::make_window(wide, 80.0, wide->FloorAt(80.0, 20.0), 20.0);
 	const Vec3 w24 = mw.limit_terrain(Vec3(-8.0f, 0.0f, 0.0f), Vec3(-3.0f, 0.0f, 0.0f));
 	near(w24.x, -8.0, 1e-6, "24 m default: world 77 is already inside the band");
+}
+
+namespace {
+constexpr float kHalfPi = 1.5707963f;
+
+struct CreekFx : fft::TestCase {
+	InputFrame in;
+	float yaw = 3.14159265f;   // camera along -z: from the bank (z 12) toward the creek
+
+	void step(Session& s, int n = 1) {
+		for (int i = 0; i < n; ++i) {
+			s.Step(in, yaw);
+			in.ClearEdges();
+		}
+		std::vector<Event> drop;
+		s.TakeEvents(drop);
+	}
+	const ActorView* player(const Session& s) const { return s.GetSnapshot().FindActor(s.GetSnapshot().player_id); }
+	double world_x(const Session& s) const { return s.GetSnapshot().origin_x + player(s)->pos.x; }
+	double world_y(const Session& s) const { return s.GetSnapshot().origin_y + player(s)->pos.y; }
+	double world_z(const Session& s) const { return s.GetSnapshot().origin_z + player(s)->pos.z; }
+};
+}  // namespace
+
+FF_TEST_F(test_world_water, CreekFx, test_wading_follows_the_sloped_creek_and_walks_back_out) {
+	Session s;
+	RoamOptions o;
+	o.kit = "all";
+	o.encounters = false;
+	check(s.LoadRoam(make_creek_world(), o), "creek world loads");
+	in.move = Vec2(0.0f, 1.0f);
+	for (int t = 0; t < 60 * 6 && !player(s)->in_water; ++t) step(s);
+	check(player(s)->in_water, S("reached the water (z ", world_z(s), ")"));
+	for (int t = 0; t < 60 * 3 && std::fabs(world_z(s)) > 3.0; ++t) step(s);   // on into the bed
+	in.move = Vec2();
+	step(s, 30);
+	const double x0 = world_x(s), y0 = world_y(s);
+	check(player(s)->in_water && std::fabs(world_z(s)) <= 4.0, S("standing in the bed (z ", world_z(s), ")"));
+	near(y0, 0.05 * x0 - 1.15, 0.12, "feet on the wading floor (surface - wade depth)");
+	yaw = -kHalfPi;            // camera along -x: downstream
+	in.move = Vec2(0.0f, 1.0f);
+	step(s, 60 * 2);
+	in.move = Vec2();
+	step(s, 30);
+	const double x1 = world_x(s), y1 = world_y(s);
+	check(x1 < x0 - 4.0, S("walked downstream (dx ", x1 - x0, ")"));
+	check(player(s)->in_water, "still in the creek");
+	near(y1 - y0, 0.05 * (x1 - x0), 0.15, "the wading floor followed the sloped surface");
+	yaw = 3.14159265f;         // on across to the far bank (-z)
+	in.move = Vec2(0.0f, 1.0f);
+	step(s, 60 * 3);
+	check(!player(s)->in_water && world_z(s) < -6.0, S("walked out onto the far bank (z ", world_z(s), ")"));
+}
+
+FF_TEST(test_world_water, test_draw_takes_water_from_the_creek_surface) {
+	auto wd = make_creek_world();
+	check(wd != nullptr, "creek world parses");
+	if (!wd) return;
+	fft::SimHarness h(5);
+	// Bubble origin on the bank at world (0, 0, 14): the window's pool level is the surface nearest its centre (x 0: -0.3).
+	// The fighter stands at local (10, -6) = world (10, 8), uphill: the creek edge is ~3.5 m ahead and its surface there
+	// (0.2) is 0.5 m above the window's pool level, so a draw point taken from pool_level would be off the water.
+	h.w->arena = ArenaMap::make_window(wd, 0.0, wd->FloorAt(0.0, 14.0), 14.0);
+	const ArenaMap& m = h.w->arena;
+	check(m.has_water_layer(), "the window carries the layer");
+	near(m.pool_level, -0.3, 1e-5, "window pool level = the surface nearest the centre");
+	MatBody* pool = h.w->pool;
+	pool->pos = V3((m.pool_min.x + m.pool_max.x) * 0.5, m.pool_level, (m.pool_min.y + m.pool_max.y) * 0.5);
+	ActorState* wf = h.actor("W", V3(10, 0.5, -6), 0, Dict(), Sim::WATER);
+	h.step(10);
+	Vec3 at;
+	check(m.nearest_water(wf->pos.x, wf->pos.z, 7.5, at), "the creek is within reach");
+	near(at.y, wd->WaterAt(at.x, at.z + 14.0), 1e-4, "the nearest point sits on the local surface");
+	const double pool0 = pool->mass;
+	h.press(wf, "tech");
+	h.step(30);
+	MatBody* held = h.w->held(*wf);
+	check(held != nullptr && held->is_water(), "W holds drawn water");
+	if (held != nullptr) near(pool0 - pool->mass, held->mass, 1e-9, "the creek paid exactly what W holds");
+	check(h.any_event("draw_water", [&](const Dict& d) {
+		const Vec3 p = d.get("at").as_vec3();
+		return p.z + 14.0 <= 5.5 && p.x > 6.0 && std::fabs(p.y - wd->WaterAt(p.x, p.z + 14.0)) < 1e-4;
+	}), "draw_water comes from a point on the creek surface in front of W (not the window's pool level)");
+}
+
+FF_TEST(test_world_water, test_lightning_meets_the_local_surface) {
+	auto wd = make_creek_world();
+	check(wd != nullptr, "creek world parses");
+	if (!wd) return;
+	fft::SimHarness h(5);
+	h.w->arena = ArenaMap::make_window(wd, 0.0, wd->FloorAt(0.0, 14.0), 14.0);
+	// world (10, 2) = local (10, -12): creek surface 0.2, the window's pool level -0.3
+	near(h.w->arena.water_level_at(10.0, -12.0), 0.2, 1e-5, "water_level_at follows the layer");
+	check(Conduction::surface_node_at(*h.w, V3(10.0, 0.35, -12.0)) == "pool", "a point 0.15 m above the local surface touches the water");
+	check(Conduction::surface_node_at(*h.w, V3(10.0, 0.6, -12.0)).empty(), "0.4 m above it does not");
+	check(Conduction::surface_node_at(*h.w, V3(-10.0, -0.6, -12.0)) == "pool", "downstream (surface -0.8) the same rule");
+}
+
+FF_TEST(test_world_water, test_static_map_keeps_its_terrain) {
+	RoamOptions o;
+	o.kit = "all";
+	o.encounters = false;
+	SessionCore g;
+	g.load_roam(make_creek_world(", \"editable\": false"), o);
+	check(g.roam != nullptr && !g.roam->editable_terrain, "terrain.editable false parsed");
+	check(g.world->terrain_live == nullptr, "no live terrain: the ridge technique raises stone walls instead");
+	SessionCore legacy;
+	legacy.load_roam(make_creek_world(), o);
+	check(legacy.world->terrain_live != nullptr, "default worlds keep live terrain edits");
+}
+
+FF_TEST(test_world_water, test_creek_roam_is_deterministic) {
+	auto run = [] {
+		Session s;
+		RoamOptions o;
+		o.kit = "all";
+		o.encounters = false;
+		s.LoadRoam(make_creek_world(), o);
+		InputFrame f;
+		for (int t = 0; t < 60 * 10; ++t) {
+			const float a = 0.004f * static_cast<float>(t);
+			f.move = Vec2(std::sin(a), std::cos(a));
+			s.Step(f, 3.14159265f);
+			f.ClearEdges();
+		}
+		std::vector<Event> ev;
+		s.TakeEvents(ev);
+		const ActorView* p = s.GetSnapshot().FindActor(s.GetSnapshot().player_id);
+		return S(s.GetSnapshot().origin_x, ",", s.GetSnapshot().origin_z, ",", p->pos, ",", p->in_water, ",",
+		         static_cast<long long>(ev.size()));
+	};
+	const std::string a = run();
+	const std::string b = run();
+	check(a == b, "two runs match: " + a + " vs " + b);
 }

@@ -570,7 +570,7 @@ double node_factor(CombatWorld& w, const std::string& n) {
 }
 
 std::string surface_node_at(CombatWorld& w, Vec3 p) {
-	if (w.arena.in_pool(p.x, p.z) && p.y < w.arena.pool_level + 0.3) return "pool";
+	if (w.arena.in_pool(p.x, p.z) && p.y < w.arena.water_level_at(p.x, p.z) + 0.3) return "pool";
 	if (w.arena.on_metal(p.x, p.z) && p.y < w.arena.metal_top + 0.3) return "metal";
 	for (const BodyRef& bp : w.bodies) {
 		const MatBody& b = *bp;
