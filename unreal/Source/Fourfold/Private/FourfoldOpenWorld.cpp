@@ -21,9 +21,9 @@
 
 namespace FourfoldOW
 {
-	static FString DataDir()
+	static FString DataDir(const FString& Name)
 	{
-		return FPaths::ProjectContentDir() / TEXT("Fourfold") / TEXT("Data") / TEXT("openworld");
+		return FPaths::ProjectContentDir() / TEXT("Fourfold") / TEXT("Data") / Name;
 	}
 
 	struct FCache
@@ -35,26 +35,33 @@ namespace FourfoldOW
 		bool bTried = false;
 	};
 
-	static FCache& Cache()
+	// One cache per data set, so L_World and L_Ruins can both be played in one process.
+	static FCache& Cache(const FString& Name)
 	{
-		static FCache C;
-		return C;
+		static TMap<FString, TUniquePtr<FCache>> Caches;
+		TUniquePtr<FCache>& C = Caches.FindOrAdd(Name);
+		if (!C.IsValid())
+		{
+			C = MakeUnique<FCache>();
+		}
+		return *C;
 	}
 
-	static void LoadOnce()
+	static void LoadOnce(const FString& Name)
 	{
-		FCache& C = Cache();
+		FCache& C = Cache(Name);
 		if (C.bTried)
 		{
 			return;
 		}
 		C.bTried = true;
+		const FString Dir = DataDir(Name);
 		FString Text;
 		TArray<uint8> Heights;
-		if (!FFileHelper::LoadFileToString(Text, *(DataDir() / TEXT("world.json"))) ||
-		    !FFileHelper::LoadFileToArray(Heights, *(DataDir() / TEXT("heights.f32"))))
+		if (!FFileHelper::LoadFileToString(Text, *(Dir / TEXT("world.json"))) ||
+		    !FFileHelper::LoadFileToArray(Heights, *(Dir / TEXT("heights.f32"))))
 		{
-			C.Error = FString::Printf(TEXT("open world data missing in %s (run unreal/Tools/openworld/gen_world.py)"), *DataDir());
+			C.Error = FString::Printf(TEXT("world data missing in %s (openworld: unreal/Tools/openworld/gen_world.py, ruins: unreal/Tools/ruins/bake_ruins.py)"), *Dir);
 			return;
 		}
 		const std::string Utf8 = TCHAR_TO_UTF8(*Text);
@@ -65,14 +72,31 @@ namespace FourfoldOW
 			C.Error = UTF8_TO_TCHAR(Err.c_str());
 			return;
 		}
+		if (!W->water_layer.empty())
+		{
+			// per-sample water surface (sloped rivers): world.json water.layer names the float32 file next to it
+			const FString Layer = UTF8_TO_TCHAR(W->water_layer.c_str());
+			TArray<uint8> Water;
+			if (!FFileHelper::LoadFileToArray(Water, *(Dir / Layer)) || !W->LoadWaterLayer(Water.GetData(), size_t(Water.Num()), &Err))
+			{
+				C.Error = FString::Printf(TEXT("%s/%s: %s"), *Dir, *Layer, Err.empty() ? TEXT("missing") : UTF8_TO_TCHAR(Err.c_str()));
+				return;
+			}
+		}
 		ff::ParseJson(Utf8, C.Json);
-		FFileHelper::LoadFileToArray(C.Splat, *(DataDir() / TEXT("splat.rgba")));
+		FFileHelper::LoadFileToArray(C.Splat, *(Dir / TEXT("splat.rgba")));
 		if (C.Splat.Num() != W->nx * W->nz * 4)
 		{
 			C.Splat.Reset();
 		}
 		C.World = W;
 	}
+
+#if PLATFORM_IOS || PLATFORM_ANDROID
+	constexpr float kPropCullScale = 0.7f;   // world.json prop_assets cull distances: shorter on phones / tablets
+#else
+	constexpr float kPropCullScale = 1.0f;
+#endif
 
 	inline float SampleH(const ff::WorldDef& W, int32 I, int32 K)
 	{
@@ -117,12 +141,17 @@ AFourfoldOpenWorld::AFourfoldOpenWorld()
 
 std::shared_ptr<const ff::WorldDef> AFourfoldOpenWorld::LoadWorldDef(FString* OutError)
 {
-	FourfoldOW::LoadOnce();
+	return LoadWorldDefFrom(TEXT("openworld"), OutError);
+}
+
+std::shared_ptr<const ff::WorldDef> AFourfoldOpenWorld::LoadWorldDefFrom(const FString& DataDir, FString* OutError)
+{
+	FourfoldOW::LoadOnce(DataDir);
 	if (OutError)
 	{
-		*OutError = FourfoldOW::Cache().Error;
+		*OutError = FourfoldOW::Cache(DataDir).Error;
 	}
-	return FourfoldOW::Cache().World;
+	return FourfoldOW::Cache(DataDir).World;
 }
 
 float AFourfoldOpenWorld::TerrainHeightUE(const FVector& WorldUE) const
@@ -134,13 +163,13 @@ void AFourfoldOpenWorld::BeginPlay()
 {
 	Super::BeginPlay();
 	FString Err;
-	World = LoadWorldDef(&Err);
+	World = LoadWorldDefFrom(DataDirName, &Err);
 	if (!World)
 	{
 		UE_LOG(LogFourfold, Error, TEXT("AFourfoldOpenWorld: %s"), *Err);
 		return;
 	}
-	Splat = FourfoldOW::Cache().Splat;
+	Splat = FourfoldOW::Cache(DataDirName).Splat;
 	BuildAll();
 }
 
@@ -153,7 +182,7 @@ void AFourfoldOpenWorld::BuildAll()
 		TerrainMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Fourfold/Env/Materials/MI_Env_Ground.MI_Env_Ground"));
 	}
 	const int32 Cells = World->nx - 1;
-	const int32 NumC = FMath::Max(1, Cells / ChunkCells);
+	const int32 NumC = bBuildTerrain ? FMath::Max(1, Cells / ChunkCells) : 0;   // no procedural terrain: the level has its own
 	for (int32 Cz = 0; Cz < NumC; ++Cz)
 	{
 		for (int32 Cx = 0; Cx < NumC; ++Cx)
@@ -186,8 +215,14 @@ void AFourfoldOpenWorld::BuildAll()
 			Chunks.Add(C);
 		}
 	}
-	BuildWater();
-	BuildSolids();
+	if (bBuildWater)
+	{
+		BuildWater();
+	}
+	if (bBuildSolids)
+	{
+		BuildSolids();
+	}
 	BuildSitesAndProps();
 	bBuilt = true;
 	UE_LOG(LogFourfold, Log, TEXT("Open world built: %d terrain chunks, %d prop sets in %.0f ms"), Chunks.Num(), PropComps.Num(),
@@ -443,9 +478,15 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 		Cap->RegisterComponent();
 	}
 
-	// Trees and rocks: one hierarchical instanced component per mesh, distance culled.
-	const ff::Value& Json = FourfoldOW::Cache().Json;
+	if (!bBuildProps)
+	{
+		return;
+	}
+	// Trees and rocks: one hierarchical instanced component per mesh, distance culled. prop_assets (optional) maps a mesh
+	// key to {asset: object path, cull: metres, shadow: bool} for data sets that bring their own meshes (L_Ruins).
+	const ff::Value& Json = FourfoldOW::Cache(DataDirName).Json;
 	const ff::Array Props = Json.as_dict().get("props").as_array();
+	const ff::Dict Assets = Json.as_dict().get("prop_assets").as_dict();
 	TMap<FName, UHierarchicalInstancedStaticMeshComponent*> ByKey;
 	TMap<FName, double> NormScale;
 	int32 Placed = 0;
@@ -458,8 +499,13 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 		UHierarchicalInstancedStaticMeshComponent** Found = ByKey.Find(Key);
 		if (!Found)
 		{
+			const ff::Dict Def = Assets.get(D.get("mesh").as_string()).as_dict();
 			const TSoftObjectPtr<UStaticMesh>* Soft = PropMeshes.Find(MeshKey);
 			UStaticMesh* Mesh = Soft ? Soft->LoadSynchronous() : nullptr;
+			if (!Mesh && Def.has("asset"))
+			{
+				Mesh = LoadObject<UStaticMesh>(nullptr, UTF8_TO_TCHAR(Def.get("asset").as_string().c_str()));
+			}
 			if (!Mesh)
 			{
 				ByKey.Add(Key, nullptr);
@@ -471,8 +517,13 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 			H->SetMobility(EComponentMobility::Static);
 			H->SetStaticMesh(Mesh);
 			const bool bRock = MeshKey.ToString().StartsWith(TEXT("rock"));
-			const float Cull = bCliff ? CliffCullDistance : (bRock ? RockCullDistance : TreeCullDistance);
+			float Cull = bCliff ? CliffCullDistance : (bRock ? RockCullDistance : TreeCullDistance);
+			if (Def.has("cull"))
+			{
+				Cull = float(Def.get("cull").as_float(0.0) * FF::SimToUE) * FourfoldOW::kPropCullScale;
+			}
 			H->SetCullDistances(int32(Cull * 0.8f), int32(Cull));
+			H->SetCastShadow(Def.get("shadow").as_bool(true));
 			// wind (world position offset) only near the camera: far trees render without WPO / velocity
 			H->WorldPositionOffsetDisableDistance = int32(bCliff || bRock ? 1 : TreeWindDistance);
 			H->bCastFarShadow = false;
@@ -485,7 +536,11 @@ void AFourfoldOpenWorld::BuildSitesAndProps()
 			// Normalise scanned meshes to game sizes: rocks ~3 m across, trees at most 18 m tall.
 			const FVector Ext = Mesh->GetBoundingBox().GetSize();
 			double Norm = 1.0;
-			if (bRock)
+			if (!bNormalizePropScale)
+			{
+				// sizes come from the data (L_Ruins: the scene's own instance scales)
+			}
+			else if (bRock)
 			{
 				Norm = 300.0 / FMath::Max(1.0, FMath::Max(Ext.X, Ext.Y));
 			}
@@ -594,7 +649,10 @@ void AFourfoldOpenWorld::Tick(float DeltaSeconds)
 	}
 	UpdateLods(View);
 	const uint64 Rev = World->edits ? World->edits->revision : 0;
-	UpdateCover(View, Rev != CoverEditRevision);
+	if (bBuildCover)
+	{
+		UpdateCover(View, Rev != CoverEditRevision);
+	}
 	CoverEditRevision = Rev;
 }
 

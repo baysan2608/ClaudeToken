@@ -1,7 +1,10 @@
 // Fourfold - the open-world valley at runtime (owner: open-world stream).
 //
-// Reads the generated world (Content/Fourfold/Data/openworld: world.json + heights.f32 + splat.rgba, written by
-// unreal/Tools/openworld/gen_world.py) and builds what you see from the SAME heightfield the sim walks on:
+// Reads a world data set (Content/Fourfold/Data/<DataDirName>: world.json + heights.f32 [+ splat.rgba] [+ water layer];
+// openworld = the valley written by unreal/Tools/openworld/gen_world.py, ruins = L_Ruins baked by
+// unreal/Tools/ruins/bake_ruins.py). A level that brings its own meshes (L_Ruins) switches the terrain / water / solids /
+// ground cover off and keeps the sim data, the props (HISMs from world.json, prop_assets names their meshes) and the
+// encounter markers. Otherwise it builds what you see from the SAME heightfield the sim walks on:
 // - terrain: 16 x 16 chunks of 128 m (procedural mesh); every chunk has an 8 m far section, chunks near the camera
 //   get a 2 m section with collision (physics debris lands on it); skirts hide the seams between the two;
 //   vertex colour = splat weights (R grass, G rock, B sand, A ash) for the terrain material;
@@ -32,8 +35,21 @@ class FOURFOLD_API AFourfoldOpenWorld : public AActor
 public:
 	AFourfoldOpenWorld();
 
-	/** The generated world, loaded once per process (null + error when the data is missing or bad). */
+	/** The generated valley (Content/Fourfold/Data/openworld), loaded once per process (null + error when missing or bad). */
 	static std::shared_ptr<const ff::WorldDef> LoadWorldDef(FString* OutError = nullptr);
+	/** Any data set Content/Fourfold/Data/<DataDir> (openworld, ruins), loaded once per process and directory. */
+	static std::shared_ptr<const ff::WorldDef> LoadWorldDefFrom(const FString& DataDir, FString* OutError = nullptr);
+
+	/** Data set this level plays (Content/Fourfold/Data/<DataDirName>). */
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") FString DataDirName = TEXT("openworld");
+	/** What BeginPlay builds from the data (L_Ruins keeps only the props and the encounter markers). */
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bBuildTerrain = true;
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bBuildWater = true;
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bBuildSolids = true;
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bBuildProps = true;
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bBuildCover = true;
+	/** Scale scanned props to game sizes (rocks ~3 m, trees <= 18 m); off when the data carries real sizes. */
+	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") bool bNormalizePropScale = true;
 
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") TSoftObjectPtr<UMaterialInterface> TerrainMaterial;
 	UPROPERTY(EditAnywhere, Category = "Fourfold|OpenWorld") TSoftObjectPtr<UMaterialInterface> WaterMaterial;

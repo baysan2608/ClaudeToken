@@ -89,6 +89,7 @@ protected:
 	FDelegateHandle ScenarioHandle;
 	FDelegateHandle RecenterHandle;
 	bool bLevelHasOpenWorld = false;
+	FString RoamDataDir = TEXT("openworld");   // the level's AFourfoldOpenWorld data set (openworld, ruins)
 	FDelegateHandle SettingsHandle;
 	FDelegateHandle DeactivateHandle;
 	FDelegateHandle BackgroundHandle;

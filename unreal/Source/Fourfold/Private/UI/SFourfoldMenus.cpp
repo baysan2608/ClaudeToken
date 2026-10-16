@@ -539,6 +539,11 @@ void SFourfoldMenus::BuildSettings(FFFPageBuilder& B)
 		}
 	}));
 	B.Button(T(TEXT("Reset progress...")), FSimpleDelegate::CreateLambda([this]() { Push(EFFMenuPage::Confirm); }), false, FText::GetEmpty(), FFUi::Danger);
+
+	B.Section(T(TEXT("Credits")));
+	B.Label(T(TEXT("Jungle Ruins map: the \"Jungle Ruins\" scene by Cristiano Siqueira, with Charlene Teets / Intel Sample Library, "
+	               "licensed CC BY 4.0 (creativecommons.org/licenses/by/4.0). Cut, re-meshed, re-textured and re-scattered for Fourfold.")));
+	B.Label(T(TEXT("Nature scans: Poly Haven (CC0). Full list: unreal/docs/CREDITS.md.")));
 }
 
 void SFourfoldMenus::BuildConfirm(FFFPageBuilder& B)

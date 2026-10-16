@@ -182,9 +182,10 @@ void AFourfoldPlayerController::BeginPlay()
 		{
 			bLevelHasArena = true;
 		}
-		if (const AFourfoldOpenWorld* OW = Cast<AFourfoldOpenWorld>(*It); OW && OW->bAutoStartRoam)
+		if (const AFourfoldOpenWorld* OW = Cast<AFourfoldOpenWorld>(*It))
 		{
-			bLevelHasOpenWorld = true;
+			RoamDataDir = OW->DataDirName;
+			bLevelHasOpenWorld = bLevelHasOpenWorld || OW->bAutoStartRoam;
 		}
 	}
 
@@ -481,14 +482,33 @@ bool AFourfoldPlayerController::StartRoam()
 		return false;
 	}
 	FString Err;
-	std::shared_ptr<const ff::WorldDef> World = AFourfoldOpenWorld::LoadWorldDef(&Err);
+	std::shared_ptr<const ff::WorldDef> World = AFourfoldOpenWorld::LoadWorldDefFrom(RoamDataDir, &Err);
 	if (!World)
 	{
 		UE_LOG(LogFourfold, Error, TEXT("StartRoam: %s"), *Err);
 		return false;
 	}
+	// Dev: -FFRoamSpawn=<x>,<z>,<facing deg> starts at that world point (captures, device tests).
+	FString SpawnSpec;
+	if (FParse::Value(FCommandLine::Get(), TEXT("-FFRoamSpawn="), SpawnSpec, false))
+	{
+		TArray<FString> Parts;
+		SpawnSpec.ParseIntoArray(Parts, TEXT(","));
+		if (Parts.Num() == 3)
+		{
+			auto Moved = std::make_shared<ff::WorldDef>(*World);
+			const double X = FCString::Atod(*Parts[0]);
+			const double Z = FCString::Atod(*Parts[1]);
+			Moved->player_spawn = ff::Vec3(float(X), float(Moved->FloorAt(X, Z)), float(Z));
+			Moved->spawn_facing = float(FMath::DegreesToRadians(FCString::Atod(*Parts[2])));
+			World = Moved;
+			UE_LOG(LogFourfold, Display, TEXT("FFRoamSpawn: (%.1f, %.1f) facing %s deg"), X, Z, *Parts[2]);
+		}
+	}
 	ff::RoamOptions Opts;
 	Opts.kit = "all";   // every technique while the open world has no progression of its own yet
+	// Dev: -FFNoEncounters roams without fights (captures next to an encounter site, device perf runs)
+	Opts.encounters = !FParse::Param(FCommandLine::Get(), TEXT("FFNoEncounters"));
 	if (!Sim->LoadRoam(World, Opts))
 	{
 		return false;
