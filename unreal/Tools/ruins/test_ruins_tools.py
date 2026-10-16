@@ -11,6 +11,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import fetch_ruins as F  # noqa: E402
 import ruins_data as RD  # noqa: E402
 import ruins_spec as RS  # noqa: E402
 
@@ -232,6 +233,29 @@ class Writers(unittest.TestCase):
         bad = self._world(g, [RD.make_site("s_a", "A", "earth", 0, (-10.0, 0.0, 10.0), 0.0, "novice", 9.0),
                               RD.make_site("s_w", "Wet", "water", 1, (0.0, 0.0, 0.0), 0.0, "adept", 9.0)])
         self.assertTrue(any("in the water" in e for e in RD.validate(bad, h, w, g)))
+
+
+class Fetch(unittest.TestCase):
+    def test_selection_keeps_the_pipeline_inputs_only(self):
+        names = ["JungleRuins/", "JungleRuins/credits_license.txt", "JungleRuins/Blender/JungleRuins_Main.blend",
+                 "JungleRuins/USD/JungleRuins_Karma.usda", "JungleRuins/USD/elements/Pyramid/Pyramid.usd",
+                 "JungleRuins/USD/elements/Terrain/Terrain_Cinematic.usd", "JungleRuins/USD/elements/Terrain/Terrain_Extended.usd",
+                 "JungleRuins/USD/elements/Banyan/Banyan.usd", "JungleRuins/USD/elements/QueenForest/PI_S_QueenForest.usd",
+                 "JungleRuins/USD/elements/Pyramid_Moss/PI_S_Moss.usd", "JungleRuins/USD/elements/RiverForest/riverforest_classes.usda",
+                 "JungleRuins/textures/Terrain/Terrain_Cinematic_Normal_4_3.jpg", "JungleRuins/textures/Terrain/Terrain_BaseColor_0_0.jpg",
+                 "JungleRuins/textures/Trees/PX_Prunus_x_yedoensis_Leaf_02_albedo.jpg", "JungleRuins/textures/Plants/Shrub_04_BaseColor.tif",
+                 "JungleRuins/../escape.txt", "Other/credits_license.txt"]
+        self.assertEqual(F.select_members(names), [
+            "JungleRuins/credits_license.txt", "JungleRuins/USD/JungleRuins_Karma.usda",
+            "JungleRuins/USD/elements/Pyramid/Pyramid.usd", "JungleRuins/USD/elements/Terrain/Terrain_Cinematic.usd",
+            "JungleRuins/USD/elements/RiverForest/riverforest_classes.usda",
+            "JungleRuins/textures/Terrain/Terrain_Cinematic_Normal_4_3.jpg", "JungleRuins/textures/Plants/Shrub_04_BaseColor.tif"])
+
+    def test_destinations_stay_inside_the_extract_folder(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertTrue(F.safe_dest(d, "JungleRuins/USD/a.usd").startswith(os.path.abspath(d)))
+            with self.assertRaises(ValueError):
+                F.safe_dest(d, "JungleRuins/../../evil.txt")
 
 
 if __name__ == "__main__":
