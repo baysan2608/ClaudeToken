@@ -7,6 +7,7 @@
 #                                          Xcode's 'Touch UBT generated tiles' pre-action while a direct xcodebuild works)
 #   bash unreal/Tools/mac/ios.sh --check   only check the device and exit
 #   add --no-launch to install without starting the app
+#   IOS_ARGS="-csvCaptureFrames=2400" bash unreal/Tools/mac/ios.sh --fast   passes launch arguments (no spaces inside one)
 # Device: the first paired physical iOS device, or IOS_DEVICE=<name or UDID>. Log: logs/ios_deploy.log
 # Needs: iPad Developer Mode on, unlocked, USB cable.
 # On iOS 27 use this, not the editor's Launch: it also patches the iOS 27 launch crash (see the note before the install).
@@ -98,7 +99,8 @@ echo "== Installing on $NAME"
 xcrun devicectl device install app --device "$UDID" "$APP" >> "$LOG" 2>&1 || { echo "== Install failed (see $LOG)"; exit 1; }
 echo "== Installed $BUNDLE on $NAME"
 if [[ $LAUNCH == 1 ]]; then
-  xcrun devicectl device process launch --device "$UDID" --terminate-existing "$BUNDLE" > /dev/null 2>&1 \
+  # shellcheck disable=SC2086  # IOS_ARGS is split into arguments on purpose
+  xcrun devicectl device process launch --device "$UDID" --terminate-existing "$BUNDLE" ${IOS_ARGS:-} > /dev/null 2>&1 \
     && echo "== Started. Four-finger tap opens the console: stat unit / stat fps" \
     || echo "== Installed, but could not start it remotely: tap the Fourfold icon (unlock the device first)."
 fi

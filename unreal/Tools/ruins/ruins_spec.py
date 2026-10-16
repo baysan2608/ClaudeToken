@@ -50,8 +50,9 @@ THIN = {"tree": 6, "sapling": 8, "seedling": 60, "shrub": 6, "grass": 40, "pyram
 RING_THIN = 20                                                                                    # trees in the ring
 LOD_TRIS = {"tree": (12000, 3500, 1000), "sapling": (6000, 2000, 600), "seedling": (1500, 500, 150),
             "shrub": (1500, 500, 150), "grass": (800, 250, 80), "pyramid_grass": (800, 250, 80)}
-CULL_M = {"tree": 260.0, "sapling": 120.0, "seedling": 60.0, "shrub": 50.0, "grass": 35.0, "pyramid_grass": 35.0}
-SHADOW = {"tree": True, "sapling": True, "seedling": False, "shrub": False, "grass": False, "pyramid_grass": False}
+# Mac 1600x900 spawn view 2026-10-16: 19.7 ms with tree 260 / sapling 120 m and sapling shadows (shadow depths 3.6 ms)
+CULL_M = {"tree": 200.0, "sapling": 80.0, "seedling": 40.0, "shrub": 40.0, "grass": 28.0, "pyramid_grass": 28.0}
+SHADOW = {"tree": True, "sapling": False, "seedling": False, "shrub": False, "grass": False, "pyramid_grass": False}
 BUDGET = {"tree": 1200, "sapling": 600, "seedling": 6500, "shrub": 2300, "grass": 16000, "pyramid_grass": 5000}
 
 # Encounter sites (element: earth 0, water 1, fire 2, air 3). mode: flat = flattest reachable ground within radius of the
