@@ -8,13 +8,26 @@ Audited 21 Oct 2026 with headless Chromium and Lighthouse 12 (mobile, simulated 
 |---|---|---|
 | Lighthouse performance | 80 / 72 | **99 / 99** |
 | Lighthouse SEO | 85 / 85 | **100 / 100** |
-| Lighthouse accessibility | 92 / 92 | **99 / 100** |
-| Largest contentful paint | 2.4 s / 4.1 s | 2.1 s / 2.0 s |
-| Total blocking time | 550 ms / 480 ms | 40 ms / 0 ms |
+| Lighthouse accessibility | 92 / 92 | **100 / 100** |
+| Largest contentful paint | 2.4 s / 4.1 s | 2.2 s / 2.0 s |
+| Total blocking time | 550 ms / 480 ms | 0 ms / 0 ms |
 | Layout shift (CLS) | 0.112 / 0 | 0 / 0 |
-| Page weight | 1,180 KB / 1,132 KB | 341 KB / 213 KB |
+| Page weight | 1,180 KB / 1,132 KB | 273 KB / 190 KB |
 
 The redesign was measured on a local server. Its images still load from the real Shopify CDN, so the numbers are close to what production hosting will give, but not identical.
+
+Collection pages also score 99–100 in every category. Underwear: 394 KB. Handbags: 140 KB.
+
+## Checkout & operations: most urgent
+
+These were found by querying the store's own cart and shipping-rate endpoints.
+
+1. **No shipping rates outside Norway.** For Denmark, Finland, Sweden, Germany, France, the UK and the US, the store returns no shipping options, whether the cart holds a NOK 245 top or a NOK 7,100 bag. That normally means checkout can't be completed for international customers. Yet the policy pages promise UPS delivery to Europe and worldwide, plus tax-free shopping abroad. **Check Shopify admin → Settings → Shipping and delivery.** Either add international zones, or remove the international promises.
+2. **Free delivery in Norway is never mentioned.** Every Norwegian order ships free, from the cheapest to the most expensive item. It's the strongest selling point the store has, and it appears nowhere on the site.
+3. **The "Size Guide" section on product pages is an empty heading.** The "Care Guide" tab is empty too.
+4. **The payment-icons list in the footer is empty.** Shoppers can't see how they can pay until checkout.
+
+The redesign leads with "Free delivery in Norway". The international messaging (tax-free abroad, UPS delivery) is behind a build switch (`INTERNATIONAL=1`), to turn on once shipping zones are fixed. Until then, the site tells international visitors to email the shop.
 
 ## What the live site is
 
@@ -53,7 +66,8 @@ The redesign was measured on a local server. Its images still load from the real
 
 **SEO**
 - 131 pages: home, 17 collections, 107 product pages and 5 content pages.
-- Every page has a unique, keyword-led title and meta description, one H1, a canonical URL, Open Graph data and breadcrumbs.
+- Every page has a unique, keyword-led title (under 60 characters) and meta description, one H1, a canonical URL, Open Graph data and breadcrumbs. I checked all 131 pages for duplicates and invalid structured data, and found none.
+- Every collection landing page has its own copy, with internal links to related styles and the guide.
 - **New landing pages that rank for real searches:**
   - 7 style pages (camisoles, tank tops, long-sleeve tops & turtlenecks, …)
   - 2 material pages (pure silk, wool & silk)
@@ -62,7 +76,7 @@ The redesign was measured on a local server. Its images still load from the real
 - **Readable product names**, decoded from the Italian codes (SS = camisole, SL = tank, MM = short sleeve, ML = long sleeve). `Emily_SS` becomes "Emily Camisole". The original code is kept on the page for anyone who searches by style number.
 - Structured data:
   - `OnlineStore` with the return policy
-  - `Product` with an offer per variant (price, stock, material, colour)
+  - `Product` with an offer per variant (price, stock, material, colour) and shipping details (free, 2–5 days, Norway)
   - `BreadcrumbList`, `CollectionPage`/`ItemList`, `FAQPage`, `Article`
 - Same `/products/…` and `/collections/…` paths as Shopify, so moving needs no redirects for existing pages (static hosts add the trailing slash automatically). Includes `sitemap.xml` and `robots.txt`.
 
@@ -72,6 +86,15 @@ The redesign was measured on a local server. Its images still load from the real
 - Product pages have colour and size pickers tied to the real Shopify variants, with sold-out handling. They also have a sticky "Add to bag" bar on mobile, "More from the Emily line" cross-sells, and material & care / size & fit / delivery sections.
 - The cart drawer checks out through the **real Shopify checkout** using cart permalinks (`/cart/{variant}:{qty}`).
 - FAQ, a rewritten "Our story" page, and newsletter and contact forms that post to the Shopify store.
+
+**Shopping flow (mobile-first)**
+- The menu has collapsible categories plus links to shipping and contact. Search has its own close button and ranks bestsellers first. Keyboard focus stays inside open panels and returns to the button that opened them.
+- Style and colour filters scroll sideways in one row on phones, so products start above the fold.
+- A sticky bar on product pages shows from the start. It asks the shopper to choose a size before it will add an item.
+- The bag shows bestsellers ("Goes well with"). The data loads only when the bag is opened.
+- Numbered lines get readable names that include material and line, e.g. "Silk Camisole 909" and "Wool & Silk Long-Sleeve Top 589". Product pages cross-sell the rest of the same line.
+
+**Migration & hosting**: `_redirects` sends old Shopify URLs to their new pages, including the photo gallery, the returns page, `/collections/frontpage`, `/collections/*/products/*` and `/policies/*`. `_headers` sets long-term caching for assets and basic security headers.
 
 **Performance**: no framework, under 9 KB of JavaScript (3 KB gzipped), self-hosted fonts (~50 KB), and responsive WebP images from the Shopify CDN with fixed dimensions (no layout shift).
 
@@ -84,7 +107,7 @@ Product descriptions for underwear are written per style and material. The care 
 ## Recommended next steps (owner decisions)
 
 1. **Collect reviews** (e.g. Judge.me) and add `aggregateRating` once real reviews exist.
-2. Decide on a **free-shipping threshold** (e.g. NOK 1,000) and/or **free size exchanges**, then add it to the announcement bar.
+2. **Fix international shipping zones** (see "Checkout & operations"), then build with `INTERNATIONAL=1`. Consider **free size exchanges**: free delivery in Norway already exists, and free exchanges would remove the last risk of buying the wrong size.
 3. Add **Vipps and Klarna**. The terms page names PayPal as the payment gateway, and Norwegian shoppers expect Vipps.
 4. Add a **Norwegian (nb) version** with `hreflang`.
 5. Do one **consistent photo shoot**, especially for jewellery (currently on mannequins) and the numbered underwear lines.

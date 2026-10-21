@@ -9,7 +9,15 @@ python3 build.py                        # writes the static site to dist/
 python3 -m http.server 8000 -d dist     # open http://localhost:8000
 ```
 
-`NOINDEX=1 python3 build.py` builds a preview copy that search engines won't index. Use it for any staging URL.
+Build switches (environment variables):
+
+- `NOINDEX=1` builds a preview copy that search engines won't index. Use it for any staging URL.
+- `INTERNATIONAL=1` turns the export messaging back on (tax-free abroad, UPS delivery to Europe and worldwide). Only use it once international shipping zones are enabled in Shopify. Today the checkout only returns rates for Norway.
+- `SITE_URL=…` sets the canonical domain. Default: `https://www.closetoskin.com`.
+
+The build also writes `_redirects` (old Shopify URLs → new pages) and `_headers` (caching and security). Netlify and Cloudflare Pages read both automatically.
+
+`screenshots/mobile-walkthrough.mp4` is a 50-second phone walkthrough: home, menu, collection, product, bag, search.
 
 ## How it fits together
 

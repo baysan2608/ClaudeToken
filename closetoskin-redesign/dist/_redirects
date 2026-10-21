@@ -1,0 +1,8 @@
+/pages/photo-gallery /collections/all/ 301
+/pages/returns-exchanges /pages/shipping-returns/ 301
+/collections/frontpage /collections/bestsellers/ 301
+/collections/frontpage/ /collections/bestsellers/ 301
+/collections/:c/products/:h /products/:h/ 301
+/policies/refund-policy /pages/shipping-returns/ 301
+/policies/shipping-policy /pages/shipping-returns/ 301
+/policies/* /pages/terms-conditions/ 301

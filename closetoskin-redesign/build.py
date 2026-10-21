@@ -19,6 +19,9 @@ ROOT = Path(__file__).parent
 DIST = ROOT / "dist"
 SITE_URL = os.environ.get("SITE_URL", "https://www.closetoskin.com").rstrip("/")
 NOINDEX = os.environ.get("NOINDEX") == "1"
+# The live checkout (checked 21 Oct 2026) only returns shipping rates for Norway, where delivery is free.
+# Set INTERNATIONAL=1 once international shipping zones are enabled in Shopify to restore the export messaging.
+INTERNATIONAL = os.environ.get("INTERNATIONAL") == "1"
 CDN = "https://cdn.shopify.com"
 BRAND = "Closetoskin"
 EMAIL = "info@closetoskin.com"
@@ -70,6 +73,22 @@ COLOURS = {
 }
 LABEL_FIX = {"Ivony": "Ivory", "Small": "S", "Medium": "M", "Large": "L"}
 
+# Unique closing copy per landing page (SEO + help with choosing).
+L = lambda href, text: f'<a class="link" href="{href}">{text}</a>'
+COLLECTION_COPY = {
+    "camisoles": f"<h2>How to wear a wool &amp; silk camisole</h2><p>A camisole is the most discreet base layer: thin straps disappear under shirts, knitwear and dresses, and the fine knit adds warmth without bulk. Choose {L('/collections/silk-underwear/', 'pure silk')} for a light, smooth layer in spring and summer, or {L('/collections/wool-silk-underwear/', 'wool &amp; silk')} for warmth from autumn to spring.</p><p>Want more coverage on the shoulders? Try a {L('/collections/tank-tops/', 'tank top')} or a {L('/collections/short-sleeve-tops/', 'short-sleeve top')}.</p>",
+    "tank-tops": f"<h2>Tank tops: extra coverage, same light feel</h2><p>Wider shoulder straps make a tank top warmer than a camisole and easier to wear on its own. It sits neatly under blouses, jumpers and jackets, and works as an everyday base layer all year.</p><p>For the coldest days, step up to a {L('/collections/long-sleeve-tops/', 'long-sleeve top or turtleneck')}.</p>",
+    "short-sleeve-tops": f"<h2>The in-between layer</h2><p>Short sleeves add warmth to the upper arms while staying invisible under knitwear and jackets, which makes them ideal for offices, travel and changeable weather.</p><p>Compare with our {L('/collections/camisoles/', 'camisoles')} and {L('/collections/long-sleeve-tops/', 'long-sleeve tops')}, or read the {L('/pages/wool-silk-guide/', 'wool &amp; silk guide')}.</p>",
+    "long-sleeve-tops": f"<h2>The warmest everyday layer</h2><p>A long-sleeve top in wool &amp; silk is the classic Nordic base layer: thin enough to wear under a shirt or jumper, warm enough for winter. Turtlenecks and mock necks add warmth at the neck and look polished on their own.</p><p>Pair with {L('/collections/leggings-briefs/', 'matching leggings')} for a complete base layer, or add a {L('/collections/cardigans-boleros/', 'cardigan or bolero')} on top.</p>",
+    "bodysuits": f"<h2>Why choose a bodysuit?</h2><p>A bodysuit stays tucked in all day, so there is no riding up and no extra fabric at the waistband. That means a smooth line under trousers and skirts and warmth where you need it most.</p><p>Prefer separates? See our {L('/collections/tank-tops/', 'tank tops')} and {L('/collections/long-sleeve-tops/', 'long-sleeve tops')}.</p>",
+    "cardigans-boleros": f"<h2>Soft layers to wear on top</h2><p>Our cardigans, boleros and gilets are knitted in the same fine wool &amp; silk as our underwear, so they layer smoothly over a {L('/collections/camisoles/', 'camisole')} or {L('/collections/tank-tops/', 'tank top')} without bulk. A bolero warms the shoulders and arms; a cardigan gives full coverage.</p>",
+    "leggings-briefs": f"<h2>Complete the base layer</h2><p>Wool &amp; silk leggings add warmth under trousers in winter and are comfortable on their own at home. Culotte briefs and shorts in silk and wool &amp; silk match our {L('/collections/camisoles/', 'camisoles')} and {L('/collections/long-sleeve-tops/', 'tops')}.</p>",
+    "silk-underwear": f"<h2>Why pure silk?</h2><p>Silk is one of the lightest natural fibres. It feels smooth and cool to the touch, and stays comfortable in warm and cool weather alike, which makes it ideal under fine blouses and for summer. Our pure silk lines come in camisoles, tank tops, long-sleeve tops and culotte briefs.</p><p>Need more warmth? Choose {L('/collections/wool-silk-underwear/', 'wool &amp; silk')}. Read more in our {L('/pages/wool-silk-guide/', 'guide')}.</p>",
+    "wool-silk-underwear": f"<h2>The best of both fibres</h2><p>Wool insulates and manages moisture, so you stay warm without overheating. Silk adds softness and takes away the itch some people feel from pure wool. Our blends (85% wool / 15% silk and 70% wool / 30% silk) make thin, second-skin layers for everyday wear from autumn to spring.</p><p>Find your style: {L('/collections/camisoles/', 'camisoles')}, {L('/collections/long-sleeve-tops/', 'long-sleeve tops')} or {L('/collections/bodysuits/', 'bodysuits')}.</p>",
+    "handbags": f"<h2>What is the tubular method?</h2><p>Instead of weaving flat panels and sewing them together, the leather is woven by hand in a continuous tube. The result is a bag with no side seams: stronger, softer and more refined. Every bag is made in Italy and finished with gold-tone hardware.</p><p>Complete the look with handmade {L('/collections/accessories/', 'Venetian jewellery')}.</p>",
+    "accessories": f"<h2>About Maria Calderara</h2><p>Maria Calderara is an Italian designer whose jewellery is handmade in Venice. Her long necklaces, bold bracelets, earrings and rings are made by hand in small numbers: pieces to wear every day and keep for years.</p><p>Browse by type: {L('/collections/necklaces/', 'necklaces')}, {L('/collections/bracelets/', 'bracelets')}, {L('/collections/earrings/', 'earrings')} and {L('/collections/rings/', 'rings')}.</p>",
+}
+
 STYLE_COPY = {
     "Camisole": "Thin straps and a close, smooth fit make it an invisible base layer under shirts, knitwear and dresses.",
     "Tank Top": "Wider shoulder straps give extra coverage and warmth, and it layers neatly under blouses and jumpers.",
@@ -109,7 +128,7 @@ def material_label(raw):
     return raw
 
 
-def parse_underwear(title):
+def parse_underwear(title, mat=""):
     """Turn store codes like 'Emily_SS' or '909 04 ML' into readable names + a style group."""
     t = title.replace("Am_lie", "Amélie").replace("_", " ").replace("-", " ")
     toks = t.split()
@@ -133,8 +152,9 @@ def parse_underwear(title):
     else: raise ValueError(f"unknown style: {title}")
     if toks[0][0].isdigit():
         digits = "".join(x for x in toks if x.isdigit())
-        code = f"{digits[:3]}-{digits[3:5]}" if len(digits) >= 5 else digits
-        return f"{style} {code}", style, group, None
+        line = digits[:3]
+        prefix = {"Pure silk": "Silk", "Wool & silk": "Wool & Silk"}.get(mat, mat)
+        return f"{prefix} {style} {line}".strip(), style, group, line
     model = toks[0].capitalize() if toks[0].islower() else toks[0]
     return f"{model} {style}", style, group, model
 
@@ -160,7 +180,7 @@ def load_catalog():
         facts = clean_body(p["body_html"])
         style = group = model = None
         if cat == "underwear":
-            name, style, group, model = parse_underwear(p["title"])
+            name, style, group, model = parse_underwear(p["title"], mat)
             desc = [f"The {name} is a fine-knit layer made to be worn close to the skin. {STYLE_COPY[style]}", MATERIAL_COPY.get(mat, "")]
         elif cat == "handbags":
             name = BAG_NAMES.get(p["title"], p["title"])
@@ -227,6 +247,7 @@ ICONS = {
     "leaf": '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14Z"/><path d="M5 19 13 11"/></svg>',
     "truck": '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.5"/><circle cx="17" cy="17.5" r="1.5"/></svg>',
     "return": '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+    "chat": '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/><path d="M8 9h8M8 12h5"/></svg>',
     "globe": '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>',
 }
 
@@ -243,17 +264,18 @@ def header(active):
     mats = "".join(f'<a href="/collections/{s}/">{v[0]}</a>' for s, v in MATERIALS.items())
     jewel = "".join(f'<a href="/collections/{s}/">{v[1]}</a>' for s, v in JEWELLERY_TYPES.items())
     return f'''<a class="skip" href="#main">Skip to content</a>
-<div class="announce"><span>Tax-free shopping outside Norway</span><span>Delivery in 2–5 days across Norway &amp; Europe</span><span>14-day returns &amp; size exchanges</span></div>
+<div class="announce">{"".join(f"<span>{e(x)}</span>" for x in PERKS)}</div>
 <header class="header"><div class="wrap">
-<button class="icon-btn menu-toggle" type="button" data-open-nav aria-label="Open menu">{ICONS["menu"]}</button>
+<button class="icon-btn menu-toggle" type="button" data-open-nav aria-label="Open menu" aria-expanded="false">{ICONS["menu"]}</button>
 <a class="logo" href="/" aria-label="{BRAND} home">{logo()}</a>
 <nav class="nav" aria-label="Main">
 <button class="icon-btn nav-close" type="button" data-close aria-label="Close menu">{ICONS["close"]}</button>
-<div class="has-menu">{a("/collections/underwear/", "Underwear")}<div class="menu"><strong>By style</strong>{styles}<strong>By material</strong>{mats}</div></div>
+<div class="has-menu">{a("/collections/underwear/", "Underwear")}<button class="sub-toggle" type="button" aria-expanded="false" aria-label="Underwear categories"></button><div class="menu"><strong>By style</strong>{styles}<strong>By material</strong>{mats}</div></div>
 {a("/collections/handbags/", "Handbags")}
-<div class="has-menu">{a("/collections/accessories/", "Jewellery")}<div class="menu"><strong>By type</strong>{jewel}</div></div>
+<div class="has-menu">{a("/collections/accessories/", "Jewellery")}<button class="sub-toggle" type="button" aria-expanded="false" aria-label="Jewellery categories"></button><div class="menu"><strong>By type</strong>{jewel}</div></div>
 {a("/pages/wool-silk-guide/", "Wool &amp; Silk Guide")}
 {a("/pages/about-us/", "Our Story")}
+<div class="nav-extra"><a href="/pages/shipping-returns/">Shipping &amp; returns</a><a href="/pages/contact/">Contact us</a><a href="mailto:{EMAIL}">{EMAIL}</a></div>
 </nav>
 <div class="icons">
 <button class="icon-btn" type="button" data-open-search aria-label="Search">{ICONS["search"]}</button>
@@ -275,9 +297,9 @@ def footer():
 <div class="overlay" aria-hidden="true"></div>
 <aside class="drawer" aria-label="Shopping bag"><header><h2>Your bag</h2><button class="icon-btn" id="cart-close" type="button" data-close aria-label="Close bag">{ICONS["close"]}</button></header>
 <div class="lines" id="cart-lines"></div>
-<footer><div class="sum"><span>Subtotal</span><span id="cart-total">NOK 0</span></div><p class="muted" style="margin:0;font-size:.85rem">Shipping calculated at checkout. Customers outside Norway shop tax-free.</p>
+<footer><div class="sum"><span>Subtotal</span><span id="cart-total">NOK 0</span></div><p class="muted" style="margin:0;font-size:.85rem">Free delivery in Norway · VAT included{" · tax-free outside Norway" if INTERNATIONAL else ""}</p>
 <a class="btn btn-block" id="checkout" href="#">Secure checkout</a></footer></aside>
-<div class="search" role="dialog" aria-label="Search products"><label class="sr-only" for="q">Search products</label><input id="q" type="search" placeholder="Search camisoles, silk, bags…" autocomplete="off"><ul class="results" id="results"></ul></div>'''
+<div class="search" role="dialog" aria-label="Search products"><div class="search-bar"><label class="sr-only" for="q">Search products</label><input id="q" type="search" placeholder="Search camisoles, silk, bags…" autocomplete="off"><button class="icon-btn" type="button" data-close aria-label="Close search">{ICONS["close"]}</button></div><ul class="results" id="results"></ul></div>'''
 
 
 def page(path, title, desc, body, active="", ld=(), og_image=None, preload=None):
@@ -331,16 +353,17 @@ def crumbs(items):
 
 def card(p, eager=False, pos=None):
     ims = p["images"][:2]
-    alt = f"{p['name']}" + (f" in {p['material'].lower()}" if p["material"] else "")
-    imgs = "".join(picture(im, alt if k == 0 else "", "(max-width:700px) 50vw, (max-width:1024px) 33vw, 300px", (360, 540, 720), eager and k == 0) for k, im in enumerate(ims))
-    sw = "".join(f'<i style="background:{COLOURS.get(c, "#bbb")}" title="{e(LABEL_FIX.get(c, c))}"></i>' for c in p["colours"][:6])
     meta = p["material"] or ("Made in Italy" if p["cat"] == "handbags" else "Handmade in Venice" if "Calderara" in p["name"] else "")
+    alt = p["name"] + (f", {meta.lower()}" if meta else ", jewellery")
+    imgs = picture(ims[0], alt, "(max-width:700px) 50vw, (max-width:1024px) 33vw, 300px", (360, 540, 720), eager) if ims else ""
+    hover = f' data-hover="{img_url(ims[1], 540)}"' if len(ims) > 1 else ""
+    sw = "".join(f'<i style="background:{COLOURS.get(c, "#bbb")}" title="{e(LABEL_FIX.get(c, c))}"></i>' for c in p["colours"][:6])
     ncol = len(p["colours"])
     tag = f'<span class="tag">{ncol} colours</span>' if ncol > 1 else ""
     filt = " ".join(x for x in [p["group"] or "", "silk" if p["material"] == "Pure silk" else "woolsilk" if p["material"] else ""] if x)
     cols = " ".join(re.sub(r"\W", "", LABEL_FIX.get(c, c)).lower() for c in p["colours"])
     return (f'<article class="card" data-f="{filt}" data-c="{cols}" data-p="{p["price"]:.0f}" data-d="{p["created"][:10]}" data-i="{p["i"] if pos is None else pos}">'
-            f'<a href="{p["url"]}"><span class="media">{imgs}{tag}</span><h3>{e(p["name"])}</h3></a>'
+            f'<a href="{p["url"]}"><span class="media"{hover}>{imgs}{tag}</span><h3>{e(p["name"])}</h3></a>'
             f'<div class="meta">{e(meta)}</div><div class="price">{money(p["price"])}</div>{f"<div class=swatches>{sw}</div>" if sw else ""}</article>')
 
 
@@ -353,9 +376,20 @@ ORG_LD = {
                                 "merchantReturnDays": 14, "returnMethod": "https://schema.org/ReturnByMail", "returnFees": "https://schema.org/ReturnFeesCustomerResponsibility"},
 }
 
+PERKS = (["Free delivery in Norway", "Tax-free shopping outside Norway", "14-day returns & size exchanges"] if INTERNATIONAL
+         else ["Free delivery in Norway", "Delivered in 2–5 days", "14-day returns & size exchanges"])
+SHIP_META = "Free delivery in Norway, 14-day returns" + (", tax-free abroad" if INTERNATIONAL else "")
+SHIP_LD = {"@type": "OfferShippingDetails", "shippingRate": {"@type": "MonetaryAmount", "value": 0, "currency": "NOK"},
+           "shippingDestination": {"@type": "DefinedRegion", "addressCountry": "NO"},
+           "deliveryTime": {"@type": "ShippingDeliveryTime",
+                            "handlingTime": {"@type": "QuantitativeValue", "minValue": 0, "maxValue": 1, "unitCode": "DAY"},
+                            "transitTime": {"@type": "QuantitativeValue", "minValue": 2, "maxValue": 5, "unitCode": "DAY"}}}
 FAQ = [
-    ("How long does delivery take?", "Orders ship Monday to Friday. Delivery takes 2–5 days within Norway and Europe and 4–10 days to the rest of the world. Norwegian orders ship with Posten, international orders with UPS."),
-    ("Can I shop tax-free from outside Norway?", "Yes. Our prices include 25% Norwegian VAT. Customers outside Norway shop tax-free, but are responsible for any import duties and taxes in their own country."),
+    ("How long does delivery take?", "Delivery within Norway is free on every order and takes 2–5 business days with Posten. Orders ship Monday to Friday; weekend orders ship the next business day."
+     + (" International orders ship with UPS: 2–5 days within Europe, 4–10 days to the rest of the world." if INTERNATIONAL else "")),
+    ("Can I shop tax-free from outside Norway?", "Yes. Our prices include 25% Norwegian VAT. Customers outside Norway shop tax-free, but are responsible for any import duties and taxes in their own country.")
+    if INTERNATIONAL else
+    ("Do you ship outside Norway?", f"Our online checkout currently delivers within Norway. For orders to other countries, email {EMAIL} and we'll help you."),
     ("What is your return and exchange policy?", "You can return or exchange items within 14 days of delivery, as long as they are in perfect condition with tags and seal attached. We happily exchange to a different size, subject to stock. Return shipping is paid by the customer."),
     ("What are your underwear made of?", "Our underwear is made from natural fibres: wool & silk blends (85/15 and 70/30), pure 100% silk, and a cotton, wool & silk blend. The exact composition is listed on every product page."),
     ("How do I choose my size?", "Our underwear comes in S, M and L with a close, second-skin fit. If you are between sizes or prefer a looser layer, choose the larger size. You can always exchange within 14 days."),
@@ -391,15 +425,15 @@ def build_home(products, best):
     jewels = [next(p for p in calderara if p["group"] == g) for g in ("bracelets", "necklaces", "earrings", "rings")]
     usp = f'''<div class="wrap usp">
 <div>{ICONS["leaf"]}<span><strong>Natural fibres</strong>Wool, silk and cotton, worn close to the skin</span></div>
-<div>{ICONS["truck"]}<span><strong>Fast delivery</strong>2–5 days across Norway &amp; Europe</span></div>
+<div>{ICONS["truck"]}<span><strong>Free delivery in Norway</strong>2–5 days with Posten, on every order</span></div>
 <div>{ICONS["return"]}<span><strong>14-day returns</strong>Easy size exchanges</span></div>
-<div>{ICONS["globe"]}<span><strong>Tax-free abroad</strong>No Norwegian VAT outside Norway</span></div></div>'''
+{f'<div>{ICONS["globe"]}<span><strong>Tax-free abroad</strong>No Norwegian VAT outside Norway</span></div>' if INTERNATIONAL else f'<div>{ICONS["chat"]}<span><strong>Personal service</strong>Real people in Oslo, Mon–Fri</span></div>'}</div>'''
     body = f'''<section class="hero">
 <div class="hero-copy"><span class="eyebrow">Wool · Silk · Cotton</span>
 <h1>Wool &amp; silk underwear, made to live close to your skin</h1>
 <p class="lead">Fine-knit camisoles, tops and bodysuits in natural wool, silk and cotton. Warm without bulk, soft enough to forget you're wearing them. Plus hand-woven Italian leather bags and handmade Venetian jewellery.</p>
 <div class="hero-cta"><a class="btn" href="/collections/underwear/">Shop underwear</a><a class="btn btn-ghost" href="/collections/bestsellers/">See bestsellers</a></div>
-<ul class="ticks"><li>Tax-free outside Norway</li><li>2–5 day delivery in Europe</li><li>14-day size exchanges</li></ul></div>
+<ul class="ticks"><li>Free delivery in Norway</li><li>14-day size exchanges</li><li>Natural fibres since 2009</li></ul></div>
 <div class="hero-media">{picture(hero_im, "Woman wearing an ivory camisole with a lace neckline", hero_sizes, (540, 720, 900, 1200), eager=True)}</div>
 </section>
 {usp}
@@ -433,8 +467,8 @@ def build_home(products, best):
 <form class="inline-form" method="post" action="{SITE_URL}/contact#newsletter"><input type="hidden" name="form_type" value="customer"><input type="hidden" name="utf8" value="✓"><input type="hidden" name="contact[tags]" value="newsletter">
 <label class="sr-only" for="nl">Email</label><input id="nl" type="email" name="contact[email]" required placeholder="Your email" autocomplete="email"><button class="btn" type="submit">Subscribe</button></form></div></section>'''
     site_ld = {"@context": "https://schema.org", "@type": "WebSite", "name": BRAND, "url": SITE_URL + "/", "publisher": {"@id": SITE_URL + "/#org"}}
-    page("/", "Wool & Silk Underwear, Woven Leather Bags & Jewellery | Closetoskin",
-         "Shop fine wool & silk and pure silk underwear: camisoles, long-sleeve tops and bodysuits. Plus hand-woven Italian leather bags. 2–5 day delivery, tax-free outside Norway.",
+    page("/", "Wool & Silk Underwear and Woven Leather Bags | Closetoskin",
+         f"Shop fine wool & silk and pure silk underwear: camisoles, long-sleeve tops and bodysuits. Plus hand-woven Italian leather bags. {SHIP_META}.",
          body, "/", [ORG_LD, site_ld], img_url(hero_im, 1200), (img_url(hero_im, 720), hero_srcset, hero_sizes))
 
 
@@ -459,7 +493,7 @@ def build_collection(path, h1, title, desc, intro, items, crumb, pills=None, fil
     else:
         tool = '<div style="height:28px"></div>'
     body = f'''{nav}<div class="wrap"><header class="col-head"><h1>{e(h1)}</h1><p class="lead">{e(intro)}</p>{pill_html}</header>
-{tool}<div class="grid" id="grid">{"".join(card(p, k < 4, k) for k, p in enumerate(items))}</div>
+{tool}<h2 class="sr-only">Products</h2><div class="grid" id="grid">{"".join(card(p, k < 4, k) for k, p in enumerate(items))}</div>
 {f'<section class="section seo-copy">{seo}</section>' if seo else '<div style="height:80px"></div>'}</div>'''
     item_ld = {"@context": "https://schema.org", "@type": "CollectionPage", "name": h1, "description": desc, "url": SITE_URL + path,
                "mainEntity": {"@type": "ItemList", "numberOfItems": len(items), "itemListElement": [
@@ -472,7 +506,7 @@ def build_collections(products, best):
     best_ids = {p["handle"] for p in best}
     # featured order: bestsellers, then named lines (lifestyle photography), then numbered styles; bottoms last
     under = sorted((p for p in products if p["cat"] == "underwear"),
-                   key=lambda p: (p["handle"] not in best_ids, p["group"] == "leggings-briefs", p["model"] is None, p["model"] or "", p["i"]))
+                   key=lambda p: (p["handle"] not in best_ids, p["group"] == "leggings-briefs", p["model"].isdigit(), p["model"], p["i"]))
     bags = [p for p in products if p["cat"] == "handbags"]
     jew = [p for p in products if p["cat"] == "accessories"]
     # put the most giftable / recognisable pieces first
@@ -482,32 +516,32 @@ def build_collections(products, best):
     seo_under = '''<h2>Wool &amp; silk underwear for every season</h2>
 <p>Closetoskin underwear is knitted from natural fibres that work with your body: wool to keep you warm and dry, silk for a smooth, light feel against the skin. Choose a thin-strap camisole as an invisible base layer, a tank top for more coverage, or a long-sleeve top and turtleneck for the coldest days.</p>
 <p>Every piece comes in sizes S, M and L with a close, second-skin fit, in timeless colours like black, ivory, ash grey and powder. Not sure where to start? Read our <a class="link" href="/pages/wool-silk-guide/">wool &amp; silk guide</a>.</p>'''
-    build_collection("/collections/underwear/", "Wool & silk underwear", "Wool & Silk Underwear for Women – Camisoles, Tops & Bodysuits | Closetoskin",
-                     f"Shop {len(under)} styles of wool & silk and pure silk underwear: camisoles, tank tops, long-sleeve tops, bodysuits and cardigans in S–L. Tax-free outside Norway.",
+    build_collection("/collections/underwear/", "Wool & silk underwear", "Wool & Silk Underwear for Women | Closetoskin",
+                     f"Shop {len(under)} styles of wool & silk and pure silk underwear: camisoles, tank tops, long-sleeve tops, bodysuits and cardigans in S–L. {SHIP_META}.",
                      "Fine-knit layers in wool & silk, pure silk and cotton blends: warm, breathable and soft enough to wear all day.",
                      under, [home, ("Underwear", None)], style_pills, seo=seo_under)
     for slug, (sing, plural, intro) in UNDERWEAR_STYLES.items():
         items = [p for p in under if p["group"] == slug]
         build_collection(f"/collections/{slug}/", plural, f"{plural} in Wool & Silk | Closetoskin",
-                         f"{intro} {len(items)} styles in S–L. Delivery in 2–5 days across Europe, 14-day exchanges.",
-                         intro, items, [home, ("Underwear", "/collections/underwear/"), (plural, None)], style_pills)
+                         f"{intro} {len(items)} styles in S–L. {SHIP_META}.",
+                         intro, items, [home, ("Underwear", "/collections/underwear/"), (plural, None)], style_pills, seo=COLLECTION_COPY.get(slug, ""))
     for slug, (h1, intro) in MATERIALS.items():
         items = [p for p in under if (p["material"] == "Pure silk") == (slug == "silk-underwear")]
         build_collection(f"/collections/{slug}/", h1, f"{h1} for Women | Closetoskin",
-                         f"{intro} {len(items)} styles from camisoles to long-sleeve tops. Tax-free outside Norway.",
-                         intro, items, [home, ("Underwear", "/collections/underwear/"), (h1, None)], style_pills)
+                         f"{intro} {len(items)} styles from camisoles to long-sleeve tops. {SHIP_META}.",
+                         intro, items, [home, ("Underwear", "/collections/underwear/"), (h1, None)], style_pills, seo=COLLECTION_COPY.get(slug, ""))
     build_collection("/collections/handbags/", "Hand-woven leather handbags", "Hand-Woven Italian Leather Handbags | Closetoskin",
                      "Seamless hand-woven leather handbags made in Italy using the tubular method: shopper, hobo, pochette and mini messenger. Free size exchanges, 14-day returns.",
                      "Woven by hand in Italy using the tubular method, so every bag is seamless. Soft leather, gold-tone hardware, made to last for years.",
-                     bags, [home, ("Handbags", None)], filters=False)
+                     bags, [home, ("Handbags", None)], filters=False, seo=COLLECTION_COPY["handbags"])
     jpills = [("All jewellery", "/collections/accessories/")] + [(v[1], f"/collections/{s}/") for s, v in JEWELLERY_TYPES.items()]
     build_collection("/collections/accessories/", "Jewellery", "Maria Calderara Jewellery – Handmade in Venice | Closetoskin",
                      "Necklaces, bracelets and earrings by Italian designer Maria Calderara, handmade in Venice, plus pearl and solitaire studs and pendants.",
                      "Sculptural necklaces, bracelets and earrings by Italian designer Maria Calderara, handmade in Venice, alongside fine pearl and solitaire pieces.",
-                     jew, [home, ("Jewellery", None)], jpills)
+                     jew, [home, ("Jewellery", None)], jpills, seo=COLLECTION_COPY["accessories"])
     for slug, (sing, plural, intro) in JEWELLERY_TYPES.items():
         items = [p for p in jew if p["group"] == slug]
-        build_collection(f"/collections/{slug}/", plural, f"{plural} – Handmade Italian Jewellery | Closetoskin", intro, intro, items,
+        build_collection(f"/collections/{slug}/", plural, f"{plural} – Handmade Jewellery | Closetoskin", intro, intro, items,
                          [home, ("Jewellery", "/collections/accessories/"), (plural, None)], jpills)
     build_collection("/collections/bestsellers/", "Bestsellers", "Bestselling Wool & Silk Underwear | Closetoskin",
                      "Our customers' favourite wool & silk camisoles, tops and bodysuits.", "The layers our customers come back for, season after season.",
@@ -555,28 +589,28 @@ def build_product(p, products):
 <p>Hand wash in cool water with a mild wool or silk detergent. Don't wring; dry flat away from direct heat. Always check the care label.</p></div></details>
 <details><summary>Size &amp; fit</summary><div class="body"><p>Close, second-skin fit in S, M and L. Between sizes or prefer a looser layer? Size up. Exchanges to another size are free of hassle within 14 days.</p></div></details>'''
     acc = f'''<div class="acc"><details open><summary>Description</summary><div class="body">{desc_html}</div></details>{mat_block}
-<details><summary>Delivery &amp; returns</summary><div class="body"><p>Ships Monday–Friday. 2–5 days within Norway &amp; Europe (Posten / UPS), 4–10 days worldwide. Returns and size exchanges within 14 days of delivery. <a class="link" href="/pages/shipping-returns/">Full policy</a></p></div></details></div>'''
+<details><summary>Delivery &amp; returns</summary><div class="body"><p>Free delivery within Norway in 2–5 business days with Posten{"; 2–5 days within Europe and 4–10 days worldwide with UPS" if INTERNATIONAL else ""}. Orders ship Monday–Friday. Returns and size exchanges within 14 days of delivery. <a class="link" href="/pages/shipping-returns/">Full policy</a></p></div></details></div>'''
     chips = "".join(f'<span class="chip">{e(c)}</span>' for c in [p["material"], "Made in Italy" if p["cat"] == "handbags" else "", "Handmade in Venice" if "Calderara" in p["name"] else ""] if c)
     code = f'<div class="code">Style {e(p["code"])}</div>' if p["code"] != p["name"] else ""
     # related: same model line first, then same group
     line = [x for x in products if x is not p and p["model"] and x["model"] == p["model"]]
     same = [x for x in products if x is not p and x["group"] == p["group"] and x not in line]
     rel = (line + same + [x for x in products if x["cat"] == p["cat"] and x is not p and x not in line and x not in same])[:4]
-    rel_title = f"More from the {p['model']} line" if line else "You may also like"
+    rel_title = (f"More from the {p['model']} line" if not p["model"].isdigit() else f"More from line {p['model']}") if line else "You may also like"
     body = f'''{nav}<div class="wrap"><div class="pdp">
 <div><div class="gallery">{f'<div class="thumbs">{thumbs}</div>' if thumbs else ''}<div class="slides">{slides}</div></div><div class="dots" aria-hidden="true">{dots}</div></div>
 <div class="buy">{code}<h1>{e(p["name"])}</h1><div>{chips}</div>
-<div class="price" data-price>{money(p["price"])}</div><div class="tax">Incl. Norwegian VAT · tax-free when shipped outside Norway</div>
+<div class="price" data-price>{money(p["price"])}</div><div class="tax">Incl. 25% VAT · free delivery in Norway{" · tax-free abroad" if INTERNATIONAL else ""}</div>
 <form id="buy" onsubmit="return false">{fs}
-<div class="atc"><button class="btn btn-block" id="atc-main" type="submit" data-atc>Add to bag — {money(p["price"])}</button><span id="stock" class="stock">{"In stock — ships within 1 business day" if p["available"] else "Currently sold out"}</span></div></form>
-<ul class="assure"><li>{ICONS["truck"]}<span>Delivery in 2–5 days across Norway &amp; Europe</span></li><li>{ICONS["return"]}<span>14-day returns &amp; size exchanges</span></li><li>{ICONS["globe"]}<span>Tax-free shopping outside Norway</span></li></ul>
+<div class="atc"><button class="btn btn-block" id="atc-main" type="submit" data-atc>Add to bag — {money(p["price"])}</button><span id="stock" class="stock">{"In stock, ready to ship" if p["available"] else "Currently sold out"}</span></div></form>
+<ul class="assure"><li>{ICONS["truck"]}<span>Free delivery in Norway, 2–5 business days</span></li><li>{ICONS["return"]}<span>14-day returns &amp; size exchanges</span></li><li>{f'{ICONS["globe"]}<span>Tax-free shopping outside Norway</span>' if INTERNATIONAL else f'{ICONS["chat"]}<span>Questions about fit? <a class="link" href="mailto:{EMAIL}">Email our Oslo team</a></span>'}</li></ul>
 {acc}</div></div>
 <section class="section" style="padding-top:24px"><div class="section-head"><h2>{e(rel_title)}</h2><a class="link" href="{trail[-1][1]}">View all</a></div><div class="grid">{"".join(card(x) for x in rel)}</div></section></div>
 <div class="sticky-atc" aria-hidden="true"><div><strong>{e(p["name"])}</strong><span data-price>{money(p["price"])}</span></div><button class="btn" type="button" data-atc tabindex="-1">Add to bag</button></div>
 <script type="application/json" id="pdata">{json.dumps(pjson, ensure_ascii=False)}</script>'''
     offers = [{"@type": "Offer", "url": f"{SITE_URL}{p['url']}?variant={v['id']}", "priceCurrency": "NOK", "price": v["price"],
                "availability": "https://schema.org/" + ("InStock" if v["available"] else "OutOfStock"), "itemCondition": "https://schema.org/NewCondition",
-               "name": v["title"] if v["title"] != "Default Title" else p["name"], "seller": {"@id": SITE_URL + "/#org"}} for v in p["variants"]]
+               "name": v["title"] if v["title"] != "Default Title" else p["name"], "seller": {"@id": SITE_URL + "/#org"}, "shippingDetails": SHIP_LD} for v in p["variants"]]
     prod_ld = {"@context": "https://schema.org", "@type": "Product", "name": p["name"], "url": SITE_URL + p["url"], "mpn": p["code"], "sku": p["code"],
                "brand": {"@type": "Brand", "name": "Maria Calderara" if "Calderara" in p["name"] else BRAND},
                "description": " ".join(p["desc"] + p["facts"]), "image": [img_url(im, 1200) for im in ims],
@@ -590,8 +624,12 @@ def build_product(p, products):
     if len(title) > 70:
         title = f"{p['name']} | Closetoskin"
     cols = ", ".join(LABEL_FIX.get(c, c) for c in p["colours"][:4])
-    desc = f"{p['name']}{mat.lower()}" + (f" in {cols}" if cols and not mat else f". {cols}" if cols else "") + f". {money(p['price'])}. 2–5 day delivery in Europe, 14-day returns, tax-free outside Norway."
-    page(p["url"], title, desc[:300], body, cat_url, [bld, prod_ld], img_url(ims[0], 1200) if ims else None)
+    desc = f"{p['name']}{mat.lower()}" + (f" in {cols}" if cols and not mat else f". {cols}" if cols else "") + f". {money(p['price'])}. {SHIP_META}."
+    pre = None
+    if ims:
+        ws = [w for w in (540, 720, 900, 1200) if w <= max(ims[0]["w"], 360)] or [540]
+        pre = (img_url(ims[0], ws[min(1, len(ws) - 1)]), ", ".join(f"{img_url(ims[0], w)} {w}w" for w in ws), "(max-width:900px) 100vw, 55vw")
+    page(p["url"], title, desc[:300], body, cat_url, [bld, prod_ld], img_url(ims[0], 1200) if ims else None, pre)
 
 
 def build_pages(products):
@@ -611,25 +649,26 @@ def build_pages(products):
 <h2>It's about you</h2>
 <p>It's about feeling wonderful in whatever you're wearing and whatever you're doing. It's about luxury, quality, simplicity and style, and about giving a gift that's remembered.</p>
 <p><a class="btn" href="/collections/underwear/">Explore the collection</a></p></article>'''
-    page("/pages/about-us/", "Our Story – Natural Underwear from Oslo since 2009 | Closetoskin",
+    page("/pages/about-us/", "Our Story – Natural Basics from Oslo | Closetoskin",
          "Closetoskin was founded in Oslo in 2009 to make modern basics in natural wool, silk, cotton and cashmere: comfortable, timeless and made to last.",
          about, "/pages/about-us/", [bld, ORG_LD])
     # Shipping & returns
     nav, bld = crumbs([("Home", "/"), ("Shipping & returns", None)])
     ship = f'''{nav}<article class="prose wrap"><h1>Shipping &amp; returns</h1>
-<p class="lead">Fast delivery from Oslo, tax-free shopping outside Norway and 14 days to change your mind.</p>
+<p class="lead">Free delivery in Norway, fast dispatch from Oslo and 14 days to change your mind.</p>
 <h2>Delivery</h2>
-<table><thead><tr><th>Destination</th><th>Carrier</th><th>Delivery time</th></tr></thead><tbody>
-<tr><td>Norway</td><td>Posten</td><td>2–5 business days</td></tr><tr><td>Europe</td><td>UPS International Economy</td><td>2–5 business days</td></tr><tr><td>Rest of the world</td><td>UPS International Economy</td><td>4–10 business days</td></tr></tbody></table>
+<table><thead><tr><th>Destination</th><th>Carrier</th><th>Delivery time</th><th>Cost</th></tr></thead><tbody>
+<tr><td>Norway</td><td>Posten</td><td>2–5 business days</td><td>Free</td></tr>{'<tr><td>Europe</td><td>UPS International Economy</td><td>2–5 business days</td><td>At checkout</td></tr><tr><td>Rest of the world</td><td>UPS International Economy</td><td>4–10 business days</td><td>At checkout</td></tr>' if INTERNATIONAL else ''}</tbody></table>
+{'' if INTERNATIONAL else f'<p>Ordering from outside Norway? Our online checkout currently delivers within Norway. Email <a class="link" href="mailto:{EMAIL}">{EMAIL}</a> and we will help you.</p>'}
 <p>Orders ship Monday to Friday; weekend orders ship the next business day. In Norway, Posten delivers to your local pick-up point and notifies you by SMS or email.</p>
 <h2>Prices, VAT &amp; duties</h2>
-<p>All prices are in NOK and include 25% Norwegian VAT. Customers outside Norway shop tax-free. Import duties and local taxes, where they apply, are paid by the customer.</p>
+<p>All prices are in NOK and include 25% Norwegian VAT.{" Customers outside Norway shop tax-free. Import duties and local taxes, where they apply, are paid by the customer." if INTERNATIONAL else " Delivery within Norway is always free."}</p>
 <h2>Returns &amp; exchanges</h2>
 <ul><li>Return or exchange within <strong>14 days</strong> of delivery.</li><li>Items must be in perfect condition with tags and seal attached.</li><li>Size exchanges are processed when we receive your return, subject to stock.</li><li>Refunds go back to the original payment method. Return shipping is paid by the customer.</li><li>The same policy applies during sales.</li></ul>
 <p>Send returns to: <strong>Closetoskin, {ADDRESS["street"]}, {ADDRESS["zip"]} {ADDRESS["city"]}, Norway</strong>. Need help? Email <a class="link" href="mailto:{EMAIL}">{EMAIL}</a>.</p>
 <h2>FAQ</h2>{faq_html(FAQ)}</article>'''
-    page("/pages/shipping-returns/", "Shipping, Returns & Tax-Free Shopping | Closetoskin",
-         "Delivery in 2–5 days across Norway & Europe, 4–10 days worldwide. Tax-free outside Norway. 14-day returns and size exchanges.",
+    page("/pages/shipping-returns/", "Free Delivery in Norway, Shipping & Returns | Closetoskin",
+         "Free delivery on every order in Norway, in 2–5 business days with Posten. 14-day returns and size exchanges. All prices include VAT.",
          ship, "", [bld, faq_ld(FAQ)])
     # Contact
     nav, bld = crumbs([("Home", "/"), ("Contact", None)])
@@ -683,7 +722,7 @@ def build_pages(products):
     art = {"@context": "https://schema.org", "@type": "Article", "headline": "Wool & silk underwear: how to choose, wear and care for it",
            "author": {"@type": "Organization", "name": BRAND}, "publisher": {"@id": SITE_URL + "/#org"}, "datePublished": "2026-10-21",
            "image": img_url(by["arianna_ss-top"]["images"][0], 1200), "mainEntityOfPage": SITE_URL + "/pages/wool-silk-guide/"}
-    page("/pages/wool-silk-guide/", "Wool & Silk Underwear Guide: Choosing, Sizing & Care | Closetoskin",
+    page("/pages/wool-silk-guide/", "Wool & Silk Underwear Guide: Fit & Care | Closetoskin",
          "How to choose between wool & silk and pure silk underwear, which style suits you, how to find your size and how to wash wool and silk.",
          guide, "/pages/wool-silk-guide/", [bld, art])
     # 404
@@ -696,8 +735,23 @@ def build_assets(products, best):
     (ad / "fonts").mkdir(parents=True, exist_ok=True)
     for f in (ROOT / "src/fonts").glob("*.woff2"):
         shutil.copy(f, ad / "fonts" / f.name)
-    shutil.copy(ROOT / "src/styles.css", ad / "styles.css")
-    shutil.copy(ROOT / "src/app.js", ad / "app.js")
+    css = re.sub(r"/\*.*?\*/", "", (ROOT / "src/styles.css").read_text(), flags=re.S)
+    (ad / "styles.css").write_text(re.sub(r"\n+", "", css))
+    js = (ROOT / "src/app.js").read_text().splitlines()
+    (ad / "app.js").write_text("\n".join(l.strip() for l in js if l.strip() and not l.strip().startswith("//")))
+    (DIST / "_redirects").write_text("\n".join([
+        "/pages/photo-gallery /collections/all/ 301",
+        "/pages/returns-exchanges /pages/shipping-returns/ 301",
+        "/collections/frontpage /collections/bestsellers/ 301",
+        "/collections/frontpage/ /collections/bestsellers/ 301",
+        "/collections/:c/products/:h /products/:h/ 301",
+        "/policies/refund-policy /pages/shipping-returns/ 301",
+        "/policies/shipping-policy /pages/shipping-returns/ 301",
+        "/policies/* /pages/terms-conditions/ 301",
+    ]) + "\n")
+    (DIST / "_headers").write_text("/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n"
+                                   "/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n"
+                                   "  Permissions-Policy: camera=(), microphone=(), geolocation=()\n" + ("  X-Robots-Tag: noindex\n" if NOINDEX else ""))
     (DIST / "favicon.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#2b2420"/><text x="32" y="44" font-family="Georgia,serif" font-size="36" text-anchor="middle" fill="#f7f3ee">c</text></svg>')
     best_ids = {p["handle"] for p in best}
     idx = [{"n": p["name"], "u": p["url"], "i": img_url(p["images"][0], 120) if p["images"] else "", "p": p["price"],
