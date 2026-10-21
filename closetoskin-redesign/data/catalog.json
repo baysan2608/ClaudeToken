@@ -1,0 +1,8159 @@
+{
+ "source": "https://www.closetoskin.com/products.json",
+ "fetched": "2026-10-21",
+ "bestsellers": [
+  "909-04-ml",
+  "emily_ss",
+  "fiordaliso_sl",
+  "ilary-ml-neckline",
+  "arianna_ss-top",
+  "sara-sl_body"
+ ],
+ "products": [
+  {
+   "handle": "mini-messenger",
+   "title": "Mini messenger",
+   "tags": [
+    "handbags"
+   ],
+   "body_html": "<p data-mce-fragment=\"1\"><span data-mce-fragment=\"1\">* Mini cross-body messenger in hand-made red coral woven leather.</span></p>\n<p data-mce-fragment=\"1\"><span data-mce-fragment=\"1\">*</span><span class=\"s1\" data-mce-fragment=\"1\">Processing with tubular method.</span></p>\n<p data-mce-fragment=\"1\"><span class=\"s1\" data-mce-fragment=\"1\">*Shoulder strap in metallic chain and leather.</span></p>\n<p data-mce-fragment=\"1\"><span class=\"s1\" data-mce-fragment=\"1\">*Gold metal accessories.</span></p>\n<p data-mce-fragment=\"1\"><span class=\"s1\" data-mce-fragment=\"1\">Flap on top push lock closure with logo detail.</span></p>\n<p data-mce-fragment=\"1\"><span class=\"s1\" data-mce-fragment=\"1\">*Made in Italy.</span></p>\n<p data-mce-fragment=\"1\"><span class=\"s1\" data-mce-fragment=\"1\">* Wi</span><span class=\"s1\" data-mce-fragment=\"1\">dth: 22 cmHeight: 16 cmDepth: 10 cm</span></p>",
+   "material": "",
+   "created_at": "2022-08-28T16:56:21-04:00",
+   "options": [
+    {
+     "name": "Color",
+     "values": [
+      "Silver",
+      "Black",
+      "Taupe"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40248689393729,
+     "title": "Silver",
+     "option1": "Silver",
+     "option2": null,
+     "price": "2800.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248689426497,
+     "title": "Black",
+     "option1": "Black",
+     "option2": null,
+     "price": "2800.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248689459265,
+     "title": "Taupe",
+     "option1": "Taupe",
+     "option2": null,
+     "price": "2800.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/87.png",
+     "v": "1666961473",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/90.png",
+     "v": "1666961473",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/91.png",
+     "v": "1666961473",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/88.png",
+     "v": "1666961473",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/92.png",
+     "v": "1666961473",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "medium-shopper-in-woven-leather",
+   "title": "Medium shopper in woven leather",
+   "tags": [
+    "handbags"
+   ],
+   "body_html": "<p data-mce-fragment=\"1\">* Woven nappa leather</p>\n<p data-mce-fragment=\"1\">*Hand made using the tubular method</p>\n<p data-mce-fragment=\"1\">*Exclusive seamless construction</p>\n<p data-mce-fragment=\"1\">* Double handles and metallic zip closure. Gold metal accessories.</p>\n<p data-mce-fragment=\"1\">* Small removable pochette.</p>\n<p data-mce-fragment=\"1\">*Made in Italy.</p>\n<p data-mce-fragment=\"1\">Width 35cm</p>\n<p data-mce-fragment=\"1\">Height 29cm</p>\n<p data-mce-fragment=\"1\">Depth 14cm</p>",
+   "material": "",
+   "created_at": "2022-08-28T16:54:16-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126951129153,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "6600.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/84.png",
+     "v": "1666960677",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/85.png",
+     "v": "1666960677",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/86.png",
+     "v": "1666960677",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "woven-leather-handbag",
+   "title": "Woven leather handbag",
+   "tags": [
+    "handbags"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Handbag double handle in vinaccia/purple hand-woven leather. Processing with tubolar method. Metallic zip closure. Gold metal accessories. </span><span class=\"s1\" data-mce-fragment=\"1\">Unlined, with removable pocket. Made in Italy.</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:52:31-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126950965313,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "6600.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/100.png",
+     "v": "1666962741",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/99.png",
+     "v": "1666962741",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/98.png",
+     "v": "1666962741",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "pochette-in-woven-leather",
+   "title": "Pochette in woven leather",
+   "tags": [
+    "handbags"
+   ],
+   "body_html": "<p data-mce-fragment=\"1\">* Pochette in hand-woven calf-leather, made in Italy.</p>\n<p data-mce-fragment=\"1\">* Made using the tubular method and hence no seams.  </p>\n<p data-mce-fragment=\"1\">* Gold metallic zip closure and removable shoulder strap in chain.</p>\n<p data-mce-fragment=\"1\">Width:30cm Height:16cm Depth:3cm</p>",
+   "material": "",
+   "created_at": "2022-08-28T16:50:58-04:00",
+   "options": [
+    {
+     "name": "Color",
+     "values": [
+      "Black",
+      "Ivory",
+      "Camel",
+      "Gold",
+      "Silver"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40248675991617,
+     "title": "Black",
+     "option1": "Black",
+     "option2": null,
+     "price": "2300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248676024385,
+     "title": "Ivory",
+     "option1": "Ivory",
+     "option2": null,
+     "price": "2300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248676057153,
+     "title": "Camel",
+     "option1": "Camel",
+     "option2": null,
+     "price": "2300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248676089921,
+     "title": "Gold",
+     "option1": "Gold",
+     "option2": null,
+     "price": "2300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248676122689,
+     "title": "Silver",
+     "option1": "Silver",
+     "option2": null,
+     "price": "2300.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/96.png",
+     "v": "1666962186",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/94.png",
+     "v": "1666962186",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/93.png",
+     "v": "1666962186",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/95.png",
+     "v": "1666962186",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/97.png",
+     "v": "1666962186",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/89.png",
+     "v": "1666962186",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "hobo-woven-leather-handbag",
+   "title": "Hobo -Woven leather handbag",
+   "tags": [
+    "handbags"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Shoulder bag in hand-made woven t.moro leather. Processing with tubolar method. Magnetic button closure. Gold metal accessories. Unlined with a little removable pockets. Made in Italy.</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:49:35-04:00",
+   "options": [
+    {
+     "name": "Color",
+     "values": [
+      "Black",
+      "Taupe",
+      "Gold",
+      "Silver",
+      "Dark Brown",
+      "Beige"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40248660525121,
+     "title": "Black",
+     "option1": "Black",
+     "option2": null,
+     "price": "7100.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248660557889,
+     "title": "Taupe",
+     "option1": "Taupe",
+     "option2": null,
+     "price": "7100.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248660590657,
+     "title": "Gold",
+     "option1": "Gold",
+     "option2": null,
+     "price": "7100.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248660623425,
+     "title": "Silver",
+     "option1": "Silver",
+     "option2": null,
+     "price": "7100.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248660656193,
+     "title": "Dark Brown",
+     "option1": "Dark Brown",
+     "option2": null,
+     "price": "7100.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248660688961,
+     "title": "Beige",
+     "option1": "Beige",
+     "option2": null,
+     "price": "7100.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/77.png",
+     "v": "1666959990",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/78.png",
+     "v": "1666959990",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/79.png",
+     "v": "1666959990",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/76.png",
+     "v": "1666959990",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/80.png",
+     "v": "1666959990",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1s117wg",
+   "title": "1S117WG",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:47:44-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126950244417,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1890.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/5.png",
+     "v": "1666942599",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r106ba",
+   "title": "1R106BA",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:46:53-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126949982273,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1890.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/11.png",
+     "v": "1666942397",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r108",
+   "title": "1R108",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:46:12-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126945558593,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1750.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/10.png",
+     "v": "1666942423",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r109",
+   "title": "1R109",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:45:27-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126942249025,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1750.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/9.png",
+     "v": "1666942489",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r111",
+   "title": "1R111",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:44:35-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126941986881,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2160.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/8.png",
+     "v": "1666942510",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r113",
+   "title": "1R113",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:43:29-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126941888577,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2565.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/7_2de0ad2b-2a50-4006-a501-b62570403ce9.png",
+     "v": "1666942530",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r058c",
+   "title": "1R058c",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:43:02-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126941724737,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1063.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/D_0114eb1c-607d-4a66-902e-f9620b0afc9b.png",
+     "v": "1666939012",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r058n",
+   "title": "1R058n",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:42:02-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126934679617,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1063.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/D_2763bb83-4289-4e07-b2e1-6d6a255214c9.png",
+     "v": "1666939101",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r058k",
+   "title": "1R058k",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:41:27-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126934450241,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1063.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/D_0aa4ce06-1730-45d6-b758-38f03af7a6b6.png",
+     "v": "1666939044",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r001j",
+   "title": "1R001J",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Earrings, hand made in Venice by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:40:54-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126934253633,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1025.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/A_12d58a35-af01-4c61-9f5e-699073cc1878.png",
+     "v": "1666938303",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r001a",
+   "title": "1R001A",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Earrings by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:40:16-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126933303361,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1025.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/A.png",
+     "v": "1666938285",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r010a",
+   "title": "1R010a",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Earrings, hand made in Venice by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:39:36-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126932549697,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/B_fcaf89f7-1ead-424b-afe5-c27dfa9d98ac.png",
+     "v": "1666938596",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r055q",
+   "title": "1R055Q",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara, , handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:37:46-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126932222017,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2430.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/C.png",
+     "v": "1666938858",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r055g",
+   "title": "1R055G",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:37:07-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126932025409,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "3038.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/C_c4f80c32-f9a9-451a-a123-5bcc7ad85806.png",
+     "v": "1666938879",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r058b",
+   "title": "1R058b",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara, , handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:36:05-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126931370049,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "850.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/D.png",
+     "v": "1666938989",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r058t",
+   "title": "1R058t",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:35:29-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126930255937,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1063.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/D_d2386dd4-142b-49fe-957f-4abebb91aca2.png",
+     "v": "1666939119",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r058lv",
+   "title": "1R058lv",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:34:45-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126929633345,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1063.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/D_76d7f251-310e-45eb-9fc8-6683d7f9e347.png",
+     "v": "1666939084",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1r058u",
+   "title": "1R058u",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:34:10-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126928748609,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1063.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/D_21ea68dc-6f59-43de-b34a-d8dbcb76fbdf.png",
+     "v": "1666939139",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1s133m",
+   "title": "1S133M",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:33:27-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126928093249,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "3500.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1.png",
+     "v": "1666942693",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1s403b",
+   "title": "1S403B",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Ring by Italian Designer Maria Calderara. Hand made in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:32:35-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126927863873,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1350.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S403B.jpg",
+     "v": "1661718758",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s403x",
+   "title": "1S403X",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Ring by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:31:49-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126926618689,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1688.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S403X.jpg",
+     "v": "1661718710",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s403n",
+   "title": "1S403N",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Ring by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:31:06-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126926323777,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1688.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S403N.jpg",
+     "v": "1661718667",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s404b",
+   "title": "1S404B",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Ring by Italian Designer Maria Calderara. Hand made in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:30:16-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126926225473,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1490.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S404B.jpg",
+     "v": "1661718618",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s404x",
+   "title": "1S404X",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Ring by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:29:35-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126926159937,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "1863.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S404X.jpg",
+     "v": "1661718576",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1r010mm",
+   "title": "1R010mm",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:28:41-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126925996097,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "825.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/B.png",
+     "v": "1666938571",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1s133bg",
+   "title": "1S133BG",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:27:45-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126925897793,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "3500.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/2.png",
+     "v": "1666942674",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1s125n",
+   "title": "1S125N",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:26:52-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126925799489,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "4300.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S125N.jpg",
+     "v": "1661718414",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s051",
+   "title": "1S051",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara, , handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:25:53-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126925307969,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2025.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S051J.jpg",
+     "v": "1661718355",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s052",
+   "title": "1S052",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara, , handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:24:59-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924881985,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2565.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S052J.jpg",
+     "v": "1666208211",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s055b",
+   "title": "1S055B",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara, , handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:24:01-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924750913,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "945.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S055B.jpg",
+     "v": "1661718243",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s055m",
+   "title": "1S055M",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:22:54-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924390465,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "945.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S055M.jpg",
+     "v": "1661718175",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s055w",
+   "title": "1S055W",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Bracelet by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:22:04-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924259393,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "945.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S055W.jpg",
+     "v": "1661718125",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s118gc",
+   "title": "1S118GC",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:21:11-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924226625,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2970.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/4.png",
+     "v": "1666942618",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1s118m",
+   "title": "1S118M",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:20:31-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924193857,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2970.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/3.png",
+     "v": "1666942636",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1s125b",
+   "title": "1S125B",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "<span data-mce-fragment=\"1\">Necklace by Italian Designer Maria Calderara. Handmade in Venice</span>",
+   "material": "",
+   "created_at": "2022-08-28T16:19:05-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924128321,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "4300.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/1S125B.jpg",
+     "v": "1661717947",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1s105j",
+   "title": "1S105J",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:17:47-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924062785,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "3375.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/6.png",
+     "v": "1666942581",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "kala-bracelet",
+   "title": "Kala Bracelet",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:16:52-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126924030017,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "3500.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/sort_dia_lenke.jpg",
+     "v": "1661717814",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1272h-p",
+   "title": "1272H-P",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:15:57-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126923866177,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "4500.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/7.png",
+     "v": "1666860400",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1273h",
+   "title": "1273H",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:14:55-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126923833409,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "4250.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/quartus_restik_261012.jpg",
+     "v": "1661717696",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1278h",
+   "title": "1278H",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:14:04-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126923767873,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "8250.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/quartus_restik_261012_1889149079.jpg",
+     "v": "1661717646",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "1v129",
+   "title": "1V129",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:13:18-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126923374657,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2430.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/13.png",
+     "v": "1666947304",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "1v106",
+   "title": "1v106",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:12:35-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126922915905,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2700.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/12.png",
+     "v": "1666947280",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "3581h",
+   "title": "3581H",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:11:38-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126922391617,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2375.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/quartus_vedhng_261012_1674991607_bdaf0d30-f983-46cf-a4fc-f6304923e5b9.jpg",
+     "v": "1661717500",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "3582h-p",
+   "title": "3582H-P",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:10:32-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126921932865,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2375.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/14.png",
+     "v": "1666948059",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/quartus_vedhng_drbe.jpg",
+     "v": "1666948059",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "3583h",
+   "title": "3583H",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:08:42-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126920884289,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "5750.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/quartus_vedhng_261012_1674991607.jpg",
+     "v": "1661717324",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "v100-42h",
+   "title": "V100/42H",
+   "tags": [
+    "accessories"
+   ],
+   "body_html": "",
+   "material": "",
+   "created_at": "2022-08-28T16:03:14-04:00",
+   "options": [
+    {
+     "name": "Title",
+     "values": [
+      "Default Title"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126918557761,
+     "title": "Default Title",
+     "option1": "Default Title",
+     "option2": null,
+     "price": "2375.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/70.png",
+     "v": "1666956283",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "908_09_culotte",
+   "title": "908_09_Culotte",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:55:25-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Taupe"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126911119425,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911152193,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911184961,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911217729,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911250497,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911283265,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911316033,
+     "title": "Taupe / Small",
+     "option1": "Taupe",
+     "option2": "Small",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911348801,
+     "title": "Taupe / Medium",
+     "option1": "Taupe",
+     "option2": "Medium",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126911381569,
+     "title": "Taupe / Large",
+     "option1": "Taupe",
+     "option2": "Large",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/50.png",
+     "v": "1666954347",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "909-01-ss",
+   "title": "909 01 SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:53:18-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Ivony"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126905057345,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905090113,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905122881,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905155649,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905188417,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905221185,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905253953,
+     "title": "Ivony / Small",
+     "option1": "Ivony",
+     "option2": "Small",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905286721,
+     "title": "Ivony / Medium",
+     "option1": "Ivony",
+     "option2": "Medium",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126905319489,
+     "title": "Ivony / Large",
+     "option1": "Ivony",
+     "option2": "Large",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/57.png",
+     "v": "1666954386",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/90901.jpg",
+     "v": "1666954386",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "90902-sl",
+   "title": "90902 SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:51:01-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126903484481,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903517249,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903550017,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903582785,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903615553,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903648321,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903681089,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903713857,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126903746625,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "625.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/49.png",
+     "v": "1666954478",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/90902.jpg",
+     "v": "1666954478",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "909-04-ml",
+   "title": "909 04 ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:48:35-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126899257409,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899290177,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899322945,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899355713,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899388481,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899421249,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899454017,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899486785,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126899519553,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "950.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/48.png",
+     "v": "1666954444",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/90904.jpg",
+     "v": "1666954444",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "909-09-culotte",
+   "title": "909 09 Culotte",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:46:30-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126896144449,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896177217,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896209985,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896242753,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896275521,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896308289,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896341057,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896373825,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126896406593,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/47.png",
+     "v": "1666954461",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/90909.jpg",
+     "v": "1666954461",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "am_lie_ml",
+   "title": "Am_lie_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T15:43:02-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Raisins",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126891130945,
+     "title": "Raisins / Small",
+     "option1": "Raisins",
+     "option2": "Small",
+     "price": "580.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126891163713,
+     "title": "Raisins / Medium",
+     "option1": "Raisins",
+     "option2": "Medium",
+     "price": "580.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126891196481,
+     "title": "Raisins / Large",
+     "option1": "Raisins",
+     "option2": "Large",
+     "price": "580.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126891229249,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "580.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126891262017,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "580.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126891294785,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "580.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/46.png",
+     "v": "1666954497",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "am_lie_ml_turtleneck",
+   "title": "Am_lie_ML_Turtleneck",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T15:40:29-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Raisins",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126885658689,
+     "title": "Raisins / Small",
+     "option1": "Raisins",
+     "option2": "Small",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126885691457,
+     "title": "Raisins / Medium",
+     "option1": "Raisins",
+     "option2": "Medium",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126885724225,
+     "title": "Raisins / Large",
+     "option1": "Raisins",
+     "option2": "Large",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126885756993,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126885789761,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126885822529,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/58.png",
+     "v": "1666954527",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/amelie_ml_giro.jpg",
+     "v": "1666954527",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "85-wool-15-silk",
+   "title": "Am_lie_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T15:38:03-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Ivory",
+      "Raisins",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126882611265,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882644033,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882676801,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882709569,
+     "title": "Raisins / Small",
+     "option1": "Raisins",
+     "option2": "Small",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882742337,
+     "title": "Raisins / Medium",
+     "option1": "Raisins",
+     "option2": "Medium",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882775105,
+     "title": "Raisins / Large",
+     "option1": "Raisins",
+     "option2": "Large",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882807873,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882840641,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126882873409,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "355.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/45.png",
+     "v": "1666954267",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/amelie_sl.jpg",
+     "v": "1666954267",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "am_lie_sm_turtleneck",
+   "title": "Am_lie_SM_turtleneck",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T15:34:30-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Raisins",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126881202241,
+     "title": "Raisins / Small",
+     "option1": "Raisins",
+     "option2": "Small",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126881235009,
+     "title": "Raisins / Medium",
+     "option1": "Raisins",
+     "option2": "Medium",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126881267777,
+     "title": "Raisins / Large",
+     "option1": "Raisins",
+     "option2": "Large",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126881300545,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126881333313,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126881366081,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/59.png",
+     "v": "1666954541",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/amelie_sm_dv.jpg",
+     "v": "1666954541",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "908_04_ml",
+   "title": "908_04_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:31:21-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Taupe"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126880153665,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880219201,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880251969,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880317505,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880350273,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880383041,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880415809,
+     "title": "Taupe / Small",
+     "option1": "Taupe",
+     "option2": "Small",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880448577,
+     "title": "Taupe / Medium",
+     "option1": "Taupe",
+     "option2": "Medium",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126880481345,
+     "title": "Taupe / Large",
+     "option1": "Taupe",
+     "option2": "Large",
+     "price": "1040.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/51.png",
+     "v": "1666954310",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "908_02_sl",
+   "title": "908_02_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:28:39-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Taupe"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126879432769,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879465537,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879498305,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879531073,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879563841,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879596609,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879629377,
+     "title": "Taupe / Small",
+     "option1": "Taupe",
+     "option2": "Small",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879662145,
+     "title": "Taupe / Medium",
+     "option1": "Taupe",
+     "option2": "Medium",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879694913,
+     "title": "Taupe / Large",
+     "option1": "Taupe",
+     "option2": "Large",
+     "price": "650.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/56.png",
+     "v": "1666954290",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/90802.jpg",
+     "v": "1666954290",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "707_04_ml",
+   "title": "707_04_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:25:55-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126879105089,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "490.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879137857,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "490.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879170625,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "490.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879203393,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "490.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879236161,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "490.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126879268929,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "490.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/52.png",
+     "v": "1666954213",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/707_04.jpg",
+     "v": "1666954213",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "319-01-ss-top",
+   "title": "319 01 SS Top",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100% Silk",
+   "created_at": "2022-08-28T15:23:41-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Taupe"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126878711873,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878744641,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878777409,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878810177,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878842945,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878875713,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878908481,
+     "title": "Taupe / Small",
+     "option1": "Taupe",
+     "option2": "Small",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878941249,
+     "title": "Taupe / Medium",
+     "option1": "Taupe",
+     "option2": "Medium",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126878974017,
+     "title": "Taupe / Large",
+     "option1": "Taupe",
+     "option2": "Large",
+     "price": "620.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/20.png",
+     "v": "1666947942",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/319_01.jpg",
+     "v": "1666947942",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "319-02-sl",
+   "title": "319 02 SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "100 % Silk",
+   "created_at": "2022-08-28T15:21:08-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Taupe"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126873796673,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126873829441,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126873862209,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126873894977,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126873927745,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126873960513,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126873993281,
+     "title": "Taupe / Small",
+     "option1": "Taupe",
+     "option2": "Small",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126874026049,
+     "title": "Taupe / Medium",
+     "option1": "Taupe",
+     "option2": "Medium",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126874058817,
+     "title": "Taupe / Large",
+     "option1": "Taupe",
+     "option2": "Large",
+     "price": "760.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/19.png",
+     "v": "1666947974",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/31902.jpg",
+     "v": "1666947974",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "589_01_ss",
+   "title": "589_01_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:18:43-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126872191041,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872223809,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872256577,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872289345,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872322113,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872354881,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872387649,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872420417,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126872453185,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "535.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/18.png",
+     "v": "1666947999",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/58901.jpg",
+     "v": "1666947999",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "589_02_sl",
+   "title": "589_02_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:16:29-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126870519873,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870552641,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870585409,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870618177,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870650945,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870683713,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870716481,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870749249,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126870782017,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "560.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/17.png",
+     "v": "1666948035",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/58902.jpg",
+     "v": "1666948035",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "589_04_ml",
+   "title": "589_04_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:13:34-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126868652097,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868684865,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868717633,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868750401,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868783169,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868815937,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868848705,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868881473,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868914241,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "835.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/16.png",
+     "v": "1666948115",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/58904.jpg",
+     "v": "1666948115",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "595_05_sm_gilet",
+   "title": "595_05_SM_Gilet",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:11:04-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126868389953,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868422721,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868455489,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/15.png",
+     "v": "1666948089",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/59505.jpg",
+     "v": "1666948089",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "599_02_sl",
+   "title": "599_02_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:08:58-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Raisins"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126867767361,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126867800129,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126867832897,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126867865665,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126867898433,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126867931201,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126867963969,
+     "title": "Raisins / Small",
+     "option1": "Raisins",
+     "option2": "Small",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126867996737,
+     "title": "Raisins / Medium",
+     "option1": "Raisins",
+     "option2": "Medium",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126868029505,
+     "title": "Raisins / Large",
+     "option1": "Raisins",
+     "option2": "Large",
+     "price": "720.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/54.png",
+     "v": "1666954084",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/59902_art.jpg",
+     "v": "1666954084",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "599_04_ml",
+   "title": "599_04_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:06:04-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Grey",
+      "Raisins"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126865997889,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866030657,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866063425,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866096193,
+     "title": "Grey / Small",
+     "option1": "Grey",
+     "option2": "Small",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866128961,
+     "title": "Grey / Medium",
+     "option1": "Grey",
+     "option2": "Medium",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866161729,
+     "title": "Grey / Large",
+     "option1": "Grey",
+     "option2": "Large",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866194497,
+     "title": "Raisins / Small",
+     "option1": "Raisins",
+     "option2": "Small",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866227265,
+     "title": "Raisins / Medium",
+     "option1": "Raisins",
+     "option2": "Medium",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126866260033,
+     "title": "Raisins / Large",
+     "option1": "Raisins",
+     "option2": "Large",
+     "price": "491.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/55.png",
+     "v": "1666954121",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/59904.jpg",
+     "v": "1666954121",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "707_03_mm",
+   "title": "707_03_MM",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:03:25-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126865440833,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "410.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126865473601,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "410.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126865506369,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "410.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126865539137,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "410.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126865571905,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "410.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126865604673,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "410.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/53.png",
+     "v": "1666954181",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/707_03.jpg",
+     "v": "1666954181",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "707_01_ss",
+   "title": "707_01_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T15:00:07-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126862655553,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126862688321,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126862721089,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126862753857,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126862786625,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "300.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126862819393,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "300.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/23.png",
+     "v": "1666954136",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "707_02_sl",
+   "title": "707_02_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "70% Wool 30% Silk",
+   "created_at": "2022-08-28T14:57:08-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126861541441,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126861574209,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126861606977,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126861639745,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126861672513,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126861705281,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "350.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/24.png",
+     "v": "1666954157",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/707_02.jpg",
+     "v": "1666954157",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "am_lie_ss",
+   "title": "Am_lie_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:54:33-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Ivory",
+      "Raisins",
+      "Ocean"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126860034113,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860066881,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860099649,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860132417,
+     "title": "Raisins / Small",
+     "option1": "Raisins",
+     "option2": "Small",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860165185,
+     "title": "Raisins / Medium",
+     "option1": "Raisins",
+     "option2": "Medium",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860197953,
+     "title": "Raisins / Large",
+     "option1": "Raisins",
+     "option2": "Large",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860230721,
+     "title": "Ocean / Small",
+     "option1": "Ocean",
+     "option2": "Small",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860263489,
+     "title": "Ocean / Medium",
+     "option1": "Ocean",
+     "option2": "Medium",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126860296257,
+     "title": "Ocean / Large",
+     "option1": "Ocean",
+     "option2": "Large",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/44.png",
+     "v": "1666954561",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/amelie_ss.jpg",
+     "v": "1666954561",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "arianna_ml",
+   "title": "Arianna_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:51:54-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126856953921,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "510.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126856986689,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "510.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126857019457,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "510.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126857052225,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "510.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126857084993,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "510.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126857117761,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "510.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/43.png",
+     "v": "1666954578",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/arianna_ml.jpg",
+     "v": "1666954578",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "arianna_mm",
+   "title": "Arianna_MM",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:49:20-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126853283905,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "435.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126853316673,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "435.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126853349441,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "435.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126853382209,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "435.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126853414977,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "435.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126853447745,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "435.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/42.png",
+     "v": "1666954768",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/arianna_mm.jpg",
+     "v": "1666954768",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "ilary-ml-lupetto",
+   "title": "Ilary ML Lupetto",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:46:08-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Pomegranate"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126844502081,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844534849,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844567617,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844600385,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844633153,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844665921,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844698689,
+     "title": "Pomegranate / Small",
+     "option1": "Pomegranate",
+     "option2": "Small",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844731457,
+     "title": "Pomegranate / Medium",
+     "option1": "Pomegranate",
+     "option2": "Medium",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126844764225,
+     "title": "Pomegranate / Large",
+     "option1": "Pomegranate",
+     "option2": "Large",
+     "price": "530.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/29.png",
+     "v": "1666955685",
+     "w": 800,
+     "h": 800
+    }
+   ]
+  },
+  {
+   "handle": "ilary-ml-neckline",
+   "title": "Ilary ML Neckline",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:43:56-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Pomegranate"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126841880641,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126841913409,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126841946177,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126841978945,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126842011713,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126842044481,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126842077249,
+     "title": "Pomegranate / Small",
+     "option1": "Pomegranate",
+     "option2": "Small",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126842110017,
+     "title": "Pomegranate / Medium",
+     "option1": "Pomegranate",
+     "option2": "Medium",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126842142785,
+     "title": "Pomegranate / Large",
+     "option1": "Pomegranate",
+     "option2": "Large",
+     "price": "500.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/30.png",
+     "v": "1666955760",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/ilary_girocollo.jpg",
+     "v": "1666955760",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "ilary-ml-turtleneck",
+   "title": "Ilary ML Turtleneck",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:40:25-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Pomegranate"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126840209473,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840242241,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840275009,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840307777,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840340545,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840373313,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840406081,
+     "title": "Pomegranate / Small",
+     "option1": "Pomegranate",
+     "option2": "Small",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840438849,
+     "title": "Pomegranate / Medium",
+     "option1": "Pomegranate",
+     "option2": "Medium",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126840471617,
+     "title": "Pomegranate / Large",
+     "option1": "Pomegranate",
+     "option2": "Large",
+     "price": "550.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/31.png",
+     "v": "1666955784",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/ilary_dolcevita.jpg",
+     "v": "1666955784",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "ilary-short",
+   "title": "Ilary Short",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:36:53-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126834442305,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "290.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126834475073,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "290.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126834507841,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "290.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/68.png",
+     "v": "1666955807",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/ilary_short.jpg",
+     "v": "1666955807",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "lavinia_sl",
+   "title": "Lavinia_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:33:13-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126833688641,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "390.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126833721409,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "390.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126833754177,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "390.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126833786945,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "390.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126833819713,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "390.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126833852481,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "390.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/28.png",
+     "v": "1666955850",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/laviniasl.jpg",
+     "v": "1666955850",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "lavinia_ss",
+   "title": "Lavinia_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:30:50-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126832803905,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832836673,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832869441,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832902209,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832934977,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832967745,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/laviniassstilllife.jpg",
+     "v": "1661711452",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "marie-_ml_cardigan",
+   "title": "Marie _ML_Cardigan",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:28:20-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ash-Grey",
+      "Powder"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126832115777,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832148545,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832181313,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832214081,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832246849,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832279617,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832312385,
+     "title": "Ash-Grey / Small",
+     "option1": "Ash-Grey",
+     "option2": "Small",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832345153,
+     "title": "Ash-Grey / Medium",
+     "option1": "Ash-Grey",
+     "option2": "Medium",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832377921,
+     "title": "Ash-Grey / Large",
+     "option1": "Ash-Grey",
+     "option2": "Large",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832410689,
+     "title": "Powder / Small",
+     "option1": "Powder",
+     "option2": "Small",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832443457,
+     "title": "Powder / Medium",
+     "option1": "Powder",
+     "option2": "Medium",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126832476225,
+     "title": "Powder / Large",
+     "option1": "Powder",
+     "option2": "Large",
+     "price": "750.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/27.png",
+     "v": "1666955872",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/marie_cardigan.jpg",
+     "v": "1666955872",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "marie_ml_bolero",
+   "title": "Marie_ML_Bolero",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:24:32-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ash-Grey",
+      "Powder"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126831099969,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831132737,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831165505,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831198273,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831231041,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831263809,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831296577,
+     "title": "Ash-Grey / Small",
+     "option1": "Ash-Grey",
+     "option2": "Small",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831329345,
+     "title": "Ash-Grey / Medium",
+     "option1": "Ash-Grey",
+     "option2": "Medium",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831362113,
+     "title": "Ash-Grey / Large",
+     "option1": "Ash-Grey",
+     "option2": "Large",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831394881,
+     "title": "Powder / Small",
+     "option1": "Powder",
+     "option2": "Small",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831427649,
+     "title": "Powder / Medium",
+     "option1": "Powder",
+     "option2": "Medium",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126831460417,
+     "title": "Powder / Large",
+     "option1": "Powder",
+     "option2": "Large",
+     "price": "675.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/62.png",
+     "v": "1666955910",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/marie_bolero.jpg",
+     "v": "1666955910",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "marie_sl",
+   "title": "Marie_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:22:06-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ash-Grey",
+      "Powder"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126828773441,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126828806209,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126828838977,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126828871745,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126828904513,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126828937281,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126828970049,
+     "title": "Ash-Grey / Small",
+     "option1": "Ash-Grey",
+     "option2": "Small",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126829002817,
+     "title": "Ash-Grey / Medium",
+     "option1": "Ash-Grey",
+     "option2": "Medium",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126829035585,
+     "title": "Ash-Grey / Large",
+     "option1": "Ash-Grey",
+     "option2": "Large",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126829068353,
+     "title": "Powder / Small",
+     "option1": "Powder",
+     "option2": "Small",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126829101121,
+     "title": "Powder / Medium",
+     "option1": "Powder",
+     "option2": "Medium",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126829133889,
+     "title": "Powder / Large",
+     "option1": "Powder",
+     "option2": "Large",
+     "price": "395.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/63.png",
+     "v": "1666955967",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/marie_sl.jpg",
+     "v": "1666955967",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "marie_ss",
+   "title": "Marie_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:18:53-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ash-Grey",
+      "Powder"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126827626561,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827659329,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827692097,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827724865,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827757633,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827790401,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827823169,
+     "title": "Ash-Grey / Small",
+     "option1": "Ash-Grey",
+     "option2": "Small",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827855937,
+     "title": "Ash-Grey / Medium",
+     "option1": "Ash-Grey",
+     "option2": "Medium",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827888705,
+     "title": "Ash-Grey / Large",
+     "option1": "Ash-Grey",
+     "option2": "Large",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827921473,
+     "title": "Powder / Small",
+     "option1": "Powder",
+     "option2": "Small",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827954241,
+     "title": "Powder / Medium",
+     "option1": "Powder",
+     "option2": "Medium",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126827987009,
+     "title": "Powder / Large",
+     "option1": "Powder",
+     "option2": "Large",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/64.png",
+     "v": "1666955996",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/marie_ss.jpg",
+     "v": "1666955996",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "sara_ml_body",
+   "title": "Sara_ML_body",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:14:56-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126826545217,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826577985,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826610753,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826643521,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826676289,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826709057,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/65.png",
+     "v": "1666956034",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/sara_bdyml.jpg",
+     "v": "1666956034",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "sara_mm",
+   "title": "Sara_MM",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:12:00-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ash-Grey"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126826217537,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826250305,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826283073,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826315841,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826348609,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826381377,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826414145,
+     "title": "Ash-Grey / Small",
+     "option1": "Ash-Grey",
+     "option2": "Small",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826446913,
+     "title": "Ash-Grey / Medium",
+     "option1": "Ash-Grey",
+     "option2": "Medium",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126826479681,
+     "title": "Ash-Grey / Large",
+     "option1": "Ash-Grey",
+     "option2": "Large",
+     "price": "340.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/26.png",
+     "v": "1666956049",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/sara_mm.jpg",
+     "v": "1666956049",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "sara_sl",
+   "title": "Sara_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:09:49-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ash-Grey"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126825070657,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825103425,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825136193,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825168961,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825201729,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825234497,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825267265,
+     "title": "Ash-Grey / Small",
+     "option1": "Ash-Grey",
+     "option2": "Small",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825300033,
+     "title": "Ash-Grey / Medium",
+     "option1": "Ash-Grey",
+     "option2": "Medium",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126825332801,
+     "title": "Ash-Grey / Large",
+     "option1": "Ash-Grey",
+     "option2": "Large",
+     "price": "285.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/67.png",
+     "v": "1666956068",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/sara_sl.jpg",
+     "v": "1666956068",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "sara_ss",
+   "title": "Sara_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:07:14-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory",
+      "Ash-Grey"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126821531713,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821564481,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821597249,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821630017,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821662785,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821695553,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821728321,
+     "title": "Ash-Grey / Small",
+     "option1": "Ash-Grey",
+     "option2": "Small",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821761089,
+     "title": "Ash-Grey / Medium",
+     "option1": "Ash-Grey",
+     "option2": "Medium",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126821793857,
+     "title": "Ash-Grey / Large",
+     "option1": "Ash-Grey",
+     "option2": "Large",
+     "price": "245.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/25.png",
+     "v": "1666956085",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/sara_ss.jpg",
+     "v": "1666956085",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "ilary-ml-cardigan",
+   "title": "Ilary ML Cardigan",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:04:58-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126819926081,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "820.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126819958849,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "820.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126819991617,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "820.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/61.png",
+     "v": "1666955649",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/ilary_cardigan.jpg",
+     "v": "1666955649",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "ilary-ml-bolero",
+   "title": "Ilary ML Bolero",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:02:28-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126818287681,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "690.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126818320449,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "690.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126818353217,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "690.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/32.png",
+     "v": "1666955627",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/ilary_bolero.jpg",
+     "v": "1666955627",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "ilary-fuseaux",
+   "title": "Ilary Fuseaux",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T14:00:09-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126817435713,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126817468481,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126817501249,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "570.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/69.png",
+     "v": "1666955586",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/ilary_fus.jpg",
+     "v": "1666955586",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "arianna_sl",
+   "title": "Arianna_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:57:59-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126816649281,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126816682049,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126816714817,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126816747585,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126816780353,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126816813121,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "360.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/41.png",
+     "v": "1666954805",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/arianna_sl.jpg",
+     "v": "1666954805",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "arianna_ss-top",
+   "title": "Arianna_SS TOP",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:55:50-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126815895617,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815928385,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815961153,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815993921,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126816026689,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126816059457,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "400.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/40.png",
+     "v": "1666954823",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/arianna_ss.jpg",
+     "v": "1666954823",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "cinzia_ml",
+   "title": "Cinzia_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:53:39-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126815469633,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815502401,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815535169,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815567937,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815600705,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815633473,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/39.png",
+     "v": "1666954842",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/cinzia_ml.jpg",
+     "v": "1666954842",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "cinzia_mm",
+   "title": "Cinzia_MM",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:49:52-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126814847041,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126814879809,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126814912577,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126814945345,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126814978113,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126815010881,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/38.png",
+     "v": "1666954992",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/cinzia_mm.jpg",
+     "v": "1666954992",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "cinzia_sl",
+   "title": "Cinzia_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:42:46-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126808162369,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "310.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126808195137,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "310.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126808227905,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "310.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126808260673,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "310.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126808293441,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "310.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126808326209,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "310.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/22.png",
+     "v": "1666955018",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/25cinzia-sl.jpg",
+     "v": "1666955018",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "cinzia_ss",
+   "title": "Cinzia_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:40:23-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126807638081,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "260.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807670849,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "260.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807703617,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "260.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807736385,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "260.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807769153,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "260.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807801921,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "260.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/37.png",
+     "v": "1666955038",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/cinzia_ss.jpg",
+     "v": "1666955038",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "emily_ml",
+   "title": "Emily_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "48% Cotton 44% Wool 8% Silk",
+   "created_at": "2022-08-28T13:36:30-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126806917185,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126806949953,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126806982721,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807015489,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807048257,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126807081025,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "445.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/36.png",
+     "v": "1666955187",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/emily_ml.jpg",
+     "v": "1666955187",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "emily_mm",
+   "title": "Emily_MM",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "48% Cotton 44% Wool 8% Silk",
+   "created_at": "2022-08-28T13:32:00-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126806687809,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248450285633,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248450318401,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126806720577,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248450351169,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248450383937,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "375.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/35.png",
+     "v": "1666955209",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/emily_mm.jpg",
+     "v": "1666955209",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "emily_sl",
+   "title": "Emily_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "48% Cotton 44% Wool 8% Silk",
+   "created_at": "2022-08-28T13:29:31-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126806589505,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "325.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248447598657,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "325.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248447631425,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "325.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126806622273,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "325.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248447664193,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "325.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248447696961,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "325.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/60.png",
+     "v": "1666955242",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/emily_sl.jpg",
+     "v": "1666955242",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "emily_ss",
+   "title": "Emily_SS",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "48% Cotton 44% Wool 8% Silk",
+   "created_at": "2022-08-28T13:26:55-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126805803073,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "270.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248443863105,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "270.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248443895873,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "270.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126805835841,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "270.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248443928641,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "270.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40248443961409,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "270.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/34.png",
+     "v": "1666955262",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/emily_ss.jpg",
+     "v": "1666955262",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "fiordaliso_ml",
+   "title": "Fiordaliso_ML",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:24:22-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126805180481,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126805213249,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126805246017,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "415.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/21.png",
+     "v": "1666955282",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/23fiordaliso-ml.jpg",
+     "v": "1666955282",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "fiordaliso_sl",
+   "title": "Fiordaliso_SL",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:19:23-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126804852801,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "290.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126804885569,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "290.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126804918337,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "290.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/33.png",
+     "v": "1666955318",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/fiordaliso_sl.jpg",
+     "v": "1666955318",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  },
+  {
+   "handle": "sara-sl_body",
+   "title": "Sara-SL_body",
+   "tags": [
+    "underwear"
+   ],
+   "body_html": "",
+   "material": "85% Wool 15% Silk",
+   "created_at": "2022-08-28T13:01:39-04:00",
+   "options": [
+    {
+     "name": "Colors",
+     "values": [
+      "Black",
+      "Ivory"
+     ]
+    },
+    {
+     "name": "Size",
+     "values": [
+      "Small",
+      "Medium",
+      "Large"
+     ]
+    }
+   ],
+   "variants": [
+    {
+     "id": 40126800232513,
+     "title": "Black / Small",
+     "option1": "Black",
+     "option2": "Small",
+     "price": "420.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126800265281,
+     "title": "Black / Medium",
+     "option1": "Black",
+     "option2": "Medium",
+     "price": "420.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126800298049,
+     "title": "Black / Large",
+     "option1": "Black",
+     "option2": "Large",
+     "price": "420.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126800330817,
+     "title": "Ivory / Small",
+     "option1": "Ivory",
+     "option2": "Small",
+     "price": "420.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126800363585,
+     "title": "Ivory / Medium",
+     "option1": "Ivory",
+     "option2": "Medium",
+     "price": "420.00",
+     "available": true,
+     "sku": ""
+    },
+    {
+     "id": 40126800396353,
+     "title": "Ivory / Large",
+     "option1": "Ivory",
+     "option2": "Large",
+     "price": "420.00",
+     "available": true,
+     "sku": ""
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/66.png",
+     "v": "1666956017",
+     "w": 800,
+     "h": 800
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0571/3733/2289/products/sara_bdysl.jpg",
+     "v": "1666956017",
+     "w": 400,
+     "h": 400
+    }
+   ]
+  }
+ ]
+}
