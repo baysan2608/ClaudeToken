@@ -1,0 +1,163 @@
+<title>Closetoskin Before &amp; After</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Jost:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single reading column of before/after pairs; side by side on wide screens, a Today/Redesign switch on phones */
+:root {
+  --bg: #f7f3ee; --surface: #fffdfa; --ink: #2b2420; --muted: #6e625a; --line: #e2d9ce;
+  --accent: #7a5c45; --bad: #9b3b2f; --chip: #ede5da;
+  --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --sans: "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1d1916; --surface: #26201c; --ink: #f0e8de; --muted: #b9ab9c; --line: #3b322c;
+  --accent: #d2a985; --bad: #e38b7c; --chip: #332a24; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #1d1916; --surface: #26201c; --ink: #f0e8de; --muted: #b9ab9c; --line: #3b322c;
+  --accent: #d2a985; --bad: #e38b7c; --chip: #332a24; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased }
+.page { max-width: 1120px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+h1, h2 { font-family: var(--serif); font-weight: 500; line-height: 1.08; text-wrap: balance; margin: 0 }
+h1 { font-size: clamp(2.6rem, 7vw, 4.4rem) }
+h2 { font-size: clamp(2rem, 5vw, 2.8rem) }
+.eyebrow { font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 500 }
+.intro { display: grid; gap: 14px; max-width: 46rem; margin-bottom: 40px }
+.intro p { margin: 0; color: var(--muted); font-size: 1.08rem }
+.intro a { color: var(--accent); font-weight: 500 }
+.numbers { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 20px 4px }
+.numbers th, .numbers td { text-align: left; padding: 13px 8px; border-bottom: 1px solid var(--line); vertical-align: baseline }
+.numbers tr:last-child td { border-bottom: 0 }
+.numbers th { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; color: var(--muted) }
+.numbers th.after, .numbers td.after { color: var(--accent) }
+.numbers td.before, .numbers td.after { font-family: var(--serif); font-size: 1.45rem; white-space: nowrap; width: 8.5rem }
+.numbers td.before { color: var(--muted) }
+.note { font-size: .82rem; color: var(--muted); margin: 10px 0 0 }
+section.pair { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 36px; display: grid; gap: 18px }
+.pair header { display: grid; gap: 6px }
+.pair header p { margin: 0; color: var(--muted) }
+.switch { display: none; gap: 4px; padding: 4px; background: var(--chip); border-radius: 999px; width: max-content }
+.switch button { font: 500 .92rem var(--sans); color: var(--ink); background: transparent; border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; min-height: 40px }
+.switch button[aria-pressed="true"] { background: var(--ink); color: var(--bg) }
+.switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start }
+.sides.wide { grid-template-columns: 1fr }
+figure { margin: 0; display: grid; gap: 14px; min-width: 0 }
+.tag { justify-self: start; font-size: .74rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; color: #fff; padding: 5px 12px; border-radius: 999px }
+.before .tag { background: #6e625a }
+.after .tag { background: #7a5c45 }
+.shot { width: 100%; max-width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 14px 30px rgba(43, 36, 32, .10) }
+.sides:not(.wide) .shot { max-width: 420px }
+figcaption ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px }
+figcaption li { padding-left: 24px; position: relative }
+figcaption li::before { position: absolute; left: 0; font-weight: 600 }
+.before li::before { content: "–"; color: var(--bad) }
+.after li::before { content: "+"; color: var(--accent) }
+.wide figure { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); column-gap: 28px; align-items: start }
+.wide .tag { grid-column: 1 / -1 }
+footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; display: grid; gap: 6px }
+footer p { margin: 0 }
+@media (max-width: 760px) {
+  .switch { display: flex }
+  .sides, .sides.wide { grid-template-columns: 1fr }
+  .wide figure { grid-template-columns: 1fr }
+  .pair[data-show="before"] figure.after, .pair[data-show="after"] figure.before { display: none }
+  .sides:not(.wide) .shot { max-width: 100% }
+  .numbers td.before, .numbers td.after { width: auto; font-size: 1.2rem }
+  .table-wrap { padding: 4px 12px 0 }
+}
+@media (prefers-reduced-motion: no-preference) { .switch button { transition: background .15s, color .15s } }
+</style>
+
+<main class="page">
+  <div class="intro">
+    <span class="eyebrow">Closetoskin · redesign review · 21 October 2026</span>
+    <h1>Before &amp; after</h1>
+    <p>Screenshots of closetoskin.com as it is today, next to the same pages in the proposed redesign. Same products, prices and photos. On a phone, tap <strong>Today</strong> and <strong>Redesign</strong> to switch.</p>
+    <p>The full redesign can be browsed here: <a href="https://claude.ai/artifact/24fCtZ3MzgiJcwf4oRRmVv">Closetoskin redesign preview</a> (shared separately).</p>
+  </div>
+
+  <div class="table-wrap">
+    <table class="numbers">
+      <thead><tr><th scope="col">What we measured</th><th scope="col">Today</th><th scope="col" class="after">Redesign</th></tr></thead>
+      <tbody>
+        <tr><td>Speed score, homepage</td><td class="before">80</td><td class="after">99</td></tr>
+        <tr><td>Speed score, product page</td><td class="before">72</td><td class="after">99</td></tr>
+        <tr><td>SEO score</td><td class="before">85</td><td class="after">100</td></tr>
+        <tr><td>Accessibility score</td><td class="before">92</td><td class="after">100</td></tr>
+        <tr><td>Product page: time until the main image shows</td><td class="before">4.1 s</td><td class="after">2.0 s</td></tr>
+        <tr><td>Homepage download size</td><td class="before">1.18 MB</td><td class="after">0.27 MB</td></tr>
+        <tr><td>Products named with a code, like “Emily_SS”</td><td class="before">49</td><td class="after">0</td></tr>
+        <tr><td>Products with no description</td><td class="before">68</td><td class="after">0</td></tr>
+        <tr><td>Homepage images without alt text</td><td class="before">16 of 22</td><td class="after">0</td></tr>
+        <tr><td>“Free delivery in Norway” mentioned</td><td class="before">Nowhere</td><td class="after">Every page</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Scores from Google Lighthouse 12, mobile profile. The redesign was measured on a test server, so final numbers depend on hosting.</p>
+
+  <section class="pair" data-show="before" aria-labelledby="h-home">
+    <header><span class="eyebrow">On a laptop</span><h2 id="h-home">Homepage</h2><p>The first thing a visitor sees.</p></header>
+    <div class="switch" role="group" aria-label="Show version"><button type="button" data-show="before" aria-pressed="true">Today</button><button type="button" data-show="after" aria-pressed="false">Redesign</button></div>
+    <div class="sides wide">
+      <figure class="before"><span class="tag">Today</span><img class="shot" src="img/home-desktop-before.jpg" width="1440" height="900" alt="Current homepage: two photos of necklaces on mannequins with a Shop all button"><figcaption><ul><li>No headline: two photos of necklaces on mannequins</li><li>One “Shop all” button. Underwear, over half the catalogue, isn’t shown</li><li>Free delivery in Norway isn’t mentioned</li></ul></figcaption></figure>
+      <figure class="after"><span class="tag">Redesign</span><img class="shot" src="img/home-desktop-after.jpg" width="1440" height="900" loading="lazy" alt="Redesigned homepage: headline about wool and silk underwear, two buttons and a camisole photo"><figcaption><ul><li>The headline says what the shop sells: wool &amp; silk underwear</li><li>Two clear buttons: Shop underwear and See bestsellers</li><li>Free delivery, 14-day exchanges and personal service up front</li></ul></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair" data-show="before" aria-labelledby="h-home-m">
+    <header><span class="eyebrow">On a phone</span><h2 id="h-home-m">Homepage, first screen</h2><p>What shows before any scrolling.</p></header>
+    <div class="switch" role="group" aria-label="Show version"><button type="button" data-show="before" aria-pressed="true">Today</button><button type="button" data-show="after" aria-pressed="false">Redesign</button></div>
+    <div class="sides">
+      <figure class="before"><span class="tag">Today</span><img class="shot" src="img/home-mobile-before.jpg" width="780" height="1688" loading="lazy" alt="Current homepage on a phone"><figcaption><ul><li>Logo, two mannequins and a “Shop all” button</li><li>Nothing says what the shop sells</li></ul></figcaption></figure>
+      <figure class="after"><span class="tag">Redesign</span><img class="shot" src="img/home-mobile-after.jpg" width="780" height="1688" loading="lazy" alt="Redesigned homepage on a phone"><figcaption><ul><li>Headline, two buttons and free delivery, all before scrolling</li><li>Delivery, timing and returns rotate in the top bar</li></ul></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair" data-show="before" aria-labelledby="h-col">
+    <header><span class="eyebrow">On a phone</span><h2 id="h-col">Shopping a category</h2><p>The underwear page.</p></header>
+    <div class="switch" role="group" aria-label="Show version"><button type="button" data-show="before" aria-pressed="true">Today</button><button type="button" data-show="after" aria-pressed="false">Redesign</button></div>
+    <div class="sides">
+      <figure class="before"><span class="tag">Today</span><img class="shot" src="img/collection-mobile-before.jpg" width="780" height="1688" loading="lazy" alt="Current underwear page on a phone"><figcaption><ul><li>Products named by internal codes: Sara_SS, Sara_SL, Sara_MM</li><li>No introduction and no filters by style, material or colour</li></ul></figcaption></figure>
+      <figure class="after"><span class="tag">Redesign</span><img class="shot" src="img/collection-mobile-after.jpg" width="780" height="1688" loading="lazy" alt="Redesigned underwear page on a phone"><figcaption><ul><li>Readable names with the material: “Arianna Camisole, Wool &amp; silk”</li><li>Filter by style, material and colour, with a colour count on each photo</li></ul></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair" data-show="before" aria-labelledby="h-pdp">
+    <header><span class="eyebrow">On a phone</span><h2 id="h-pdp">Product page</h2><p>First screen of the Emily camisole.</p></header>
+    <div class="switch" role="group" aria-label="Show version"><button type="button" data-show="before" aria-pressed="true">Today</button><button type="button" data-show="after" aria-pressed="false">Redesign</button></div>
+    <div class="sides">
+      <figure class="before"><span class="tag">Today</span><img class="shot" src="img/product-mobile-before.jpg" width="780" height="1688" loading="lazy" alt="Current product page for Emily_SS on a phone"><figcaption><ul><li>The name is the code “Emily_SS”</li><li>The material isn’t shown up front</li></ul></figcaption></figure>
+      <figure class="after"><span class="tag">Redesign</span><img class="shot" src="img/product-mobile-after.jpg" width="780" height="1688" loading="lazy" alt="Redesigned product page for the Emily Camisole on a phone"><figcaption><ul><li>Named “Emily Camisole”, with a path back to Camisoles</li><li>Material shown as a tag, and an add-to-bag bar always in reach</li></ul></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair" data-show="before" aria-labelledby="h-buy">
+    <header><span class="eyebrow">On a phone</span><h2 id="h-buy">Deciding to buy</h2><p>The same product page, at the buy button.</p></header>
+    <div class="switch" role="group" aria-label="Show version"><button type="button" data-show="before" aria-pressed="true">Today</button><button type="button" data-show="after" aria-pressed="false">Redesign</button></div>
+    <div class="sides">
+      <figure class="before"><span class="tag">Today</span><img class="shot" src="img/buy-mobile-before.jpg" width="780" height="1688" loading="lazy" alt="Current buy section with closed Material, Shipping and Care Guide tabs"><figcaption><ul><li>Delivery info is hidden in a closed tab</li><li>A “Size Guide” heading with nothing under it, and the Care Guide tab is empty</li></ul></figcaption></figure>
+      <figure class="after"><span class="tag">Redesign</span><img class="shot" src="img/buy-mobile-after.jpg" width="780" height="1688" loading="lazy" alt="Redesigned buy section with delivery, returns and stock status under the button"><figcaption><ul><li>Free delivery, 14-day returns and stock status right under the button</li><li>Description, material &amp; care, and size &amp; fit written for every product</li></ul></figcaption></figure>
+    </div>
+  </section>
+
+  <footer>
+    <p>Today: closetoskin.com, captured 21 October 2026 on an iPhone-sized screen (390 × 844) and a laptop screen (1440 × 900).</p>
+    <p>Redesign: the review preview, with the same catalogue, prices and photos as the live store.</p>
+  </footer>
+</main>
+
+<script>
+document.querySelectorAll('.pair').forEach(function (pair) {
+  pair.querySelectorAll('.switch button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      pair.dataset.show = btn.dataset.show;
+      pair.querySelectorAll('.switch button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    });
+  });
+});
+</script>
