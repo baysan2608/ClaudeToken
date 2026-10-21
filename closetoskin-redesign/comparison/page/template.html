@@ -1,0 +1,160 @@
+<title>Closetoskin Before &amp; After</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one reading column; live-version cards, the numbers, then each screen as today / v2 / v3 (side by side wide, a switch on phones) */
+@@FONTS@@
+:root {
+  --bg: #f6f5f2; --surface: #ffffff; --ink: #1c2329; --muted: #5d646a; --line: #dcd8d2; --chip: #ebe6e0;
+  --v1: #6e625a; --v2: #7a5c45; --v3: #285a5e; --bad: #9b3b2f;
+  --display: "Bodoni Moda", Didot, Georgia, serif; --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161b1f; --surface: #1f262b; --ink: #edf0ee; --muted: #a8b1b5; --line: #343d43; --chip: #262e33;
+  --v1: #b9ab9c; --v2: #d2a985; --v3: #7fc0bf; --bad: #e38b7c; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #161b1f; --surface: #1f262b; --ink: #edf0ee; --muted: #a8b1b5; --line: #343d43; --chip: #262e33;
+  --v1: #b9ab9c; --v2: #d2a985; --v3: #7fc0bf; --bad: #e38b7c; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased }
+.page { max-width: 1180px; margin: 0 auto; padding-block: 44px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.06; text-wrap: balance; margin: 0; letter-spacing: -.01em }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem) }
+h2 { font-size: clamp(2rem, 5vw, 2.9rem) }
+h3 { font-size: 1.5rem }
+em { font-style: italic }
+.eyebrow { font: 400 .72rem/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
+.intro { display: grid; gap: 14px; max-width: 48rem }
+.intro p { margin: 0; color: var(--muted); font-size: 1.08rem }
+.live { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 34px 0 10px }
+.live a { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: center; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; transition: border-color .2s, transform .2s }
+.live a:hover { border-color: var(--ink); transform: translateY(-2px) }
+.live img { width: 84px; height: 120px; object-fit: cover; object-position: top; border-radius: 6px; display: block }
+.live strong { display: block; font: 400 1.35rem/1.1 var(--display) }
+.live span { font-size: .9rem; color: var(--muted) }
+.live .go { display: inline-block; margin-top: 6px; font-weight: 600; font-size: .88rem }
+.live .v1 .go { color: var(--v1) } .live .v2 .go { color: var(--v2) } .live .v3 .go { color: var(--v3) }
+.note { font-size: .84rem; color: var(--muted); margin: 8px 0 0 }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 20px 2px; margin-top: 36px }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums }
+th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: baseline }
+tr:last-child td { border-bottom: 0 }
+th { font: 400 .72rem/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
+td.n { font: 500 1.15rem/1.3 var(--sans); white-space: nowrap; width: 8.5rem }
+.c1 { color: var(--v1) } .c2 { color: var(--v2) } .c3 { color: var(--v3) }
+section.pair { border-top: 1px solid var(--line); margin-top: 60px; padding-top: 38px; display: grid; gap: 18px }
+.pair header { display: grid; gap: 6px }
+.pair header p { margin: 0; color: var(--muted) }
+.switch { display: none; gap: 4px; padding: 4px; background: var(--chip); border-radius: 999px; width: max-content; max-width: 100% }
+.switch button { font: 600 .9rem var(--sans); color: var(--ink); background: transparent; border: 0; border-radius: 999px; padding: 9px 16px; min-height: 42px; cursor: pointer }
+.switch button[aria-pressed="true"] { background: var(--ink); color: var(--bg) }
+.switch button:focus-visible, .live a:focus-visible { outline: 2px solid var(--v3); outline-offset: 2px }
+.sides { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start }
+.sides.wide { grid-template-columns: 1fr; gap: 34px }
+figure { margin: 0; display: grid; gap: 12px; min-width: 0 }
+.tag { justify-self: start; font: 600 .72rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: #fff; padding: 7px 12px; border-radius: 999px }
+.v1 .tag { background: #6e625a } .v2 .tag { background: #7a5c45 } .v3 .tag { background: #285a5e }
+.shot { width: 100%; max-width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 14px 30px rgba(28, 35, 41, .10) }
+.wide figure { grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); column-gap: 28px; align-items: start }
+.wide .tag { grid-column: 1 / -1 }
+figcaption ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: .97rem }
+figcaption li { padding-left: 22px; position: relative }
+figcaption li::before { position: absolute; left: 0; font-weight: 700 }
+.v1 li::before { content: "–"; color: var(--bad) }
+.v2 li::before { content: "+"; color: var(--v2) }
+.v3 li::before { content: "+"; color: var(--v3) }
+.new { margin-top: 64px; border-top: 1px solid var(--line); padding-top: 40px; display: grid; gap: 20px }
+.new ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 32px }
+.new li { border-top: 1px solid var(--line); padding-top: 14px }
+.new li strong { display: block; font-weight: 600 }
+.new li span { color: var(--muted); font-size: .95rem }
+footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; display: grid; gap: 6px }
+footer p { margin: 0 }
+@media (max-width: 820px) {
+  .live { grid-template-columns: 1fr }
+  .switch { display: flex }
+  .sides, .sides.wide { grid-template-columns: 1fr }
+  .wide figure { grid-template-columns: 1fr }
+  .pair[data-show="v1"] figure:not(.v1), .pair[data-show="v2"] figure:not(.v2), .pair[data-show="v3"] figure:not(.v3) { display: none }
+  .new ol { grid-template-columns: 1fr }
+  .table-wrap { padding: 4px 14px 2px }
+  table, thead, tbody { display: block }
+  tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid var(--line) }
+  tbody tr:last-child { border-bottom: 0 }
+  th, td { border: 0; padding: 0 }
+  th:first-child { display: none }
+  td:first-child { grid-column: 1 / -1; font-size: .95rem; margin-bottom: 2px }
+  td.n { width: auto; font-size: 1.05rem; white-space: normal }
+}
+@media (prefers-reduced-motion: no-preference) { .switch button { transition: background .15s, color .15s } }
+</style>
+
+<main class="page">
+  <div class="intro">
+    <span class="eyebrow">Closetoskin · redesign review · 21 October 2026</span>
+    <h1>Today, version 2 <em>&amp;</em> version 3</h1>
+    <p>Her site as it is today, the first redesign and the new version 3, on the same screens, with the same products, prices and photos. Open each version to click through it live; the screenshots below compare them side by side.</p>
+  </div>
+
+  <nav class="live" aria-label="Open the live versions">
+    <a class="v1" href="https://www.closetoskin.com/"><img src="img/home-mobile-before.jpg" alt="" width="84" height="120"><div><strong>Today</strong><span>closetoskin.com as it is now</span><br><span class="go">Open the live site</span></div></a>
+    <a class="v2" href="https://claude.ai/artifact/24fCtZ3MzgiJcwf4oRRmVv"><img src="img/home-mobile-after.jpg" alt="" width="84" height="120"><div><strong>Version 2</strong><span>Clear structure, fast, SEO-ready</span><br><span class="go">Open version 2</span></div></a>
+    <a class="v3" href="https://claude.ai/artifact/HCDGPc6a2BpZrbjmiwqMk2"><img src="img/home-mobile-v3.jpg" alt="" width="84" height="120"><div><strong>Version 3</strong><span>Editorial, fibre-led, helps you choose</span><br><span class="go">Open version 3</span></div></a>
+  </nav>
+  <p class="note">Versions 2 and 3 are private review copies: checkout and forms are turned off.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">What we measured</th><th scope="col">Today</th><th scope="col" class="c2">Version 2</th><th scope="col" class="c3">Version 3</th></tr></thead>
+      <tbody>
+        <tr><td>Speed score, homepage</td><td class="n c1">80</td><td class="n c2">99</td><td class="n c3">99</td></tr>
+        <tr><td>Speed score, product page</td><td class="n c1">72</td><td class="n c2">99</td><td class="n c3">99</td></tr>
+        <tr><td>SEO score</td><td class="n c1">85</td><td class="n c2">100</td><td class="n c3">100</td></tr>
+        <tr><td>Accessibility score</td><td class="n c1">92</td><td class="n c2">100</td><td class="n c3">100</td></tr>
+        <tr><td>Product page: time until the main image shows</td><td class="n c1">4.1 s</td><td class="n c2">2.0 s</td><td class="n c3">2.1 s</td></tr>
+        <tr><td>Homepage download size</td><td class="n c1">1.18 MB</td><td class="n c2">0.27 MB</td><td class="n c3">0.31 MB</td></tr>
+        <tr><td>Products named with a code, like “Emily_SS”</td><td class="n c1">49</td><td class="n c2">0</td><td class="n c3">0</td></tr>
+        <tr><td>Products with no description</td><td class="n c1">68</td><td class="n c2">0</td><td class="n c3">0</td></tr>
+        <tr><td>“Free delivery in Norway” mentioned</td><td class="n c1">Nowhere</td><td class="n c2">Every page</td><td class="n c3">Every page</td></tr>
+        <tr><td>Fibre composition on every product card</td><td class="n c1">No</td><td class="n c2">No</td><td class="n c3">Yes</td></tr>
+        <tr><td>Help choosing (layer finder, warmth scale)</td><td class="n c1">No</td><td class="n c2">No</td><td class="n c3">Yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Scores from Google Lighthouse 12, mobile profile. Versions 2 and 3 were measured on a test server, so final numbers depend on hosting.</p>
+
+@@PAIRS@@
+
+  <section class="new" aria-labelledby="h-new">
+    <span class="eyebrow">What changed in version 3, and why</span>
+    <h2 id="h-new">Built from what the <em>category leaders</em> do</h2>
+    <ol>
+      <li><strong>An editorial hero</strong><span>Her own high-resolution photo fades into its studio wall, with a short promise: “The layer you forget you’re wearing”. Large brands (Icebreaker, Janus, Hanro) all lead with one strong image and one benefit.</span></li>
+      <li><strong>Fibre first</strong><span>Every product card shows the real composition, like “85% wool · 15% silk”, and the menu lets you shop by fibre, the way Hanro does.</span></li>
+      <li><strong>Find your layer</strong><span>Two questions (do you get cold easily, how much coverage) pick three products. Woolpower’s base-layer guide uses the same first question.</span></li>
+      <li><strong>A warmth scale</strong><span>Light to warmest, worked out from wool content, as Devold and Janus grade their fabrics. Shown on every underwear product.</span></li>
+      <li><strong>A care label on product pages</strong><span>Composition, warmth and care symbols set like the woven label inside the garment.</span></li>
+      <li><strong>Complete the layer</strong><span>Each underwear product suggests a cardigan, leggings or briefs and a piece of jewellery to go with it.</span></li>
+      <li><strong>Bestsellers and Gifts in the menu</strong><span>Bestsellers first, as on Hanro and SKIMS, and a Gifts page sorted by budget for the Christmas season.</span></li>
+      <li><strong>Her own type and colour</strong><span>Bodoni Moda for the brand voice, Hanken Grotesk for reading, a mono “label” face for fibre facts, and colours taken from her photography.</span></li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>Today: closetoskin.com, captured 21 October 2026 on an iPhone-sized screen (390 × 844) and a laptop screen (1440 × 900).</p>
+    <p>Versions 2 and 3: review previews built from the store’s own catalogue, prices and photos.</p>
+  </footer>
+</main>
+
+<script>
+document.querySelectorAll('.pair').forEach(function (pair) {
+  pair.querySelectorAll('.switch button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      pair.dataset.show = btn.dataset.show;
+      pair.querySelectorAll('.switch button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    });
+  });
+});
+</script>

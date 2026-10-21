@@ -41,9 +41,14 @@
     else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
   });
 
+  let shown = null;
   function render() {
     const count = cart.reduce((a, x) => a + x.q, 0);
-    $$('[data-cart-count]').forEach(b => { b.textContent = count || ''; });
+    $$('[data-cart-count]').forEach(b => {
+      b.textContent = count || '';
+      if (shown !== null && count > shown) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+    });
+    shown = count;
     const lines = $('#cart-lines');
     if (!lines) return;
     if (!cart.length) {
@@ -174,6 +179,9 @@
       if (!picked) { form.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
       if (!current || !current.a) { form.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
       add({ id: current.id, q: 1, t: P.name, v: P.variants.length > 1 ? current.o.map(x => P.labels[x] || x).join(' / ') : '', p: current.p, i: P.img, u: P.url });
+      // brief confirmation on the button itself, then back to its normal label
+      btns.forEach(x => { x.classList.add('added'); x.textContent = 'Added to bag ✓'; });
+      clearTimeout(b._t); b._t = setTimeout(() => { btns.forEach(x => x.classList.remove('added')); update(); }, 1600);
     }));
 
     // gallery: thumbnails + dots follow the scroll-snap slider
@@ -204,6 +212,49 @@
       const img = new Image();
       img.src = m.dataset.hover; img.alt = ''; img.className = 'hover'; img.decoding = 'async';
       m.appendChild(img);
+    });
+  }
+
+  /* ---------- layer finder (homepage) ---------- */
+  const fd = $('#finder-data');
+  if (fd) {
+    const D = JSON.parse(fd.textContent);
+    const st = { cold: 'some', cover: 'camisoles' };
+    const out = $('#finder-results'), note = $('#finder-note'), more = $('#finder-more');
+    const show = () => {
+      const pref = D.pref[st.cold];
+      // same ranking as build.py: closest warmth to the answer first, then price
+      const picks = D.items.filter(x => x.g === st.cover).sort((a, b) => pref.indexOf(a.w) - pref.indexOf(b.w) || a.p - b.p).slice(0, 3);
+      if (!picks.length) return;
+      note.textContent = (picks[0].w === pref[0] ? '' : 'No ' + D.fibre[pref[0]] + ' version of this style yet. ') + D.notes[picks[0].w];
+      out.innerHTML = picks.map(x => `<article class="card"><a href="${url(x.u)}"><span class="media"><img src="${url(x.i)}" alt="" width="540" height="675" loading="lazy" decoding="async"></span><h3>${esc(x.n)}</h3></a><div class="meta">${esc(x.c)}</div><div class="price">${money(x.p)}</div></article>`).join('');
+      more.href = url('/collections/' + st.cover + '/');
+      more.textContent = 'See all ' + D.names[st.cover];
+    };
+    $$('[data-cold],[data-cover]').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.cold ? 'cold' : 'cover';
+      st[k] = b.dataset[k];
+      $$(`[data-${k}]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+      show();
+    }));
+  }
+
+  /* ---------- motion: header shadow, reveal-on-scroll for content below the fold ---------- */
+  const onScroll = () => root.classList.toggle('scrolled', scrollY > 8);
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  const reveal = $$('[data-reveal]');
+  if (reveal.length && 'IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const io = new IntersectionObserver(es => es.forEach(en => {
+      if (en.isIntersecting) { en.target.classList.remove('pre'); io.unobserve(en.target); }
+    }), { rootMargin: '0px 0px -6% 0px' });
+    // measure everything first, then write, so the browser lays the page out once
+    const below = reveal.filter(el => el.getBoundingClientRect().top >= innerHeight);
+    below.forEach(el => {
+      // stagger siblings in a row
+      const sib = [...el.parentElement.children].filter(x => x.hasAttribute('data-reveal'));
+      el.style.setProperty('--d', (sib.indexOf(el) % 4) * 0.08 + 's');
+      el.classList.add('pre');
+      io.observe(el);
     });
   }
 

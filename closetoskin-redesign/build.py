@@ -128,6 +128,29 @@ def material_label(raw):
     return raw
 
 
+def composition(raw):
+    """'85% Wool 15% Silk' -> '85% wool · 15% silk' (set as a care label in CSS)."""
+    return " · ".join(f"{n}% {fibre.lower()}" for n, fibre in re.findall(r"(\d+)\s*%\s*([A-Za-z]+)", raw or ""))
+
+
+# Warmth follows wool content, the way Nordic base-layer brands grade their fabrics.
+WARMTH = ["light", "medium", "warm", "warmest"]
+WARMTH_NOTE = {
+    "warmest": "Our warmest blend: 85% wool, 15% silk. For cold days and anyone who feels the cold.",
+    "warm": "70% wool, 30% silk: warm without bulk, for every day from autumn to spring.",
+    "medium": "Cotton, wool & silk: soft and breathable, for wearing all year.",
+    "light": "Pure silk: light and smooth, for warm days and under fine blouses.",
+}
+
+
+def warmth(raw):
+    if not raw:
+        return None
+    m = re.search(r"(\d+)\s*%\s*wool", raw, re.I)
+    wool = int(m.group(1)) if m else 0
+    return "warmest" if wool >= 80 else "warm" if wool >= 60 else "medium" if wool > 0 else "light"
+
+
 def parse_underwear(title, mat=""):
     """Turn store codes like 'Emily_SS' or '909 04 ML' into readable names + a style group."""
     t = title.replace("Am_lie", "Amélie").replace("_", " ").replace("-", " ")
@@ -204,7 +227,7 @@ def load_catalog():
         prices = [float(v["price"]) for v in p["variants"]]
         products.append({
             "i": i, "handle": p["handle"], "code": p["title"], "name": name, "cat": cat, "group": group, "style": style, "model": model,
-            "material_raw": p["material"], "material": mat, "facts": facts if cat != "underwear" else [], "desc": [d for d in desc if d],
+            "material_raw": p["material"], "material": mat, "comp": composition(p["material"]), "warmth": warmth(p["material"]), "facts": facts if cat != "underwear" else [], "desc": [d for d in desc if d],
             "options": opts, "colours": colours, "variants": p["variants"], "price": min(prices),
             "available": any(v["available"] for v in p["variants"]), "images": p["images"], "created": p["created_at"],
             "url": f"/products/{p['handle']}/",
@@ -229,10 +252,28 @@ def picture(im, alt, sizes, widths=(360, 540, 720, 900, 1200), eager=False, cls=
     ws = [w for w in widths if w <= max(im["w"], 360)] or [widths[0]]
     srcset = ", ".join(f"{img_url(im, w)} {w}w" for w in ws)
     h = round(ws[-1] * im["h"] / im["w"])
-    load = 'fetchpriority="high" loading="eager"' if eager else 'loading="lazy"'
+    # eager="high" marks the one image most likely to be the largest paint
+    load = 'fetchpriority="high" loading="eager"' if eager == "high" else 'loading="eager"' if eager else 'loading="lazy"'
     c = f' class="{cls}"' if cls else ""
     return (f'<img src="{img_url(im, ws[min(1, len(ws)-1)])}" srcset="{srcset}" sizes="{sizes}" width="{ws[-1]}" height="{h}" '
             f'alt="{e(alt)}" {load} decoding="async"{c}>')
+
+
+ART = {"hero": (1550, 1350), "knit": (320, 320), "lace": (510, 600), "weave": (700, 640), "bag": (1370, 1700)}
+ART_W = {"hero": (900, 1500), "knit": (480,), "lace": (700,), "weave": (700,), "bag": (900,)}
+
+
+def art_src(name, w=None):
+    return f"/assets/img/{name}-{w or ART_W[name][-1]}.webp"
+
+
+def art(name, alt, sizes, eager=False):
+    ws = ART_W[name]
+    w, h = ART[name]
+    srcset = ", ".join(f"{art_src(name, x)} {x}w" for x in ws)
+    load = 'fetchpriority="high" loading="eager"' if eager else 'loading="lazy"'
+    return (f'<img src="{art_src(name)}" srcset="{srcset}" sizes="{sizes}" width="{ws[-1]}" height="{round(ws[-1] * h / w)}" '
+            f'alt="{e(alt)}" {load} decoding="async">')
 
 
 def money(n):
@@ -262,6 +303,7 @@ def header(active):
         return f'<a href="{href}"{cur}>{label}</a>'
     styles = "".join(f'<a href="/collections/{s}/">{v[1]}</a>' for s, v in UNDERWEAR_STYLES.items())
     mats = "".join(f'<a href="/collections/{s}/">{v[0]}</a>' for s, v in MATERIALS.items())
+    mats += '<a href="/pages/wool-silk-guide/">Which fibre is right for me?</a>'
     jewel = "".join(f'<a href="/collections/{s}/">{v[1]}</a>' for s, v in JEWELLERY_TYPES.items())
     return f'''<a class="skip" href="#main">Skip to content</a>
 <div class="announce">{"".join(f"<span>{e(x)}</span>" for x in PERKS)}</div>
@@ -270,12 +312,13 @@ def header(active):
 <a class="logo" href="/" aria-label="{BRAND} home">{logo()}</a>
 <nav class="nav" aria-label="Main">
 <button class="icon-btn nav-close" type="button" data-close aria-label="Close menu">{ICONS["close"]}</button>
-<div class="has-menu">{a("/collections/underwear/", "Underwear")}<button class="sub-toggle" type="button" aria-expanded="false" aria-label="Underwear categories"></button><div class="menu"><strong>By style</strong>{styles}<strong>By material</strong>{mats}</div></div>
+{a("/collections/bestsellers/", "Bestsellers")}
+<div class="has-menu">{a("/collections/underwear/", "Underwear")}<button class="sub-toggle" type="button" aria-expanded="false" aria-label="Underwear categories"></button><div class="menu"><strong>By style</strong>{styles}<strong>By fibre</strong>{mats}</div></div>
 {a("/collections/handbags/", "Handbags")}
 <div class="has-menu">{a("/collections/accessories/", "Jewellery")}<button class="sub-toggle" type="button" aria-expanded="false" aria-label="Jewellery categories"></button><div class="menu"><strong>By type</strong>{jewel}</div></div>
-{a("/pages/wool-silk-guide/", "Wool &amp; Silk Guide")}
-{a("/pages/about-us/", "Our Story")}
-<div class="nav-extra"><a href="/pages/shipping-returns/">Shipping &amp; returns</a><a href="/pages/contact/">Contact us</a><a href="mailto:{EMAIL}">{EMAIL}</a></div>
+{a("/collections/gifts/", "Gifts")}
+{a("/pages/wool-silk-guide/", "Guide")}
+<div class="nav-extra"><a href="/pages/about-us/">Our story</a><a href="/pages/shipping-returns/">Shipping &amp; returns</a><a href="/pages/contact/">Contact us</a><a href="mailto:{EMAIL}">{EMAIL}</a></div>
 </nav>
 <div class="icons">
 <button class="icon-btn" type="button" data-open-search aria-label="Search">{ICONS["search"]}</button>
@@ -288,8 +331,8 @@ def footer():
 <div class="cols">
 <div><a class="logo" href="/">{logo()}</a><p>Underwear in natural wool, silk and cotton, hand-woven Italian leather bags and handmade Venetian jewellery. From Oslo since 2009.</p>
 <p><a href="{SOCIAL[0]}" rel="noopener">Instagram</a> · <a href="{SOCIAL[1]}" rel="noopener">Facebook</a></p></div>
-<div><h2>Shop</h2><ul><li><a href="/collections/underwear/">Underwear</a></li><li><a href="/collections/silk-underwear/">Pure silk</a></li><li><a href="/collections/wool-silk-underwear/">Wool &amp; silk</a></li><li><a href="/collections/handbags/">Handbags</a></li><li><a href="/collections/accessories/">Jewellery</a></li><li><a href="/collections/all/">Shop all</a></li></ul></div>
-<div><h2>Help</h2><ul><li><a href="/pages/shipping-returns/">Shipping &amp; returns</a></li><li><a href="/pages/wool-silk-guide/">Fit &amp; care guide</a></li><li><a href="/pages/contact/">Contact us</a></li><li><a href="/pages/terms-conditions/">Terms &amp; conditions</a></li></ul></div>
+<div><h2>Shop</h2><ul><li><a href="/collections/underwear/">Underwear</a></li><li><a href="/collections/silk-underwear/">Pure silk</a></li><li><a href="/collections/wool-silk-underwear/">Wool &amp; silk</a></li><li><a href="/collections/handbags/">Handbags</a></li><li><a href="/collections/accessories/">Jewellery</a></li><li><a href="/collections/gifts/">Gifts</a></li><li><a href="/collections/all/">Shop all</a></li></ul></div>
+<div><h2>Help</h2><ul><li><a href="/pages/about-us/">Our story</a></li><li><a href="/pages/shipping-returns/">Shipping &amp; returns</a></li><li><a href="/pages/wool-silk-guide/">Fit &amp; care guide</a></li><li><a href="/pages/contact/">Contact us</a></li><li><a href="/pages/terms-conditions/">Terms &amp; conditions</a></li></ul></div>
 <div><h2>Contact</h2><ul><li><a href="mailto:{EMAIL}">{EMAIL}</a></li><li>Mon–Fri, 08:00–16:00 CET</li><li>{ADDRESS["street"]}<br>{ADDRESS["zip"]} {ADDRESS["city"]}, Norway</li></ul></div>
 </div>
 <div class="legal"><span>© 2026 Closetoskin · Operated by Sommerfugl Consult, org. no. 813 728 362</span><span>Prices in NOK incl. Norwegian VAT</span></div>
@@ -319,11 +362,11 @@ def page(path, title, desc, body, active="", ld=(), og_image=None, preload=None)
 {robots}
 <meta property="og:site_name" content="{BRAND}"><meta property="og:type" content="{'product' if path.startswith('/products/') else 'website'}"><meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{canon}">{og}
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#f7f3ee">
+<meta name="theme-color" content="#f6f5f2">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="{CDN}">
-<link rel="preload" href="/assets/fonts/jost-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/assets/fonts/cormorant-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/hanken-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/bodoni-400.woff2" as="font" type="font/woff2" crossorigin>
 {pre}
 <link rel="stylesheet" href="/assets/styles.css?v={ASSET_V['css']}">
 <script src="/assets/app.js?v={ASSET_V['js']}" defer></script>
@@ -355,6 +398,7 @@ def card(p, eager=False, pos=None):
     ims = p["images"][:2]
     meta = p["material"] or ("Made in Italy" if p["cat"] == "handbags" else "Handmade in Venice" if "Calderara" in p["name"] else "")
     alt = p["name"] + (f", {meta.lower()}" if meta else ", jewellery")
+    label = p["comp"] or ("Hand-woven leather · Italy" if p["cat"] == "handbags" else "Handmade in Venice" if "Calderara" in p["name"] else "Jewellery")
     imgs = picture(ims[0], alt, "(max-width:700px) 50vw, (max-width:1024px) 33vw, 300px", (360, 540, 720), eager) if ims else ""
     hover = f' data-hover="{img_url(ims[1], 540)}"' if len(ims) > 1 else ""
     sw = "".join(f'<i style="background:{COLOURS.get(c, "#bbb")}" title="{e(LABEL_FIX.get(c, c))}"></i>' for c in p["colours"][:6])
@@ -362,9 +406,9 @@ def card(p, eager=False, pos=None):
     tag = f'<span class="tag">{ncol} colours</span>' if ncol > 1 else ""
     filt = " ".join(x for x in [p["group"] or "", "silk" if p["material"] == "Pure silk" else "woolsilk" if p["material"] else ""] if x)
     cols = " ".join(re.sub(r"\W", "", LABEL_FIX.get(c, c)).lower() for c in p["colours"])
-    return (f'<article class="card" data-f="{filt}" data-c="{cols}" data-p="{p["price"]:.0f}" data-d="{p["created"][:10]}" data-i="{p["i"] if pos is None else pos}">'
+    return (f'<article class="card" data-reveal data-f="{filt}" data-c="{cols}" data-p="{p["price"]:.0f}" data-d="{p["created"][:10]}" data-i="{p["i"] if pos is None else pos}">'
             f'<a href="{p["url"]}"><span class="media"{hover}>{imgs}{tag}</span><h3>{e(p["name"])}</h3></a>'
-            f'<div class="meta">{e(meta)}</div><div class="price">{money(p["price"])}</div>{f"<div class=swatches>{sw}</div>" if sw else ""}</article>')
+            f'<div class="meta">{e(label)}</div><div class="price">{money(p["price"])}</div>{f"<div class=swatches>{sw}</div>" if sw else ""}</article>')
 
 
 ORG_LD = {
@@ -377,7 +421,7 @@ ORG_LD = {
 }
 
 PERKS = (["Free delivery in Norway", "Tax-free shopping outside Norway", "14-day returns & size exchanges"] if INTERNATIONAL
-         else ["Free delivery in Norway", "Delivered in 2–5 days", "14-day returns & size exchanges"])
+         else ["Free delivery in Norway", "14-day returns & size exchanges", "Oslo · since 2009"])
 SHIP_META = "Free delivery in Norway, 14-day returns" + (", tax-free abroad" if INTERNATIONAL else "")
 SHIP_LD = {"@type": "OfferShippingDetails", "shippingRate": {"@type": "MonetaryAmount", "value": 0, "currency": "NOK"},
            "shippingDestination": {"@type": "DefinedRegion", "addressCountry": "NO"},
@@ -406,70 +450,146 @@ def faq_ld(items):
         {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in items]}
 
 
+# --------------------------------------------------------------------------- layer finder (shared with app.js)
+
+FINDER_COLD = [("yes", "Yes, always"), ("some", "Sometimes"), ("no", "No, I run warm")]
+FINDER_PREF = {"yes": ["warmest", "warm", "medium", "light"], "some": ["warm", "medium", "warmest", "light"], "no": ["light", "medium", "warm", "warmest"]}
+FINDER_COVER = [("camisoles", "Thin straps"), ("tank-tops", "Wider straps"), ("short-sleeve-tops", "Short sleeves"),
+                ("long-sleeve-tops", "Long sleeves"), ("bodysuits", "Bodysuit")]
+
+
+def finder_items(products):
+    return [{"n": p["name"], "u": p["url"], "i": img_url(p["images"][0], 540) if p["images"] else "", "p": p["price"],
+             "g": p["group"], "w": p["warmth"], "c": p["comp"]} for p in products if p["cat"] == "underwear"]
+
+
+def finder_pick(items, cold, cover):
+    """Same ranking as app.js: closest warmth to the answer first, then price."""
+    pref = FINDER_PREF[cold]
+    return sorted((x for x in items if x["g"] == cover), key=lambda x: (pref.index(x["w"]), x["p"]))[:3]
+
+
+def mini_card(x):
+    return (f'<article class="card"><a href="{x["u"]}"><span class="media"><img src="{x["i"]}" alt="" width="540" height="675" loading="lazy" decoding="async"></span>'
+            f'<h3>{e(x["n"])}</h3></a><div class="meta">{e(x["c"])}</div><div class="price">{money(x["p"])}</div></article>')
+
+
+TILE_PICK = {"camisoles": "arianna_ss-top", "tank-tops": "fiordaliso_sl", "short-sleeve-tops": "emily_mm", "long-sleeve-tops": "ilary-ml-neckline",
+             "bodysuits": "sara_ml_body", "cardigans-boleros": "marie-_ml_cardigan", "leggings-briefs": "ilary-fuseaux"}
+
+CARE_ICONS = (
+    '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 11l3 15h18l3-15"/><path d="M4 11c2-2 4-2 6 0s4 2 6 0 4-2 6 0 4 2 6 0"/><text x="16" y="23" text-anchor="middle" font-size="8" fill="currentColor" stroke="none" font-family="sans-serif">30</text></svg>'
+    '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5l13 22H3z"/><path d="M7 7l18 20M25 7L7 27"/></svg>'
+    '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 5h22v22H5z"/><path d="M10 16h12"/></svg>'
+    '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 5h22v22H5z"/><circle cx="16" cy="16" r="7"/><path d="M6 6l20 20M26 6L6 26"/></svg>')
+
+
 # --------------------------------------------------------------------------- pages
 
 def build_home(products, best):
-    hero_im = {"src": f"{CDN}/s/files/1/0571/3733/2289/files/Image_new_1_Asset_8.png", "v": "1667813786", "w": 1897, "h": 1906}
-    bag_im = {"src": f"{CDN}/s/files/1/0571/3733/2289/files/Image_new_1_Asset_1.png", "v": "1667812724", "w": 1897, "h": 1906}
-    ring_im = {"src": f"{CDN}/s/files/1/0571/3733/2289/files/Image_new_1_Asset_7.png", "v": "1667813753", "w": 1897, "h": 1905}
-    hero_sizes = "(max-width:860px) 100vw, 50vw"
-    hero_srcset = ", ".join(f"{img_url(hero_im, w)} {w}w" for w in (540, 720, 900, 1200))
     by = {p["handle"]: p for p in products}
-    tiles = [("camisoles", "arianna_ss-top"), ("long-sleeve-tops", "ilary-ml-neckline"), ("bodysuits", "sara_ml_body"), ("cardigans-boleros", "marie-_ml_cardigan")]
-    tile_html = ""
-    for slug, h in tiles:
-        p = by.get(h) or next(x for x in products if x["group"] == slug)
-        n = sum(1 for x in products if x["group"] == slug)
-        tile_html += f'<a class="tile" href="/collections/{slug}/">{picture(p["images"][0], "", "(max-width:860px) 50vw, 25vw", (360, 540, 720))}<span>{UNDERWEAR_STYLES[slug][1]}<small>{n}</small></span></a>'
-    calderara = [p for p in products if p["cat"] == "accessories" and "Calderara" in p["name"]]
-    jewels = [next(p for p in calderara if p["group"] == g) for g in ("bracelets", "necklaces", "earrings", "rings")]
+    hero_sizes = "(max-width:860px) 100vw, 62vw"
+    hero = f'''<section class="hero">
+<div class="hero-media">{art("hero", "Woman in an ivory fine-knit camisole with a lace neckline", hero_sizes, eager=True)}</div>
+<div class="hero-copy"><span class="eyebrow">Wool · Silk · Oslo since 2009</span>
+<h1>The layer you <em>forget</em> you’re wearing</h1>
+<p class="lead">Fine-knit camisoles, tops and bodysuits in wool &amp; silk and pure silk. Warm without bulk, and smooth against the skin.</p>
+<div class="hero-cta"><a class="btn" href="/collections/underwear/">Shop underwear <span class="arrow" aria-hidden="true">→</span></a><a class="btn btn-ghost" href="#find-your-layer">Find your layer</a></div>
+<ul class="ticks"><li>Free delivery in Norway</li><li>14-day size exchanges</li><li>Natural fibres</li></ul></div>
+</section>'''
+    facts = ["85% wool · 15% silk", "70% wool · 30% silk", "100% silk", "48% cotton · 44% wool · 8% silk",
+             "Hand-woven leather · made in Italy", "Handmade in Venice", "Oslo · since 2009"]
+    run = "".join(f"<span>{e(x)}</span>" for x in facts)
+    strip = (f'<div class="labelstrip" role="note" aria-label="Our fibres: {e(", ".join(facts))}"><div class="track">'
+             f'<div style="display:inline-flex" aria-hidden="true">{run}</div><div style="display:inline-flex" aria-hidden="true">{run}</div></div></div>')
     usp = f'''<div class="wrap usp">
 <div>{ICONS["leaf"]}<span><strong>Natural fibres</strong>Wool, silk and cotton, worn close to the skin</span></div>
 <div>{ICONS["truck"]}<span><strong>Free delivery in Norway</strong>2–5 days with Posten, on every order</span></div>
 <div>{ICONS["return"]}<span><strong>14-day returns</strong>Easy size exchanges</span></div>
-{f'<div>{ICONS["globe"]}<span><strong>Tax-free abroad</strong>No Norwegian VAT outside Norway</span></div>' if INTERNATIONAL else f'<div>{ICONS["chat"]}<span><strong>Personal service</strong>Real people in Oslo, Mon–Fri</span></div>'}</div>'''
-    body = f'''<section class="hero">
-<div class="hero-copy"><span class="eyebrow">Wool · Silk · Cotton</span>
-<h1>Wool &amp; silk underwear, made to live close to your skin</h1>
-<p class="lead">Fine-knit camisoles, tops and bodysuits in natural wool, silk and cotton. Warm without bulk, soft enough to forget you're wearing them. Plus hand-woven Italian leather bags and handmade Venetian jewellery.</p>
-<div class="hero-cta"><a class="btn" href="/collections/underwear/">Shop underwear</a><a class="btn btn-ghost" href="/collections/bestsellers/">See bestsellers</a></div>
-<ul class="ticks"><li>Free delivery in Norway</li><li>14-day size exchanges</li><li>Natural fibres since 2009</li></ul></div>
-<div class="hero-media">{picture(hero_im, "Woman wearing an ivory camisole with a lace neckline", hero_sizes, (540, 720, 900, 1200), eager=True)}</div>
-</section>
+<div>{ICONS["chat"]}<span><strong>Personal service</strong>Real people in Oslo, Mon–Fri</span></div></div>'''
+    tiles = ""
+    for slug, (sing, plural, intro) in UNDERWEAR_STYLES.items():
+        p = by.get(TILE_PICK.get(slug)) or next(x for x in products if x["group"] == slug)
+        n = sum(1 for x in products if x["group"] == slug)
+        tiles += (f'<a class="tile" data-reveal href="/collections/{slug}/"><span class="img">{picture(p["images"][0], "", "(max-width:700px) 62vw, 280px", (360, 540))}</span>'
+                  f'<span class="name">{e(plural)}<small>{n}</small></span></a>')
+    items = finder_items(products)
+    default = finder_pick(items, "some", "camisoles")
+    cold_btns = "".join(f'<button type="button" data-cold="{k}" aria-pressed="{str(k == "some").lower()}">{e(v)}</button>' for k, v in FINDER_COLD)
+    cover_btns = "".join(f'<button type="button" data-cover="{k}" aria-pressed="{str(k == "camisoles").lower()}">{e(v)}</button>' for k, v in FINDER_COVER)
+    fdata = json.dumps({"items": items, "pref": FINDER_PREF, "notes": WARMTH_NOTE,
+                        "fibre": {"light": "pure silk", "medium": "cotton, wool & silk", "warm": "70/30 wool & silk", "warmest": "85/15 wool & silk"},
+                        "names": {k: UNDERWEAR_STYLES[k][1].lower() for k, _ in FINDER_COVER}}, ensure_ascii=False).replace("</", "<\\/")
+    # Calderara pieces photographed on white (most of the catalogue has grey bars baked into the photo)
+    jewels = [by[h] for h in ("1s051", "1s403b", "1s125n", "1s055b")]
+    body = f'''{hero}
+{strip}
 {usp}
 <section class="section"><div class="wrap">
-<div class="section-head"><div><span class="eyebrow">Bestsellers</span><h2>Most-loved layers</h2></div><a class="link" href="/collections/bestsellers/">Shop all bestsellers</a></div>
+<div class="section-head" data-reveal><div><span class="eyebrow">Bestsellers</span><h2>The ones people <em>come back</em> for</h2></div><a class="link" href="/collections/bestsellers/">Shop all bestsellers</a></div>
 <div class="grid">{"".join(card(p) for p in best[:4])}</div></div></section>
 <section class="section band"><div class="wrap">
-<div class="section-head"><div><span class="eyebrow">Underwear</span><h2>Shop by style</h2></div><a class="link" href="/collections/underwear/">All {sum(1 for p in products if p["cat"] == "underwear")} styles</a></div>
-<div class="tiles">{tile_html}</div></div></section>
-<section class="section"><div class="wrap split">
-{picture(by["am_lie_ml"]["images"][0], "Grey long-sleeve wool and silk top", "(max-width:860px) 100vw, 50vw", (540, 720, 900))}
-<div><span class="eyebrow">Why wool &amp; silk</span><h2>Warm in winter, light in spring, soft all year</h2>
-<ul class="facts"><li><strong>Wool</strong> insulates and manages moisture, so you stay warm without overheating.</li><li><strong>Silk</strong> is light and smooth, and takes away the itch some people feel from pure wool.</li><li><strong>Together</strong> they make a thin, second-skin layer that disappears under your clothes.</li></ul>
-<a class="btn" href="/collections/wool-silk-underwear/">Shop wool &amp; silk</a> <a class="link" style="margin-left:14px" href="/pages/wool-silk-guide/">Read the guide</a></div></div></section>
-<section class="section dark"><div class="wrap split">
-<div><span class="eyebrow">Handbags</span><h2>Hand-woven in Italy. Seamless by design.</h2><p class="muted">Each bag is woven by hand from soft leather using the tubular method, which leaves it without a single seam. Finished with gold-tone hardware, from the evening pochette to the everyday shopper.</p>
-<a class="btn" href="/collections/handbags/">Shop handbags · from {money(min(p["price"] for p in products if p["cat"] == "handbags"))}</a></div>
-{picture(bag_im, "Dark brown hand-woven leather shopper bag", "(max-width:860px) 100vw, 50vw", (540, 720, 900))}</div></section>
+<div class="section-head" data-reveal><div><span class="eyebrow">Underwear</span><h2>Shop by layer</h2></div><a class="link" href="/collections/underwear/">All {sum(1 for p in products if p["cat"] == "underwear")} styles</a></div>
+<div class="scroller">{tiles}</div></div></section>
+<section class="section silk" id="find-your-layer"><div class="wrap finder">
+<div data-reveal><span class="eyebrow">Find your layer</span><h2>Which layer is <em>right</em> for you?</h2>
+<p class="muted">Warmth follows wool content: the more wool, the warmer the layer. Silk keeps it light and smooth.</p>
+<fieldset><legend>Do you get cold easily?</legend><div class="chips">{cold_btns}</div></fieldset>
+<fieldset><legend>How much coverage do you like?</legend><div class="chips">{cover_btns}</div></fieldset></div>
+<div class="finder-out" aria-live="polite"><p id="finder-note">{e(WARMTH_NOTE[default[0]["w"]])}</p>
+<div class="grid" id="finder-results">{"".join(mini_card(x) for x in default)}</div>
+<p style="margin-top:20px"><a class="link" id="finder-more" href="/collections/camisoles/">See all camisoles</a></p></div>
+</div><script type="application/json" id="finder-data">{fdata}</script></section>
 <section class="section"><div class="wrap">
-<div class="section-head"><div><span class="eyebrow">Jewellery</span><h2>Handmade in Venice by Maria Calderara</h2></div><a class="link" href="/collections/accessories/">Shop jewellery</a></div>
+<div class="section-head" data-reveal><div><span class="eyebrow">Up close</span><h2>Made to be <em>felt</em></h2></div><a class="link" href="/pages/wool-silk-guide/">Read the wool &amp; silk guide</a></div>
+<div class="textures">
+<div class="texture" data-reveal><div class="img">{art("knit", "Close-up of a navy wool and silk knit", "(max-width:860px) 50vw, 400px")}</div><span class="label">85% wool · 15% silk</span><h3>Fine wool &amp; silk</h3><p>A thin, close knit that keeps you warm and disappears under your clothes.</p></div>
+<div class="texture" data-reveal><div class="img">{art("lace", "Close-up of a lace strap on an ivory camisole", "(max-width:860px) 50vw, 400px")}</div><span class="label">The details</span><h3>Soft lace edges</h3><p>Lace trims on selected camisoles and tops, soft enough to wear all day.</p></div>
+<div class="texture" data-reveal><div class="img">{art("weave", "Close-up of hand-woven dark brown leather", "(max-width:860px) 100vw, 400px")}</div><span class="label">The leather</span><h3>Woven by hand in Italy</h3><p>Woven in one continuous tube, so our bags have no side seams.</p></div>
+</div></div></section>
+<section class="section dark"><div class="wrap split">
+<div data-reveal><span class="eyebrow">Handbags</span><h2>Woven by hand. <em>Seamless</em> by design.</h2><p class="muted">Each bag is woven from soft leather in Italy using the tubular method: one continuous weave, no side seams, finished with gold-tone hardware. From the evening pochette to the everyday shopper.</p>
+<a class="btn" href="/collections/handbags/">Shop handbags · from {money(min(p["price"] for p in products if p["cat"] == "handbags"))}</a></div>
+<div data-reveal>{art("bag", "Dark brown hand-woven leather shopper", "(max-width:860px) 100vw, 50vw")}</div></div></section>
+<section class="section"><div class="wrap">
+<div class="section-head" data-reveal><div><span class="eyebrow">Jewellery</span><h2>Handmade in <em>Venice</em></h2></div><a class="link" href="/collections/accessories/">Shop jewellery</a></div>
 <div class="grid">{"".join(card(p) for p in jewels)}</div></div></section>
-<section class="section band"><div class="wrap split">
-<div><span class="eyebrow">Our story</span><h2>Beautiful things that are natural and long-lasting</h2>
-<p>Closetoskin was founded in Oslo in 2009 by a group of friends who met as students in London. We grew up by the Caribbean sea, and the feeling of silk against the body is what feels like home to us.</p>
-<p>Our idea is simple: modern basics in natural materials (wool, silk, cotton and cashmere) that are comfortable, timeless and made to last.</p>
-<a class="link" href="/pages/about-us/">Read our story</a></div>
-{picture(ring_im, "Gold-tone sculptural statement ring", "(max-width:860px) 100vw, 50vw", (540, 720, 900))}</div></section>
-<section class="section"><div class="wrap"><div class="section-head"><div><span class="eyebrow">Good to know</span><h2>Questions, answered</h2></div><a class="link" href="/pages/shipping-returns/">Shipping &amp; returns</a></div>{faq_html(FAQ[:4])}</div></section>
+<section class="section silk"><figure class="quote wrap" data-reveal><span class="eyebrow">Our story</span>
+<blockquote>“That feeling of silk against the body is what makes us feel <em>at home.</em>”</blockquote>
+<figcaption><span class="label">The founders · Oslo, since 2009</span><p style="margin:14px 0 0"><a class="link" href="/pages/about-us/">Read our story</a></p></figcaption></figure></section>
+<section class="section"><div class="wrap"><div class="section-head" data-reveal><div><span class="eyebrow">Good to know</span><h2>Questions, answered</h2></div><a class="link" href="/pages/shipping-returns/">Shipping &amp; returns</a></div>{faq_html(FAQ[:4])}</div></section>
 <section class="section dark"><div class="wrap split" style="align-items:center">
-<div><h2>Join the Closetoskin letter</h2><p class="muted">New colours, restocks and the occasional private sale. No spam, unsubscribe anytime.</p></div>
+<div><h2>Letters from <em>Oslo</em></h2><p class="muted">New colours, restocks and the occasional private sale. No spam, unsubscribe anytime.</p></div>
 <form class="inline-form" method="post" action="{SITE_URL}/contact#newsletter"><input type="hidden" name="form_type" value="customer"><input type="hidden" name="utf8" value="✓"><input type="hidden" name="contact[tags]" value="newsletter">
 <label class="sr-only" for="nl">Email</label><input id="nl" type="email" name="contact[email]" required placeholder="Your email" autocomplete="email"><button class="btn" type="submit">Subscribe</button></form></div></section>'''
     site_ld = {"@context": "https://schema.org", "@type": "WebSite", "name": BRAND, "url": SITE_URL + "/", "publisher": {"@id": SITE_URL + "/#org"}}
+    srcset = ", ".join(f"{art_src('hero', w)} {w}w" for w in ART_W["hero"])
     page("/", "Wool & Silk Underwear and Woven Leather Bags | Closetoskin",
-         f"Shop fine wool & silk and pure silk underwear: camisoles, long-sleeve tops and bodysuits. Plus hand-woven Italian leather bags. {SHIP_META}.",
-         body, "/", [ORG_LD, site_ld], img_url(hero_im, 1200), (img_url(hero_im, 720), hero_srcset, hero_sizes))
+         f"Fine wool & silk and pure silk underwear: camisoles, long-sleeve tops and bodysuits, plus hand-woven Italian leather bags. {SHIP_META}.",
+         body, "/", [ORG_LD, site_ld], SITE_URL + art_src("hero"), (art_src("hero", 900), srcset, hero_sizes))
+
+
+def build_gifts(products, best):
+    nav, bld = crumbs([("Home", "/"), ("Gifts", None)])
+    best_ids = {p["handle"] for p in best}
+    # briefs and leggings are left out: they don't make easy gifts
+    pool = sorted((p for p in products if p["group"] != "leggings-briefs"), key=lambda p: (p["handle"] not in best_ids, p["cat"] != "underwear", p["i"]))
+    statement = sorted((p for p in products if p["price"] > 1500), key=lambda p: (p["cat"] != "handbags", -p["price"]))
+    tiers = [("Under NOK 500", "Camisoles and tops in wool & silk and pure silk: a gift that gets worn every day.", [p for p in pool if p["price"] < 500]),
+             ("NOK 500 to 1,500", "Long-sleeve layers and cardigans, plus handmade Venetian earrings and bracelets.",
+              sorted((p for p in pool if 500 <= p["price"] <= 1500), key=lambda p: (p["cat"] == "accessories" and "Calderara" not in p["name"], p["cat"] != "underwear"))),
+             ("Statement gifts", "Hand-woven Italian leather bags and sculptural jewellery by Maria Calderara.", statement)]
+    sections = "".join(f'''<section class="section" style="padding-top:28px"><div class="section-head" data-reveal><div><h2>{e(t)}</h2><p class="muted" style="margin:0">{e(d)}</p></div></div>
+<div class="grid">{"".join(card(p) for p in items[:8])}</div></section>''' for t, d, items in tiers)
+    body = f'''{nav}<div class="wrap"><header class="col-head"><span class="eyebrow">Gift ideas</span><h1>Gifts, by <em>budget</em></h1>
+<p class="lead">Natural-fibre layers, hand-woven bags and handmade Venetian jewellery. Free delivery in Norway and 14-day exchanges.</p></header>{sections}</div>'''
+    shown = [p for _, _, items in tiers for p in items[:8]]
+    item_ld = {"@context": "https://schema.org", "@type": "CollectionPage", "name": "Gifts", "url": SITE_URL + "/collections/gifts/",
+               "mainEntity": {"@type": "ItemList", "numberOfItems": len(shown), "itemListElement": [
+                   {"@type": "ListItem", "position": i + 1, "url": SITE_URL + p["url"], "name": p["name"]} for i, p in enumerate(shown)]}}
+    page("/collections/gifts/", "Gift Ideas in Silk, Wool & Leather | Closetoskin",
+         "Gift ideas from Closetoskin: wool & silk and pure silk underwear under NOK 500, Venetian jewellery and hand-woven Italian leather bags. Free delivery in Norway.",
+         body, "/collections/gifts/", [bld, item_ld], img_url(statement[0]["images"][0], 1200))
 
 
 def build_collection(path, h1, title, desc, intro, items, crumb, pills=None, filters=True, seo=""):
@@ -493,13 +613,17 @@ def build_collection(path, h1, title, desc, intro, items, crumb, pills=None, fil
     else:
         tool = '<div style="height:28px"></div>'
     body = f'''{nav}<div class="wrap"><header class="col-head"><h1>{e(h1)}</h1><p class="lead">{e(intro)}</p>{pill_html}</header>
-{tool}<h2 class="sr-only">Products</h2><div class="grid" id="grid">{"".join(card(p, k < 4, k) for k, p in enumerate(items))}</div>
+{tool}<h2 class="sr-only">Products</h2><div class="grid" id="grid">{"".join(card(p, "high" if k == 0 else k < 4, k) for k, p in enumerate(items))}</div>
 {f'<section class="section seo-copy">{seo}</section>' if seo else '<div style="height:80px"></div>'}</div>'''
     item_ld = {"@context": "https://schema.org", "@type": "CollectionPage", "name": h1, "description": desc, "url": SITE_URL + path,
                "mainEntity": {"@type": "ItemList", "numberOfItems": len(items), "itemListElement": [
                    {"@type": "ListItem", "position": i + 1, "url": SITE_URL + p["url"], "name": p["name"]} for i, p in enumerate(items)]}}
     og = img_url(items[0]["images"][0], 1200) if items and items[0]["images"] else None
-    page(path, title, desc, body, crumb[1][1] if len(crumb) > 2 else path, [bld, item_ld], og)
+    pre = None
+    if items and items[0]["images"]:
+        im = items[0]["images"][0]
+        pre = (img_url(im, 540), ", ".join(f"{img_url(im, w)} {w}w" for w in (360, 540, 720)), "(max-width:700px) 50vw, (max-width:1024px) 33vw, 300px")
+    page(path, title, desc, body, crumb[1][1] if len(crumb) > 2 else path, [bld, item_ld], og, pre)
 
 
 def build_collections(products, best):
@@ -563,7 +687,7 @@ def build_product(p, products):
     nav, bld = crumbs(trail + [(p["name"], None)])
     alt_base = p["name"] + (f", {p['material'].lower()}" if p["material"] else "")
     ims = p["images"] or []
-    slides = "".join(picture(im, f"{alt_base} – view {k + 1}", "(max-width:900px) 100vw, 55vw", (540, 720, 900, 1200), k == 0) for k, im in enumerate(ims))
+    slides = "".join(picture(im, f"{alt_base} – view {k + 1}", "(max-width:900px) 100vw, 55vw", (540, 720, 900, 1200), "high" if k == 0 else False) for k, im in enumerate(ims))
     thumbs = "".join(f'<button type="button" aria-label="Show image {k + 1}" aria-current="{str(k == 0).lower()}"><img src="{img_url(im, 160)}" alt="" width="72" height="90" loading="lazy"></button>' for k, im in enumerate(ims)) if len(ims) > 1 else ""
     dots = "".join(f'<i class="{"on" if k == 0 else ""}"></i>' for k in range(len(ims))) if len(ims) > 1 else ""
     # options
@@ -596,6 +720,27 @@ def build_product(p, products):
     line = [x for x in products if x is not p and p["model"] and x["model"] == p["model"]]
     same = [x for x in products if x is not p and x["group"] == p["group"] and x not in line]
     rel = (line + same + [x for x in products if x["cat"] == p["cat"] and x is not p and x not in line and x not in same])[:4]
+    care = ""
+    if p["cat"] == "underwear":
+        steps = "".join(f'<span class="{"on" if w == p["warmth"] else "fill" if WARMTH.index(w) < WARMTH.index(p["warmth"]) else ""}">{w.capitalize()}</span>' for w in WARMTH)
+        care = f'''<div class="care"><span class="label">Composition</span><div class="comp">{e(p["comp"])}</div>
+<div class="warmth"><span class="label">Warmth, by wool content: {p["warmth"]}</span><div class="scale" aria-hidden="true">{steps}</div></div>
+<div class="icons-row" role="img" aria-label="Care: hand wash at 30 degrees, do not bleach, dry flat, do not tumble dry">{CARE_ICONS}</div>
+<small>General care for wool and silk. Always follow the label in the garment.</small></div>'''
+    elif p["cat"] == "handbags":
+        care = '<div class="care"><span class="label">Made of</span><div class="comp">Hand-woven leather · made in Italy</div></div>'
+    elif "Calderara" in p["name"]:
+        care = '<div class="care"><span class="label">Made by</span><div class="comp">Maria Calderara · handmade in Venice</div></div>'
+    complete = ""
+    if p["cat"] == "underwear":
+        def layer_pick(group):
+            pool = sorted((x for x in products if x["group"] == group and x is not p and x not in rel), key=lambda x: (x["warmth"] != p["warmth"], x["i"]))
+            return pool[0] if pool else None
+        groups = [g for g in ("cardigans-boleros", "leggings-briefs", "camisoles", "long-sleeve-tops") if g != p["group"]][:3]
+        layer = [x for x in (layer_pick(g) for g in groups) if x]
+        layer.append(next(x for x in products if x["cat"] == "accessories" and x["group"] == "bracelets" and "Calderara" in x["name"]))
+        complete = (f'<section class="section" style="padding-top:8px"><div class="section-head" data-reveal><div><span class="eyebrow">Wear it with</span><h2>Complete the <em>layer</em></h2></div></div>'
+                    f'<div class="grid">{"".join(card(x) for x in layer)}</div></section>')
     rel_title = (f"More from the {p['model']} line" if not p["model"].isdigit() else f"More from line {p['model']}") if line else "You may also like"
     body = f'''{nav}<div class="wrap"><div class="pdp">
 <div><div class="gallery">{f'<div class="thumbs">{thumbs}</div>' if thumbs else ''}<div class="slides">{slides}</div></div><div class="dots" aria-hidden="true">{dots}</div></div>
@@ -604,8 +749,8 @@ def build_product(p, products):
 <form id="buy" onsubmit="return false">{fs}
 <div class="atc"><button class="btn btn-block" id="atc-main" type="submit" data-atc>Add to bag — {money(p["price"])}</button><span id="stock" class="stock">{"In stock, ready to ship" if p["available"] else "Currently sold out"}</span></div></form>
 <ul class="assure"><li>{ICONS["truck"]}<span>Free delivery in Norway, 2–5 business days</span></li><li>{ICONS["return"]}<span>14-day returns &amp; size exchanges</span></li><li>{f'{ICONS["globe"]}<span>Tax-free shopping outside Norway</span>' if INTERNATIONAL else f'{ICONS["chat"]}<span>Questions about fit? <a class="link" href="mailto:{EMAIL}">Email our Oslo team</a></span>'}</li></ul>
-{acc}</div></div>
-<section class="section" style="padding-top:24px"><div class="section-head"><h2>{e(rel_title)}</h2><a class="link" href="{trail[-1][1]}">View all</a></div><div class="grid">{"".join(card(x) for x in rel)}</div></section></div>
+{care}{acc}</div></div>
+<section class="section" style="padding-top:24px"><div class="section-head"><h2>{e(rel_title)}</h2><a class="link" href="{trail[-1][1]}">View all</a></div><div class="grid">{"".join(card(x) for x in rel)}</div></section>{complete}</div>
 <div class="sticky-atc" aria-hidden="true"><div><strong>{e(p["name"])}</strong><span data-price>{money(p["price"])}</span></div><button class="btn" type="button" data-atc tabindex="-1">Add to bag</button></div>
 <script type="application/json" id="pdata">{json.dumps(pjson, ensure_ascii=False)}</script>'''
     offers = [{"@type": "Offer", "url": f"{SITE_URL}{p['url']}?variant={v['id']}", "priceCurrency": "NOK", "price": v["price"],
@@ -735,6 +880,7 @@ def build_assets(products, best):
     (ad / "fonts").mkdir(parents=True, exist_ok=True)
     for f in (ROOT / "src/fonts").glob("*.woff2"):
         shutil.copy(f, ad / "fonts" / f.name)
+    shutil.copytree(ROOT / "src/img", ad / "img")
     css = re.sub(r"/\*.*?\*/", "", (ROOT / "src/styles.css").read_text(), flags=re.S)
     (ad / "styles.css").write_text(re.sub(r"\n+", "", css))
     js = (ROOT / "src/app.js").read_text().splitlines()
@@ -784,6 +930,7 @@ if __name__ == "__main__":
     build_assets(products, best)
     build_home(products, best)
     build_collections(products, best)
+    build_gifts(products, best)
     for p in products:
         build_product(p, products)
     build_pages(products)
