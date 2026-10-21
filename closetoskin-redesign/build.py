@@ -477,6 +477,12 @@ def mini_card(x):
 TILE_PICK = {"camisoles": "arianna_ss-top", "tank-tops": "fiordaliso_sl", "short-sleeve-tops": "emily_mm", "long-sleeve-tops": "ilary-ml-neckline",
              "bodysuits": "sara_ml_body", "cardigans-boleros": "marie-_ml_cardigan", "leggings-briefs": "ilary-fuseaux"}
 
+# S/M/L columns of the store's own size-conversion chart (SG_new_f2.png on the live site)
+SIZE_CHART = [("Norway", "36", "38", "40"), ("Germany", "36", "38", "40"), ("France", "38", "40", "42"),
+              ("Italy", "42", "44", "46"), ("UK", "10", "12", "14"), ("US", "4–6", "8", "10")]
+SIZE_TABLE = ('<table><thead><tr><th scope="col">Size</th><th scope="col">S</th><th scope="col">M</th><th scope="col">L</th></tr></thead><tbody>'
+              + "".join(f'<tr><th scope="row">{c}</th><td>{s_}</td><td>{m}</td><td>{l}</td></tr>' for c, s_, m, l in SIZE_CHART) + "</tbody></table>")
+
 CARE_ICONS = (
     '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 11l3 15h18l3-15"/><path d="M4 11c2-2 4-2 6 0s4 2 6 0 4-2 6 0 4 2 6 0"/><text x="16" y="23" text-anchor="middle" font-size="8" fill="currentColor" stroke="none" font-family="sans-serif">30</text></svg>'
     '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5l13 22H3z"/><path d="M7 7l18 20M25 7L7 27"/></svg>'
@@ -711,7 +717,7 @@ def build_product(p, products):
     if p["cat"] == "underwear":
         mat_block = f'''<details><summary>Material &amp; care</summary><div class="body"><p><strong>Composition:</strong> {e(p["material_raw"])}</p>
 <p>Hand wash in cool water with a mild wool or silk detergent. Don't wring; dry flat away from direct heat. Always check the care label.</p></div></details>
-<details><summary>Size &amp; fit</summary><div class="body"><p>Close, second-skin fit in S, M and L. Between sizes or prefer a looser layer? Size up. Exchanges to another size are free of hassle within 14 days.</p></div></details>'''
+<details><summary>Size &amp; fit</summary><div class="body">{SIZE_TABLE}<p>Close, second-skin fit. Between sizes or prefer a looser layer? Size up. You can exchange for another size within 14 days.</p></div></details>'''
     acc = f'''<div class="acc"><details open><summary>Description</summary><div class="body">{desc_html}</div></details>{mat_block}
 <details><summary>Delivery &amp; returns</summary><div class="body"><p>Free delivery within Norway in 2–5 business days with Posten{"; 2–5 days within Europe and 4–10 days worldwide with UPS" if INTERNATIONAL else ""}. Orders ship Monday–Friday. Returns and size exchanges within 14 days of delivery. <a class="link" href="/pages/shipping-returns/">Full policy</a></p></div></details></div>'''
     chips = "".join(f'<span class="chip">{e(c)}</span>' for c in [p["material"], "Made in Italy" if p["cat"] == "handbags" else "", "Handmade in Venice" if "Calderara" in p["name"] else ""] if c)

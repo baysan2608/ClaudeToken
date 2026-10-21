@@ -24,7 +24,7 @@ These were found by querying the store's own cart and shipping-rate endpoints.
 
 1. **No shipping rates outside Norway.** For Denmark, Finland, Sweden, Germany, France, the UK and the US, the store returns no shipping options, whether the cart holds a NOK 245 top or a NOK 7,100 bag. That normally means checkout can't be completed for international customers. Yet the policy pages promise UPS delivery to Europe and worldwide, plus tax-free shopping abroad. **Check Shopify admin → Settings → Shipping and delivery.** Either add international zones, or remove the international promises.
 2. **Free delivery in Norway is never mentioned.** Every Norwegian order ships free, from the cheapest to the most expensive item. It's the strongest selling point the store has, and it appears nowhere on the site.
-3. **The "Size Guide" section on product pages is an empty heading.** The "Care Guide" tab is empty too.
+3. **The size guide is hard to find and hard to read.** It is a generic size-conversion chart (XS–XL across nine countries), published as an image at the very bottom of every product page, far from the size buttons. Bags and jewellery get the chart too. Search engines and screen readers can't read it, and it has no body measurements. The "Care Guide" tab is empty.
 4. **The payment-icons list in the footer is empty.** Shoppers can't see how they can pay until checkout.
 
 The redesign leads with "Free delivery in Norway". The international messaging (tax-free abroad, UPS delivery) is behind a build switch (`INTERNATIONAL=1`), to turn on once shipping zones are fixed. Until then, the site tells international visitors to email the shop.

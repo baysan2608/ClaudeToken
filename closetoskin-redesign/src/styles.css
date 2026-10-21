@@ -285,6 +285,10 @@ legend span{font-weight:400;color:var(--muted)}
 .acc details[open] summary::after{transform:rotate(45deg)}
 .acc .body{padding:0 0 18px;color:var(--muted);font-size:.96rem}
 .acc ul{padding-left:1.1em;margin:0}
+.acc table{width:100%;border-collapse:collapse;margin:2px 0 14px;font-size:.92rem;font-variant-numeric:tabular-nums}
+.acc th,.acc td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:left;font-weight:400}
+.acc tbody th{color:var(--ink)}
+.acc thead th{font:400 .68rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .sticky-atc{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:12px;transform:translateY(110%);transition:transform .3s var(--ease)}
 .sticky-atc.show{transform:none}
 .sticky-atc div{flex:1;min-width:0;font-size:.9rem;line-height:1.3}
