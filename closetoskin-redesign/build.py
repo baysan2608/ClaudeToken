@@ -16,7 +16,7 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-DIST = ROOT / "dist"
+DIST = ROOT / os.environ.get("DIST", "dist")
 SITE_URL = os.environ.get("SITE_URL", "https://www.closetoskin.com").rstrip("/")
 NOINDEX = os.environ.get("NOINDEX") == "1"
 # The live checkout (checked 21 Oct 2026) only returns shipping rates for Norway, where delivery is free.
@@ -579,7 +579,7 @@ def build_product(p, products):
         fs += f'<fieldset><legend>{e(lab)}: <span id="ov{i}"></span></legend><div class="opts">{opts}</div></fieldset>'
     labels = {v: LABEL_FIX.get(v, v) for o in p["options"] for v in o["values"] if v in LABEL_FIX and v not in ("Small", "Medium", "Large")}
     variants = [{"id": v["id"], "o": [v["option1"], v["option2"]][:len(p["options"])], "a": v["available"], "p": float(v["price"])} for v in p["variants"]]
-    pjson = {"name": p["name"], "price": p["price"], "img": img_url(ims[0], 200) if ims else "", "options": [o["name"] for o in p["options"]], "labels": labels, "variants": variants}
+    pjson = {"name": p["name"], "url": p["url"], "price": p["price"], "img": img_url(ims[0], 200) if ims else "", "options": [o["name"] for o in p["options"]], "labels": labels, "variants": variants}
     # accordion
     details_list = "".join(f"<li>{e(f)}</li>" for f in p["facts"]) if p["facts"] else ""
     desc_html = "".join(f"<p>{e(d)}</p>" for d in p["desc"]) + (f"<ul>{details_list}</ul>" if details_list else "")

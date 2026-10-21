@@ -34,3 +34,7 @@ Pick one:
 2. Host `dist/` on Netlify, Cloudflare Pages or similar, with checkout still on Shopify. Rebuild whenever products or prices change. `catalog.json` is a snapshot, not live stock.
 
 Only deploy this with the brand owner's permission.
+
+## Private review copy
+
+`python3 preview.py` writes `preview/`, a self-contained review copy for sharing as a private claude.ai Artifact. It shows a "preview" banner on every page, turns off checkout and forms, uses relative links, inlines CSS and JS, and bundles the product photos. `preview/` is git-ignored; rebuild it whenever the site changes.

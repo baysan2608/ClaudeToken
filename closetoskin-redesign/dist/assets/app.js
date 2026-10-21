@@ -6,6 +6,9 @@ const KEY = 'cts-cart';
 const root = document.documentElement;
 const money = n => 'NOK ' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ROOT = window.CTS_ROOT;
+const PREVIEW = !!window.CTS_PREVIEW;
+const url = u => (ROOT == null || /^https?:/.test(u)) ? u : ROOT + u.replace(/^\//, '') + (u.endsWith('/') ? 'index.html' : '');
 /* ---------- cart (localStorage, checkout via Shopify cart permalink) ---------- */
 let cart = [];
 let index;
@@ -40,11 +43,11 @@ $$('[data-cart-count]').forEach(b => { b.textContent = count || ''; });
 const lines = $('#cart-lines');
 if (!lines) return;
 if (!cart.length) {
-lines.innerHTML = '<p class="empty">Your bag is empty.<br><a class="link" href="/collections/underwear/">Shop underwear</a></p>';
+lines.innerHTML = `<p class="empty">Your bag is empty.<br><a class="link" href="${url('/collections/underwear/')}">Shop underwear</a></p>`;
 if (root.classList.contains('cart-open')) recs();
 } else {
-lines.innerHTML = cart.map((x, i) => `<div class="line"><img src="${esc(x.i)}" alt="" width="76" height="95" loading="lazy">
-<div><a href="${esc(x.u)}">${esc(x.t)}</a><div class="muted">${esc(x.v || '')}</div>
+lines.innerHTML = cart.map((x, i) => `<div class="line"><img src="${esc(url(x.i))}" alt="" width="76" height="95" loading="lazy">
+<div><a href="${esc(url(x.u))}">${esc(x.t)}</a><div class="muted">${esc(x.v || '')}</div>
 <div class="qty"><button type="button" data-q="${i}" data-d="-1" aria-label="Decrease quantity">−</button><span>${x.q}</span><button type="button" data-q="${i}" data-d="1" aria-label="Increase quantity">+</button></div></div>
 <div style="text-align:right">${money(x.p * x.q)}<br><button type="button" class="rm" data-rm="${i}">Remove</button></div></div>`).join('');
 if (root.classList.contains('cart-open')) recs();
@@ -57,11 +60,11 @@ co.toggleAttribute('aria-disabled', !cart.length);
 }
 async function recs() {
 const lines = $('#cart-lines');
-if (!index) { try { index = await (await fetch('/search-index.json')).json(); } catch (e) { return; } }
+if (!index) { try { index = await (await fetch(url('/search-index.json'))).json(); } catch (e) { return; } }
 const inBag = new Set(cart.map(x => x.u));
 const picks = index.filter(p => p.b && !inBag.has(p.u)).slice(0, 3);
 if (!picks.length || lines.querySelector('.recs')) return;
-lines.insertAdjacentHTML('beforeend', `<div class="recs"><h3>${cart.length ? 'Goes well with' : 'Bestsellers'}</h3><ul>${picks.map(p => `<li><a href="${p.u}"><img src="${p.i}" alt="" width="56" height="70" loading="lazy"><span>${esc(p.n)}<br><small class="muted">${esc(p.m)}</small></span><span>${money(p.p)}</span></a></li>`).join('')}</ul></div>`);
+lines.insertAdjacentHTML('beforeend', `<div class="recs"><h3>${cart.length ? 'Goes well with' : 'Bestsellers'}</h3><ul>${picks.map(p => `<li><a href="${url(p.u)}"><img src="${url(p.i)}" alt="" width="56" height="70" loading="lazy"><span>${esc(p.n)}<br><small class="muted">${esc(p.m)}</small></span><span>${money(p.p)}</span></a></li>`).join('')}</ul></div>`);
 }
 function add(item) {
 const found = cart.find(x => x.id === item.id);
@@ -80,7 +83,16 @@ else if (t.matches('.sub-toggle')) { const o = t.parentElement.classList.toggle(
 else if (t.matches('[data-close]')) { closeAll(); }
 else if (t.dataset.q) { const x = cart[+t.dataset.q]; x.q += +t.dataset.d; if (x.q < 1) cart.splice(+t.dataset.q, 1); save(); }
 else if (t.dataset.rm) { cart.splice(+t.dataset.rm, 1); save(); }
-else if (t.id === 'checkout' && !cart.length) { e.preventDefault(); }
+else if (t.id === 'checkout' && (PREVIEW || !cart.length)) {
+e.preventDefault();
+if (PREVIEW && cart.length) t.textContent = 'Checkout is turned off in this preview';
+}
+});
+if (PREVIEW) document.addEventListener('submit', e => {
+if (e.target.id === 'buy') return;
+e.preventDefault();
+const b = e.target.querySelector('[type=submit]');
+if (b) b.textContent = 'Turned off in this preview';
 });
 $('.overlay')?.addEventListener('click', closeAll);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
@@ -89,7 +101,7 @@ async function openSearch() {
 open('search-open');
 const input = $('#q');
 input.focus();
-if (!index) { try { index = await (await fetch('/search-index.json')).json(); } catch (e) { index = []; } }
+if (!index) { try { index = await (await fetch(url('/search-index.json'))).json(); } catch (e) { index = []; } }
 input.dispatchEvent(new Event('input'));
 }
 $('#q')?.addEventListener('input', e => {
@@ -101,7 +113,7 @@ const score = p => (p.b ? 2 : 0) + (words.some(w => p.n.toLowerCase().includes(w
 const hits = (words.length ? index.filter(p => words.every(w => p.k.includes(w))) : index.filter(p => p.b))
 .map((p, i) => [p, i]).sort((a, b) => score(b[0]) - score(a[0]) || a[1] - b[1]).map(x => x[0]).slice(0, 8);
 out.innerHTML = hits.length
-? hits.map(p => `<li><a href="${p.u}"><img src="${p.i}" alt="" width="48" height="60" loading="lazy"><span>${esc(p.n)}<br><small>${esc(p.m)}</small></span><span>${money(p.p)}</span></a></li>`).join('')
+? hits.map(p => `<li><a href="${url(p.u)}"><img src="${url(p.i)}" alt="" width="48" height="60" loading="lazy"><span>${esc(p.n)}<br><small>${esc(p.m)}</small></span><span>${money(p.p)}</span></a></li>`).join('')
 : `<li class="muted" style="padding:12px 8px">No matches for “${esc(q)}”.</li>`;
 });
 /* ---------- product page ---------- */
@@ -137,7 +149,7 @@ b.textContent = sticky && !picked ? choose : ok ? (sticky ? 'Add to bag' : 'Add 
 });
 priceEls.forEach(p => { p.textContent = money(current ? current.p : P.price); });
 if (stock) { stock.textContent = ok ? 'In stock, ready to ship' : 'Currently sold out'; stock.classList.toggle('out', !ok); }
-if (e && current && P.variants.length > 1) history.replaceState(null, '', '?variant=' + current.id);
+if (e && current && P.variants.length > 1) try { history.replaceState(null, '', '?variant=' + current.id); } catch (err) {}
 }
 const pre = new URLSearchParams(location.search).get('variant');
 const preV = pre && P.variants.find(v => String(v.id) === pre);
@@ -148,7 +160,7 @@ btns.forEach(b => b.addEventListener('click', e => {
 e.preventDefault();
 if (!picked) { form.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 if (!current || !current.a) { form.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-add({ id: current.id, q: 1, t: P.name, v: P.variants.length > 1 ? current.o.map(x => P.labels[x] || x).join(' / ') : '', p: current.p, i: P.img, u: location.pathname });
+add({ id: current.id, q: 1, t: P.name, v: P.variants.length > 1 ? current.o.map(x => P.labels[x] || x).join(' / ') : '', p: current.p, i: P.img, u: P.url });
 }));
 const slides = $('.slides');
 const thumbs = $$('.thumbs button');
