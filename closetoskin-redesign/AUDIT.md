@@ -4,15 +4,18 @@ Audited 21 Oct 2026 with headless Chromium and Lighthouse 12 (mobile, simulated 
 
 ## Scorecard
 
-| | Live site (home / product) | Redesign (home / product) |
+| | Live site (home / product) | Redesign, version 2 (home / product) |
 |---|---|---|
-| Lighthouse performance | 80 / 72 | **99 / 99** |
+| Speed score, phone | 68–93 / 72–81 | **98–99 / 99** |
+| Speed score, laptop (homepage) | 98 | **100** |
 | Lighthouse SEO | 85 / 85 | **100 / 100** |
 | Lighthouse accessibility | 92 / 92 | **100 / 100** |
-| Largest contentful paint | 2.4 s / 4.1 s | 2.2 s / 2.0 s |
+| Largest contentful paint, phone | 2.4–2.9 s / 3.2–4.1 s | 2.2–2.4 s / 2.0–2.2 s |
 | Total blocking time | 550 ms / 480 ms | 0 ms / 0 ms |
 | Layout shift (CLS) | 0.112 / 0 | 0 / 0 |
 | Page weight | 1,180 KB / 1,132 KB | 273 KB / 190 KB |
+
+Scores come from repeated Lighthouse runs on 21–22 October 2026. Speed scores move a lot from run to run on the live site (68 to 93 on the same page), so ranges are shown. On a laptop the live site is already fast; the speed gain is on phones. SEO (85) and accessibility (92) did not change between runs. Google PageSpeed Insights runs on different hardware and will show somewhat different numbers.
 
 The redesign was measured on a local server. Its images still load from the real Shopify CDN, so the numbers are close to what production hosting will give, but not identical.
 
